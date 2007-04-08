@@ -11,6 +11,7 @@ import EDU.oswego.cs.dl.util.concurrent.SynchronizedRef;
 
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogging;
+import com.tc.process.LinkedJavaProcessPollingAgent;
 import com.tc.test.collections.CollectionAssert;
 import com.tc.util.Assert;
 import com.tc.util.EqualityComparator;
@@ -80,16 +81,28 @@ public class TCTestCase extends TestCase {
 
   public TCTestCase() {
     super();
-
-    TCLogging.disableLocking();
+    init();
   }
 
   public TCTestCase(String arg0) {
     super(arg0);
+    init();
+  }
 
+  private void init() {
     TCLogging.disableLocking();
   }
 
+  protected void setUp() throws Exception {
+    super.setUp();
+    LinkedJavaProcessPollingAgent.startHeartBeatServer();
+  }
+
+  protected void tearDown() throws Exception {
+    LinkedJavaProcessPollingAgent.shutdown(5000);
+    super.tearDown();
+  }
+  
   // called by timer thread (ie. NOT the main thread of test case)
   private void timeoutCallback() {
     String bar = "***************************************";

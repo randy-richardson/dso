@@ -13,7 +13,6 @@ import EDU.oswego.cs.dl.util.concurrent.SynchronizedInt;
 
 import com.tc.object.config.schema.Lock;
 import com.tc.object.config.schema.Root;
-import com.tc.process.LinkedJavaProcessPollingAgent;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.test.TCTestCase;
 import com.tc.test.TestConfigObject;
@@ -185,6 +184,7 @@ public abstract class AbstractAppServerTestCase extends TCTestCase {
   }
 
   protected void setUp() throws Exception {
+    super.setUp();
     isSynchronousWrite = false;
     config = TestConfigObject.getInstance();
     tempDir = getTempDirectory();
@@ -407,10 +407,12 @@ public abstract class AbstractAppServerTestCase extends TCTestCase {
         Server server = (Server) iter.next();
         server.stop();
       }
-      Thread.sleep(5000);
-      LinkedJavaProcessPollingAgent.destroy();
-      Thread.sleep(5000);
+      
+      //System.out.println("Shutdown heartbeat server and its children...");
+      //LinkedJavaProcessPollingAgent.shutdown(10 * 1000); // time out in 5s
+      
       if (dsoServer != null && dsoServer.isRunning()) dsoServer.stop();
+      
     } finally {
       VmStat.stop();
       synchronized (workingDirLock) {
@@ -435,6 +437,7 @@ public abstract class AbstractAppServerTestCase extends TCTestCase {
         }
       }
     }
+    super.tearDown();
   }
 
   protected final void collectVmStats() throws IOException {
