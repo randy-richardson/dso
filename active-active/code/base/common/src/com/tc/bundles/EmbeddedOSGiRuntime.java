@@ -53,8 +53,26 @@ public interface EmbeddedOSGiRuntime {
     private static final TCLogger logger = TCLogging.getLogger(EmbeddedOSGiRuntime.class);
 
     private static final void injectDefaultModules(final Modules modules) {
+      if ((System.getProperty("tc.install-root") == null)
+          && (System.getProperty(TESTS_CONFIG_MODULE_REPOSITORIES) == null)) {
+        System.out.println("[xxx] No implicit modules were loaded because neither the tc.install-root or the "
+            + "tc.tests.configuration.modules.url property was set.");
+        logger.debug("No implicit modules were loaded because neither the tc.install-root or the "
+            + "tc.tests.configuration.modules.url property was set.");
+        return;
+      }
+
       final TCProperties props = TCPropertiesImpl.getProperties().getPropertiesFor("l1.configbundles");
       final String[] entries = props.getProperty("default").split(";");
+
+      if (entries.length == 0) {
+        System.out.println("[xxx] No implicit modules were loaded because the l1.configbundles.default property "
+            + "in tc.properties file was not set.");
+        logger.debug("No implicit modules were loaded because the l1.configbundles.default property "
+            + "in tc.properties file was not set.");
+        return;
+      }
+
       for (int i = 0; i < entries.length; i++) {
         final String[] entry = entries[i].trim().split(",");
         final String name = entry[0].trim();
@@ -74,27 +92,36 @@ public interface EmbeddedOSGiRuntime {
       prependLocations.add(defaultRepository);
     }
 
-    private static final void injectTestRepository(final List prependLocations) throws MalformedURLException {
+    private static final void injectTestRepository(final List prependLocations) throws MalformedURLException, FileNotFoundException {
       final String repos = System.getProperty(TESTS_CONFIG_MODULE_REPOSITORIES);
-      if (repos == null) return;
-      final URL testRepository = new URL(repos);
-      prependLocations.add(testRepository);
-      logger.debug("Prepending test bundle repository: '" + testRepository.toString() + "'");
-      prependLocations.add(testRepository);
+      if (repos != null) {
+        final URL testRepository = new URL(repos);
+        prependLocations.add(testRepository);
+        logger.debug("Prepending test bundle repository: '" + testRepository.toString() + "'");
+        prependLocations.add(testRepository);
+      }
+      
+      // HACK - until we can propagate TESTS_CONFIG_MODULE_REPOSITORIES across VMs during test
+      if (System.getProperty("tc.install-root") == null) return;
+      final File installRoot = Directories.getInstallationRoot();
+      if (!installRoot.toString().endsWith("build")) {
+        final File testRepository = new File(Directories.getInstallationRoot(), "build");
+        prependLocations.add(new File(testRepository, "modules").toURL());
+      }
     }
 
     public static EmbeddedOSGiRuntime createOSGiRuntime(final Modules modules) throws BundleException, Exception {
       // TODO: THIS ISN'T VERY ACCURATE, WE NEED A MORE EXPLICIT WAY OF TELLING OUR CODE
       // THAT WE'RE RUNNING IN TEST MODE
-      final boolean excludeDefaults = (System.getProperty("tc.install-root") == null)
-          || (System.getProperty(TESTS_CONFIG_MODULE_REPOSITORIES) != null);
+      // final boolean excludeDefaults = (System.getProperty("tc.install-root") == null)
+      // || (System.getProperty(TESTS_CONFIG_MODULE_REPOSITORIES) != null);
       final List prependLocations = new ArrayList();
       try {
         // There are two repositories that we [optionally] prepend: a system property (used by tests)
         // and the installation root (which is not set when running tests)
         injectTestRepository(prependLocations);
         injectDefaultRepository(prependLocations);
-        if (!excludeDefaults) injectDefaultModules(modules);
+        //injectDefaultModules(modules);
 
         final URL[] prependURLs = new URL[prependLocations.size()];
         prependLocations.toArray(prependURLs);

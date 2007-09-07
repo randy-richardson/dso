@@ -357,7 +357,7 @@ class SubtreeTestRun
               module_set = @subtree.build_module.module_set
               boot_jar_config_file = @subtree.boot_jar_config_file(@static_resources)
 
-              boot_jar_base_dir = @build_results.boot_jar_directory
+              boot_jar_base_dir = @build_results.shared_boot_jar_directory
               if boot_jar_config_file == @static_resources.dso_boot_jar_config_file
                 boot_jar_dir = FilePath.new(boot_jar_base_dir, 'standard')
               else
@@ -368,12 +368,14 @@ class SubtreeTestRun
 
               boot_jar = BootJar.new(@build_results, tests_jvm, boot_jar_dir, module_set,
                                      boot_jar_config_file.to_s)
-              if boot_jar.exist?
+
+              reuse_boot_jars = (@config_source[STATIC_PROPERTIES_PREFIX + 'reuse_boot_jars'] =~ /true/i) ? true : false
+              if reuse_boot_jars && boot_jar.exist?
                 puts("Using existing boot JAR at #{boot_jar.path}")
               else
                 puts "This subtree requires a DSO boot JAR to run tests. Building one."
                 begin
-                  boot_jar.ensure_created
+                  boot_jar.ensure_created(:delete_existing => !reuse_boot_jars)
                 rescue => e
                   error_msg = "Failed to create bootjar for: #{@test_patterns.join(", ")} under module " +
                               @subtree.build_module.name + ".  Exception: #{e}"
