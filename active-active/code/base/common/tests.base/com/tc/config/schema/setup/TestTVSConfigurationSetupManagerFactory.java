@@ -9,8 +9,10 @@ import org.apache.xmlbeans.XmlOptions;
 import org.apache.xmlbeans.impl.common.XPath;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
+import com.tc.config.schema.NewActiveServerGroupsConfig;
 import com.tc.config.schema.NewCommonL1Config;
 import com.tc.config.schema.NewCommonL2Config;
+import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
 import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.TestConfigObjectInvocationHandler;
@@ -138,32 +140,34 @@ import java.util.Set;
  */
 public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfigurationSetupManagerFactory {
 
-  public static final int                MODE_CENTRALIZED_CONFIG = 0;
-  public static final int                MODE_DISTRIBUTED_CONFIG = 1;
+  public static final int                   MODE_CENTRALIZED_CONFIG = 0;
+  public static final int                   MODE_DISTRIBUTED_CONFIG = 1;
 
-  private final TestConfigBeanSet        beanSet;
-  private final TestConfigBeanSet        l1_beanSet;
+  private final TestConfigBeanSet           beanSet;
+  private final TestConfigBeanSet           l1_beanSet;
 
-  private final TestConfigurationCreator l1ConfigurationCreator;
-  private final TestConfigurationCreator l2ConfigurationCreator;
+  private final TestConfigurationCreator    l1ConfigurationCreator;
+  private final TestConfigurationCreator    l2ConfigurationCreator;
 
-  private final NewSystemConfig          sampleSystem;
-  private final NewCommonL1Config        sampleL1Common;
-  private final NewL1DSOConfig           sampleL1DSO;
-  private final NewCommonL2Config        sampleL2Common;
-  private final NewL2DSOConfig           sampleL2DSO;
-  private final NewDSOApplicationConfig  sampleDSOApplication;
+  private final NewSystemConfig             sampleSystem;
+  private final NewCommonL1Config           sampleL1Common;
+  private final NewL1DSOConfig              sampleL1DSO;
+  private final NewCommonL2Config           sampleL2Common;
+  private final NewL2DSOConfig              sampleL2DSO;
+  private final NewDSOApplicationConfig     sampleDSOApplication;
+  private final NewActiveServerGroupsConfig sampleActiveServerGroups;
+  private final NewHaConfig                 sampleHa;
 
-  private final String                   defaultL2Identifier;
+  private final String                      defaultL2Identifier;
 
-  private final int                      mode;
+  private final int                         mode;
 
   // TODO: fix the way settableObjects are used
   // this is temporary
-  private Enum                           persistenceMode         = PersistenceMode.TEMPORARY_SWAP_ONLY;
-  private boolean                        gcEnabled               = true;
-  private boolean                        gcVerbose               = false;
-  private int                            gcIntervalInSec         = 3600;
+  private Enum                              persistenceMode         = PersistenceMode.TEMPORARY_SWAP_ONLY;
+  private boolean                           gcEnabled               = true;
+  private boolean                           gcVerbose               = false;
+  private int                               gcIntervalInSec         = 3600;
 
   public TestTVSConfigurationSetupManagerFactory(int mode, String l2Identifier,
                                                  IllegalConfigurationChangeHandler illegalConfigurationChangeHandler) {
@@ -216,6 +220,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     this.sampleL2DSO = sampleL2Manager.dsoL2Config();
     this.sampleDSOApplication = sampleL1Manager
         .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME);
+    this.sampleActiveServerGroups = sampleL2Manager.activeServerGroupsConfig();
+    this.sampleHa = sampleL2Manager.haConfig();
 
     applyDefaultTestConfig();
   }
@@ -363,7 +369,7 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     persistenceMode = val;
     ((SettableConfigItem) l2DSOConfig().persistenceMode()).setValue(persistenceMode);
   }
-  
+
   public boolean getGCEnabled() {
     return gcEnabled;
   }
@@ -411,6 +417,15 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
   public NewL2DSOConfig l2DSOConfig() {
     return (NewL2DSOConfig) proxify(NewL2DSOConfig.class, allServerBeans(), this.sampleL2DSO, null);
+  }
+
+  public NewActiveServerGroupsConfig activeServerGroupsConfig() {
+    return (NewActiveServerGroupsConfig) proxify(NewActiveServerGroupsConfig.class, allServerBeans(),
+        this.sampleActiveServerGroups, null);
+  }
+
+  public NewHaConfig haConfig() {
+    return (NewHaConfig) proxify(NewHaConfig.class, allServerBeans(), this.sampleHa, null);
   }
 
   public NewDSOApplicationConfig dsoApplicationConfig(String applicationName) {

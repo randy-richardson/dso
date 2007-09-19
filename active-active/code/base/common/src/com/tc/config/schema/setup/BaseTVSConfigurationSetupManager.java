@@ -45,7 +45,7 @@ public class BaseTVSConfigurationSetupManager {
   private final MutableBeanRepository             systemBeanRepository;
   private final ApplicationsRepository            applicationsRepository;
 
-  private final DefaultValueProvider              defaultValueProvider;
+  protected final DefaultValueProvider              defaultValueProvider;
   private final XmlObjectComparator               xmlObjectComparator;
   private final IllegalConfigurationChangeHandler illegalConfigurationChangeHandler;
 
@@ -76,7 +76,7 @@ public class BaseTVSConfigurationSetupManager {
     return this.clientBeanRepository;
   }
 
-  protected final MutableBeanRepository serversBeanRepository() {
+  public final MutableBeanRepository serversBeanRepository() {
     return this.serversBeanRepository;
   }
 
@@ -110,7 +110,7 @@ public class BaseTVSConfigurationSetupManager {
     return (String[]) names.toArray(new String[names.size()]);
   }
 
-  protected final ConfigContext createContext(BeanRepository beanRepository, File configFilePath) {
+  public final ConfigContext createContext(BeanRepository beanRepository, File configFilePath) {
     Assert.assertNotNull(beanRepository);
     return new StandardConfigContext(beanRepository, this.defaultValueProvider, this.illegalConfigurationChangeHandler,
                                      configFilePath);

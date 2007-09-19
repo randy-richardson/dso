@@ -7,6 +7,7 @@ package com.tctest;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.cluster.Cluster;
+import com.tc.config.schema.NewActiveServerGroupsConfig;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
@@ -71,11 +72,9 @@ public class LockManagerSystemTest extends BaseDSOTestCase {
      */
     System.setProperty("org.terracotta.server.disableJmxConnector", "true");
     /*
-     * disable OOO temporary because:
-     * It keeps starting and stopping different client/server within the same process 
-     * and cleaning up the environement etc. Since the shutdown methods are poorly supported 
-     * as of now Sometimes the clients are still trying to reconnect to non-exisitent servers 
-     * and with OOO it seems to happen more.
+     * disable OOO temporary because: It keeps starting and stopping different client/server within the same process and
+     * cleaning up the environement etc. Since the shutdown methods are poorly supported as of now Sometimes the clients
+     * are still trying to reconnect to non-exisitent servers and with OOO it seems to happen more.
      */
     TCPropertiesImpl.setProperty("l1.reconnect.enabled", "false");
   }
@@ -421,6 +420,10 @@ public class LockManagerSystemTest extends BaseDSOTestCase {
 
     public NewHaConfig haConfig() {
       return realConfig.haConfig();
+    }
+
+    public NewActiveServerGroupsConfig activeServerGroupsConfig() {
+      return realConfig.activeServerGroupsConfig();
     }
 
     private static class L2ConfigOverride implements NewL2DSOConfig {

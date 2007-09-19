@@ -4,6 +4,7 @@
  */
 package com.tc.config.schema.setup;
 
+import com.tc.config.schema.NewActiveServerGroupsConfig;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
@@ -23,6 +24,8 @@ public interface L2TVSConfigurationSetupManager {
   NewL2DSOConfig dsoL2Config();
 
   NewHaConfig haConfig();
+
+  NewActiveServerGroupsConfig activeServerGroupsConfig();
 
   String[] applicationNames();
 

@@ -4,14 +4,11 @@
  */
 package com.tc.config.schema;
 
-import com.terracottatech.config.Ha;
 
-public interface NewHaConfig extends NewConfig {
-  String haMode();
+public interface NewActiveServerGroupConfig extends NewConfig {
+  NewMembersConfig getMembers();
 
-  int electionTime();
+  NewHaConfig getHa();
 
-  boolean isNetworkedActivePassive();
-
-  Ha getHa();
+  int getId();
 }

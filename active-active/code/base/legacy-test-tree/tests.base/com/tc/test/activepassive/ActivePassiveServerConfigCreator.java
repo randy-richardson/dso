@@ -8,9 +8,12 @@ import org.apache.commons.io.FileUtils;
 
 import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
 import com.tc.config.schema.test.ApplicationConfigBuilder;
+import com.tc.config.schema.test.GroupConfigBuilder;
+import com.tc.config.schema.test.GroupsConfigBuilder;
 import com.tc.config.schema.test.HaConfigBuilder;
 import com.tc.config.schema.test.L2ConfigBuilder;
 import com.tc.config.schema.test.L2SConfigBuilder;
+import com.tc.config.schema.test.MembersConfigBuilder;
 import com.tc.config.schema.test.SystemConfigBuilder;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.logging.TCLogger;
@@ -39,18 +42,20 @@ public class ActivePassiveServerConfigCreator {
   private final File                                    tempDir;
   private final TestTVSConfigurationSetupManagerFactory configFactory;
   private final String[]                                dataLocations;
+  private final ActivePassiveTestSetupManager           setupManager;
 
-  public ActivePassiveServerConfigCreator(int serverCount, int[] dsoPorts, int[] jmxPorts, int[] l2GroupPorts,
-                                          String[] serverNames, String serverPersistence, boolean serverDiskless,
-                                          String configModel, File configFile, File tempDir,
+  public ActivePassiveServerConfigCreator(ActivePassiveTestSetupManager setupManager, int[] dsoPorts, int[] jmxPorts,
+                                          int[] l2GroupPorts, String[] serverNames, String configModel,
+                                          File configFile, File tempDir,
                                           TestTVSConfigurationSetupManagerFactory configFactory) {
-    this.serverCount = serverCount;
+    this.setupManager = setupManager;
+    this.serverCount = this.setupManager.getServerCount();
     this.dsoPorts = dsoPorts;
     this.jmxPorts = jmxPorts;
     this.l2GroupPorts = l2GroupPorts;
     this.serverNames = serverNames;
-    this.serverPersistence = serverPersistence;
-    this.serverDiskless = serverDiskless;
+    this.serverPersistence = this.setupManager.getServerPersistenceMode();
+    this.serverDiskless = this.setupManager.isNetworkShare();
     this.configModel = configModel;
     this.configFile = configFile;
     this.tempDir = tempDir;
@@ -131,10 +136,33 @@ public class ActivePassiveServerConfigCreator {
     } else {
       ha.setMode(HaConfigBuilder.HA_MODE_DISK_BASED_ACTIVE_PASSIVE);
     }
+    ha.setElectionTime(this.setupManager.getElectionTime() + "");
 
     L2SConfigBuilder l2sConfigbuilder = new L2SConfigBuilder();
     l2sConfigbuilder.setL2s(l2s);
     l2sConfigbuilder.setHa(ha);
+
+    int indent = 7;
+    int serverNamePosition = 0;
+    GroupsConfigBuilder groups = new GroupsConfigBuilder();
+    int groupCount = this.setupManager.getActiveServerGroupCount();
+    for (int i = 0; i < groupCount; i++) {
+      GroupConfigBuilder group = new GroupConfigBuilder();
+      HaConfigBuilder groupHa = new HaConfigBuilder(indent);
+      groupHa.setMode(this.setupManager.getGroupServerShareDataMode(i));
+      groupHa.setElectionTime("" + this.setupManager.getGroupElectionTime(i));
+      MembersConfigBuilder members = new MembersConfigBuilder();
+      int memberCount = this.setupManager.getGroupMemberCount(i);
+      for (int j = 0; j < memberCount; j++) {
+        members.addMember(this.serverNames[serverNamePosition]);
+        serverNamePosition++;
+      }
+      group.setHa(groupHa);
+      group.setId(i);
+      group.setMembers(members);
+      groups.addGroupConfigBuilder(group);
+    }
+    l2sConfigbuilder.setGroups(groups);
 
     ApplicationConfigBuilder app = ApplicationConfigBuilder.newMinimalInstance();
 

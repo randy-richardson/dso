@@ -16,6 +16,7 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.ext.LexicalHandler;
 
 import com.tc.exception.ImplementMe;
+import com.terracottatech.config.ActiveServerGroups;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
@@ -270,21 +271,63 @@ public class MockServers implements Servers {
     throw new ImplementMe();
   }
 
-  public Ha getHa() {
+  public ActiveServerGroups addNewActiveServerGroups() {
     throw new ImplementMe();
   }
 
-  public boolean isSetHa() {
+  public ActiveServerGroups[] getActiveServerGroupsArray() {
     throw new ImplementMe();
   }
 
-  public void setHa(Ha arg0) {
+  public ActiveServerGroups getActiveServerGroupsArray(int arg0) {
     throw new ImplementMe();
-
   }
 
-  public void unsetHa() {
+  public Ha[] getHaArray() {
     throw new ImplementMe();
+  }
 
+  public Ha getHaArray(int arg0) {
+    throw new ImplementMe();
+  }
+
+  public ActiveServerGroups insertNewActiveServerGroups(int arg0) {
+    throw new ImplementMe();
+  }
+
+  public Ha insertNewHa(int arg0) {
+    throw new ImplementMe();
+  }
+
+  public void removeActiveServerGroups(int arg0) {
+    throw new ImplementMe();
+  }
+
+  public void removeHa(int arg0) {
+    throw new ImplementMe();
+  }
+
+  public void setActiveServerGroupsArray(ActiveServerGroups[] arg0) {
+    throw new ImplementMe();
+  }
+
+  public void setActiveServerGroupsArray(int arg0, ActiveServerGroups arg1) {
+    throw new ImplementMe();
+  }
+
+  public void setHaArray(Ha[] arg0) {
+    throw new ImplementMe();
+  }
+
+  public void setHaArray(int arg0, Ha arg1) {
+    throw new ImplementMe();
+  }
+
+  public int sizeOfActiveServerGroupsArray() {
+    throw new ImplementMe();
+  }
+
+  public int sizeOfHaArray() {
+    throw new ImplementMe();
   }
 }

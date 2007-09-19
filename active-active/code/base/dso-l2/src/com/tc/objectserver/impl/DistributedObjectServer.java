@@ -12,7 +12,8 @@ import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
 import com.tc.async.api.StageManager;
 import com.tc.async.impl.NullSink;
-import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.config.HaConfig;
+import com.tc.config.HaConfigImpl;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.TCRuntimeException;
 import com.tc.io.TCFile;
@@ -193,6 +194,7 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
   private static final TCLogger                consoleLogger = CustomerLogging.getConsoleLogger();
 
   private final L2TVSConfigurationSetupManager configSetupManager;
+  private final HaConfig                       haConfig;
   private final Sink                           httpSink;
   private NetworkListener                      l1Listener;
   private CommunicationsManager                communicationsManager;
@@ -238,6 +240,7 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
     Assert.assertEquals(threadGroup, Thread.currentThread().getThreadGroup());
 
     this.configSetupManager = configSetupManager;
+    this.haConfig = new HaConfigImpl(this.configSetupManager);
     this.connectionPolicy = connectionPolicy;
     this.httpSink = httpSink;
     this.tcServerInfoMBean = tcServerInfoMBean;
@@ -328,16 +331,13 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
       SerializationAdapterFactory serializationAdapterFactory = new CustomSerializationAdapterFactory();
       persistor = new SleepycatPersistor(TCLogging.getLogger(SleepycatPersistor.class), dbenv,
                                          serializationAdapterFactory);
-      /* This commented code is for replacing SleepyCat with MemoryDataStore as an in-memory DB for testing purpose.
-       * You need to include MemoryDataStore in tc.jar and enable with tc.properties l2.memorystore.enabled=true.
-      boolean useMemoryStore = false;
-      if (l2Properties.getProperty("memorystore.enabled", false) != null) {
-        useMemoryStore = l2Properties.getBoolean("memorystore.enabled");
-      }
-      if (useMemoryStore) {
-        persistor = new MemoryStorePersistor(TCLogging.getLogger(MemoryStorePersistor.class));
-      } 
-      */
+      /*
+       * This commented code is for replacing SleepyCat with MemoryDataStore as an in-memory DB for testing purpose. You
+       * need to include MemoryDataStore in tc.jar and enable with tc.properties l2.memorystore.enabled=true. boolean
+       * useMemoryStore = false; if (l2Properties.getProperty("memorystore.enabled", false) != null) { useMemoryStore =
+       * l2Properties.getBoolean("memorystore.enabled"); } if (useMemoryStore) { persistor = new
+       * MemoryStorePersistor(TCLogging.getLogger(MemoryStorePersistor.class)); }
+       */
 
       String cachePolicy = l2Properties.getProperty("objectmanager.cachePolicy").toUpperCase();
       if (cachePolicy.equals("LRU")) {
@@ -478,7 +478,6 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
     TransactionBatchManager transactionBatchManager = new TransactionBatchManagerImpl();
     SampledCounter globalTxnCounter = sampledCounterManager.createCounter(new SampledCounterConfig(1, 300, true, 0L));
 
-    
     final TransactionStore transactionStore = new TransactionStoreImpl(transactionPersistor,
                                                                        globalTransactionIDSequence);
     ServerGlobalTransactionManager gtxm = new ServerGlobalTransactionManagerImpl(sequenceValidator, transactionStore,
@@ -514,7 +513,7 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
     int commitThreads = (persistent ? l2Properties.getInt("seda.commitstage.threads") : 1);
     stageManager.createStage(ServerConfigurationContext.COMMIT_CHANGES_STAGE,
                              new CommitTransactionChangeHandler(transactionStorePTP), commitThreads, maxStageSize);
-    
+
     txnStageCoordinator.lookUpSinks();
 
     Stage processTx = stageManager.createStage(ServerConfigurationContext.PROCESS_TRANSACTION_STAGE,
@@ -626,7 +625,11 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
                                                                                            reconnectTimeout,
                                                                                            persistent, consoleLogger);
 
-    boolean networkedHA = configSetupManager.haConfig().isNetworkedActivePassive();
+    boolean networkedHA = this.haConfig.isNetworkedActivePassive();
+    if (networkedHA) {
+      this.haConfig.makeAllNodes();
+    }
+
     if (networkedHA) {
       logger.info("L2 Networked HA Enabled ");
       l2Coordinator = new L2HACoordinator(consoleLogger, this, stageManager, persistor.getClusterStateStore(),
@@ -657,9 +660,8 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
     if (l2Properties.getBoolean("beanshell.enabled")) startBeanShell(l2Properties.getInt("beanshell.port"));
 
     if (networkedHA) {
-      final Node thisNode = makeThisNode();
-      final Node[] allNodes = makeAllNodes();
-      l2Coordinator.start(thisNode, allNodes);
+      final Node thisNode = this.haConfig.makeThisNode();
+      l2Coordinator.start(thisNode, this.haConfig.getAllNodes());
     } else {
       // In non-network enabled HA, Only active server reached here.
       startActiveMode();
@@ -668,37 +670,7 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
 
   public boolean isBlocking() {
     return startupLock != null && startupLock.isBlocking();
-  
-  }
-  private Node[] makeAllNodes() {
-    String[] l2s = configSetupManager.allCurrentlyKnownServers();
-    Node[] rv = new Node[l2s.length];
-    for (int i = 0; i < l2s.length; i++) {
-      NewL2DSOConfig l2;
-      try {
-        l2 = configSetupManager.dsoL2ConfigFor(l2s[i]);
-      } catch (ConfigurationSetupException e) {
-        throw new RuntimeException("Error getting l2 config for: " + l2s[i], e);
-      }
-      rv[i] = makeNode(l2);
-    }
-    return rv;
-  }
 
-  private static Node makeNode(NewL2DSOConfig l2) {
-    // NOTE: until we resolve Tribes stepping on TCComm's port
-    // we'll use TCComm.port + 1 in Tribes
-    int dsoPort = l2.listenPort().getInt();
-    if (dsoPort == 0) {
-      return new Node(l2.host().getString(), dsoPort);
-    } else {
-      return new Node(l2.host().getString(), l2.l2GroupPort().getInt());
-    }
-  }
-
-  private Node makeThisNode() {
-    NewL2DSOConfig l2 = configSetupManager.dsoL2Config();
-    return makeNode(l2);
   }
 
   public boolean startActiveMode() throws IOException {
