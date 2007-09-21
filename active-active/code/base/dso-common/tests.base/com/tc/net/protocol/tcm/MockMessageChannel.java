@@ -10,6 +10,7 @@ import com.tc.exception.ImplementMe;
 import com.tc.io.TCByteBufferOutput;
 import com.tc.io.TCByteBufferOutputStream;
 import com.tc.net.TCSocketAddress;
+import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -31,6 +32,9 @@ public class MockMessageChannel implements MessageChannelInternal {
 
   private int              numSends;
   private TCNetworkMessage lastSentMessage;
+  
+  private NodeID                  source;
+  private NodeID                  destination;
 
   public MockMessageChannel(ChannelID channelId) {
     this.channelId = channelId;
@@ -169,6 +173,22 @@ public class MockMessageChannel implements MessageChannelInternal {
 
   public TCSocketAddress getRemoteAddress() {
     throw new ImplementMe();
+  }
+
+  public NodeID getSourceNodeID() {
+    return source;
+  }
+  
+  public void setSourceNodeID(NodeID source) {
+    this.source = source;
+  }
+  
+  public NodeID getDestinationNodeID() {
+    return destination;
+  }
+  
+  public void setDestinationNodeID(NodeID destination) {
+    this.destination = destination;
   }
 
 }

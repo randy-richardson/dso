@@ -6,6 +6,7 @@ package com.tc.net.protocol.tcm;
 import com.tc.bytes.TCByteBuffer;
 import com.tc.exception.ImplementMe;
 import com.tc.net.TCSocketAddress;
+import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -21,9 +22,27 @@ public class TestMessageChannel implements MessageChannel {
   public NoExceptionLinkedQueue sendQueue             = new NoExceptionLinkedQueue();
   public TCMessage              message;
   public ChannelID channelID;
+  private NodeID                 source;
+  private NodeID                 destination;
 
   public void addListener(ChannelEventListener listener) {
     return;
+  }
+
+  public NodeID getSourceNodeID() {
+    return source;
+  }
+  
+  public void setSourceNodeID(NodeID source) {
+    this.source = source;
+  }
+  
+  public NodeID getDestinationNodeID() {
+    return destination;
+  }
+  
+  public void setDestinationNodeID(NodeID destination) {
+    this.destination = destination;
   }
 
   public boolean isConnected() {

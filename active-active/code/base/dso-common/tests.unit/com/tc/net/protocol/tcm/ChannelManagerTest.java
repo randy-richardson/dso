@@ -117,7 +117,7 @@ public class ChannelManagerTest extends TestCase {
 
       ClientMessageChannel channel;
       channel = clientComms
-          .createClientChannel(sessionManager, 0, TCSocketAddress.LOOPBACK_IP, lsnr.getBindPort(), 3000,
+          .createClientChannel(sessionManager, 0, 3000,
                                new ConnectionAddressProvider(new ConnectionInfo[] { new ConnectionInfo("localhost", lsnr
                                    .getBindPort()) }));
       channel.open();

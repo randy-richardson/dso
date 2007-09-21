@@ -4,6 +4,7 @@
 package com.tc.net.protocol.tcm;
 
 import com.tc.exception.ImplementMe;
+import com.tc.net.groups.NodeID;
 import com.tc.object.session.SessionID;
 
 import junit.framework.TestCase;
@@ -65,5 +66,21 @@ public class MessageMonitorImplTest extends TestCase {
       throw new ImplementMe();
     }
     
+    public NodeID getSourceNodeID() {
+      throw new ImplementMe();
+    }
+    
+    public void setSourceNodeID(NodeID source) {
+      throw new ImplementMe();
+    }
+    
+    public NodeID getDestinationNodeID() {
+      throw new ImplementMe();
+    }
+    
+    public void setDestinationNodeID(NodeID destination) {
+      throw new ImplementMe();
+    }
+
   }
 }

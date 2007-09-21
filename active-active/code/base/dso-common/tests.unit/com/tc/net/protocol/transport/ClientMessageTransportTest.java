@@ -64,7 +64,7 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                                                                     new ConnectionInfo[] { connectionInfo }),
                                                                       maxRetries, 5000);
     transport = new ClientMessageTransport(cce, handshakeErrorHandler, this.transportMessageFactory,
-                                           new WireProtocolAdaptorFactoryImpl());
+                                           new WireProtocolAdaptorFactoryImpl(), null);
   }
 
   public void testRoundRobinReconnect() throws Exception {
@@ -128,7 +128,7 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                                                                     new ConnectionInfo[] { connInfo }),
                                                                       0, 1000);
     transport = new ClientMessageTransport(cce, this.handshakeErrorHandler, this.transportMessageFactory,
-                                           new WireProtocolAdaptorFactoryImpl());
+                                           new WireProtocolAdaptorFactoryImpl(), null);
     transport.open();
     assertTrue(transport.isConnected());
     listener.stop(5000);

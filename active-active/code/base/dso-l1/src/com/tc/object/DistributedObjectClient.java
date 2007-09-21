@@ -194,10 +194,13 @@ public class DistributedObjectClient extends SEDA {
 
     String serverHost = connectionInfo[0].getHostname();
     int serverPort = connectionInfo[0].getPort();
+    ConnectionAddressProvider[] addrProviders = new ConnectionAddressProvider[1];
+    addrProviders[0] = addrProvider;
 
-    channel = new DSOClientMessageChannelImpl(communicationsManager.createClientChannel(sessionProvider, -1,
-                                                                                        serverHost, serverPort, 10000,
-                                                                                        addrProvider));
+
+    channel = new DSOClientMessageChannelImpl(communicationsManager.createClientChannelMultiplex(sessionProvider, -1,
+                                                                                        10000,
+                                                                                        addrProviders));
     ChannelIDLoggerProvider cidLoggerProvider = new ChannelIDLoggerProvider(channel.getChannelIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 

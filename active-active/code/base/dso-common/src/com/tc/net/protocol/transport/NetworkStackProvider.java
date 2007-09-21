@@ -15,6 +15,6 @@ public interface NetworkStackProvider {
    * Takes a new connection and a connectionId.  Returns the MessageTransport associated with that
    * id.
    */
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection) throws StackNotFoundException;
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean isMultiplexOpen) throws StackNotFoundException;
 
 }

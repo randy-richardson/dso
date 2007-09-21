@@ -8,6 +8,7 @@ import com.tc.async.api.EventContext;
 import com.tc.async.impl.MockStage;
 import com.tc.exception.ImplementMe;
 import com.tc.net.TCSocketAddress;
+import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.tcm.ChannelEventListener;
@@ -288,6 +289,22 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
     }
 
     public void close() {
+      throw new ImplementMe();
+    }
+    
+    public NodeID getSourceNodeID() {
+      throw new ImplementMe();
+    }
+    
+    public void setSourceNodeID(NodeID source) {
+      throw new ImplementMe();
+    }
+    
+    public NodeID getDestinationNodeID() {
+      throw new ImplementMe();
+    }
+    
+    public void setDestinationNodeID(NodeID destination) {
       throw new ImplementMe();
     }
 

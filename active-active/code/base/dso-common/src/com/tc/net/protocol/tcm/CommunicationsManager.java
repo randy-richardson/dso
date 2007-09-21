@@ -35,8 +35,22 @@ public interface CommunicationsManager {
    * @param timeout The maximum time (in milliseconds) to wait for the underlying connection to be established before
    *        giving up.
    */
+  
+  public ClientMessageChannelMultiplex createClientChannelMultiplex(final SessionProvider sessionProvider,
+                                                                    final int maxReconnectTries,
+                                                                    final int timeout,
+                                                                    ConnectionAddressProvider[] addressProviders);
+  
   public ClientMessageChannel createClientChannel(SessionProvider sessionProvider, int maxReconnectTries,
-                                                  String hostname, int port, int timeout,
+                                                                    int timeout,
+                                                                    ConnectionAddressProvider addressProvider,
+                                                                    TCMessageFactory msgFactory,
+                                                                    TCMessageRouter router,
+                                                                    ClientMessageChannelMultiplex multiplex,
+                                                                    boolean activeCoordinator);
+  
+  public ClientMessageChannel createClientChannel(SessionProvider sessionProvider, int maxReconnectTries,
+                                                  int timeout,
                                                   ConnectionAddressProvider addressProvider);
 
   public NetworkListener createListener(SessionProvider sessionProvider, TCSocketAddress addr,

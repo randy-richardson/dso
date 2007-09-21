@@ -70,7 +70,7 @@ public class Ping implements TCMessageSink {
 
     ClientMessageChannel channel = null;
     try {
-      channel = comms.createClientChannel(new NullSessionManager(), 0, this.hostname, this.port, 3000,
+      channel = comms.createClientChannel(new NullSessionManager(), 0, 3000,
                                           new ConnectionAddressProvider(new ConnectionInfo[0]));
       channel.open();
       channel.routeMessageType(TCMessageType.PING_MESSAGE, this);

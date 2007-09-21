@@ -11,12 +11,13 @@ import com.tc.net.protocol.TCProtocolException;
 public class TransportHandshakeMessageFactoryImpl implements TransportHandshakeMessageFactory {
   public static final ConnectionID DEFAULT_ID = ConnectionID.NULL_ID;
 
-  public TransportHandshakeMessage createSyn(ConnectionID connectionId, TCConnection source) {
-    return createNewMessage(TransportHandshakeMessageImpl.SYN, connectionId, null, source, false, 0);
+  public TransportHandshakeMessage createSyn(ConnectionID connectionId, TCConnection source, boolean newConnect) {
+    return createNewMessage(TransportHandshakeMessageImpl.SYN, connectionId, null, source, false, 0, newConnect);
   }
 
+
   public TransportHandshakeMessage createAck(ConnectionID connectionId, TCConnection source) {
-    return createNewMessage(TransportHandshakeMessageImpl.ACK, connectionId, null, source, false, 0);
+    return createNewMessage(TransportHandshakeMessageImpl.ACK, connectionId, null, source, false, 0, false);
   }
 
   public TransportHandshakeMessage createSynAck(ConnectionID connectionId, TCConnection source,
@@ -28,16 +29,17 @@ public class TransportHandshakeMessageFactoryImpl implements TransportHandshakeM
                                                 TCConnection source, boolean isMaxConnectionsExceeded,
                                                 int maxConnections) {
     return createNewMessage(TransportHandshakeMessageImpl.SYN_ACK, connectionId, errorContext, source,
-                            isMaxConnectionsExceeded, maxConnections);
+                            isMaxConnectionsExceeded, maxConnections, false);
   }
 
   private TransportHandshakeMessage createNewMessage(byte type, ConnectionID connectionId,
                                                      TransportHandshakeErrorContext errorContext, TCConnection source,
-                                                     boolean isMaxConnectionsExceeded, int maxConnections) {
+                                                     boolean isMaxConnectionsExceeded, int maxConnections, boolean newConnect) {
     TCByteBufferOutputStream bbos = new TCByteBufferOutputStream();
 
     bbos.write(TransportHandshakeMessageImpl.VERSION_1);
     bbos.write(type);
+    bbos.writeBoolean(newConnect);  // indicate using ChannelMultiplex
     bbos.writeString(connectionId.getID());
     bbos.writeBoolean(isMaxConnectionsExceeded);
     bbos.writeInt(maxConnections);

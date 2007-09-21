@@ -67,13 +67,21 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
   }
 
   public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection)
+  throws StackNotFoundException {
+    return attachNewConnection(connectionId, connection, false);
+  }
+
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean newConnect)
       throws StackNotFoundException {
     Assert.assertNotNull(connection);
 
     final NetworkStackHarness harness;
     final MessageTransport rv;
-    if (connectionId.isNull()) {
-      connectionId = connectionIdFactory.nextConnectionId();
+    if (newConnect || connectionId.isNull()) {
+      // must surpply connectionId if open multiplex channel
+      Assert.assertTrue((newConnect && !connectionId.isNull()) || connectionId.isNull());
+      if (connectionId.isNull())
+        connectionId = connectionIdFactory.nextConnectionId();
 
       rv = messageTransportFactory.createNewTransport(connectionId, connection, createHandshakeErrorHandler(),
                                                       handshakeMessageFactory, transportListeners);
@@ -226,7 +234,7 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
         return;
       }
 
-      this.transport = attachNewConnection(connectionId, syn.getSource());
+      this.transport = attachNewConnection(connectionId, syn.getSource(), syn.isNewConnect());
       connectionId = this.transport.getConnectionId();
       sendSynAck(connectionId, syn.getSource());
     }

@@ -4,6 +4,7 @@
 package com.tc.net.protocol.tcm;
 
 import com.tc.async.api.EventContext;
+import com.tc.net.groups.NodeID;
 import com.tc.object.session.SessionID;
 
 import java.io.IOException;
@@ -35,5 +36,13 @@ public interface TCMessage extends EventContext {
   public SessionID getLocalSessionID();
 
   public int getTotalLength();
+  
+  public NodeID getSourceNodeID();
+  
+  public void setSourceNodeID(NodeID source);
+  
+  public NodeID getDestinationNodeID();
+  
+  public void setDestinationNodeID(NodeID destination);
 
 }

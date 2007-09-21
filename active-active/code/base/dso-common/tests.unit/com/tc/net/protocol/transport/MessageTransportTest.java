@@ -235,7 +235,7 @@ public class MessageTransportTest extends TCTestCase {
 
     this.clientTransport = new ClientMessageTransport(cce, createHandshakeErrorHandler(),
                                                       this.transportHandshakeMessageFactory,
-                                                      new WireProtocolAdaptorFactoryImpl());
+                                                      new WireProtocolAdaptorFactoryImpl(), null);
     this.clientResponder = new ClientHandshakeMessageResponder(this.clientResponderSentQueue,
                                                                this.clientResponderReceivedQueue,
                                                                this.transportHandshakeMessageFactory,

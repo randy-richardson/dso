@@ -4,5 +4,7 @@
 package com.tc.net.protocol.transport;
 
 public interface SynMessage extends TransportHandshakeMessage {
-  //
+  
+  public boolean isNewConnect();
+
 }

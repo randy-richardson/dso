@@ -12,6 +12,7 @@ import com.tc.bytes.TCByteBuffer;
 import com.tc.logging.TCLogger;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
+import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -40,6 +41,8 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
   private final TCMessageRouter         router;
   private final TCMessageParser         parser;
   private final TCLogger                logger;
+  private NodeID                 source;
+  private NodeID                 destination;
 
   protected NetworkLayer                sendLayer;
 
@@ -79,6 +82,22 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     if (listener == null) { return; }
 
     listeners.add(listener);
+  }
+  
+  public NodeID getSourceNodeID() {
+    return source;
+  }
+  
+  public void setSourceNodeID(NodeID source) {
+    this.source = source;
+  }
+  
+  public NodeID getDestinationNodeID() {
+    return destination;
+  }
+  
+  public void setDestinationNodeID(NodeID destination) {
+    this.destination = destination;
   }
 
   public TCMessage createMessage(TCMessageType type) {

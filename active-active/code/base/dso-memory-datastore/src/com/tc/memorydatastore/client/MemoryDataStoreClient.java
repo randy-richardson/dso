@@ -57,7 +57,7 @@ public class MemoryDataStoreClient implements MemoryDataMap {
 
   private void setupClient(String serverHost, int serverPort) {
 
-    this.channel = communicationsManager.createClientChannel(new NullSessionManager(), -1, serverHost, serverPort,
+    this.channel = communicationsManager.createClientChannel(new NullSessionManager(), -1, 
         10000, new ConnectionAddressProvider(new ConnectionInfo[] { new ConnectionInfo(serverHost, serverPort) }));
 
     channel.addClassMapping(TCMessageType.MEMORY_DATA_STORE_RESPONSE_MESSAGE, MemoryDataStoreResponseMessage.class);

@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol.transport;
 
@@ -26,6 +27,7 @@ class TransportHandshakeMessageImpl extends WireProtocolMessageImpl implements S
   private final boolean      hasErrorContext;
   private final int          maxConnections;
   private final boolean      isMaxConnectionsExceeded;
+  private final boolean      newConnect;
 
   TransportHandshakeMessageImpl(TCConnection source, TCNetworkHeader header, TCByteBuffer[] payload)
       throws TCProtocolException {
@@ -38,13 +40,14 @@ class TransportHandshakeMessageImpl extends WireProtocolMessageImpl implements S
       if (version != VERSION_1) { throw new TCProtocolException("Bad Version: " + version + " != " + VERSION_1); }
 
       this.type = in.readByte();
-
+      
+      this.newConnect = in.readBoolean();
       try {
         this.connectionId = ConnectionID.parse(in.readString());
       } catch (InvalidConnectionIDException e) {
         throw new TCProtocolException(e);
       }
-
+      
       this.isMaxConnectionsExceeded = in.readBoolean();
       this.maxConnections = in.readInt();
       this.hasErrorContext = in.readBoolean();
@@ -117,6 +120,10 @@ class TransportHandshakeMessageImpl extends WireProtocolMessageImpl implements S
 
   public int getMaxConnections() {
     return this.maxConnections;
+  }
+  
+  public boolean isNewConnect() {
+    return this.newConnect;
   }
 
 }

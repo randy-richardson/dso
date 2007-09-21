@@ -363,8 +363,7 @@ public class MessageChannelTest extends TCTestCase {
 
   private ClientMessageChannel createClientMessageChannel(int maxReconnectTries) {
     ClientMessageChannel ch = clientComms
-        .createClientChannel(new NullSessionManager(), maxReconnectTries, TCSocketAddress.LOOPBACK_IP, lsnr
-            .getBindPort(), WAIT, new ConnectionAddressProvider(new ConnectionInfo[] { new ConnectionInfo("localhost", lsnr
+        .createClientChannel(new NullSessionManager(), maxReconnectTries, WAIT, new ConnectionAddressProvider(new ConnectionInfo[] { new ConnectionInfo("localhost", lsnr
             .getBindPort()) }));
     ch.addClassMapping(TCMessageType.PING_MESSAGE, PingMessage.class);
     return ch;

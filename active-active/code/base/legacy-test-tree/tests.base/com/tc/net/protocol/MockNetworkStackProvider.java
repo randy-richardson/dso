@@ -36,8 +36,7 @@ public class MockNetworkStackProvider implements NetworkStackProvider {
     throw new ImplementMe();
   }
 
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection) {
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean newConnect) {
     throw new ImplementMe();
   }
-
 }
