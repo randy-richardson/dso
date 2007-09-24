@@ -45,11 +45,11 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     this.channels = new ClientMessageChannel[addressProviders.length];
     this.nodeIDs = new NodeID[addressProviders.length];
 
-    // use the same master channelID for rest connections
     for (int i = 0; i < addressProviders.length; ++i) {
+      boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, -1, 10000,
                                                                    this.addressProviders[i], this.msgFactory, this.router,
-                                                                   this, (i == 0));
+                                                                   this, isActiveCoordinator);
     }
   }
 
@@ -157,6 +157,14 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     for (int i = 0; i < channels.length; ++i)
       channels[i].close();
   }
+  
+  public boolean isConnected() {
+    if (channels.length == 0) return false;
+    for (int i = 0; i < channels.length; ++i) {
+      if (!channels[i].isConnected()) return false;
+    }
+    return true;
+  }
 
   public ClientMessageChannel channel() {
     // return the active-coordinator
@@ -206,6 +214,11 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
   }
 
   public void addListener(ChannelEventListener listener) {
+    if (channels.length == 1) {
+      channels[0].addListener(listener);
+      return;
+    }
+    
     ChannelEventMiddleMan middleman = new ChannelEventMiddleMan(listener);
     for (int i = 0; i < channels.length; ++i)
       channels[i].addListener(middleman);

@@ -134,7 +134,7 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     }
   }
 
-  public final boolean isConnected() {
+  public boolean isConnected() {
     return this.sendLayer != null && this.sendLayer.isConnected();
   }
 
