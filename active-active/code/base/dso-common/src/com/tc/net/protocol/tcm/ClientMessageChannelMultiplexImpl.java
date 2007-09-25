@@ -18,6 +18,7 @@ import com.tc.util.TCTimeoutException;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 
 public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl implements
     ClientMessageChannelMultiplex {
@@ -48,8 +49,8 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, -1, 10000,
-                                                                   this.addressProviders[i], this.msgFactory, this.router,
-                                                                   this, isActiveCoordinator);
+                                                                   this.addressProviders[i], this.msgFactory,
+                                                                   this.router, this, isActiveCoordinator);
     }
   }
 
@@ -110,7 +111,6 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     return nid;
   }
 
-
   public ChannelID getChannelID() {
     // return one of active-coordinator, they are same for all channels
     return getActiveCoordinator().getChannelID();
@@ -157,7 +157,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     for (int i = 0; i < channels.length; ++i)
       channels[i].close();
   }
-  
+
   public boolean isConnected() {
     if (channels.length == 0) return false;
     for (int i = 0; i < channels.length; ++i) {
@@ -178,9 +178,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
    */
   private class ChannelEventMiddleMan implements ChannelEventListener {
     private final ChannelEventListener listener;
-    private int                        connectedCount         = 0;
-    private boolean                    disconnectedEventFired = false;
-    private boolean                    closedEventFired       = false;
+    private HashSet                    connectedSet = new HashSet();
 
     public ChannelEventMiddleMan(ChannelEventListener listener) {
       this.listener = listener;
@@ -188,22 +186,17 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
 
     public void notifyChannelEvent(ChannelEvent event) {
       if (event.getType() == ChannelEventType.TRANSPORT_DISCONNECTED_EVENT) {
-        --connectedCount;
-        Assert.assertTrue(connectedCount >= 0);
-        if (!disconnectedEventFired) {
+        if (connectedSet.remove(event.getChannel())) {
           fireEvent(event);
-          disconnectedEventFired = true;
         }
       } else if (event.getType() == ChannelEventType.TRANSPORT_CONNECTED_EVENT) {
-        if (++connectedCount == channels.length) {
+        connectedSet.add(event.getChannel());
+        if (connectedSet.size() == channels.length) {
           fireEvent(event);
-          disconnectedEventFired = false;
         }
       } else if (event.getType() == ChannelEventType.CHANNEL_CLOSED_EVENT) {
-        --connectedCount;
-        if (!closedEventFired) {
+        if (connectedSet.remove(event.getChannel())) {
           fireEvent(event);
-          closedEventFired = true;
         }
       }
     }
@@ -218,7 +211,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
       channels[0].addListener(listener);
       return;
     }
-    
+
     ChannelEventMiddleMan middleman = new ChannelEventMiddleMan(listener);
     for (int i = 0; i < channels.length; ++i)
       channels[i].addListener(middleman);
