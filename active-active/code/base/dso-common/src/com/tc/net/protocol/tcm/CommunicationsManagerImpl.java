@@ -122,8 +122,9 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                                                                     new TCMessageFactoryImpl(
                                                                                                              sessionProvider,
                                                                                                              monitor),
-                                                                                    new TCMessageRouterImpl(),
-                                                                                    sessionProvider, this,
+                                                                                    sessionProvider, 
+                                                                                    maxReconnectTries,
+                                                                                    this,
                                                                                     addressProviders);
 
     return (multiplex);

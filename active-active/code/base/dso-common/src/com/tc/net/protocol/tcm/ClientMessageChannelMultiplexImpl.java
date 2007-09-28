@@ -10,10 +10,8 @@ import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkStackID;
-import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.object.session.SessionProvider;
-import com.tc.util.Assert;
 import com.tc.util.TCTimeoutException;
 
 import java.io.IOException;
@@ -24,7 +22,6 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     ClientMessageChannelMultiplex {
   private static final TCLogger       logger = TCLogging.getLogger(ClientMessageChannelMultiplex.class);
   private final TCMessageFactory      msgFactory;
-  private final TCMessageRouter       router;
   private final SessionProvider       sessionProvider;
 
   private CommunicationsManager       communicationsManager;
@@ -32,13 +29,13 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
   private ClientMessageChannel[]      channels;
   private NodeID[]                    nodeIDs;
 
-  public ClientMessageChannelMultiplexImpl(TCMessageFactory msgFactory, TCMessageRouter router,
+  public ClientMessageChannelMultiplexImpl(TCMessageFactory msgFactory,
                                            SessionProvider sessionProvider,
+                                           final int maxReconnectTries,
                                            CommunicationsManager communicationsManager,
                                            ConnectionAddressProvider[] addressProviders) {
-    super(msgFactory, router, sessionProvider, null, null, false);
+    super(msgFactory, null, sessionProvider, null, null, false);
     this.msgFactory = msgFactory;
-    this.router = router;
     this.sessionProvider = sessionProvider;
 
     this.communicationsManager = communicationsManager;
@@ -48,9 +45,9 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
 
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
-      channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, -1, 10000,
+      channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, maxReconnectTries, 10000,
                                                                    this.addressProviders[i], this.msgFactory,
-                                                                   this.router, this, isActiveCoordinator);
+                                                                   new TCMessageRouterImpl(), this, isActiveCoordinator);
     }
   }
 
@@ -64,7 +61,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
 
   public NodeID makeNodeMultiplexId(ChannelID cid, ConnectionAddressProvider addressProvider) {
     // XXX ....
-    return (new NodeID());
+    return (new NodeID(addressProvider + cid.toString(), addressProvider.toString().getBytes()));
   }
 
   public ClientMessageChannel[] getChannels() {
@@ -77,15 +74,24 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
 
   public ClientMessageChannel getChannel(NodeID id) {
     for (int i = 0; i < nodeIDs.length; ++i) {
-      if (id.equals(nodeIDs[i])) { return (channels[i]); }
+      if (id.equals(nodeIDs[i])) { 
+        return (channels[i]); }
     }
     return null;
   }
 
-  public void broadcast(final TCNetworkMessage message) {
-    for (int i = 0; i < channels.length; ++i) {
-      channels[i].send(message);
+  public void broadcast(final TCMessage[] messages) {
+    for (int i = 0; i < messages.length; ++i) {
+      messages[i].send();
     }
+  }
+  
+  public TCMessage[] createBroadcastMessage(TCMessageType type) {
+    TCMessage[] msgs = new TCMessage[channels.length];
+    for(int i =0; i < channels.length; ++i) {
+      msgs[i] = msgFactory.createMessage(channels[i], type);
+    }
+    return (msgs);
   }
 
   public TCMessage createMessage(NodeID id, TCMessageType type) {
@@ -131,6 +137,12 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
       count += channels[i].getConnectAttemptCount();
     return count;
   }
+  
+  public void routeMessageType(TCMessageType messageType, TCMessageSink dest) {
+    for (int i = 0; i < channels.length; ++i)
+      channels[i].routeMessageType(messageType, dest);
+  }
+
 
   public void notifyTransportConnected(MessageTransport transport) {
     throw new AssertionError();
@@ -162,6 +174,14 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     if (channels.length == 0) return false;
     for (int i = 0; i < channels.length; ++i) {
       if (!channels[i].isConnected()) return false;
+    }
+    return true;
+  }
+
+  public boolean isOpen() {
+    if (channels.length == 0) return false;
+    for (int i = 0; i < channels.length; ++i) {
+      if (!channels[i].isOpen()) return false;
     }
     return true;
   }

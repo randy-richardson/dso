@@ -197,7 +197,7 @@ public class ClientMessageTransport extends MessageTransportBase {
       waitForSynAckResult = new TCFuture(status);
       ConnectionID synConnId = this.connectionId;
       if (!channel.isActiveCoordinator() && channel.isInitConnect()) { // for active-active multiplex
-        synConnId = new ConnectionID(channel.getActiveActiveChannelID().toLong(), null);
+        synConnId = new ConnectionID(channel.getActiveActiveChannelID().toLong(), ConnectionID.NULL_ID.getServerID());
       }
       TransportHandshakeMessage syn = this.messageFactory.createSyn(synConnId, getConnection(), channel.isInitConnect());
       // send syn message
