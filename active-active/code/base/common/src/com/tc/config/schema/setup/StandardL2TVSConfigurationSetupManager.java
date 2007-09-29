@@ -4,7 +4,9 @@
  */
 package com.tc.config.schema.setup;
 
+import org.apache.xmlbeans.XmlBoolean;
 import org.apache.xmlbeans.XmlException;
+import org.apache.xmlbeans.XmlInteger;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlOptions;
 
@@ -20,6 +22,8 @@ import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewHaConfigObject;
 import com.tc.config.schema.NewSystemConfig;
 import com.tc.config.schema.NewSystemConfigObject;
+import com.tc.config.schema.UpdateCheckConfig;
+import com.tc.config.schema.UpdateCheckConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.repository.ChildBeanFetcher;
 import com.tc.config.schema.repository.ChildBeanRepository;
@@ -38,6 +42,7 @@ import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
 import com.terracottatech.config.TcConfigDocument;
+import com.terracottatech.config.UpdateCheck;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -65,6 +70,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   private final Map                         l2ConfigData;
   private final NewHaConfig                 haConfig;
   private final NewActiveServerGroupsConfig activeServerGroupsConfig;
+  private final UpdateCheckConfig           updateCheckConfig;
 
   private final String                      thisL2Identifier;
   private L2ConfigData                      myConfigData;
@@ -84,6 +90,11 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     this.systemConfig = null;
     this.l2ConfigData = new HashMap();
+    try {
+      this.updateCheckConfig = getUpdateCheckConfig();
+    } catch (XmlException e2) {
+      throw new ConfigurationSetupException(e2);
+    }
 
     this.thisL2Identifier = thisL2Identifier;
     this.myConfigData = null;
@@ -207,6 +218,46 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   public Ha getCommonHa() {
     return this.haConfig.getHa();
+  }
+
+  private UpdateCheckConfig getUpdateCheckConfig() throws XmlException {
+    final UpdateCheck defaultUpdateCheck = getDefaultUpdateCheck();
+
+    ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), UpdateCheck.class,
+        new ChildBeanFetcher() {
+          public XmlObject getChild(XmlObject parent) {
+            UpdateCheck[] ucArray = ((Servers) parent).getUpdateCheckArray();
+
+            if (ucArray.length > 1) {
+              // TODO: throw this error in a different way?
+              throw new AssertionError(
+                  "You have specified too many UpdateCheck elements. There are "
+                      + ucArray.length
+                      + " UpdateCheck elements defined in the configuration file. You must indicate at most 1 UpdateCheck element.");
+            } else {
+              if (ucArray.length == 0) {
+                ucArray = new UpdateCheck[1];
+                ucArray[0] = defaultUpdateCheck;
+                ((Servers) parent).setUpdateCheckArray(ucArray);
+              }
+              return ucArray[0];
+            }
+          }
+        });
+
+    return new UpdateCheckConfigObject(createContext(beanRepository, configurationCreator
+        .directoryConfigurationLoadedFrom()));
+  }
+
+  private UpdateCheck getDefaultUpdateCheck() throws XmlException {
+    final int defaultPeriodDays = ((XmlInteger) defaultValueProvider.defaultFor(serversBeanRepository()
+        .rootBeanSchemaType(), "update-check/period-days")).getBigIntegerValue().intValue();
+    final boolean defaultEnabled = ((XmlBoolean) defaultValueProvider.defaultFor(serversBeanRepository()
+        .rootBeanSchemaType(), "update-check/enabled")).getBooleanValue();
+    UpdateCheck uc = UpdateCheck.Factory.newInstance();
+    uc.setEnabled(defaultEnabled);
+    uc.setPeriodDays(defaultPeriodDays);
+    return uc;
   }
 
   private class L2ConfigData {
@@ -423,6 +474,10 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   public NewActiveServerGroupsConfig activeServerGroupsConfig() {
     return activeServerGroupsConfig;
+  }
+
+  public UpdateCheckConfig updateCheckConfig() {
+    return updateCheckConfig;
   }
 
   public String[] allCurrentlyKnownServers() {

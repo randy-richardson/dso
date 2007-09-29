@@ -8,7 +8,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
-import com.tc.net.groups.NodeID;
+import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.MessageTransport;
@@ -48,8 +48,8 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     this.activeCoordinator = activeCoordinator;
     
     // XXX EY setup source/destination NodeID
-    setSourceNodeID(new NodeID());
-    setDestinationNodeID(new NodeID());
+    setSourceNodeID(new NodeIDImpl());
+    setDestinationNodeID(new NodeIDImpl());
   }
 
   public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException,

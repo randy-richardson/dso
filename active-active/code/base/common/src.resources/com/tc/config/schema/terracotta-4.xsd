@@ -443,6 +443,13 @@
     </xs:all>
   </xs:complexType>
 
+  <xs:complexType name="update-check">
+    <xs:all>
+      <xs:element name="enabled" type="xs:boolean" minOccurs="0" default="false"/>
+      <xs:element name="period-days" type="positive-int" minOccurs="0" default="7"/>
+    </xs:all>
+  </xs:complexType>
+
   <xs:complexType name="server">
     <xs:annotation>
       <xs:documentation xmlns="http://www.w3.org/1999/xhtml">
@@ -751,9 +758,10 @@
       <xs:element name="server" type="server" maxOccurs="unbounded" />
       <xs:element name="active-server-groups" type="active-server-groups" maxOccurs="1" minOccurs="0" />
       <xs:element name="ha" type="ha" maxOccurs="1" minOccurs="0" />
+      <xs:element name="update-check" type="update-check" maxOccurs="1" minOccurs="0" />
     </xs:choice>
   </xs:complexType>
-  
+   
   <xs:complexType name="active-server-groups">
     <xs:annotation>
         <xs:documentation>

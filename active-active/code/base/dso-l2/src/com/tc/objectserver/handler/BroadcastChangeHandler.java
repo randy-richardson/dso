@@ -9,7 +9,8 @@ import com.tc.async.api.ConfigurationContext;
 import com.tc.async.api.EventContext;
 import com.tc.async.api.EventHandlerException;
 import com.tc.async.api.Sink;
-import com.tc.net.protocol.tcm.ChannelID;
+import com.tc.net.groups.ClientID;
+import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.object.ObjectRequestID;
@@ -55,14 +56,15 @@ public class BroadcastChangeHandler extends AbstractEventHandler {
   public void handleEvent(EventContext context) throws EventHandlerException {
     BroadcastChangeContext bcc = (BroadcastChangeContext) context;
 
-    final ChannelID committerID = bcc.getChannelID();
+    final NodeID committerID = bcc.getNodeID();
     final TransactionID txnID = bcc.getTransactionID();
 
     final MessageChannel[] channels = channelManager.getActiveChannels();
 
     for (int i = 0; i < channels.length; i++) {
       MessageChannel client = channels[i];
-      ChannelID clientID = client.getChannelID();
+      //TODO:: make message channel return clientID and short channelManager call.
+      ClientID clientID = channelManager.getClientIDFor(client.getChannelID());
 
       Map newRoots = bcc.getNewRoots();
       Set notifiedWaiters = bcc.getNewlyPendingWaiters().getNotifiedFor(clientID);
@@ -85,7 +87,8 @@ public class BroadcastChangeHandler extends AbstractEventHandler {
           // ObjectManagerImpl
           this.managedObjectRequestSink.add(new ManagedObjectRequestContext(clientID, ObjectRequestID.NULL_ID,
                                                                             lookupObjectIDs, -1,
-                                                                            this.respondObjectRequestSink));
+                                                                            this.respondObjectRequestSink,
+                                                                            "BroadcastChangeHandler"));
         }
         final DmiDescriptor[] dmi = (includeDmi) ? prunedDmis : DmiDescriptor.EMPTY_ARRAY;
         BroadcastTransactionMessage responseMessage = (BroadcastTransactionMessage) client
@@ -115,12 +118,10 @@ public class BroadcastChangeHandler extends AbstractEventHandler {
     }
   }
 
-  private static DmiDescriptor[] pruneDmiDescriptors(DmiDescriptor[] dmiDescriptors, ChannelID clientID,
+  private static DmiDescriptor[] pruneDmiDescriptors(DmiDescriptor[] dmiDescriptors, ClientID clientID,
                                                      ClientStateManager clientStateManager) {
-    if(dmiDescriptors.length == 0) {
-      return dmiDescriptors;
-    }
-    
+    if (dmiDescriptors.length == 0) { return dmiDescriptors; }
+
     List list = new ArrayList();
     for (int i = 0; i < dmiDescriptors.length; i++) {
       DmiDescriptor dd = dmiDescriptors[i];
@@ -133,14 +134,13 @@ public class BroadcastChangeHandler extends AbstractEventHandler {
     return rv;
   }
 
-  private synchronized long getNextChangeIDFor(ChannelID id) {
+  private synchronized long getNextChangeIDFor(ClientID clientID) {
     // FIXME Fix this facility. Should keep a counter for every client and
     // increment on every
     return 0;
   }
 
-  public void initialize(ConfigurationContext context) {
-    super.initialize(context);
+  protected void initialize(ConfigurationContext context) {
     ServerConfigurationContext scc = (ServerConfigurationContext) context;
     this.channelManager = scc.getChannelManager();
     this.clientStateManager = scc.getClientStateManager();

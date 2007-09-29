@@ -6,8 +6,11 @@ package com.tctest.webapp.servlets;
 
 import org.hibernate.LockMode;
 import org.hibernate.Session;
+import org.hibernate.stat.QueryStatistics;
+import org.hibernate.stat.Statistics;
 
 import com.tc.util.Assert;
+import com.tctest.domain.Account;
 import com.tctest.domain.Event;
 import com.tctest.domain.EventManager;
 import com.tctest.domain.HibernateUtil;
@@ -93,25 +96,31 @@ public final class ContainerHibernateTestServlet extends HttpServlet {
     List emailList = mgr.listEmailsOfEvent(engMeetingId);
     System.out.println("Email list for Eng meeting: " + emailList);
     httpSession.setAttribute("events", eventList);
+    httpSession.setAttribute("event", eventList.get(0));
     System.out.println("added event list to session");
+    
+    Account acc = new Account();
+    Long accId = mgr.addPersonToAccount(steveId, acc);
+    acc = mgr.getAccount(accId);
+    httpSession.setAttribute("acc", acc);
 
     HibernateUtil.getSessionFactory().close();
   }
 
   private void doServer1(HttpSession httpSession) throws Exception {
-    // comment this out intentionally
-    // List events = (List) httpSession.getAttribute("events");
+    Session sessionTmp = HibernateUtil.getSessionFactory().getCurrentSession();
+    sessionTmp.beginTransaction();
+    Account acc = (Account) httpSession.getAttribute("acc");
+    sessionTmp.lock(acc, LockMode.NONE);
+    System.err.println("acc.person: " + acc.getPerson());
+    sessionTmp.getTransaction().commit();
 
     EventManager mgr = new EventManager();
+    Statistics stats = HibernateUtil.getSessionFactory().getStatistics();
+    stats.setStatisticsEnabled(true);
+    
     // this will get the data from ehcache
     List events = mgr.listEvents();
-
-    System.out.println();    
-    System.out.println("@@@ There should be NO query for then events below since they are fetched from cache");
-    System.out.println(events);
-    System.out.println();
-    
-    Assert.assertTrue(events.size() >= 2);
 
     Session session = HibernateUtil.getSessionFactory().getCurrentSession();
     session.beginTransaction();
@@ -120,6 +129,9 @@ public final class ContainerHibernateTestServlet extends HttpServlet {
     for (Iterator it = events.iterator(); it.hasNext();) {
       session.lock((Event) it.next(), LockMode.NONE);
     }
+    
+    System.out.println("events: " + events);
+    Assert.assertTrue(events.size() >= 2);
 
     // list people in first event
     Event event = (Event) events.get(0);
@@ -146,5 +158,10 @@ public final class ContainerHibernateTestServlet extends HttpServlet {
     session.getTransaction().commit();
     HibernateUtil.getSessionFactory().close();
     System.out.println("DONE!");
+    
+    QueryStatistics queryStats = stats.getQueryStatistics("from Event");
+    System.out.println("Event query cache hit: " + queryStats.getCacheHitCount());
+    
+    Assert.assertEquals(1, queryStats.getCacheHitCount());
   }
 }

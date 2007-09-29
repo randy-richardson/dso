@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -37,7 +39,7 @@ public class Resolver {
 
   private static final String BUNDLE_FILENAME_EXT       = ".jar";
   private static final String BUNDLE_PATH               = "{0}-{1}" + BUNDLE_FILENAME_EXT;
-  private static final String BUNDLE_VERSION_REGEX      = "[0-9]+\\.[0-9]+\\.[0-9]+";
+  private static final String BUNDLE_VERSION_REGEX      = "[0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?";
   private static final String BUNDLE_FILENAME_REGEX     = ".+-";
   private static final String BUNDLE_FILENAME_EXT_REGEX = "\\" + BUNDLE_FILENAME_EXT;
   private static final String BUNDLE_FILENAME_PATTERN   = "^" + BUNDLE_FILENAME_REGEX + BUNDLE_VERSION_REGEX
@@ -123,7 +125,15 @@ public class Resolver {
       final URL location = repositories[i];
       // TODO: support other protocol besides file://
       if (location.getProtocol().equalsIgnoreCase("file")) {
-        final File repository = new File(location.getFile(), spec.getGroupId().replace('.', File.separatorChar));
+        URI uriLocation = null;
+        try {
+          uriLocation = new URI(location.toString());
+        } catch (URISyntaxException e1) {
+          error(Message.ERROR_BUNDLE_MALFORMED_URL, new Object[] { location });
+          return null;
+        }
+        
+        final File repository = new File(uriLocation.getPath(), spec.getGroupId().replace('.', File.separatorChar));
         if (!repository.exists() || !repository.isDirectory()) {
           warn(Message.WARN_REPOSITORY_UNRESOLVED, new Object[] { location });
           continue;

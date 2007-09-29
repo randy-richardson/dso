@@ -8,7 +8,8 @@ import com.tc.async.api.Sink;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.net.protocol.tcm.ChannelID;
+import com.tc.net.groups.ClientID;
+import com.tc.net.groups.NodeID;
 import com.tc.object.ObjectID;
 import com.tc.object.cache.CacheStats;
 import com.tc.object.cache.Evictable;
@@ -164,28 +165,26 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     return objectStore.getRootID(name);
   }
 
-  public boolean lookupObjectsAndSubObjectsFor(ChannelID channelID, ObjectManagerResultsContext responseContext,
+  public boolean lookupObjectsAndSubObjectsFor(NodeID nodeID, ObjectManagerResultsContext responseContext,
                                                int maxReachableObjects) {
     // maxReachableObjects is at least 1 so that addReachableObjectsIfNecessary does the right thing
-    return lookupObjectsForOptionallyCreate(channelID, responseContext, maxReachableObjects <= 0 ? 1
-        : maxReachableObjects);
+    return lookupObjectsForOptionallyCreate(nodeID, responseContext, maxReachableObjects <= 0 ? 1 : maxReachableObjects);
   }
 
-  public boolean lookupObjectsFor(ChannelID channelID, ObjectManagerResultsContext responseContext) {
-    return lookupObjectsForOptionallyCreate(channelID, responseContext, -1);
+  public boolean lookupObjectsFor(NodeID nodeID, ObjectManagerResultsContext responseContext) {
+    return lookupObjectsForOptionallyCreate(nodeID, responseContext, -1);
   }
 
-  private synchronized boolean lookupObjectsForOptionallyCreate(ChannelID channelID,
+  private synchronized boolean lookupObjectsForOptionallyCreate(NodeID nodeID,
                                                                 ObjectManagerResultsContext responseContext,
                                                                 int maxReachableObjects) {
     syncAssertNotInShutdown();
 
     if (collector.isPausingOrPaused()) {
-      makePending(channelID, new ObjectManagerLookupContext(responseContext, false, false), maxReachableObjects);
+      makePending(nodeID, new ObjectManagerLookupContext(responseContext, false), maxReachableObjects);
       return false;
     }
-    return basicLookupObjectsFor(channelID, new ObjectManagerLookupContext(responseContext, false, false),
-                                 maxReachableObjects);
+    return basicLookupObjectsFor(nodeID, new ObjectManagerLookupContext(responseContext, false), maxReachableObjects);
   }
 
   public Iterator getRoots() {
@@ -215,9 +214,9 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private ManagedObject lookup(ObjectID id, boolean missingOk) {
     syncAssertNotInShutdown();
 
-    WaitForLookupContext waitContext = new WaitForLookupContext(id);
-    ObjectManagerLookupContext context = new ObjectManagerLookupContext(waitContext, missingOk, true);
-    basicLookupObjectsFor(ChannelID.NULL_ID, context, -1);
+    WaitForLookupContext waitContext = new WaitForLookupContext(id, missingOk);
+    ObjectManagerLookupContext context = new ObjectManagerLookupContext(waitContext, true);
+    basicLookupObjectsFor(ClientID.NULL_ID, context, -1);
 
     ManagedObject mo = waitContext.getLookedUpObject();
     if (mo == null) {
@@ -259,8 +258,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
     if (rv == null) {
       // Request Faulting in a different stage and give back a "Referenced" proxy
-      ManagedObjectFaultingContext mofc = new ManagedObjectFaultingContext(id, context.removeOnRelease(), context
-          .isMissingOK());
+      ManagedObjectFaultingContext mofc = new ManagedObjectFaultingContext(id, context.removeOnRelease());
       faultSink.add(mofc);
 
       // don't account for a cache "miss" unless this was a real request
@@ -272,8 +270,9 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       FaultingManagedObjectReference fmr = (FaultingManagedObjectReference) rv;
       if (!fmr.isFaultingInProgress()) {
         references.remove(id);
-        if (context.isMissingOK()) { return null; }
-        throw new AssertionError("Request for a non-existent object: " + id + " context: " + context);
+        logger.warn("Request for non-exisitent object : " + id + " context = " + context);
+        context.missingObject(id);
+        return null;
       }
       if (context.isNewRequest()) stats.cacheMiss();
     } else {
@@ -381,7 +380,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   }
 
-  private synchronized boolean basicLookupObjectsFor(ChannelID channelID, ObjectManagerLookupContext context,
+  private synchronized boolean basicLookupObjectsFor(NodeID nodeID, ObjectManagerLookupContext context,
                                                      int maxReachableObjects) {
     Set objects = createNewSet();
 
@@ -396,14 +395,12 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       // 2) to Fault objects that are not available
       ManagedObjectReference reference = getOrLookupReference(context, id);
       if (reference == null) {
-        Assert.assertTrue(context.isMissingOK());
         continue;
-      }
-      if (available && reference.isReferenced()) {
+      } else if (available && reference.isReferenced()) {
         available = false;
         // Setting only the first referenced object to process Pending. If objects are being faulted in, then this
         // will ensure that we don't run processPending multiple times unnecessarily.
-        addBlocked(channelID, context, maxReachableObjects, id);
+        addBlocked(nodeID, context, maxReachableObjects, id);
       }
 
       objects.add(reference);
@@ -411,7 +408,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
     if (available) {
       createNewObjectsAndAddTo(objects, newObjectIDs);
-      Set processLater = addReachableObjectsIfNecessary(channelID, maxReachableObjects, objects);
+      Set processLater = addReachableObjectsIfNecessary(nodeID, maxReachableObjects, objects);
       ObjectManagerLookupResults results = new ObjectManagerLookupResultsImpl(processObjectsRequest(objects),
                                                                               processLater);
       context.setResults(results);
@@ -430,7 +427,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
   }
 
-  private Set addReachableObjectsIfNecessary(ChannelID channelID, int maxReachableObjects, Set objects) {
+  private Set addReachableObjectsIfNecessary(NodeID nodeID, int maxReachableObjects, Set objects) {
     if (maxReachableObjects <= 0) { return Collections.EMPTY_SET; }
     ManagedObjectTraverser traverser = new ManagedObjectTraverser(maxReachableObjects);
     Set lookedUpObjects = objects;
@@ -438,7 +435,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       traverser.traverse(lookedUpObjects);
       lookedUpObjects = new HashSet();
       Set lookupObjectIDs = traverser.getObjectsToLookup();
-      stateManager.removeReferencedFrom(channelID, lookupObjectIDs);
+      stateManager.removeReferencedFrom(nodeID, lookupObjectIDs);
       for (Iterator j = lookupObjectIDs.iterator(); j.hasNext();) {
         ObjectID id = (ObjectID) j.next();
         ManagedObjectReference newRef = getReference(id);
@@ -716,13 +713,13 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     List lp = pending.getAndResetPendingRequests();
     for (Iterator i = lp.iterator(); i.hasNext();) {
       Pending p = (Pending) i.next();
-      basicLookupObjectsFor(p.getChannelID(), p.getRequestContext(), p.getMaxReachableObjects());
+      basicLookupObjectsFor(p.getNodeID(), p.getRequestContext(), p.getMaxReachableObjects());
     }
   }
 
-  private void addBlocked(ChannelID channelID, ObjectManagerLookupContext context, int maxReachableObjects,
+  private void addBlocked(NodeID nodeID, ObjectManagerLookupContext context, int maxReachableObjects,
                           ObjectID blockedOid) {
-    pending.makeBlocked(blockedOid, new Pending(channelID, context, maxReachableObjects));
+    pending.makeBlocked(blockedOid, new Pending(nodeID, context, maxReachableObjects));
 
     if (context.getProcessedCount() % 500 == 499) {
       logger.warn("Reached " + context.getProcessedCount() + " Pending size : " + pending.size()
@@ -738,8 +735,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     return pending.isBlocked(id);
   }
 
-  private void makePending(ChannelID channelID, ObjectManagerLookupContext context, int maxReachableObjects) {
-    pending.addPending(new Pending(channelID, context, maxReachableObjects));
+  private void makePending(NodeID nodeID, ObjectManagerLookupContext context, int maxReachableObjects) {
+    pending.addPending(new Pending(nodeID, context, maxReachableObjects));
   }
 
   private void syncAssertNotInShutdown() {
@@ -813,14 +810,11 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private static class ObjectManagerLookupContext implements ObjectManagerResultsContext {
 
     private final ObjectManagerResultsContext responseContext;
-    private final boolean                     missingOK;
     private final boolean                     removeOnRelease;
     private int                               processedCount = 0;
 
-    public ObjectManagerLookupContext(ObjectManagerResultsContext responseContext, boolean missingOK,
-                                      boolean removeOnRelease) {
+    public ObjectManagerLookupContext(ObjectManagerResultsContext responseContext, boolean removeOnRelease) {
       this.responseContext = responseContext;
-      this.missingOK = missingOK;
       this.removeOnRelease = removeOnRelease;
     }
 
@@ -834,10 +828,6 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
     public boolean isNewRequest() {
       return processedCount == 0;
-    }
-
-    public boolean isMissingOK() {
-      return missingOK;
     }
 
     public boolean removeOnRelease() {
@@ -856,6 +846,10 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       responseContext.setResults(results);
     }
 
+    public void missingObject(ObjectID oid) {
+      responseContext.missingObject(oid);
+    }
+
     public String toString() {
       return "ObjectManagerLookupContext : [ processed count = " + processedCount + ", responseContext = "
              + responseContext + "] ";
@@ -865,12 +859,14 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private static class WaitForLookupContext implements ObjectManagerResultsContext {
 
     private final ObjectID lookupID;
+    private final boolean  missingOk;
     private final Set      lookupIDs = new HashSet();
     private boolean        resultSet = false;
     private ManagedObject  result;
 
-    public WaitForLookupContext(ObjectID id) {
+    public WaitForLookupContext(ObjectID id, boolean missingOk) {
       this.lookupID = id;
+      this.missingOk = missingOk;
       lookupIDs.add(id);
     }
 
@@ -904,15 +900,23 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       notifyAll();
     }
 
+    public void missingObject(ObjectID oid) {
+      if (!missingOk) { throw new AssertionError("Lookup of non-exisiting object : " + oid + " " + this); }
+    }
+
+    public String toString() {
+      return "WaitForLookupContext [ " + lookupID + ", missingOK = " + missingOk + "]";
+    }
+
   }
 
   private static class Pending {
     private final ObjectManagerLookupContext context;
-    private final ChannelID                  groupingKey;
+    private final NodeID                     groupingKey;
     private final int                        maxReachableObjects;
 
-    public Pending(ChannelID groupingKey, ObjectManagerLookupContext context, int maxReachableObjects) {
-      this.groupingKey = groupingKey;
+    public Pending(NodeID nodeID, ObjectManagerLookupContext context, int maxReachableObjects) {
+      this.groupingKey = nodeID;
       this.context = context;
       this.maxReachableObjects = maxReachableObjects;
     }
@@ -922,7 +926,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
     }
 
-    public ChannelID getChannelID() {
+    public NodeID getNodeID() {
       return this.groupingKey;
     }
 

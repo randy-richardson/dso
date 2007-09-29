@@ -52,6 +52,11 @@ public class GenericServer extends AbstractStoppable implements WebApplicationSe
   private static final String               SERVER          = "server_";
   private static final boolean              GC_LOGGGING     = true;
   private static final boolean              ENABLE_DEBUGGER = false;
+  private static final ThreadLocal          dsoEnabled      = new ThreadLocal() {
+                                                              protected Object initialValue() {
+                                                                return Boolean.TRUE;
+                                                              }
+                                                            };
 
   private final int                         jmxRemotePort;
   private final int                         rmiRegistryPort;
@@ -84,11 +89,12 @@ public class GenericServer extends AbstractStoppable implements WebApplicationSe
     File tcConfigFile = new File(tempDir, "tc-config.xml");
     tcConfigbuilder.saveToFile(tcConfigFile);
 
-    // enable DSO
-    parameters.appendSysProp("tc.config", tcConfigFile.getAbsolutePath());
-    parameters.appendJvmArgs("-Xbootclasspath/p:" + bootJarFile.getAbsolutePath());
-    parameters.appendSysProp("tc.classpath", "file://" + writeTerracottaClassPathFile());
-    parameters.appendSysProp("tc.session.classpath", config.sessionClasspath());
+    if (dsoEnabled()) {
+      parameters.appendSysProp("tc.config", tcConfigFile.getAbsolutePath());
+      parameters.appendJvmArgs("-Xbootclasspath/p:" + bootJarFile.getAbsolutePath());
+      parameters.appendSysProp("tc.classpath", writeTerracottaClassPathFile());
+      parameters.appendSysProp("tc.session.classpath", config.sessionClasspath());
+    }
 
     if (!Vm.isIBM() && !(Os.isMac() && Vm.isJDK14())) {
       parameters.appendJvmArgs("-XX:+HeapDumpOnOutOfMemoryError");
@@ -131,21 +137,19 @@ public class GenericServer extends AbstractStoppable implements WebApplicationSe
         // bumped up because ContainerHibernateTest was failing with WL 9
         parameters.appendJvmArgs("-XX:MaxPermSize=128m");
         parameters.appendJvmArgs("-Xms128m -Xmx256m");
-
-        if ("9".equals(AppServerFactory.getCurrentAppServerMajorVersion())) {
-          Banner.warnBanner("Enabling debug for weblogic 9 -- This should be removed at some point");
-          parameters.appendSysProp("weblogic.kernel.debug", true);
-          parameters.appendSysProp("weblogic.debug.DebugConnection", true);
-
-          // This property enables a class adapter in StandardDSOClientConfigHelper.addWeblogicCustomAdapters()
-          parameters.appendSysProp("com.tc.weblogic.rjvm.debug", true);
-        }
-
         break;
     }
 
     proxyBuilderMap.put(RmiServiceExporter.class, new RMIProxyBuilder());
     proxyBuilderMap.put(HttpInvokerServiceExporter.class, new HttpInvokerProxyBuilder());
+  }
+
+  private static boolean dsoEnabled() {
+    return ((Boolean) dsoEnabled.get()).booleanValue();
+  }
+
+  public static void setDsoEnabled(boolean b) {
+    dsoEnabled.set(Boolean.valueOf(b));
   }
 
   public StandardAppServerParameters getServerParameters() {
@@ -182,7 +186,7 @@ public class GenericServer extends AbstractStoppable implements WebApplicationSe
       String rmiURL = "rmi://localhost:" + rmiRegistryPort + "/" + url;
       logger.debug("Getting proxy for: " + rmiRegistryPort + " on " + result.serverPort());
       Exception e = null;
-      for (int i = 5; i >= 0; i++) {
+      for (int i = 5; i > 0; i--) {
         try {
           RmiProxyFactoryBean prfb = new RmiProxyFactoryBean();
           prfb.setServiceUrl(rmiURL);
@@ -265,8 +269,19 @@ public class GenericServer extends AbstractStoppable implements WebApplicationSe
     try {
       result = server.start(parameters);
     } catch (Exception e) {
-      ThreadDump.dumpProcessGroup();
-      throw e;
+      dumpThreadsAndRethrow(e);
+    }
+  }
+
+  private void dumpThreadsAndRethrow(Exception e) throws Exception {
+    try {
+      if (!Os.isWindows()) {
+        ThreadDump.dumpProcessGroup();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+    } finally {
+      if (true) throw e; // if (true) used to silence warning
     }
   }
 
@@ -274,8 +289,7 @@ public class GenericServer extends AbstractStoppable implements WebApplicationSe
     try {
       server.stop();
     } catch (Exception e) {
-      ThreadDump.dumpProcessGroup();
-      throw e;
+      dumpThreadsAndRethrow(e);
     }
   }
 
@@ -346,12 +360,7 @@ public class GenericServer extends AbstractStoppable implements WebApplicationSe
       fos = new FileOutputStream(tempFile);
       fos.write(System.getProperty("java.class.path").getBytes());
 
-      String rv = tempFile.getAbsolutePath();
-      if (Os.isWindows()) {
-        rv = "/" + rv;
-      }
-
-      return rv;
+      return tempFile.toURI().toString();
     } catch (IOException ioe) {
       throw new AssertionError(ioe);
     } finally {

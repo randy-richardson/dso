@@ -4,20 +4,27 @@
  */
 package com.tc.object;
 
+import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
+
 import com.tc.exception.ImplementMe;
 import com.tc.logging.NullTCLogger;
+import com.tc.net.groups.ClientID;
 import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TestChannelIDProvider;
+import com.tc.object.dna.api.DNA;
 import com.tc.object.msg.RequestManagedObjectMessage;
 import com.tc.object.msg.RequestManagedObjectMessageFactory;
 import com.tc.object.msg.RequestRootMessage;
 import com.tc.object.msg.RequestRootMessageFactory;
 import com.tc.object.session.NullSessionManager;
+import com.tc.object.session.SessionID;
 import com.tc.objectserver.core.api.TestDNA;
 import com.tc.test.TCTestCase;
 import com.tc.util.concurrent.NoExceptionLinkedQueue;
+import com.tc.util.concurrent.ThreadUtil;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,24 +37,69 @@ public class RemoteObjectManagerImplTest extends TCTestCase {
 
   RemoteObjectManagerImpl                        manager;
   ThreadGroup                                    threadGroup;
-  private TestChannelIDProvider                  channelIDProvider;
+  private ClientIDProvider                       cidProvider;
   private TestRequestRootMessageFactory          rrmf;
   private TestRequestManagedObjectMessageFactory rmomf;
   private RetrieverThreads                       rt;
 
   protected void setUp() throws Exception {
     super.setUp();
-    this.channelIDProvider = new TestChannelIDProvider();
-    this.channelIDProvider.channelID = new ChannelID(1);
+    TestChannelIDProvider channelIDProvider = new TestChannelIDProvider();
+    channelIDProvider.channelID = new ChannelID(1);
+    this.cidProvider = new ClientIDProviderImpl(channelIDProvider);
     this.rmomf = new TestRequestManagedObjectMessageFactory();
     newRmom();
     this.rrmf = new TestRequestRootMessageFactory();
     newRrm();
 
     this.threadGroup = new ThreadGroup(getClass().getName());
-    manager = new RemoteObjectManagerImpl(new NullTCLogger(), channelIDProvider, rrmf, rmomf,
-                                          new NullObjectRequestMonitor(), 500, new NullSessionManager());
+    manager = new RemoteObjectManagerImpl(new NullTCLogger(), cidProvider, rrmf, rmomf, new NullObjectRequestMonitor(),
+                                          500, new NullSessionManager());
     rt = new RetrieverThreads(Thread.currentThread().getThreadGroup(), manager);
+  }
+
+  public void testDNACacheClearing() {
+    Collection dnas;
+    int dnaCollectionCount = 4;
+    for (int i = 0; i < dnaCollectionCount; i++) {
+      dnas = new ArrayList();
+      dnas.add(new TestDNA(new ObjectID(i)));
+      manager.addAllObjects(new SessionID(i), i, dnas);
+    }
+    assertEquals(dnaCollectionCount, manager.getDNACacheSize());
+    DNA dna = manager.retrieve(new ObjectID(0));
+    assertNotNull(dna);
+    assertEquals(dnaCollectionCount - 1, manager.getDNACacheSize());
+    manager.pause();
+    manager.starting();
+    manager.clear();
+    assertEquals(0, manager.getDNACacheSize());
+  }
+
+  public void testMissingObjectIDsThrowsError() throws Exception {
+    final CyclicBarrier barrier = new CyclicBarrier(2);
+    Thread thread = new Thread("Test Thread Saro") {
+      public void run() {
+        System.err.println("Doing a bogus lookup");
+        try {
+          manager.retrieve(new ObjectID(Long.MAX_VALUE));
+          System.err.println("Didnt throw assertion : Not calling barrier()");
+        } catch (AssertionError e) {
+          System.err.println("Got assertion as expected : " + e);
+          try {
+            barrier.barrier();
+          } catch (Exception e1) {
+            e1.printStackTrace();
+          }
+        }
+      }
+    };
+    thread.start();
+    ThreadUtil.reallySleep(5000);
+    Set missingSet = new HashSet();
+    missingSet.add(new ObjectID(Long.MAX_VALUE));
+    manager.objectsNotFoundFor(SessionID.NULL_ID, 1, missingSet);
+    barrier.barrier();
   }
 
   public void testRequestOutstandingRequestRootMessages() throws Exception {
@@ -326,7 +378,7 @@ public class RemoteObjectManagerImplTest extends TCTestCase {
     oids.add(objectID);
     assertTrue(rmom.initializeQueue.isEmpty());
     ObjectRequestContext ctxt = (ObjectRequestContext) initArgs[0];
-    assertEquals(this.channelIDProvider.channelID, ctxt.getChannelID());
+    assertEquals(cidProvider.getClientID(), ctxt.getClientID());
     assertEquals(oids, ctxt.getObjectIDs());
     // The object id in the request
     assertEquals(oids, initArgs[1]);
@@ -444,7 +496,7 @@ public class RemoteObjectManagerImplTest extends TCTestCase {
       sendQueue.put(new Object());
     }
 
-    public ChannelID getChannelID() {
+    public ClientID getClientID() {
       throw new ImplementMe();
     }
 
@@ -498,7 +550,7 @@ public class RemoteObjectManagerImplTest extends TCTestCase {
       throw new ImplementMe();
     }
 
-    public ChannelID getChannelID() {
+    public ClientID getClientID() {
       throw new ImplementMe();
     }
 
@@ -508,6 +560,10 @@ public class RemoteObjectManagerImplTest extends TCTestCase {
 
     public void recycle() {
       return;
+    }
+
+    public String getRequestingThreadName() {
+      return "TestThreadDummy";
     }
 
   }

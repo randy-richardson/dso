@@ -4,6 +4,7 @@
  */
 package org.terracotta.modules.hibernate_3_1_2;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.terracotta.modules.configuration.TerracottaConfiguratorModule;
@@ -12,14 +13,13 @@ import org.terracotta.modules.hibernate_3_1_2.object.config.HibernateModuleSpec;
 
 import com.tc.object.bytecode.ClassAdapterFactory;
 import com.tc.object.config.ModuleSpec;
-import com.tc.object.config.StandardDSOClientConfigHelper;
 import com.tc.object.config.TransparencyClassSpec;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
 
 public final class HibernateTerracottaConfigurator extends TerracottaConfiguratorModule {
-  protected final void addInstrumentation(final BundleContext context, final StandardDSOClientConfigHelper configHelper) {
+  protected final void addInstrumentation(final BundleContext context) {
     /* AutoSynchronized lock for AbstractPersistentCollection, PersistentSet, PersistentBag, PersistentList, and PersistentMap are defined in the terracotta.xml */
     TransparencyClassSpec spec = configHelper.getOrCreateSpec("org.hibernate.collection.AbstractPersistentCollection");
     spec.addTransient("session");
@@ -78,14 +78,30 @@ public final class HibernateTerracottaConfigurator extends TerracottaConfigurato
     factory = new EhcacheProviderClassAdapter();
     spec = configHelper.getOrCreateSpec("org.hibernate.cache.EhCacheProvider");
     spec.setCustomClassAdapter(factory);
+    
+    Bundle thisBundle = getExportedBundle(context, "org.terracotta.modules.clustered-hibernate-3.1.2");
+    addExportedBundleClass(thisBundle, "org.terracotta.modules.hibernate_3_1_2.util.HibernateUtil");
   }
   
   protected final void registerModuleSpec(final BundleContext context) {
     final Dictionary serviceProps = new Hashtable();
     serviceProps.put(Constants.SERVICE_VENDOR, "Terracotta, Inc.");
     serviceProps.put(Constants.SERVICE_DESCRIPTION, "Hibernate Plugin Spec");
-    serviceProps.put(Constants.SERVICE_RANKING, ModuleSpec.HIGN_RANK);
+    serviceProps.put(Constants.SERVICE_RANKING, ModuleSpec.HIGH_RANK);
     context.registerService(ModuleSpec.class.getName(), new HibernateModuleSpec(new HibernateChangeApplicatorSpec(getClass().getClassLoader())), serviceProps);
+  }
+  
+  private Bundle getExportedBundle(final BundleContext context, String targetBundleName) {
+    // find the bundle that contains the replacement classes
+    Bundle[] bundles = context.getBundles();
+    Bundle bundle = null;
+    for (int i = 0; i < bundles.length; i++) {
+      if (targetBundleName.equals(bundles[i].getSymbolicName())) {
+        bundle = bundles[i];
+        break;
+      }
+    }  
+    return bundle;
   }
 
 }

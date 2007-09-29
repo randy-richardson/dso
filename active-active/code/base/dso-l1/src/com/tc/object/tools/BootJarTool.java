@@ -64,6 +64,7 @@ import com.tc.object.bytecode.DuplicateMethodAdapter;
 import com.tc.object.bytecode.HashtableClassAdapter;
 import com.tc.object.bytecode.JavaLangReflectProxyClassAdapter;
 import com.tc.object.bytecode.JavaLangStringAdapter;
+import com.tc.object.bytecode.JavaLangThrowableDebugClassAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentCyclicBarrierDebugClassAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentHashMapAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentHashMapSegmentAdapter;
@@ -75,6 +76,7 @@ import com.tc.object.bytecode.JavaUtilTreeMapAdapter;
 import com.tc.object.bytecode.JavaUtilWeakHashMapAdapter;
 import com.tc.object.bytecode.LinkedHashMapClassAdapter;
 import com.tc.object.bytecode.LinkedListAdapter;
+import com.tc.object.bytecode.LogManagerAdapter;
 import com.tc.object.bytecode.LogicalClassSerializationAdapter;
 import com.tc.object.bytecode.Manageable;
 import com.tc.object.bytecode.Manager;
@@ -102,8 +104,8 @@ import com.tc.object.bytecode.hook.impl.Util;
 import com.tc.object.cache.Cacheable;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.DSOSpringConfigHelper;
-import com.tc.object.config.TransparencyClassSpec;
 import com.tc.object.config.StandardDSOClientConfigHelperImpl;
+import com.tc.object.config.TransparencyClassSpec;
 import com.tc.object.dna.impl.ProxyInstance;
 import com.tc.object.field.TCField;
 import com.tc.object.loaders.BytecodeProvider;
@@ -115,6 +117,7 @@ import com.tc.object.loaders.StandardClassLoaderAdapter;
 import com.tc.object.loaders.StandardClassProvider;
 import com.tc.object.logging.InstrumentationLogger;
 import com.tc.object.logging.InstrumentationLoggerImpl;
+import com.tc.object.util.OverrideCheck;
 import com.tc.plugins.ModulesLoader;
 import com.tc.properties.TCProperties;
 import com.tc.session.SessionSupport;
@@ -164,6 +167,8 @@ import java.util.Set;
  * Tool for creating the DSO boot jar
  */
 public class BootJarTool {
+  public static final String          TC_DEBUG_THROWABLE_CONSTRUCTION = "tc.debug.throwable.construction";
+  
   private static final String         EXCESS_CLASSES               = "excess";
   private static final String         MISSING_CLASSES              = "missing";
 
@@ -274,7 +279,7 @@ public class BootJarTool {
    * Checks if the given bootJarFile is complete; meaning: - All the classes declared in the configurations
    * <additional-boot-jar-classes/> section is present in the boot jar. - And there are no user-classes present in the
    * boot jar that is not declared in the <additional-boot-jar-classes/> section
-   * 
+   *
    * @return <code>true</cide> if the boot jar is complete.
    */
   private final boolean isBootJarComplete(File bootJarFile) {
@@ -292,7 +297,7 @@ public class BootJarTool {
    * Scans the boot JAR file for: - User-defined classes that are in the boot JAR but is not defined in the
    * <additional-boot-jar-classes/> section of the config - Class names declared in the config but are not in the boot
    * JAR
-   * 
+   *
    * @throws InvalidBootJarMetaDataException
    */
   private final Map compareBootJarContentsToUserSpec(File bootJarFile) throws InvalidBootJarMetaDataException {
@@ -437,6 +442,7 @@ public class BootJarTool {
       loadTerracottaClass(TCLogger.class.getName());
       loadTerracottaClass(Banner.class.getName());
       loadTerracottaClass(StandardClassProvider.class.getName());
+      loadTerracottaClass(StandardClassProvider.SystemLoaderHolder.class.getName());
       loadTerracottaClass(Namespace.class.getName());
       loadTerracottaClass(ClassProcessorHelper.class.getName());
       loadTerracottaClass(ClassProcessorHelperJDK15.class.getName());
@@ -459,6 +465,7 @@ public class BootJarTool {
       loadTerracottaClass(NIOWorkarounds.class.getName());
       loadTerracottaClass(TCProperties.class.getName());
       loadTerracottaClass(ClusterEventListener.class.getName());
+      loadTerracottaClass(OverrideCheck.class.getName());
 
       // These classes need to be specified as literal in order to prevent
       // the static block of IdentityWeakHashMap from executing during generating
@@ -485,6 +492,7 @@ public class BootJarTool {
 
       addRuntimeClasses();
 
+      addInstrumentedLogManager();
       addSunStandardLoaders();
       addInstrumentedAccessibleObject();
       addInstrumentedJavaLangThrowable();
@@ -1532,6 +1540,21 @@ public class BootJarTool {
     bootJar.loadClassIntoJar(className, bytes, true);
   }
 
+  private final void addInstrumentedLogManager() {
+    String className = "java.util.logging.LogManager";
+    byte[] bytes = getSystemBytes(className);
+
+    ClassReader cr = new ClassReader(bytes);
+    ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+
+    ClassVisitor cv = new LogManagerAdapter(cw);
+    cr.accept(cv, ClassReader.SKIP_FRAMES);
+
+    bytes = cw.toByteArray();
+
+    bootJar.loadClassIntoJar(className, bytes, false);
+  }
+
   private final void addInstrumentedJavaLangString() {
     byte[] orig = getSystemBytes("java.lang.String");
 
@@ -1562,13 +1585,21 @@ public class BootJarTool {
 
   private final void addInstrumentedJavaLangThrowable() {
     String className = "java.lang.Throwable";
-    byte[] orig = getSystemBytes(className);
+    byte[] bytes = getSystemBytes(className);
+
+    if (System.getProperty(TC_DEBUG_THROWABLE_CONSTRUCTION) != null) {
+      ClassReader cr = new ClassReader(bytes);
+      ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+      ClassVisitor cv = new JavaLangThrowableDebugClassAdapter(cw);
+      cr.accept(cv, ClassReader.SKIP_FRAMES);
+      bytes = cw.toByteArray();
+    }
 
     TransparencyClassSpec spec = config.getOrCreateSpec(className);
     spec.markPreInstrumented();
     spec.setHonorTransient(true);
 
-    byte[] instrumented = doDSOTransform(className, orig);
+    byte[] instrumented = doDSOTransform(className, bytes);
 
     bootJar.loadClassIntoJar(className, instrumented, spec.isPreInstrumented());
   }
@@ -2294,6 +2325,9 @@ public class BootJarTool {
     if (mode.equals(MAKE_MODE)) {
       boolean makeItAnyway = commandLine.hasOption("w");
       if (makeItAnyway || !targetFile.exists() || (targetFile.exists() && !bjTool.isBootJarComplete(targetFile))) {
+        // Don't reuse boot jar tool instance since its config might have been mutated by isBootJarComplete()
+        bjTool = new BootJarTool(new StandardDSOClientConfigHelperImpl(config, false), targetFile, systemLoader,
+                                 !verbose);
         bjTool.generateJar();
       }
       bjTool.verifyJar(targetFile);

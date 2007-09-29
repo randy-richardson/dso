@@ -8,6 +8,7 @@ import com.tc.async.api.EventContext;
 import com.tc.async.api.Sink;
 import com.tc.exception.ImplementMe;
 import com.tc.net.TCSocketAddress;
+import com.tc.net.groups.ClientID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -193,8 +194,8 @@ public class HydrateHandlerTest extends TCTestCase {
       return channel;
     }
 
-    public ChannelID getChannelID() {
-      return channel.getChannelID();
+    public  ClientID getClientID() {
+      return new ClientID(channel.getChannelID());
     }
 
     public SessionID getLocalSessionID() {

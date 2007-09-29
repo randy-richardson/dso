@@ -146,7 +146,7 @@ public class TransactionalObjectManagerImpl implements TransactionalObjectManage
     if (!newRequests.isEmpty()) {
       lookupContext = new LookupContext(newRequests, (newTxn ? txn.getNewObjectIDs() : Collections.EMPTY_SET), txn
           .getServerTransactionID());
-      if (objectManager.lookupObjectsFor(txn.getChannelID(), lookupContext)) {
+      if (objectManager.lookupObjectsFor(txn.getSourceID(), lookupContext)) {
         addLookedupObjects(lookupContext);
       } else {
         // New request went pending in object manager
@@ -452,6 +452,10 @@ public class TransactionalObjectManagerImpl implements TransactionalObjectManage
 
     public Set getNewObjectIDs() {
       return newOids;
+    }
+
+    public void missingObject(ObjectID oid) {
+      throw new AssertionError("Lookup for non-exisistent Object : " + oid + " lookup context is : " + this);
     }
 
   }

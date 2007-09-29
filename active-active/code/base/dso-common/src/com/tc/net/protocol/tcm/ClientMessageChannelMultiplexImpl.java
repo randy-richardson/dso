@@ -9,6 +9,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.NodeID;
+import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.object.session.SessionProvider;
@@ -61,7 +62,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
 
   public NodeID makeNodeMultiplexId(ChannelID cid, ConnectionAddressProvider addressProvider) {
     // XXX ....
-    return (new NodeID(addressProvider + cid.toString(), addressProvider.toString().getBytes()));
+    return (new NodeIDImpl(addressProvider + cid.toString(), addressProvider.toString().getBytes()));
   }
 
   public ClientMessageChannel[] getChannels() {

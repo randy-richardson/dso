@@ -9,6 +9,7 @@ import com.terracottatech.config.ActiveServerGroups;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
+import com.terracottatech.config.UpdateCheck;
 
 public class TestL2S extends TestXmlObject implements Servers {
 
@@ -62,6 +63,7 @@ public class TestL2S extends TestXmlObject implements Servers {
     throw new ImplementMe();
   }
 
+
   public ActiveServerGroups addNewActiveServerGroups() {
     throw new ImplementMe();
   }
@@ -82,6 +84,14 @@ public class TestL2S extends TestXmlObject implements Servers {
     throw new ImplementMe();
   }
 
+  public UpdateCheck[] getUpdateCheckArray() {
+    throw new ImplementMe();
+  }
+
+  public UpdateCheck getUpdateCheckArray(int arg0) {
+    throw new ImplementMe();
+  }
+
   public ActiveServerGroups insertNewActiveServerGroups(int arg0) {
     throw new ImplementMe();
   }
@@ -90,28 +100,53 @@ public class TestL2S extends TestXmlObject implements Servers {
     throw new ImplementMe();
   }
 
+  public UpdateCheck insertNewUpdateCheck(int arg0) {
+    throw new ImplementMe();
+  }
+
   public void removeActiveServerGroups(int arg0) {
     throw new ImplementMe();
+    
   }
 
   public void removeHa(int arg0) {
     throw new ImplementMe();
+    
+  }
+
+  public void removeUpdateCheck(int arg0) {
+    throw new ImplementMe();
+    
   }
 
   public void setActiveServerGroupsArray(ActiveServerGroups[] arg0) {
     throw new ImplementMe();
+    
   }
 
   public void setActiveServerGroupsArray(int arg0, ActiveServerGroups arg1) {
     throw new ImplementMe();
+    
   }
 
   public void setHaArray(Ha[] arg0) {
     throw new ImplementMe();
+    
   }
 
   public void setHaArray(int arg0, Ha arg1) {
     throw new ImplementMe();
+    
+  }
+
+  public void setUpdateCheckArray(UpdateCheck[] arg0) {
+    throw new ImplementMe();
+    
+  }
+
+  public void setUpdateCheckArray(int arg0, UpdateCheck arg1) {
+    throw new ImplementMe();
+    
   }
 
   public int sizeOfActiveServerGroupsArray() {
@@ -122,4 +157,11 @@ public class TestL2S extends TestXmlObject implements Servers {
     throw new ImplementMe();
   }
 
+  public int sizeOfUpdateCheckArray() {
+    throw new ImplementMe();
+  }
+
+  public UpdateCheck addNewUpdateCheck() {
+    throw new ImplementMe();
+  }
 }

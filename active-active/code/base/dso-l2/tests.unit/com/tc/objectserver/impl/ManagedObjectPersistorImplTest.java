@@ -38,10 +38,14 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
   private PersistentManagedObjectStore objectStore;
   PersistenceTransactionProvider persistenceTransactionProvider;
   DBEnvironment env;
-  
+
+  public ManagedObjectPersistorImplTest() {
+    //
+  }
+
   protected void setUp() throws Exception {
     super.setUp();
-    boolean paranoid = false;
+    boolean paranoid = true;
     env = newDBEnvironment(paranoid);
     env.open();
     CursorConfig dbCursorConfig = new CursorConfig();
@@ -60,18 +64,19 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
                                                             env.getRootDatabase(),
                                                             rootDBCursorConfig,
                                                             persistenceTransactionProvider,
-                                                            sleepycatCollectionsPersistor
+                                                            sleepycatCollectionsPersistor,
+                                                            env.isParanoidMode()
                                                             );
     map = new HashMap();
     persistor = new TestManagedObjectPersistor(map);
     objectStore = new PersistentManagedObjectStore(managedObjectPersistor);
   }
-  
+
   protected void tearDown() throws Exception {
     env.close();
     super.tearDown();
   }
-  
+
   private DBEnvironment newDBEnvironment(boolean paranoid) throws Exception {
     File dbHome;
     int count = 0;
@@ -95,12 +100,12 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
       if (ids.add(new Long(id))) {
         ManagedObject mo = new TestManagedObject(new ObjectID(id), new ObjectID[] {});
         objects.add(mo);
-      }   
+      }
     }
     logger.info("Test with "+ objects.size()+ " objects");
     return (objects);
   }
-  
+
   private void verify(Collection objects) {
     // verify a in-memory bit crosspond to an object ID
     HashSet originalIds = new HashSet();
@@ -111,10 +116,10 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     Collection inMemoryIds = managedObjectPersistor.bitsArrayMapToObjectID();
     assertTrue("Wrong bits in memory were set",
                originalIds.containsAll(inMemoryIds));
-    
+
     // verify on disk object IDs
     // clear in memory arrays then read in from persistor
-    managedObjectPersistor.resetBitsArrayMap();    
+    managedObjectPersistor.resetBitsArrayMap();
     SyncObjectIdSet idSet = managedObjectPersistor.getAllObjectIDs();
     idSet.snapshot(); // blocked while reading from disk
     Collection diskIds = managedObjectPersistor.bitsArrayMapToObjectID();
@@ -122,25 +127,33 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
                diskIds.equals(inMemoryIds));
 
   }
-  
+
   public void testOidBitsArraySave() throws Exception {
+    // wait for background retrieving persistent data
+    objectStore.getAllObjectIDs();
+    managedObjectPersistor.resetBitsArrayMap();
+
     // publish data
     Collection objects = createRandomObjects(15050);
     PersistenceTransaction ptx = persistenceTransactionProvider.newTransaction();
     managedObjectPersistor.saveAllObjects(ptx, objects);
     ptx.commit();
-    
+
     //verify object IDs is in memory
     for(Iterator i = objects.iterator(); i.hasNext(); ) {
       ManagedObject mo = (ManagedObject) i.next();
-      assertTrue("Object:"+mo.getID()+" missed in memory! ", 
+      assertTrue("Object:"+mo.getID()+" missed in memory! ",
                  managedObjectPersistor.inMemoryContains(mo.getID()));
     }
-    
+
     verify(objects);
    }
-  
+
   public void testOidBitsArrayDeleteHalf() throws Exception {
+    // wait for background retrieving persistent data
+    objectStore.getAllObjectIDs();
+    managedObjectPersistor.resetBitsArrayMap();
+
     // publish data
     Collection objects = createRandomObjects(15050);
     PersistenceTransaction ptx = persistenceTransactionProvider.newTransaction();
@@ -158,17 +171,21 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     ptx = persistenceTransactionProvider.newTransaction();
     managedObjectPersistor.deleteAllObjectsByID(ptx, toDelete);
     ptx.commit();
-    
+
     verify(objects);
   }
-  
+
   public void testOidBitsArrayDeleteAll() throws Exception {
+    // wait for background retrieving persistent data
+    objectStore.getAllObjectIDs();
+    managedObjectPersistor.resetBitsArrayMap();
+
     // publish data
     Collection objects = createRandomObjects(15050);
     PersistenceTransaction ptx = persistenceTransactionProvider.newTransaction();
     managedObjectPersistor.saveAllObjects(ptx, objects);
     ptx.commit();
-    
+
     HashSet objectIds = new HashSet();
     for(Iterator i = objects.iterator(); i.hasNext(); ) {
       ManagedObject mo = (ManagedObject) i.next();
@@ -177,7 +194,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     ptx = persistenceTransactionProvider.newTransaction();
     managedObjectPersistor.deleteAllObjectsByID(ptx, objectIds);
     ptx.commit();
-    
+
     objects.clear();
     verify(objects);
   }

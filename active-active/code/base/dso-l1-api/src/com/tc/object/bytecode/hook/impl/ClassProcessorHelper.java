@@ -16,11 +16,11 @@ import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.NamedClassLoader;
 import com.tc.object.loaders.StandardClassProvider;
 import com.tc.text.Banner;
+import com.tc.util.runtime.Vm;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -59,8 +59,6 @@ public class ClassProcessorHelper {
 
   private static final State                 initState               = new State();
 
-  private static final ThreadLocal           inStaticInitializer     = new ThreadLocal();
-
   private static final String                tcInstallRootSysProp    = System.getProperty(TC_INSTALL_ROOT_SYSPROP);
 
   // This map should only hold a weak reference to the loader (key).
@@ -69,37 +67,30 @@ public class ClassProcessorHelper {
 
   private static final StandardClassProvider globalProvider          = new StandardClassProvider();
 
-  private static final URL[]                 tcClassPath;
-
   private static URLClassLoader              tcLoader;
   private static DSOContext                  gloalContext;
 
   private static final boolean               TRACE;
   private static final PrintStream           TRACE_STREAM;
 
-  static {
-    // Make sure that the DSOContext class is loaded before using the
-    // TC functionalities. This is needed for the IBM JDK when Hashtable is
-    // instrumented for auto-locking in the bootjar.
-    Class dsocontext_class = DSOContext.class;
+  private static boolean                     systemLoaderInitialized = false;
 
-    inStaticInitializer.set(new Object());
+  private static final boolean               IS_IBM_VM               = Vm.isIBM();
+
+  static {
 
     try {
+      // Make sure that the DSOContext class is loaded before using the
+      // TC functionalities. This is needed for the IBM JDK when Hashtable is
+      // instrumented for auto-locking in the bootjar.
+      Class.forName(DSOContext.class.getName());
+
       String global = System.getProperty("tc.dso.globalmode", null);
       if (global != null) {
         USE_GLOBAL_CONTEXT = Boolean.valueOf(global).booleanValue();
       } else {
         USE_GLOBAL_CONTEXT = GLOBAL_MODE_DEFAULT;
       }
-
-      // This avoids a deadlock (see LKC-853, LKC-1387)
-      java.security.Security.getProviders();
-
-      // Workaround bug in NIO on solaris 10
-      NIOWorkarounds.solaris10Workaround();
-
-      tcClassPath = buildTerracottaClassPath();
 
       // See if we should trace or not -- if so grab System.[out|err] and keep a local reference to it. Applications
       // like WebSphere like to intercept this later and we can get caught in a loop and get a stack overflow
@@ -114,18 +105,24 @@ public class ClassProcessorHelper {
       }
       TRACE_STREAM = ts;
       TRACE = TRACE_STREAM != null;
+
     } catch (Throwable t) {
       Util.exit(t);
       throw new AssertionError(); // this has to be here to make the compiler happy
-    } finally {
-      inStaticInitializer.set(null);
     }
   }
 
-  private static URLClassLoader createTCLoader() {
-    return new URLClassLoader(tcClassPath, null);
+  private static URLClassLoader createTCLoader() throws Exception {
+    return new URLClassLoader(buildTerracottaClassPath(), null);
   }
 
+  /**
+   * Get resource URL
+   *
+   * @param name Resource name
+   * @param cl Loading classloader
+   * @return URL to load resource from
+   */
   public static URL getTCResource(String name, ClassLoader cl) {
     String className = null;
     if (name.endsWith(CLASS_SUFFIX)) {
@@ -147,6 +144,14 @@ public class ClassProcessorHelper {
     return resource;
   }
 
+  /**
+   * Get TC class definition
+   *
+   * @param name Class name
+   * @param cl Classloader
+   * @return Class bytes
+   * @throws ClassNotFoundException If class not found
+   */
   public static byte[] getTCClass(String name, ClassLoader cl) throws ClassNotFoundException {
     URL resource = getClassResource(name, cl);
 
@@ -251,7 +256,8 @@ public class ClassProcessorHelper {
 
     File tcHomeDir = getTCInstallDir(true);
     if (tcHomeDir == null) {
-      URL[] systemURLS = ((URLClassLoader) ClassLoader.getSystemClassLoader()).getURLs();
+      ClassLoader classPathLoader = sun.misc.Launcher.getLauncher().getClassLoader();
+      URL[] systemURLS = ((URLClassLoader) classPathLoader).getURLs();
       return (URL[]) systemURLS.clone();
     }
 
@@ -281,11 +287,11 @@ public class ClassProcessorHelper {
   }
 
   private static String slurpFile(String path) throws IOException {
-    FileInputStream in = new FileInputStream(path);
+    URL url = new URL(path);
+    InputStream in = url.openStream();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
     try {
-      in = new FileInputStream(path);
       byte[] buf = new byte[1024];
       int len;
       while ((len = in.read(buf, 0, buf.length)) >= 0) {
@@ -313,8 +319,8 @@ public class ClassProcessorHelper {
     // here and not bother creating a tc.jar every time you change some source
 
     String tcClasspath = System.getProperty(TC_CLASSPATH_SYSPROP);
-    if (tcClasspath.startsWith("file:///")) {
-      tcClasspath = slurpFile(tcClasspath.substring("file://".length()));
+    if (tcClasspath.startsWith("file:/")) {
+      tcClasspath = slurpFile(tcClasspath);
     }
 
     String[] parts = tcClasspath.split(File.pathSeparator);
@@ -353,6 +359,12 @@ public class ClassProcessorHelper {
   private static void init() {
     if (initState.attemptInit()) {
       try {
+        // This avoids a deadlock (see LKC-853, LKC-1387)
+        java.security.Security.getProviders();
+
+        // Workaround bug in NIO on solaris 10
+        NIOWorkarounds.solaris10Workaround();
+
         tcLoader = createTCLoader();
 
         // do this before doing anything with the TC loader
@@ -407,6 +419,9 @@ public class ClassProcessorHelper {
     globalProvider.registerNamedLoader(loader);
   }
 
+  /**
+   * Shut down the ClassProcessorHelper
+   */
   public static void shutdown() {
     if (!USE_GLOBAL_CONTEXT) { throw new IllegalStateException("Not global DSO mode"); }
     try {
@@ -418,9 +433,14 @@ public class ClassProcessorHelper {
     }
   }
 
+  /**
+   * Check whether this web app is using DSO sessions
+   *
+   * @param appName Web app name
+   * @return True if DSO sessions enabled
+   */
   public static boolean isDSOSessions(String appName) {
     appName = ("/".equals(appName)) ? "ROOT" : appName;
-    init();
     try {
       Method m = getContextMethod("isDSOSessions", new Class[] { String.class });
       boolean rv = ((Boolean) m.invoke(null, new Object[] { appName })).booleanValue();
@@ -431,7 +451,12 @@ public class ClassProcessorHelper {
     }
   }
 
-  // used by test framework only
+  /**
+   * WARNING: Used by test framework only
+   *
+   * @param loader Loader
+   * @param context DSOContext
+   */
   public static void setContext(ClassLoader loader, DSOContext context) {
     if (USE_GLOBAL_CONTEXT) { throw new IllegalStateException("DSO Context is global in this VM"); }
 
@@ -445,7 +470,9 @@ public class ClassProcessorHelper {
     }
   }
 
-  // used by test framework only
+  /**
+   * WARNING: used by test framework only
+   */
   public static Manager getManager(ClassLoader caller) {
     if (USE_GLOBAL_CONTEXT) { return gloalContext.getManager(); }
 
@@ -457,6 +484,12 @@ public class ClassProcessorHelper {
     return context.getManager();
   }
 
+  /**
+   * Get the DSOContext for this classloader
+   *
+   * @param cl Loader
+   * @return Context
+   */
   public static DSOContext getContext(ClassLoader cl) {
     if (USE_GLOBAL_CONTEXT) return gloalContext;
 
@@ -480,14 +513,21 @@ public class ClassProcessorHelper {
 
   /**
    * byte code instrumentation of class loaded <br>
-   * XXX::NOTE:: Donot optimize to return same input byte array if the class is instrumented (I cant imagine why we
-   * would). ClassLoader checks the returned byte array to see if the class is instrumented or not to maintain the
-   * offset.
-   * 
+   * XXX::NOTE:: Do NOT optimize to return same input byte array if the class was instrumented (I can't imagine why we
+   * would). Our instrumentation in java.lang.ClassLoader checks the returned byte array to see if the class is
+   * instrumented or not to maintain the array offset.
+   *
+   * @param caller Loader defining class
+   * @param name Class name
+   * @param b Data
+   * @param off Offset into b
+   * @param len Length of class data
+   * @param pd Protection domain for class
+   * @return Modified class array
+   *
    * @see ClassLoaderPreProcessorImpl
    */
   public static byte[] defineClass0Pre(ClassLoader caller, String name, byte[] b, int off, int len, ProtectionDomain pd) {
-    if (inStaticInitializer()) { return b; }
     if (skipClass(caller)) { return b; }
 
     // needed for JRockit
@@ -498,7 +538,10 @@ public class ClassProcessorHelper {
     if (isAWDependency(name)) { return b; }
     if (isDSODependency(name)) { return b; }
 
-    init();
+    if (IS_IBM_VM) {
+      init();
+    }
+
     if (!initState.isInitialized()) { return b; }
 
     ManagerUtil.enable();
@@ -513,9 +556,13 @@ public class ClassProcessorHelper {
     return (caller == tcLoader);
   }
 
+  /**
+   * Post process class during definition
+   *
+   * @param clazz Class being defined
+   * @param caller Classloader doing definition
+   */
   public static void defineClass0Post(Class clazz, ClassLoader caller) {
-    if (inStaticInitializer()) { return; }
-
     ClassPostProcessor postProcessor = getPostProcessor(caller);
     if (!initState.isInitialized()) { return; }
 
@@ -526,10 +573,9 @@ public class ClassProcessorHelper {
     postProcessor.postProcess(clazz, caller);
   }
 
-  private static boolean inStaticInitializer() {
-    return inStaticInitializer.get() != null;
-  }
-
+  /**
+   * @return Global Manager
+   */
   public static Manager getGlobalManager() {
     return gloalContext.getManager();
   }
@@ -550,6 +596,12 @@ public class ClassProcessorHelper {
     }
   }
 
+  /**
+   * Check whether this is an AspectWerkz dependency
+   *
+   * @param className Class name
+   * @return True if AspectWerkz dependency
+   */
   public static boolean isAWDependency(final String className) {
     return (className == null)
            || className.endsWith("_AWFactory")// TODO AVF refactor
@@ -560,6 +612,12 @@ public class ClassProcessorHelper {
            || className.startsWith("sun.reflect.Generated"); // issue on J2SE 5 reflection - AW-245
   }
 
+  /**
+   * Check whether this is a DSO dependency
+   *
+   * @param className Class name
+   * @return True if DSO dependency
+   */
   public static boolean isDSODependency(final String className) {
     return false;
     // return (className == null) || className.startsWith("DO_NOT_USE.") || className.startsWith("com.tc.")
@@ -569,6 +627,12 @@ public class ClassProcessorHelper {
     // || className.startsWith("org.apache.xmlbeans.") || className.startsWith("org.apache.xerces.");
   }
 
+  /**
+   * Get type of lock used by sessions
+   *
+   * @param appName Web app context
+   * @return Lock type
+   */
   public static int getSessionLockType(String appName) {
     return gloalContext.getSessionLockType(appName);
   }
@@ -587,19 +651,58 @@ public class ClassProcessorHelper {
     TRACE_STREAM.flush();
   }
 
+  public static void loggingInitialized() {
+    final boolean attempt;
+
+    synchronized (ClassProcessorHelper.class) {
+      attempt = systemLoaderInitialized;
+    }
+
+    if (attempt) init();
+  }
+
+  public static void systemLoaderInitialized() {
+    final boolean attempt;
+
+    synchronized (ClassProcessorHelper.class) {
+      if (systemLoaderInitialized) { throw new AssertionError("already set"); }
+      systemLoaderInitialized = true;
+      attempt = !inLoggingStaticInit();
+    }
+
+    if (attempt) init();
+  }
+
+  private static final boolean inLoggingStaticInit() {
+    StackTraceElement[] stack = new Throwable().getStackTrace();
+    for (int i = 0; i < stack.length; i++) {
+      StackTraceElement frame = stack[i];
+
+      if ("java.util.logging.LogManager".equals(frame.getClassName()) && "<clinit>".equals(frame.getMethodName())) { return true; }
+    }
+
+    return false;
+  }
+
+  /**
+   * File filter for JAR files
+   */
   public static class JarFilter implements FileFilter {
     public boolean accept(File pathname) {
       return pathname.isFile() && pathname.getAbsolutePath().toLowerCase().endsWith(".jar");
     }
   }
 
-  public static class State {
+  /**
+   * ClassProcessorHelper initialization state
+   */
+  public static final class State {
     private final int NOT_INTIALIZED = 0;
     private final int INITIALIZING   = 1;
     private final int INITIALIZED    = 2;
     private int       state          = NOT_INTIALIZED;
 
-    public synchronized boolean attemptInit() {
+    final synchronized boolean attemptInit() {
       if (state == NOT_INTIALIZED) {
         state = INITIALIZING;
         return true;
@@ -607,14 +710,15 @@ public class ClassProcessorHelper {
       return false;
     }
 
-    public synchronized void initialized() {
+    final synchronized void initialized() {
       if (state != INITIALIZING) { throw new IllegalStateException("State was " + state); }
       state = INITIALIZED;
     }
 
-    public synchronized boolean isInitialized() {
+    final synchronized boolean isInitialized() {
       return state == INITIALIZED;
     }
+
   }
 
 }

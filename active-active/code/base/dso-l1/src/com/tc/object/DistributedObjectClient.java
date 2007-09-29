@@ -78,6 +78,7 @@ import com.tc.object.msg.LockRequestMessage;
 import com.tc.object.msg.LockResponseMessage;
 import com.tc.object.msg.ObjectIDBatchRequestMessage;
 import com.tc.object.msg.ObjectIDBatchRequestResponseMessage;
+import com.tc.object.msg.ObjectsNotFoundMessage;
 import com.tc.object.msg.RequestManagedObjectMessageImpl;
 import com.tc.object.msg.RequestManagedObjectResponseMessage;
 import com.tc.object.msg.RequestRootMessageImpl;
@@ -204,6 +205,8 @@ public class DistributedObjectClient extends SEDA {
     ChannelIDLoggerProvider cidLoggerProvider = new ChannelIDLoggerProvider(channel.getChannelIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 
+    ClientIDProvider clientIDProvider = new ClientIDProviderImpl(channel.getChannelIDProvider());
+
     this.runtimeLogger = new RuntimeLoggerImpl(config);
 
     logger.debug("Created channel.");
@@ -224,10 +227,8 @@ public class DistributedObjectClient extends SEDA {
                                                                         gtxManager), sessionManager);
 
     RemoteObjectManager remoteObjectManager = new RemoteObjectManagerImpl(new ChannelIDLogger(channel
-        .getChannelIDProvider(), TCLogging.getLogger(RemoteObjectManager.class)), channel.getChannelIDProvider(),
-                                                                          channel.getRequestRootMessageFactory(),
-                                                                          channel
-                                                                              .getRequestManagedObjectMessageFactory(),
+        .getChannelIDProvider(), TCLogging.getLogger(RemoteObjectManager.class)), clientIDProvider, channel
+        .getRequestRootMessageFactory(), channel.getRequestManagedObjectMessageFactory(),
                                                                           new NullObjectRequestMonitor(), faultCount,
                                                                           sessionManager);
 
@@ -301,9 +302,9 @@ public class DistributedObjectClient extends SEDA {
     Collection stagesToPauseOnDisconnect = Collections.EMPTY_LIST;
     ProductInfo pInfo = ProductInfo.getInstance();
     clientHandshakeManager = new ClientHandshakeManager(new ChannelIDLogger(channel.getChannelIDProvider(), TCLogging
-        .getLogger(ClientHandshakeManager.class)), channel.getChannelIDProvider(), channel
-        .getClientHandshakeMessageFactory(), objectManager, remoteObjectManager, lockManager, rtxManager, gtxManager,
-                                                        stagesToPauseOnDisconnect, pauseStage.getSink(),
+        .getLogger(ClientHandshakeManager.class)), clientIDProvider, channel.getClientHandshakeMessageFactory(),
+                                                        objectManager, remoteObjectManager, lockManager, rtxManager,
+                                                        gtxManager, stagesToPauseOnDisconnect, pauseStage.getSink(),
                                                         sessionManager, pauseListener, sequence, cluster, pInfo
                                                             .buildVersion());
     channel.addListener(clientHandshakeManager);
@@ -323,6 +324,7 @@ public class DistributedObjectClient extends SEDA {
     channel.addClassMapping(TCMessageType.REQUEST_MANAGED_OBJECT_MESSAGE, RequestManagedObjectMessageImpl.class);
     channel.addClassMapping(TCMessageType.REQUEST_MANAGED_OBJECT_RESPONSE_MESSAGE,
                             RequestManagedObjectResponseMessage.class);
+    channel.addClassMapping(TCMessageType.OBJECTS_NOT_FOUND_RESPONSE_MESSAGE, ObjectsNotFoundMessage.class);
     channel.addClassMapping(TCMessageType.BROADCAST_TRANSACTION_MESSAGE, BroadcastTransactionMessageImpl.class);
     channel.addClassMapping(TCMessageType.OBJECT_ID_BATCH_REQUEST_MESSAGE, ObjectIDBatchRequestMessage.class);
     channel.addClassMapping(TCMessageType.OBJECT_ID_BATCH_REQUEST_RESPONSE_MESSAGE,
@@ -344,6 +346,7 @@ public class DistributedObjectClient extends SEDA {
     channel.routeMessageType(TCMessageType.REQUEST_ROOT_RESPONSE_MESSAGE, receiveRootID.getSink(), hydrateSink);
     channel.routeMessageType(TCMessageType.REQUEST_MANAGED_OBJECT_RESPONSE_MESSAGE, receiveObject.getSink(),
                              hydrateSink);
+    channel.routeMessageType(TCMessageType.OBJECTS_NOT_FOUND_RESPONSE_MESSAGE, receiveObject.getSink(), hydrateSink);
     channel.routeMessageType(TCMessageType.BROADCAST_TRANSACTION_MESSAGE, receiveTransaction.getSink(), hydrateSink);
     channel.routeMessageType(TCMessageType.OBJECT_ID_BATCH_REQUEST_RESPONSE_MESSAGE, oidRequestResponse.getSink(),
                              hydrateSink);

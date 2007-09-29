@@ -5,6 +5,7 @@ package com.tc.net.protocol.tcm;
 
 import com.tc.exception.ImplementMe;
 import com.tc.net.groups.NodeID;
+import com.tc.net.groups.ClientID;
 import com.tc.object.session.SessionID;
 
 import junit.framework.TestCase;
@@ -53,7 +54,7 @@ public class MessageMonitorImplTest extends TestCase {
       return 100;
     }
 
-    public ChannelID getChannelID() {
+    public ClientID getClientID() {
       return null;
     }
 

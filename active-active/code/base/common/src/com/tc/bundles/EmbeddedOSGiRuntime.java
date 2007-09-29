@@ -105,7 +105,7 @@ public interface EmbeddedOSGiRuntime {
       if (System.getProperty("tc.install-root") == null) return;
       final File installRoot = Directories.getInstallationRoot();
       if (!installRoot.toString().endsWith("build")) {
-        final File testRepository = new File(Directories.getInstallationRoot(), "build");
+        final File testRepository = new File(installRoot, "build");
         prependLocations.add(new File(testRepository, "modules").toURL());
       }
     }
@@ -121,7 +121,7 @@ public interface EmbeddedOSGiRuntime {
         // and the installation root (which is not set when running tests)
         injectTestRepository(prependLocations);
         injectDefaultRepository(prependLocations);
-        //injectDefaultModules(modules);
+        injectDefaultModules(modules);
 
         final URL[] prependURLs = new URL[prependLocations.size()];
         prependLocations.toArray(prependURLs);

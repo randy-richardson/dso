@@ -5,7 +5,8 @@
 package com.tc.objectserver.context;
 
 import com.tc.async.api.Sink;
-import com.tc.net.protocol.tcm.ChannelID;
+import com.tc.net.groups.ClientID;
+import com.tc.object.ObjectID;
 import com.tc.object.ObjectRequestID;
 import com.tc.objectserver.api.ObjectManagerLookupResults;
 import com.tc.text.PrettyPrintable;
@@ -14,30 +15,34 @@ import com.tc.text.PrettyPrinter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * @author steve This is the context needed to make a request to the server for a specific Managed root.
+ * This is the context needed to make a request to the server for a specific Managed root.
  */
 public class ManagedObjectRequestContext implements ObjectManagerResultsContext, PrettyPrintable {
   private final long            timestamp;
-  private final ChannelID       channelID;
+  private final ClientID        clientID;
   private final Set             requestedObjectIDs;
   private Map                   objects;
   private final ObjectRequestID requestID;
-  private boolean               moreObjects = false;
-  private int                   batchCount  = 0;
+  private boolean               moreObjects    = false;
+  private int                   batchCount     = 0;
   private Set                   lookupPendingObjectIDs;
   private final int             maxRequestDepth;
   private final Sink            sink;
+  private final Set             missingObjects = new HashSet();
+  private final String          requestingThreadName;
 
-  public ManagedObjectRequestContext(ChannelID channelID, ObjectRequestID requestID, Set ids, int maxRequestDepth,
-                                     Sink sink) {
+  public ManagedObjectRequestContext(ClientID clientID, ObjectRequestID requestID, Set ids, int maxRequestDepth,
+                                     Sink sink, String requestingThreadName) {
     this.maxRequestDepth = maxRequestDepth;
     this.sink = sink;
+    this.requestingThreadName = requestingThreadName;
     this.timestamp = System.currentTimeMillis();
-    this.channelID = channelID;
+    this.clientID = clientID;
     this.requestID = requestID;
     this.requestedObjectIDs = ids;
   }
@@ -50,8 +55,8 @@ public class ManagedObjectRequestContext implements ObjectManagerResultsContext,
     return moreObjects;
   }
 
-  public ChannelID getChannelID() {
-    return channelID;
+  public ClientID getRequestedNodeID() {
+    return clientID;
   }
 
   public int getBatchCount() {
@@ -79,15 +84,15 @@ public class ManagedObjectRequestContext implements ObjectManagerResultsContext,
     PrettyPrinter rv = out;
     out = out.duplicateAndIndent();
     out.indent().println(new Date(timestamp));
-    out.indent().println("channelID: " + channelID);
+    out.indent().println("channelID: " + clientID);
     out.indent().println("requestID: " + requestID);
     out.indent().print("requestedObjectIDs: ").println(requestedObjectIDs);
     return rv;
   }
 
   public String toString() {
-    return "ManagedObjectRequestContext@" + System.identityHashCode(this) + " [ " + channelID + " , " + requestID
-           + " , " + requestedObjectIDs + "]";
+    return "ManagedObjectRequestContext@" + System.identityHashCode(this) + " [ " + clientID + " , " + requestID
+           + " , " + requestedObjectIDs + ", requestingThread = " + requestingThreadName + " ]";
   }
 
   public void setResults(ObjectManagerLookupResults results) {
@@ -102,6 +107,14 @@ public class ManagedObjectRequestContext implements ObjectManagerResultsContext,
 
   public Set getNewObjectIDs() {
     return Collections.EMPTY_SET;
+  }
+
+  public void missingObject(ObjectID oid) {
+    missingObjects.add(oid);
+  }
+
+  public Set getMissingObjectIDs() {
+    return missingObjects;
   }
 
 }

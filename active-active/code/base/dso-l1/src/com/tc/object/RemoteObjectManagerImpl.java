@@ -5,8 +5,7 @@
 package com.tc.object;
 
 import com.tc.logging.TCLogger;
-import com.tc.net.protocol.tcm.ChannelID;
-import com.tc.net.protocol.tcm.ChannelIDProvider;
+import com.tc.net.groups.ClientID;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.msg.RequestManagedObjectMessage;
 import com.tc.object.msg.RequestManagedObjectMessageFactory;
@@ -35,8 +34,6 @@ import java.util.Map.Entry;
 /**
  * This class is a kludge but I think it will do the trick for now. It is responsible for any communications to the
  * server for object retrieval and removal
- * 
- * @author steve
  */
 public class RemoteObjectManagerImpl implements RemoteObjectManager {
 
@@ -48,9 +45,10 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager {
   private final Map                                dnaRequests               = new THashMap();
   private final Map                                outstandingObjectRequests = new THashMap();
   private final Map                                outstandingRootRequests   = new THashMap();
+  private final Set                                missingObjectIDs          = new HashSet();
   private long                                     objectRequestIDCounter    = 0;
   private final ObjectRequestMonitor               requestMonitor;
-  private final ChannelIDProvider                  cip;
+  private final ClientIDProvider                   cip;
   private final RequestRootMessageFactory          rrmFactory;
   private final RequestManagedObjectMessageFactory rmomFactory;
   private final DNALRU                             lruDNA                    = new DNALRU();
@@ -65,7 +63,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager {
   private final TCLogger                           logger;
   private static final int                         REMOVE_OBJECTS_THRESHOLD  = 10000;
 
-  public RemoteObjectManagerImpl(TCLogger logger, ChannelIDProvider cip, RequestRootMessageFactory rrmFactory,
+  public RemoteObjectManagerImpl(TCLogger logger, ClientIDProvider cip, RequestRootMessageFactory rrmFactory,
                                  RequestManagedObjectMessageFactory rmomFactory, ObjectRequestMonitor requestMonitor,
                                  int defaultDepth, SessionManager sessionManager) {
     this.logger = logger;
@@ -151,11 +149,13 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager {
   public synchronized DNA retrieve(ObjectID id, int depth) {
     boolean isInterrupted = false;
 
-    ObjectRequestContext ctxt = new ObjectRequestContextImpl(this.cip.getChannelID(),
+    ObjectRequestContext ctxt = new ObjectRequestContextImpl(this.cip.getClientID(),
                                                              new ObjectRequestID(objectRequestIDCounter++), id, depth);
-    while (!dnaRequests.containsKey(id) || dnaRequests.get(id) == null) {
+    while (!dnaRequests.containsKey(id) || dnaRequests.get(id) == null || missingObjectIDs.contains(id)) {
       waitUntilRunning();
-      if (!dnaRequests.containsKey(id)) {
+      if (missingObjectIDs.contains(id)) {
+        throw new AssertionError("Requested Object is missing : " + id + " Missing Oids = " + missingObjectIDs);
+      } else if (!dnaRequests.containsKey(id)) {
         sendRequest(ctxt);
       } else if (!outstandingObjectRequests.containsKey(id)) {
         outstandingObjectRequests.put(id, ctxt);
@@ -265,10 +265,27 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager {
     notifyAll();
   }
 
+  public synchronized void objectsNotFoundFor(SessionID sessionID, long batchID, Set missingOIDs) {
+    waitUntilRunning();
+    if (!sessionManager.isCurrentSession(sessionID)) {
+      logger.warn("Ignoring Missing Object IDs " + missingOIDs + " from a different session: " + sessionID + ", "
+                  + sessionManager);
+      return;
+    }
+    logger.warn("Received Missing Object IDs from server : " + missingOIDs);
+    missingObjectIDs.addAll(missingOIDs);
+    notifyAll();
+  }
+
   // Used only for testing
   synchronized void addObject(DNA dna) {
     if (!removeObjects.contains(dna.getObjectID())) basicAddObject(dna);
     notifyAll();
+  }
+
+  // Used only for testing
+  synchronized int getDNACacheSize() {
+    return lruDNA.size();
   }
 
   private void basicAddObject(DNA dna) {
@@ -280,7 +297,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager {
     dnaRequests.remove(id);
     removeObjects.add(id);
     if (removeObjects.size() >= REMOVE_OBJECTS_THRESHOLD) {
-      ObjectRequestContext ctxt = new ObjectRequestContextImpl(this.cip.getChannelID(),
+      ObjectRequestContext ctxt = new ObjectRequestContextImpl(this.cip.getClientID(),
                                                                new ObjectRequestID(objectRequestIDCounter++),
                                                                Collections.EMPTY_SET, -1);
       RequestManagedObjectMessage rmom = createRequestManagedObjectMessage(ctxt, removeObjects);
@@ -297,25 +314,25 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager {
 
     private final ObjectRequestID requestID;
 
-    private final ChannelID       channelID;
+    private final ClientID       clientID;
 
     private final int             depth;
 
-    private ObjectRequestContextImpl(ChannelID channelID, ObjectRequestID requestID, ObjectID objectID, int depth) {
-      this(channelID, requestID, new HashSet(), depth);
+    private ObjectRequestContextImpl(ClientID clientID, ObjectRequestID requestID, ObjectID objectID, int depth) {
+      this(clientID, requestID, new HashSet(), depth);
       this.objectIDs.add(objectID);
     }
 
-    private ObjectRequestContextImpl(ChannelID channelID, ObjectRequestID requestID, Set objectIDs, int depth) {
+    private ObjectRequestContextImpl(ClientID clientID, ObjectRequestID requestID, Set objectIDs, int depth) {
       this.timestamp = System.currentTimeMillis();
-      this.channelID = channelID;
+      this.clientID = clientID;
       this.requestID = requestID;
       this.objectIDs = objectIDs;
       this.depth = depth;
     }
 
-    public ChannelID getChannelID() {
-      return this.channelID;
+    public ClientID getClientID() {
+      return this.clientID;
     }
 
     public ObjectRequestID getRequestID() {

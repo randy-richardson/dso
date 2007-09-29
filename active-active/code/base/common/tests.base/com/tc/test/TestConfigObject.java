@@ -98,20 +98,6 @@ public class TestConfigObject {
 
   private static final String     SYSTEM_PROPERTIES_RESOURCE_NAME   = "/test-system-properties.properties";
 
-  private static final String     ACTIVE_PASSIVE_PREFIX             = STATIC_PROPERTIES_PREFIX + "active-passive.";
-
-  private static final String     ACTIVE_PASSIVE_SERVER_COUNT       = ACTIVE_PASSIVE_PREFIX + "server.count";
-
-  private static final String     ACTIVE_PASSIVE_SERVER_CRASH_MODE  = ACTIVE_PASSIVE_PREFIX + "server.crash.mode";
-
-  private static final String     ACTIVE_PASSIVE_SERVER_CRASH_TYPE  = ACTIVE_PASSIVE_PREFIX + "server.crash.type";
-
-  private static final String     ACTIVE_PASSIVE_SERVER_CRASH_WAIT  = ACTIVE_PASSIVE_PREFIX + "server.crash.wait";
-
-  private static final String     ACTIVE_PASSIVE_SERVER_PERSISTENCE = ACTIVE_PASSIVE_PREFIX + "server.persistence";
-
-  private static final String     ACTIVE_PASSIVE_SERVER_DISKLESS    = ACTIVE_PASSIVE_PREFIX + "server.diskless";
-
   private static final String     L2_STARTUP_PREFIX                 = DYNAMIC_PROPERTIES_PREFIX + "l2.startup.";
   public static final String      L2_STARTUP_MODE                   = L2_STARTUP_PREFIX + "mode";
   public static final String      L2_STARTUP_JAVA_HOME              = L2_STARTUP_PREFIX + "jvm";
@@ -156,32 +142,22 @@ public class TestConfigObject {
     }
   }
 
-  // this is a hack
-  private static void loadEnv() {
-    File userDir = new File(System.getProperty("user.dir"));
-    String baseDirProp = System.getProperty(TC_BASE_DIR);
-    if (baseDirProp == null || baseDirProp.trim().equals("")) invalidBaseDir();
-    String[] baseDirParts = baseDirProp.split("[/\\\\]");
-    String baseDir = null;
-    int count = baseDirParts.length - 1;
-    File parent = null;
-
-    while (true) {
-      if (userDir.getName().equals(baseDirParts[count])) {
-        if (count == baseDirParts.length - 1) baseDir = userDir.getPath();
-        if (--count == -1) break;
-      }
-      if ((parent = userDir.getParentFile()) != null) userDir = parent;
-      else break;
-    }
-
-    if (baseDir == null || baseDir.trim().equals("")) invalidBaseDir();
+  private static void loadEnv() throws IOException {
+    File baseDir = getBaseDir();
 
     if (StringUtils.isBlank(System.getProperty(Directories.TC_INSTALL_ROOT_PROPERTY_NAME))) {
-      System.setProperty(Directories.TC_INSTALL_ROOT_PROPERTY_NAME, baseDir);
+      System.setProperty(Directories.TC_INSTALL_ROOT_PROPERTY_NAME, baseDir.getCanonicalPath());
       System.setProperty(Directories.TC_INSTALL_ROOT_IGNORE_CHECKS_PROPERTY_NAME, "true");
     }
-    System.setProperty(Directories.TC_LICENSE_LOCATION_PROPERTY_NAME, baseDir);
+    System.setProperty(Directories.TC_LICENSE_LOCATION_PROPERTY_NAME, baseDir.getCanonicalPath());
+  }
+
+  private static File getBaseDir() throws IOException {
+    String baseDirProp = System.getProperty(TC_BASE_DIR);
+    if (baseDirProp == null || baseDirProp.trim().equals("")) invalidBaseDir();
+    File baseDir = new File(baseDirProp);
+    if (!baseDir.isDirectory()) invalidBaseDir();
+    return baseDir.getCanonicalFile();
   }
 
   private static void invalidBaseDir() {
@@ -213,14 +189,10 @@ public class TestConfigObject {
     // build team. Hardcoding
     // properties here can make our lives very difficult.
 
-    if (System.getProperty(PROPERTY_FILE_LIST_PROPERTY_NAME) == null) { throw new IOException(
-        "You must set the system property '" + PROPERTY_FILE_LIST_PROPERTY_NAME
-            + "' to point to the appropriate test properties file for this set of tests. If you're running "
-            + "from Eclipse, you can do this by running 'ant test.setup', which will generate a properties "
-            + "file in build/<module>/tests.<type>.configuration, and then setting the above system "
-            + "property to point to it."); }
-
-    String[] components = System.getProperty(PROPERTY_FILE_LIST_PROPERTY_NAME).split(File.pathSeparator);
+    String[] components = {};
+    if (System.getProperty(PROPERTY_FILE_LIST_PROPERTY_NAME) != null) {
+      components = System.getProperty(PROPERTY_FILE_LIST_PROPERTY_NAME).split(File.pathSeparator);
+    }
 
     for (int i = components.length - 1; i >= 0; --i) {
       File thisFile = new File(components[i]);
@@ -242,40 +214,16 @@ public class TestConfigObject {
     logger.info("Loaded test configuration from " + loadedFrom.toString());
   }
 
-  public int getActivePassiveServerCount() {
-    String count = this.properties.getProperty(ACTIVE_PASSIVE_SERVER_COUNT);
-    Assert.assertNotBlank(count);
-    return Integer.parseInt(count);
+  private String getProperty(String key, String defaultValue) {
+    String result = this.properties.getProperty(key);
+    if (result == null) {
+      result = defaultValue;
+    }
+    return result;
   }
 
-  public String getActivePassiveServerCrashMode() {
-    String out = this.properties.getProperty(ACTIVE_PASSIVE_SERVER_CRASH_MODE);
-    Assert.assertNotBlank(out);
-    return out;
-  }
-
-  public String getActivePassiveServerCrashType() {
-    String out = this.properties.getProperty(ACTIVE_PASSIVE_SERVER_CRASH_TYPE);
-    Assert.assertNotBlank(out);
-    return out;
-  }
-
-  public int getActivePassiveServerCrashWaitTime() {
-    String seconds = this.properties.getProperty(ACTIVE_PASSIVE_SERVER_CRASH_WAIT);
-    Assert.assertNotBlank(seconds);
-    return Integer.parseInt(seconds);
-  }
-
-  public String getActivePassiveServerPersistence() {
-    String out = this.properties.getProperty(ACTIVE_PASSIVE_SERVER_PERSISTENCE);
-    Assert.assertNotBlank(out);
-    return out;
-  }
-
-  public boolean getActivePassiveServerDiskless() {
-    String out = this.properties.getProperty(ACTIVE_PASSIVE_SERVER_DISKLESS);
-    Assert.assertNotBlank(out);
-    return Boolean.valueOf(out).booleanValue();
+  private String getProperty(String key) {
+    return getProperty(key, null);
   }
 
   public String getL2StartupMode() {
@@ -309,26 +257,23 @@ public class TestConfigObject {
     return selected;
   }
 
+  /**
+   * Returns the version string for the current JVM.  Equivalent to
+   * <code>System.getProperty("java.runtime.version")</code>.
+   */
   public String jvmVersion() {
-    String out = this.properties.getProperty(JVM_VERSION);
-    Assert.assertNotBlank(out);
-    return out;
+    return System.getProperty("java.runtime.version");
   }
 
-  public String jvmType() {
-    String out = this.properties.getProperty(JVM_TYPE);
-    Assert.assertNotBlank(out);
-    return out;
-  }
-
-  public String jvmMode() {
-    String out = this.properties.getProperty(JVM_MODE);
-    Assert.assertNotBlank(out);
-    return out;
+  /**
+   * Returns the type of the current JVM.  Equivalent to <code>System.getProperty("java.vm.name")</code>.
+   */
+  public String jvmName() {
+    return System.getProperty("java.vm.name");
   }
 
   public String osName() {
-    return this.properties.getProperty(OS_NAME);
+    return getProperty(OS_NAME);
   }
 
   public String platform() {
@@ -363,10 +308,6 @@ public class TestConfigObject {
     String out = this.properties.getProperty(TEMP_DIRECTORY_ROOT);
     Assert.assertNotBlank(out);
     return out;
-  }
-
-  public String appserverURLBase() {
-    return this.properties.getProperty(APP_SERVER_REPOSITORY_URL_BASE);
   }
 
   public String appserverHome() {
@@ -449,9 +390,7 @@ public class TestConfigObject {
   }
 
   public int getJunitTimeoutInSeconds() {
-    String seconds = this.properties.getProperty(JUNIT_TEST_TIMEOUT_INSECONDS);
-    Assert.assertNotBlank(seconds);
-    return Integer.parseInt(seconds);
+    return Integer.parseInt(getProperty(JUNIT_TEST_TIMEOUT_INSECONDS, "900"));
   }
 
   public static final String    TRANSPARENT_TESTS_MODE_NORMAL         = "normal";

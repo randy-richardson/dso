@@ -109,6 +109,10 @@ public final class ProductInfo {
     return this.moniker;
   }
 
+  public String edition() {
+    return this.edition;
+  }
+  
   public String rawVersion() {
     return this.version;
   }

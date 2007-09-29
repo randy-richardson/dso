@@ -12,6 +12,8 @@ import com.tc.process.LinkedJavaProcess;
 import com.tc.process.StreamCopier;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.test.TestConfigObject;
+import com.tc.util.runtime.Os;
+import com.tc.util.runtime.Vm;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -109,10 +111,10 @@ public class ExtraProcessServerControl extends ServerControlBase {
   }
 
   // only called by constructors in this class
-  public ExtraProcessServerControl(DebugParams debugParams, String host, int dsoPort, int adminPort,
-                                   String configFileLoc, File runningDirectory, File installationRoot,
-                                   boolean mergeOutput, String serverName, List additionalJvmArgs, String undefString,
-                                   File javaHome, boolean useIdentifier) {
+  protected ExtraProcessServerControl(DebugParams debugParams, String host, int dsoPort, int adminPort,
+                                      String configFileLoc, File runningDirectory, File installationRoot,
+                                      boolean mergeOutput, String serverName, List additionalJvmArgs, String undefString,
+                                      File javaHome, boolean useIdentifier) {
     super(host, dsoPort, adminPort);
     this.useIdentifier = useIdentifier;
     this.javaHome = javaHome;
@@ -140,6 +142,10 @@ public class ExtraProcessServerControl extends ServerControlBase {
     addClasspath(jvmArgs);
     addLibPath(jvmArgs);
     addEnvVarsForWindows(jvmArgs);
+    
+    if (!Vm.isIBM() && !(Os.isMac() && Vm.isJDK14())) {
+      jvmArgs.add("-XX:+HeapDumpOnOutOfMemoryError");
+    }
   }
 
   private String getStreamIdentifier(int dsoPort, String streamType) {

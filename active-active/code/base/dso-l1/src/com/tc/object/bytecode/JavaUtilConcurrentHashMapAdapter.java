@@ -28,10 +28,10 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
   private final static String SEGMENT_TC_PUT_METHOD_DESC          = "(Ljava/lang/Object;ILjava/lang/Object;Z)Ljava/lang/Object;";
   private final static String TC_IS_DSO_HASH_REQUIRED_METHOD_NAME = ByteCodeUtil.TC_METHOD_PREFIX + "isDsoHashRequired";
   private final static String TC_IS_DSO_HASH_REQUIRED_METHOD_DESC = "(Ljava/lang/Object;)Z";
-  private final static String TC_FULLY_LOCK_METHOD_NAME           = ByteCodeUtil.TC_METHOD_PREFIX + "fullyLock";
-  private final static String TC_FULLY_LOCK_METHOD_DESC           = "()V";
-  private final static String TC_FULLY_UNLOCK_METHOD_NAME         = ByteCodeUtil.TC_METHOD_PREFIX + "fullyUnLock";
-  private final static String TC_FULLY_UNLOCK_METHOD_DESC         = "()V";
+  private final static String TC_FULLY_READLOCK_METHOD_NAME       = ByteCodeUtil.TC_METHOD_PREFIX + "fullyReadLock";
+  private final static String TC_FULLY_READLOCK_METHOD_DESC       = "()V";
+  private final static String TC_FULLY_READUNLOCK_METHOD_NAME     = ByteCodeUtil.TC_METHOD_PREFIX + "fullyReadUnlock";
+  private final static String TC_FULLY_READUNLOCK_METHOD_DESC     = "()V";
   private final static String HASH_METHOD_NAME                    = "hash";
 
   public JavaUtilConcurrentHashMapAdapter(ClassVisitor cv) {
@@ -86,8 +86,8 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     createTCForcedHashMethod();
     createTCDsoRequiredMethod();
     createTCRehashAndSupportMethods();
-    createTCFullyLockMethod();
-    createTCFullyUnLockMethod();
+    createTCFullyReadLockMethod();
+    createTCFullyReadUnlockMethod();
     super.visitEnd();
   }
 
@@ -97,15 +97,17 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
 
   private MethodVisitor addWrapperMethod(int access, String name, String desc, String signature, String[] exceptions) {
     createWrapperMethod(access, name, desc, signature, exceptions);
-    return cv.visitMethod(ACC_PRIVATE, getNewName(name), desc, signature, exceptions);
+    return new TurnIntoReadLocksMethodAdapter(cv
+        .visitMethod(ACC_PRIVATE, getNewName(name), desc, signature, exceptions));
   }
 
   private void createWrapperMethod(int access, String name, String desc, String signature, String[] exceptions) {
     Type[] params = Type.getArgumentTypes(desc);
     Type returnType = Type.getReturnType(desc);
 
-    LocalVariablesSorter mv = new LocalVariablesSorter(access, desc, cv.visitMethod(access, name, desc, signature, exceptions));
-    
+    LocalVariablesSorter mv = new LocalVariablesSorter(access, desc, cv.visitMethod(access, name, desc, signature,
+                                                                                    exceptions));
+
     mv.visitCode();
     Label l0 = new Label();
     Label l1 = new Label();
@@ -128,10 +130,11 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitLabel(l5);
     mv.visitLineNumber(807, l5);
     mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_LOCK_METHOD_NAME, TC_FULLY_LOCK_METHOD_DESC);
+    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_READLOCK_METHOD_NAME,
+                       TC_FULLY_READLOCK_METHOD_DESC);
     mv.visitLabel(l0);
     mv.visitLineNumber(810, l0);
-    
+
     mv.visitVarInsn(ALOAD, 0);
     for (int i = 0; i < params.length; i++) {
       mv.visitVarInsn(params[i].getOpcode(ILOAD), i + 1);
@@ -139,7 +142,7 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, getNewName(name), desc);
     int valueVar = mv.newLocal(returnType);
     mv.visitVarInsn(returnType.getOpcode(ISTORE), valueVar);
-    
+
     mv.visitLabel(l1);
     mv.visitLineNumber(812, l1);
     mv.visitVarInsn(ILOAD, isManagedVar);
@@ -149,13 +152,13 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitLabel(l7);
     mv.visitLineNumber(813, l7);
     mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_UNLOCK_METHOD_NAME,
-                       TC_FULLY_UNLOCK_METHOD_DESC);
+    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_READUNLOCK_METHOD_NAME,
+                       TC_FULLY_READUNLOCK_METHOD_DESC);
     mv.visitLabel(l6);
     mv.visitLineNumber(810, l6);
     mv.visitVarInsn(returnType.getOpcode(ILOAD), valueVar);
     mv.visitInsn(returnType.getOpcode(IRETURN));
-    
+
     mv.visitLabel(l2);
     mv.visitLineNumber(811, l2);
     int exceptionVar = mv.newLocal(Type.getObjectType("java/lang/Exception"));
@@ -170,8 +173,8 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitLabel(l10);
     mv.visitLineNumber(813, l10);
     mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_UNLOCK_METHOD_NAME,
-                       TC_FULLY_UNLOCK_METHOD_DESC);
+    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_READUNLOCK_METHOD_NAME,
+                       TC_FULLY_READUNLOCK_METHOD_DESC);
     mv.visitLabel(l9);
     mv.visitLineNumber(815, l9);
     mv.visitVarInsn(ALOAD, exceptionVar);
@@ -213,8 +216,9 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     return null;
   }
 
-  private void createTCFullyLockMethod() {
-    MethodVisitor mv = cv.visitMethod(ACC_PRIVATE, TC_FULLY_LOCK_METHOD_NAME, TC_FULLY_LOCK_METHOD_DESC, null, null);
+  private void createTCFullyReadLockMethod() {
+    MethodVisitor mv = cv.visitMethod(ACC_PRIVATE, TC_FULLY_READLOCK_METHOD_NAME, TC_FULLY_READLOCK_METHOD_DESC, null,
+                                      null);
     mv.visitCode();
     Label l0 = new Label();
     mv.visitLabel(l0);
@@ -238,7 +242,9 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitVarInsn(ALOAD, 1);
     mv.visitVarInsn(ILOAD, 2);
     mv.visitInsn(AALOAD);
-    mv.visitMethodInsn(INVOKEVIRTUAL, "java/util/concurrent/ConcurrentHashMap$Segment", "lock", "()V");
+    mv.visitMethodInsn(INVOKEVIRTUAL, JavaUtilConcurrentHashMapSegmentAdapter.CONCURRENT_HASH_MAP_SEGMENT_SLASH,
+                       JavaUtilConcurrentHashMapSegmentAdapter.TC_READLOCK_METHOD_NAME,
+                       JavaUtilConcurrentHashMapSegmentAdapter.TC_READLOCK_METHOD_DESC);
     Label l5 = new Label();
     mv.visitLabel(l5);
     mv.visitLineNumber(790, l5);
@@ -262,9 +268,9 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitEnd();
   }
 
-  private void createTCFullyUnLockMethod() {
-    MethodVisitor mv = cv
-        .visitMethod(ACC_PRIVATE, TC_FULLY_UNLOCK_METHOD_NAME, TC_FULLY_UNLOCK_METHOD_DESC, null, null);
+  private void createTCFullyReadUnlockMethod() {
+    MethodVisitor mv = cv.visitMethod(ACC_PRIVATE, TC_FULLY_READUNLOCK_METHOD_NAME, TC_FULLY_READUNLOCK_METHOD_DESC,
+                                      null, null);
     mv.visitCode();
     Label l0 = new Label();
     mv.visitLabel(l0);
@@ -288,7 +294,9 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitVarInsn(ALOAD, 1);
     mv.visitVarInsn(ILOAD, 2);
     mv.visitInsn(AALOAD);
-    mv.visitMethodInsn(INVOKEVIRTUAL, "java/util/concurrent/ConcurrentHashMap$Segment", "unlock", "()V");
+    mv.visitMethodInsn(INVOKEVIRTUAL, JavaUtilConcurrentHashMapSegmentAdapter.CONCURRENT_HASH_MAP_SEGMENT_SLASH,
+                       JavaUtilConcurrentHashMapSegmentAdapter.TC_READUNLOCK_METHOD_NAME,
+                       JavaUtilConcurrentHashMapSegmentAdapter.TC_READUNLOCK_METHOD_DESC);
     Label l5 = new Label();
     mv.visitLabel(l5);
     mv.visitLineNumber(796, l5);
@@ -320,20 +328,23 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitLabel(l0);
     mv.visitLineNumber(639, l0);
     mv.visitVarInsn(ALOAD, 1);
-    mv.visitMethodInsn(INVOKESTATIC, "com/tc/object/bytecode/ManagerUtil", "lookupExistingOrNull", "(Ljava/lang/Object;)Lcom/tc/object/TCObject;");
+    mv.visitMethodInsn(INVOKESTATIC, "com/tc/object/bytecode/ManagerUtil", "lookupExistingOrNull",
+                       "(Ljava/lang/Object;)Lcom/tc/object/TCObject;");
     mv.visitInsn(POP);
     Label l1 = new Label();
     mv.visitLabel(l1);
     mv.visitLineNumber(640, l1);
     mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKEVIRTUAL, "java/util/concurrent/ConcurrentHashMap", "__tc_managed", "()Lcom/tc/object/TCObject;");
+    mv.visitMethodInsn(INVOKEVIRTUAL, "java/util/concurrent/ConcurrentHashMap", "__tc_managed",
+                       "()Lcom/tc/object/TCObject;");
     Label l2 = new Label();
     mv.visitJumpInsn(IFNULL, l2);
     Label l3 = new Label();
     mv.visitLabel(l3);
     mv.visitLineNumber(641, l3);
     mv.visitVarInsn(ALOAD, 1);
-    mv.visitMethodInsn(INVOKESTATIC, "com/tc/object/bytecode/ManagerUtil", "lookupExistingOrNull", "(Ljava/lang/Object;)Lcom/tc/object/TCObject;");
+    mv.visitMethodInsn(INVOKESTATIC, "com/tc/object/bytecode/ManagerUtil", "lookupExistingOrNull",
+                       "(Ljava/lang/Object;)Lcom/tc/object/TCObject;");
     mv.visitJumpInsn(IFNONNULL, l2);
     Label l4 = new Label();
     mv.visitLabel(l4);
@@ -355,7 +366,7 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     Label l6 = new Label();
     mv.visitLabel(l6);
     mv.visitMaxs(0, 0);
-    mv.visitEnd();    
+    mv.visitEnd();
   }
 
   private void createTCRehashAndSupportMethods() {
@@ -383,7 +394,8 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitLabel(l5);
     mv.visitLineNumber(671, l5);
     mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_LOCK_METHOD_NAME, TC_FULLY_LOCK_METHOD_DESC);
+    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_READLOCK_METHOD_NAME,
+                       TC_FULLY_READLOCK_METHOD_DESC);
     mv.visitLabel(l0);
     mv.visitLineNumber(673, l0);
     mv.visitTypeInsn(NEW, "java/util/ArrayList");
@@ -561,8 +573,8 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitLabel(l34);
     mv.visitLineNumber(697, l34);
     mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_UNLOCK_METHOD_NAME,
-                       TC_FULLY_UNLOCK_METHOD_DESC);
+    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_READUNLOCK_METHOD_NAME,
+                       TC_FULLY_READUNLOCK_METHOD_DESC);
     Label l35 = new Label();
     mv.visitLabel(l35);
     mv.visitLineNumber(698, l35);
@@ -571,7 +583,8 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
     mv.visitLabel(l31);
     mv.visitLineNumber(697, l31);
     mv.visitVarInsn(ALOAD, 0);
-    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, "__tc_fullyUnLock", "()V");
+    mv.visitMethodInsn(INVOKESPECIAL, CONCURRENT_HASH_MAP_SLASH, TC_FULLY_READUNLOCK_METHOD_NAME,
+                       TC_FULLY_READUNLOCK_METHOD_DESC);
     mv.visitLabel(l4);
     mv.visitLineNumber(700, l4);
     mv.visitInsn(RETURN);
@@ -988,6 +1001,27 @@ public class JavaUtilConcurrentHashMapAdapter extends ClassAdapter implements Op
       } else {
         super.visitMethodInsn(opcode, owner, name, desc);
       }
+    }
+  }
+
+  private static class TurnIntoReadLocksMethodAdapter extends MethodAdapter implements Opcodes {
+
+    public TurnIntoReadLocksMethodAdapter(MethodVisitor mv) {
+      super(mv);
+    }
+
+    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+      if (INVOKEVIRTUAL == opcode
+          && JavaUtilConcurrentHashMapSegmentAdapter.CONCURRENT_HASH_MAP_SEGMENT_SLASH.equals(owner)
+          && "()V".equals(desc)) {
+        if ("lock".equals(name)) {
+          name = JavaUtilConcurrentHashMapSegmentAdapter.TC_READLOCK_METHOD_NAME;
+        } else if ("unlock".equals(name)) {
+          name = JavaUtilConcurrentHashMapSegmentAdapter.TC_READUNLOCK_METHOD_NAME;
+        }
+      }
+
+      super.visitMethodInsn(opcode, owner, name, desc);
     }
   }
 

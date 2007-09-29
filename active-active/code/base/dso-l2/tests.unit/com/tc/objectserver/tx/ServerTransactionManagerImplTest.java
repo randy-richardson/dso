@@ -8,6 +8,8 @@ import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 
 import com.tc.exception.ImplementMe;
 import com.tc.exception.TCRuntimeException;
+import com.tc.net.groups.ClientID;
+import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.object.ObjectID;
@@ -140,7 +142,7 @@ public class ServerTransactionManagerImplTest extends TestCase {
     transactionManager.addTransactionListener(l2);
 
     Set txns = new HashSet();
-    ChannelID cid1 = new ChannelID(1);
+    ClientID cid1 = new ClientID(new ChannelID(1));
     List dnas = Collections.unmodifiableList(new LinkedList());
     ObjectStringSerializer serializer = null;
     Map newRoots = Collections.unmodifiableMap(new HashMap());
@@ -230,7 +232,7 @@ public class ServerTransactionManagerImplTest extends TestCase {
   }
 
   public void tests() throws Exception {
-    ChannelID cid1 = new ChannelID(1);
+    ClientID cid1 = new ClientID(new ChannelID(1));
     TransactionID tid1 = new TransactionID(1);
     TransactionID tid2 = new TransactionID(2);
     TransactionID tid3 = new TransactionID(3);
@@ -238,8 +240,8 @@ public class ServerTransactionManagerImplTest extends TestCase {
     TransactionID tid5 = new TransactionID(5);
     TransactionID tid6 = new TransactionID(6);
 
-    ChannelID cid2 = new ChannelID(2);
-    ChannelID cid3 = new ChannelID(3);
+    ClientID cid2 = new ClientID(new ChannelID(2));
+    ClientID cid3 = new ClientID(new ChannelID(3));
 
     LockID[] lockIDs = new LockID[0];
     List dnas = Collections.unmodifiableList(new LinkedList());
@@ -308,8 +310,8 @@ public class ServerTransactionManagerImplTest extends TestCase {
     transactionManager.addWaitingForAcknowledgement(cid1, tid3, cid3);
     assertTrue(action.clientID == null && action.txID == null);
     assertTrue(transactionManager.isWaiting(cid1, tid3));
-    transactionManager.shutdownClient(cid3);
-    assertTrue(this.clientStateManager.shutdownClientCalled);
+    transactionManager.shutdownNode(cid3);
+    assertEquals(cid3, this.clientStateManager.shutdownClient);
     assertTrue(transactionManager.isWaiting(cid1, tid3));
     transactionManager.acknowledgement(cid1, tid3, cid2);
     doStages(cid1, txns);
@@ -321,6 +323,7 @@ public class ServerTransactionManagerImplTest extends TestCase {
     gtxm.clear();
     txns.clear();
     txnIDs.clear();
+    clientStateManager.shutdownClient = null;
 
     sequenceID = new SequenceID(4);
     ServerTransaction tx4 = new ServerTransactionImpl(gtxm, new TxnBatchID(4), tid4, sequenceID, lockIDs, cid1, dnas,
@@ -331,9 +334,37 @@ public class ServerTransactionManagerImplTest extends TestCase {
     transactionManager.incomingTransactions(cid1, txnIDs, txns, false, Collections.EMPTY_LIST);
     transactionManager.addWaitingForAcknowledgement(cid1, tid4, cid2);
     transactionManager.addWaitingForAcknowledgement(cid1, tid4, cid3);
-    transactionManager.shutdownClient(cid1);
+    transactionManager.shutdownNode(cid1);
     assertTrue(action.clientID == null && action.txID == null);
+    // It should still be waiting, since we only do cleans ups on completion of all transactions.
+    assertNull(clientStateManager.shutdownClient);
+    assertTrue(transactionManager.isWaiting(cid1, tid4));
+
+    // adding new transactions should throw an error
+    boolean failed = false;
+    try {
+      transactionManager.incomingTransactions(cid1, txnIDs, txns, false, Collections.EMPTY_LIST);
+      failed = true;
+    } catch (Throwable t) {
+      // failed as expected.
+    }
+    if (failed) {
+      //
+      throw new Exception("Calling incomingTransaction after client shutdown didnt throw an error as excepted!!! ;(");
+    }
+    transactionManager.acknowledgement(cid1, tid4, cid2);
+    assertTrue(transactionManager.isWaiting(cid1, tid4));
+    transactionManager.acknowledgement(cid1, tid4, cid3);
     assertFalse(transactionManager.isWaiting(cid1, tid4));
+
+    // shutdown is not called yet since apply commit and broadcast need to complete.
+    assertNull(clientStateManager.shutdownClient);
+    List serverTids = new ArrayList();
+    serverTids.add(new ServerTransactionID(cid1, tid4));
+    transactionManager.commit(ptxp, Collections.EMPTY_SET, Collections.EMPTY_MAP, serverTids, Collections.EMPTY_SET);
+    assertNull(clientStateManager.shutdownClient);
+    transactionManager.broadcasted(cid1, tid4);
+    assertEquals(cid1, clientStateManager.shutdownClient);
 
     // Test with 2 waiters on different tx's
     action.clear();
@@ -369,14 +400,14 @@ public class ServerTransactionManagerImplTest extends TestCase {
 
   }
 
-  private void doStages(ChannelID cid, Set txns) {
-    doStages(cid, txns, true);
+  private void doStages(ClientID cid1, Set txns) {
+    doStages(cid1, txns, true);
   }
 
-  private void doStages(ChannelID cid, Set txns, boolean skipIncoming) {
+  private void doStages(ClientID cid1, Set txns, boolean skipIncoming) {
 
     // process stage
-    if (!skipIncoming) transactionManager.incomingTransactions(cid, getServerTransactionIDs(txns), txns, false,
+    if (!skipIncoming) transactionManager.incomingTransactions(cid1, getServerTransactionIDs(txns), txns, false,
                                                                Collections.EMPTY_LIST);
 
     for (Iterator iter = txns.iterator(); iter.hasNext();) {
@@ -392,7 +423,7 @@ public class ServerTransactionManagerImplTest extends TestCase {
                                      Collections.EMPTY_SET);
 
       // broadcast stage
-      transactionManager.broadcasted(tx.getChannelID(), tx.getTransactionID());
+      transactionManager.broadcasted(tx.getSourceID(), tx.getTransactionID());
     }
   }
 
@@ -413,9 +444,9 @@ public class ServerTransactionManagerImplTest extends TestCase {
       throw new ImplementMe();
     }
 
-    public void notifyTransaction(ChannelID channelID) {
+    public void notifyTransaction(NodeID nodeID) {
       try {
-        notifyTransactionContexts.put(channelID);
+        notifyTransactionContexts.put(nodeID);
       } catch (InterruptedException e) {
         throw new TCRuntimeException(e);
       }
@@ -447,8 +478,8 @@ public class ServerTransactionManagerImplTest extends TestCase {
     NoExceptionLinkedQueue appliedContext   = new NoExceptionLinkedQueue();
     NoExceptionLinkedQueue completedContext = new NoExceptionLinkedQueue();
 
-    public void incomingTransactions(ChannelID cid, Set serverTxnIDs) {
-      incomingContext.put(new Object[] { cid, serverTxnIDs });
+    public void incomingTransactions(NodeID source, Set serverTxnIDs) {
+      incomingContext.put(new Object[] { source, serverTxnIDs });
     }
 
     public void transactionApplied(ServerTransactionID stxID) {
@@ -463,7 +494,7 @@ public class ServerTransactionManagerImplTest extends TestCase {
       throw new ImplementMe();
     }
 
-    public void clearAllTransactionsFor(ChannelID killedClient) {
+    public void clearAllTransactionsFor(NodeID deadNode) {
       throw new ImplementMe();
     }
 
@@ -474,12 +505,12 @@ public class ServerTransactionManagerImplTest extends TestCase {
   }
 
   public class TestTransactionAcknowledgeAction implements TransactionAcknowledgeAction {
-    public ChannelID     clientID;
+    public NodeID     clientID;
     public TransactionID txID;
 
     public void acknowledgeTransaction(ServerTransactionID stxID) {
       this.txID = stxID.getClientTransactionID();
-      this.clientID = stxID.getChannelID();
+      this.clientID = stxID.getSourceID();
     }
 
     public void clear() {

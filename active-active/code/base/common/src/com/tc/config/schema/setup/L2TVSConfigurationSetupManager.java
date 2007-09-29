@@ -8,6 +8,7 @@ import com.tc.config.schema.NewActiveServerGroupsConfig;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
+import com.tc.config.schema.UpdateCheckConfig;
 import com.tc.object.config.schema.NewDSOApplicationConfig;
 import com.tc.object.config.schema.NewL2DSOConfig;
 
@@ -27,6 +28,8 @@ public interface L2TVSConfigurationSetupManager {
 
   NewActiveServerGroupsConfig activeServerGroupsConfig();
 
+  UpdateCheckConfig updateCheckConfig();
+  
   String[] applicationNames();
 
   NewDSOApplicationConfig dsoApplicationConfigFor(String applicationName);
