@@ -49,8 +49,6 @@ public class TCMessageFactoryImpl implements TCMessageFactory {
 
   public TCMessage createMessage(MessageChannel source, TCMessageType type, TCMessageHeader header, TCByteBuffer[] data) {
     TCMessage msg = createMessage(lookupConstructor(type, typeAndDataCstr), new Object[] { sessionProvider.getSessionID(), monitor, source, header, data });
-    msg.setSourceNodeID(source.getDestinationNodeID());
-    msg.setDestinationNodeID(source.getSourceNodeID());
     return msg;
   }
 

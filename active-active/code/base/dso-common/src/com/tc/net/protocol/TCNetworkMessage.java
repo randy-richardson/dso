@@ -35,4 +35,6 @@ public interface TCNetworkMessage extends EventContext, Recyclable {
   public void setSentCallback(Runnable callback);
   
   public Runnable getSentCallback();
+  
+  public void setSendCount(int sendCount);
 }

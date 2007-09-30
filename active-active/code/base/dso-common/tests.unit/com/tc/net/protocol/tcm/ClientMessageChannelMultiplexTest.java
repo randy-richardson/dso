@@ -354,24 +354,22 @@ public class ClientMessageChannelMultiplexTest extends TCTestCase {
     clientChannel.open();
     int count = 100;
     for (int i = 0; i < count; i++) {
-      clientChannel.broadcast(createBroadcastMessage());
+      createBroadcastMessage().send();
     }
     
     for(int ch = 0; ch < L2_COUNT; ++ch) {
+System.out.print("XXX Wait for channel " + ch);      
       waitForMessages(ch, count);
     }
   }
   
-  private PingMessage[] createBroadcastMessage() {
-    TCMessage[] msgs =  clientChannel.createBroadcastMessage(TCMessageType.PING_MESSAGE);
-    PingMessage[] pings = new PingMessage[msgs.length];
-    for(int i = 0; i < pings.length; ++i) {
-      pings[i] = (PingMessage) msgs[i];
-      pings[i].initialize(sq);
-      clientWatcheres[i].addMessageSent(pings[i]);
-    }
-
-    return pings;
+  private PingMessage createBroadcastMessage() {
+    TCMessage msg =  clientChannel.createBroadcastMessage(TCMessageType.PING_MESSAGE);
+    PingMessage ping = (PingMessage) msg;
+    ping.initialize(sq);
+    for(int i =0; i < L2_COUNT; ++i)
+      clientWatcheres[i].addMessageSent(ping);
+    return ping;
   }
 
 

@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol;
 
@@ -189,16 +190,16 @@ public class AbstractTCNetworkMessage implements TCNetworkMessage {
 
     return buf.toString();
   }
-  
+
   protected String dump() {
     StringBuffer toRet = new StringBuffer(toString());
     toRet.append("\n\n");
-    if(entireMessageData != null) {
+    if (entireMessageData != null) {
       for (int i = 0; i < entireMessageData.length; i++) {
         toRet.append('[').append(i).append(']').append('=').append(entireMessageData[i].toString());
         toRet.append(" =  { ");
-          byte ba[] = entireMessageData[i].array();
-        for (int j = 0 ; j < ba.length; j++) {
+        byte ba[] = entireMessageData[i].array();
+        for (int j = 0; j < ba.length; j++) {
           toRet.append(Byte.toString(ba[j])).append(' ');
         }
         toRet.append(" }  \n\n");
@@ -240,7 +241,10 @@ public class AbstractTCNetworkMessage implements TCNetworkMessage {
 
   // Can be overloaded by sub classes to decide when to recycle differently.
   public void doRecycleOnWrite() {
-    recycle();
+    if (sendCount > 0) 
+      --sendCount;
+    else
+      recycle();
   }
 
   public void recycle() {
@@ -285,7 +289,7 @@ public class AbstractTCNetworkMessage implements TCNetworkMessage {
   public final Runnable getSentCallback() {
     return this.sentCallback;
   }
-  
+
   private void checkNotRecycled() {
     if (isRecycled()) { throw new IllegalStateException("Message is already Recycled"); }
   }
@@ -296,6 +300,14 @@ public class AbstractTCNetworkMessage implements TCNetworkMessage {
 
   private void checkNotSealed() {
     if (sealed.isSet()) { throw new IllegalStateException("Message is sealed"); }
+  }
+  
+  /*
+   * for active-active broadcast specifying number of sends to sub-channels
+   * before message recycled.
+   */
+  public void setSendCount(int sendCount) {
+    this.sendCount = sendCount;
   }
 
   private final SetOnceFlag           sealed             = new SetOnceFlag();
@@ -309,5 +321,6 @@ public class AbstractTCNetworkMessage implements TCNetworkMessage {
   private int                         dataLength;
   private int                         headerLength;
   private Runnable                    sentCallback       = null;
+  private int                         sendCount;
 
 }

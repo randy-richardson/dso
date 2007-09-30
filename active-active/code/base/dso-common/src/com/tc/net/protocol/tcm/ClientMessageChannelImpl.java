@@ -8,6 +8,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
+import com.tc.net.groups.ClientID;
 import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -34,11 +35,12 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   private final SessionProvider               sessionProvider;
   private SessionID                           channelSessionID = SessionID.NULL_ID;
   private final ClientMessageChannelMultiplex multiplex;
+  private final ConnectionAddressProvider     addrProvider;
   private final boolean                       activeCoordinator;
   private boolean                             initConnect      = true;
 
   protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router,
-                                     SessionProvider sessionProvider, ConnectionAddressProvider provider,
+                                     SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
                                      ClientMessageChannelMultiplex multiplex, boolean activeCoordinator) {
     super(router, logger, msgFactory);
     this.msgFactory = msgFactory;
@@ -46,10 +48,10 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     this.sessionProvider = sessionProvider;
     this.multiplex = multiplex;
     this.activeCoordinator = activeCoordinator;
-    
-    // XXX EY setup source/destination NodeID
-    setSourceNodeID(new NodeIDImpl());
-    setDestinationNodeID(new NodeIDImpl());
+    this.addrProvider = addrProvider;
+
+    setSourceNodeID(ClientID.NULL_ID);
+    setDestinationNodeID(NodeIDImpl.NULL_ID);
   }
 
   public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException,
@@ -61,6 +63,8 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
       NetworkStackID id = this.sendLayer.open();
       getStatus().open();
       this.channelID = new ChannelID(id.toLong());
+      setSourceNodeID(new ClientID(this.channelID));
+      setDestinationNodeID(new NodeIDImpl(this.channelID.toString(), addrProvider.toString().getBytes()));
       this.cidProvider.setChannelID(this.channelID);
       this.channelSessionID = sessionProvider.getSessionID();
       return id;
@@ -138,7 +142,7 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   public boolean isActiveCoordinator() {
     return activeCoordinator;
   }
-  
+
   public boolean isInitConnect() {
     return initConnect;
   }
@@ -146,7 +150,7 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   public void connected() {
     initConnect = false;
   }
-  
+
   private static class ChannelIDProviderImpl implements ChannelIDProvider {
 
     private ChannelID channelID = ChannelID.NULL_ID;
