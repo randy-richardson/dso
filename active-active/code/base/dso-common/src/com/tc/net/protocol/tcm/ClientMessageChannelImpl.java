@@ -70,6 +70,10 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
       return id;
     }
   }
+  
+  public ConnectionAddressProvider getConnectionAddress() {
+    return this.addrProvider;
+  }
 
   public ClientMessageChannelMultiplex getMultiplex() {
     return this.multiplex;

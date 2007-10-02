@@ -184,4 +184,8 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     this.source = source;
   }
 
+  public ConnectionAddressProvider getConnectionAddress() {
+    throw new ImplementMe();
+  }
+
 }

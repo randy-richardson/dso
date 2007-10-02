@@ -191,14 +191,15 @@ public class DistributedObjectClient extends SEDA {
 
     logger.debug("Created CommunicationsManager.");
 
-    ConfigItem connectionInfoItem = this.connectionComponents.createConnectionInfoConfigItem();
-    ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
-    ConnectionAddressProvider addrProvider = new ConnectionAddressProvider(connectionInfo);
+    ConfigItem[] connectionInfoItems = this.connectionComponents.createConnectionInfoConfigItemByGroup();
+    ConnectionAddressProvider[] addrProviders = new ConnectionAddressProvider[connectionInfoItems.length];
+    for(int i = 0; i < connectionInfoItems.length; ++i) {
+      ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItems[i].getObject();
+      addrProviders[i] = new ConnectionAddressProvider(connectionInfo);
+    }
 
-    String serverHost = connectionInfo[0].getHostname();
-    int serverPort = connectionInfo[0].getPort();
-    ConnectionAddressProvider[] addrProviders = new ConnectionAddressProvider[1];
-    addrProviders[0] = addrProvider;
+    //String serverHost = connectionInfo[0].getHostname();
+    //int serverPort = connectionInfo[0].getPort();
 
     multiplex = communicationsManager.createClientChannelMultiplex(sessionProvider, -1, 10000, addrProviders);
     channel = new DSOClientMessageChannelImpl(multiplex);
@@ -366,14 +367,13 @@ public class DistributedObjectClient extends SEDA {
         logger.debug("Channel open");
         break;
       } catch (TCTimeoutException tcte) {
-        consoleLogger.warn("Timeout connecting to server: " + serverHost + ":" + serverPort + ". " + tcte.getMessage());
+        consoleLogger.warn("Timeout connecting to server: " + tcte.getMessage());
         ThreadUtil.reallySleep(5000);
       } catch (ConnectException e) {
-        consoleLogger.warn("Connection refused from server: " + serverHost + ":" + serverPort);
+        consoleLogger.warn("Connection refused from server: " + e);
         ThreadUtil.reallySleep(5000);
       } catch (MaxConnectionsExceededException e) {
-        consoleLogger.warn("Connection refused MAXIMUM CONNECTIONS TO SERVER EXCEEDED: " + serverHost + ":"
-                           + serverPort);
+        consoleLogger.warn("Connection refused MAXIMUM CONNECTIONS TO SERVER EXCEEDED: " + e);
         ThreadUtil.reallySleep(5000);
       } catch (IOException ioe) {
         ioe.printStackTrace();

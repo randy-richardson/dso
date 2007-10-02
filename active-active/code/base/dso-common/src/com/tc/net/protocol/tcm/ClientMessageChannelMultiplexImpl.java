@@ -101,7 +101,15 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
       MaxConnectionsExceededException {
     NetworkStackID nid = null;
     for (int i = 0; i < channels.length; ++i) {
-      nid = channels[i].open();
+      try {
+        nid = channels[i].open();
+      } catch (TCTimeoutException e) {
+        throw new TCTimeoutException(channels[i].getConnectionAddress().toString() + " " + e);
+      } catch (UnknownHostException e) {
+        throw new UnknownHostException(channels[i].getConnectionAddress().toString() + " " + e);
+      } catch (MaxConnectionsExceededException e) {
+        throw new MaxConnectionsExceededException(channels[i].getConnectionAddress().toString() + " " + e);
+      }           
       nodeIDs[i] = channels[i].getDestinationNodeID();
     }
     setSourceNodeID(new ClientID(getChannelID()));
