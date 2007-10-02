@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.config.schema;
 
@@ -14,10 +15,10 @@ import com.tc.util.stringification.OurStringBuilder;
  * Contains the information from the L2s that L1 needs.
  */
 public interface L2ConfigForL1 {
-
   public static class L2Data {
     private final String host;
     private final int    dsoPort;
+    private int          groupId = -1;
 
     public L2Data(String host, int dsoPort) {
       Assert.assertNotBlank(host);
@@ -33,11 +34,20 @@ public interface L2ConfigForL1 {
       return this.dsoPort;
     }
 
+    public void setGroupId(int gid) {
+      Assert.assertTrue(gid >= 0);
+      this.groupId = gid;
+    }
+
+    public int getGroupId() {
+      Assert.assertTrue(groupId > -1);
+      return groupId;
+    }
+
     public boolean equals(Object that) {
       if (!(that instanceof L2Data)) return false;
       L2Data thatData = (L2Data) that;
-      return new EqualsBuilder().append(this.host, thatData.host)
-          .append(this.dsoPort, thatData.dsoPort).isEquals();
+      return new EqualsBuilder().append(this.host, thatData.host).append(this.dsoPort, thatData.dsoPort).isEquals();
     }
 
     public int hashCode() {
@@ -45,11 +55,12 @@ public interface L2ConfigForL1 {
     }
 
     public String toString() {
-      return new OurStringBuilder(this).append("host", this.host)
-          .append("DSO port", this.dsoPort).toString();
+      return new OurStringBuilder(this).append("host", this.host).append("DSO port", this.dsoPort).toString();
     }
   }
 
   ObjectArrayConfigItem l2Data();
+
+  ObjectArrayConfigItem[] getL2DataByGroup();
 
 }
