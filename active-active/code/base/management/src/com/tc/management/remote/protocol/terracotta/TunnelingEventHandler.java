@@ -12,6 +12,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.protocol.tcm.ChannelEvent;
 import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ChannelEventType;
+import com.tc.net.protocol.tcm.ClientMessageChannelMultiplex;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TCMessage;
 import com.tc.net.protocol.tcm.TCMessageType;
@@ -28,7 +29,7 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
     private static final TCLogger logger = TCLogging
             .getLogger(TunnelingEventHandler.class);
 
-    private final MessageChannel channel;
+    private final ClientMessageChannelMultiplex channel;
 
     private TunnelingMessageConnection messageConnection;
 
@@ -42,7 +43,7 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
 
     private boolean sentReadyMessage;
 
-    public TunnelingEventHandler(final MessageChannel channel) {
+    public TunnelingEventHandler(final ClientMessageChannelMultiplex channel) {
         this.channel = channel;
         this.channel.addListener(this);
         acceptOk = false;
@@ -66,7 +67,7 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
                                 .warn("Received a client connection initialization, resetting existing connection");
                         reset();
                     }
-                    messageConnection = new TunnelingMessageConnection(channel,
+                    messageConnection = new TunnelingMessageConnection(channel.getActiveCoordinator(),
                             true);
                     acceptOk = true;
                     notifyAll();

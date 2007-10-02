@@ -29,6 +29,7 @@ import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OOOEventHandler;
 import com.tc.net.protocol.delivery.OOONetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl;
+import com.tc.net.protocol.tcm.ClientMessageChannelMultiplex;
 import com.tc.net.protocol.tcm.CommunicationsManager;
 import com.tc.net.protocol.tcm.CommunicationsManagerImpl;
 import com.tc.net.protocol.tcm.HydrateHandler;
@@ -127,6 +128,7 @@ public class DistributedObjectClient extends SEDA {
   private final Cluster                            cluster;
 
   private DSOClientMessageChannel                  channel;
+  private ClientMessageChannelMultiplex            multiplex;
   private ClientLockManager                        lockManager;
   private ClientObjectManagerImpl                  objectManager;
   private ClientTransactionManager                 txManager;
@@ -198,10 +200,8 @@ public class DistributedObjectClient extends SEDA {
     ConnectionAddressProvider[] addrProviders = new ConnectionAddressProvider[1];
     addrProviders[0] = addrProvider;
 
-
-    channel = new DSOClientMessageChannelImpl(communicationsManager.createClientChannelMultiplex(sessionProvider, -1,
-                                                                                        10000,
-                                                                                        addrProviders));
+    multiplex = communicationsManager.createClientChannelMultiplex(sessionProvider, -1, 10000, addrProviders);
+    channel = new DSOClientMessageChannelImpl(multiplex);
     ChannelIDLoggerProvider cidLoggerProvider = new ChannelIDLoggerProvider(channel.getChannelIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 
@@ -255,7 +255,7 @@ public class DistributedObjectClient extends SEDA {
     }
 
     // Set up the JMX management stuff
-    final TunnelingEventHandler teh = new TunnelingEventHandler(channel.channel());
+    final TunnelingEventHandler teh = new TunnelingEventHandler(multiplex);
     l1Management = new L1Management(teh);
     l1Management.start();
 
