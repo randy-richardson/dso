@@ -4,7 +4,6 @@
 package com.tc.net.protocol.tcm;
 
 import com.tc.async.api.EventContext;
-import com.tc.net.groups.NodeID;
 import com.tc.net.groups.ClientID;
 import com.tc.object.session.SessionID;
 
@@ -38,12 +37,4 @@ public interface TCMessage extends EventContext {
 
   public int getTotalLength();
   
-  public NodeID getSourceNodeID();
-  
-  public void setSourceNodeID(NodeID source);
-  
-  public NodeID getDestinationNodeID();
-  
-  public void setDestinationNodeID(NodeID destination);
-
 }

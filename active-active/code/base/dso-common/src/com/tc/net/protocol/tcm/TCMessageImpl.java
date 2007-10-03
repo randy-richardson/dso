@@ -10,7 +10,6 @@ import com.tc.io.TCByteBufferInputStream;
 import com.tc.io.TCByteBufferOutput;
 import com.tc.io.TCSerializable;
 import com.tc.net.groups.ClientID;
-import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.AbstractTCNetworkMessage;
 import com.tc.util.Assert;
 import com.tc.util.concurrent.SetOnceFlag;
@@ -28,8 +27,6 @@ public abstract class TCMessageImpl extends AbstractTCNetworkMessage implements 
   private final TCMessageType     type;
   private final MessageChannel    channel;
   private int                     nvCount;
-  private NodeID                  source;
-  private NodeID                  destination;
   private TCByteBufferOutput      out;
   private TCByteBufferInputStream bbis;
   private int                     messageVersion;
@@ -323,22 +320,6 @@ public abstract class TCMessageImpl extends AbstractTCNetworkMessage implements 
     monitor.newOutgoingMessage(this);
   }
   
-  public NodeID getSourceNodeID() {
-    return source;
-  }
-  
-  public void setSourceNodeID(NodeID source) {
-    this.source = source;
-  }
-  
-  public NodeID getDestinationNodeID() {
-    return destination;
-  }
-  
-  public void setDestinationNodeID(NodeID destination) {
-    this.destination = destination;
-  }
-
 
   // FIXME:: This is here till them tc-comms merge.
   // TODO:: Remove this method once getSourceID and getDestinationID is merged into truck. You can use those methods

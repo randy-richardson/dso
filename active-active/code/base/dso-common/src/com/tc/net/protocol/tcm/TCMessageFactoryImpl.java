@@ -42,8 +42,6 @@ public class TCMessageFactoryImpl implements TCMessageFactory {
   public TCMessage createMessage(MessageChannel source, TCMessageType type) throws UnsupportedMessageTypeException {
     TCMessage msg =  createMessage(lookupConstructor(type, typeOnlyCstr), new Object[] { sessionProvider.getSessionID(), monitor,
         new TCByteBufferOutputStream(4, 4096, false), source, type });
-    msg.setSourceNodeID(source.getSourceNodeID());
-    msg.setDestinationNodeID(source.getDestinationNodeID());
     return msg;
   }
 

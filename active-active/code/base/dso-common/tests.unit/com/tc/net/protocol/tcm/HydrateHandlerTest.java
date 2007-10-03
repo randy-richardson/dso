@@ -220,22 +220,6 @@ public class HydrateHandlerTest extends TCTestCase {
       throw new ImplementMe();
     }
     
-    public NodeID getSourceNodeID() {
-      throw new ImplementMe();
-    }
-    
-    public void setSourceNodeID(NodeID source) {
-      throw new ImplementMe();
-    }
-    
-    public NodeID getDestinationNodeID() {
-      throw new ImplementMe();
-    }
-    
-    public void setDestinationNodeID(NodeID destination) {
-      throw new ImplementMe();
-    }
-
   }
 
 }
