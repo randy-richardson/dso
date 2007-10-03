@@ -175,19 +175,19 @@ public class MockMessageChannel implements MessageChannelInternal {
     throw new ImplementMe();
   }
 
-  public NodeID getSourceNodeID() {
+  public NodeID getClientID() {
     return source;
   }
   
-  public void setSourceNodeID(NodeID source) {
+  public void setClientID(NodeID source) {
     this.source = source;
   }
   
-  public NodeID getDestinationNodeID() {
+  public NodeID getServerID() {
     return destination;
   }
   
-  public void setDestinationNodeID(NodeID destination) {
+  public void setServerID(NodeID destination) {
     this.destination = destination;
   }
 

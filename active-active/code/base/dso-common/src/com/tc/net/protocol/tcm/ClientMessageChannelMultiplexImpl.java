@@ -9,6 +9,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.ClientID;
+import com.tc.net.groups.GroupID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
@@ -28,9 +29,8 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
   private final SessionProvider       sessionProvider;
 
   private CommunicationsManager       communicationsManager;
-  private ConnectionAddressProvider[] addressProviders;
   private ClientMessageChannel[]      channels;
-  private NodeID[]                    nodeIDs;
+  private GroupID[]                   servers;
 
   public ClientMessageChannelMultiplexImpl(TCMessageFactory msgFactory, SessionProvider sessionProvider,
                                            final int maxReconnectTries, CommunicationsManager communicationsManager,
@@ -40,18 +40,18 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     this.sessionProvider = sessionProvider;
 
     this.communicationsManager = communicationsManager;
-    this.addressProviders = addressProviders;
     this.channels = new ClientMessageChannel[addressProviders.length];
-    this.nodeIDs = new NodeID[addressProviders.length];
+    this.servers = new GroupID[addressProviders.length];
 
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager
-          .createClientChannel(this.sessionProvider, maxReconnectTries, 10000, this.addressProviders[i],
+          .createClientChannel(this.sessionProvider, maxReconnectTries, 10000, addressProviders[i],
                                this.msgFactory, new TCMessageRouterImpl(), this, isActiveCoordinator);
+      servers[i] = (GroupID)channels[i].getServerID();
     }
-    setSourceNodeID(ClientID.NULL_ID);
-    setDestinationNodeID(NodeIDImpl.NULL_ID);
+    setClientID(ClientID.NULL_ID);
+    setServerID(GroupID.NULL_ID);
   }
 
   public ClientMessageChannel getActiveCoordinator() {
@@ -72,12 +72,12 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
   }
 
   public NodeID[] getMultiplexIDs() {
-    return (nodeIDs);
+    return (servers);
   }
 
   public ClientMessageChannel getChannel(NodeID id) {
-    for (int i = 0; i < nodeIDs.length; ++i) {
-      if (id.equals(nodeIDs[i])) { return (channels[i]); }
+    for (int i = 0; i < servers.length; ++i) {
+      if (id.equals(servers[i])) { return (channels[i]); }
     }
     return null;
   }
@@ -109,12 +109,9 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
         throw new UnknownHostException(channels[i].getConnectionAddress().toString() + " " + e);
       } catch (MaxConnectionsExceededException e) {
         throw new MaxConnectionsExceededException(channels[i].getConnectionAddress().toString() + " " + e);
-      }           
-      nodeIDs[i] = channels[i].getDestinationNodeID();
+      }
     }
-    setSourceNodeID(new ClientID(getChannelID()));
-    // broadcast destination
-    setDestinationNodeID(new NodeIDImpl(getChannelID().toString(), new byte[0]));
+    setClientID(new ClientID(getChannelID()));
     return nid;
   }
 

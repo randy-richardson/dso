@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol.tcm;
 
@@ -30,21 +31,21 @@ import java.util.Set;
  * @author teck
  */
 abstract class AbstractMessageChannel implements MessageChannel, MessageChannelInternal {
-  
-  private final Map                     attachments               = new ConcurrentReaderHashMap();
-  private final Object                  attachmentLock            = new Object();
-  private final Set                     listeners                 = new CopyOnWriteArraySet();
-  private final ChannelStatus           status                    = new ChannelStatus();
-  private final SynchronizedRef         remoteAddr                = new SynchronizedRef(null);
-  private final SynchronizedRef         localAddr                 = new SynchronizedRef(null);
-  private final TCMessageFactory        msgFactory;
-  private final TCMessageRouter         router;
-  private final TCMessageParser         parser;
-  private final TCLogger                logger;
+
+  private final Map              attachments    = new ConcurrentReaderHashMap();
+  private final Object           attachmentLock = new Object();
+  private final Set              listeners      = new CopyOnWriteArraySet();
+  private final ChannelStatus    status         = new ChannelStatus();
+  private final SynchronizedRef  remoteAddr     = new SynchronizedRef(null);
+  private final SynchronizedRef  localAddr      = new SynchronizedRef(null);
+  private final TCMessageFactory msgFactory;
+  private final TCMessageRouter  router;
+  private final TCMessageParser  parser;
+  private final TCLogger         logger;
   private NodeID                 source;
   private NodeID                 destination;
 
-  protected NetworkLayer                sendLayer;
+  protected NetworkLayer         sendLayer;
 
   AbstractMessageChannel(TCMessageRouter router, TCLogger logger, TCMessageFactory msgFactory) {
     this.router = router;
@@ -83,20 +84,20 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
 
     listeners.add(listener);
   }
-  
-  public NodeID getSourceNodeID() {
+
+  public NodeID getClientID() {
     return source;
   }
-  
-  public void setSourceNodeID(NodeID source) {
+
+  public void setClientID(NodeID source) {
     this.source = source;
   }
-  
-  public NodeID getDestinationNodeID() {
+
+  public NodeID getServerID() {
     return destination;
   }
-  
-  public void setDestinationNodeID(NodeID destination) {
+
+  public void setServerID(NodeID destination) {
     this.destination = destination;
   }
 
@@ -115,7 +116,8 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     router.unrouteMessageType(messageType);
   }
 
-  public abstract NetworkStackID open() throws MaxConnectionsExceededException, TCTimeoutException, UnknownHostException, IOException;
+  public abstract NetworkStackID open() throws MaxConnectionsExceededException, TCTimeoutException,
+      UnknownHostException, IOException;
 
   /**
    * Routes a TCMessage to a sink. The hydrate sink will do the hydrate() work

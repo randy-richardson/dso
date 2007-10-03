@@ -296,22 +296,23 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
     public void close() {
       throw new ImplementMe();
     }
-    
-    public NodeID getSourceNodeID() {
+
+    public NodeID getClientID() {
+      throw new ImplementMe();
+    }
+
+    public NodeID getServerID() {
+      throw new ImplementMe();
+    }
+
+    public void setClientID(NodeID source) {
+      throw new ImplementMe();
+    }
+
+    public void setServerID(NodeID destination) {
       throw new ImplementMe();
     }
     
-    public void setSourceNodeID(NodeID source) {
-      throw new ImplementMe();
-    }
-    
-    public NodeID getDestinationNodeID() {
-      throw new ImplementMe();
-    }
-    
-    public void setDestinationNodeID(NodeID destination) {
-      throw new ImplementMe();
-    }
 
   }
 }
