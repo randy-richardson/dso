@@ -10,6 +10,7 @@ import EDU.oswego.cs.dl.util.concurrent.SynchronizedRef;
 
 import com.tc.async.api.Sink;
 import com.tc.bytes.TCByteBuffer;
+import com.tc.exception.ImplementMe;
 import com.tc.logging.TCLogger;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
@@ -106,6 +107,10 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     // TODO: set default channel specific information in the TC message header
 
     return rv;
+  }
+  
+  public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
+    throw new ImplementMe();
   }
 
   public void routeMessageType(TCMessageType messageType, TCMessageSink dest) {

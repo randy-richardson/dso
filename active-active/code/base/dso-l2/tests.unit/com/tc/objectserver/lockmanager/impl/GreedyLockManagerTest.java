@@ -991,6 +991,10 @@ public class GreedyLockManagerTest extends TestCase {
       throw new ImplementMe();
     }
 
+    public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
+      throw new ImplementMe();
+    }
+
 
   }
 

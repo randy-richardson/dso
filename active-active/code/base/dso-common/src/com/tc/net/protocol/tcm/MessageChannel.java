@@ -34,6 +34,8 @@ public interface MessageChannel {
   public boolean isClosed();
 
   public TCMessage createMessage(TCMessageType type);
+  
+  public TCMessage createMessage(NodeID sendToNode, TCMessageType type);
 
   public Object getAttachment(String key);
 

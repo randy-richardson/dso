@@ -191,4 +191,8 @@ public class MockMessageChannel implements MessageChannelInternal {
     this.destination = destination;
   }
 
+  public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
+    throw new ImplementMe();
+  }
+
 }

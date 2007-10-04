@@ -312,6 +312,10 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
     public void setServerID(NodeID destination) {
       throw new ImplementMe();
     }
+
+    public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
+      throw new ImplementMe();
+    }
     
 
   }
