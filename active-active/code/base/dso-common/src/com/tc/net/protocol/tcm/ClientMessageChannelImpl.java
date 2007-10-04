@@ -81,6 +81,10 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   public ChannelID getActiveActiveChannelID() {
     return getMultiplex().getChannelID();
   }
+  
+  public ClientMessageChannel getActiveCoordinator() {
+    return this;
+  }
 
   public void addClassMapping(TCMessageType type, Class msgClass) {
     msgFactory.addClassMapping(type, msgClass);

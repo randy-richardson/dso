@@ -29,7 +29,7 @@ import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OOOEventHandler;
 import com.tc.net.protocol.delivery.OOONetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl;
-import com.tc.net.protocol.tcm.ClientMessageChannelMultiplex;
+import com.tc.net.protocol.tcm.ClientMessageChannel;
 import com.tc.net.protocol.tcm.CommunicationsManager;
 import com.tc.net.protocol.tcm.CommunicationsManagerImpl;
 import com.tc.net.protocol.tcm.HydrateHandler;
@@ -128,7 +128,6 @@ public class DistributedObjectClient extends SEDA {
   private final Cluster                            cluster;
 
   private DSOClientMessageChannel                  channel;
-  private ClientMessageChannelMultiplex            multiplex;
   private ClientLockManager                        lockManager;
   private ClientObjectManagerImpl                  objectManager;
   private ClientTransactionManager                 txManager;
@@ -158,7 +157,18 @@ public class DistributedObjectClient extends SEDA {
   public void setPauseListener(PauseListener pauseListener) {
     this.pauseListener = pauseListener;
   }
-
+  
+  /*
+   * Overwrite this routine to do active-active channel
+   */
+  protected ClientMessageChannel createChannel(CommunicationsManager commMgr, PreparedComponentsFromL2Connection connComp, SessionProvider sessionProvider) {
+    ClientMessageChannel cmc;
+    ConfigItem connectionInfoItem = connComp.createConnectionInfoConfigItem();
+    ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
+    cmc = commMgr.createClientChannel(sessionProvider, -1, 10000, new ConnectionAddressProvider(connectionInfo));
+    return (cmc);
+  }
+  
   public void start() {
     l1Properties = TCPropertiesImpl.getProperties().getPropertiesFor("l1");
     int maxSize = 50000;
@@ -191,18 +201,7 @@ public class DistributedObjectClient extends SEDA {
 
     logger.debug("Created CommunicationsManager.");
 
-    ConfigItem[] connectionInfoItems = this.connectionComponents.createConnectionInfoConfigItemByGroup();
-    ConnectionAddressProvider[] addrProviders = new ConnectionAddressProvider[connectionInfoItems.length];
-    for(int i = 0; i < connectionInfoItems.length; ++i) {
-      ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItems[i].getObject();
-      addrProviders[i] = new ConnectionAddressProvider(connectionInfo);
-    }
-
-    //String serverHost = connectionInfo[0].getHostname();
-    //int serverPort = connectionInfo[0].getPort();
-
-    multiplex = communicationsManager.createClientChannelMultiplex(sessionProvider, -1, 10000, addrProviders);
-    channel = new DSOClientMessageChannelImpl(multiplex);
+    channel = new DSOClientMessageChannelImpl(createChannel(communicationsManager, connectionComponents, sessionProvider));
     ChannelIDLoggerProvider cidLoggerProvider = new ChannelIDLoggerProvider(channel.getChannelIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 
@@ -256,7 +255,7 @@ public class DistributedObjectClient extends SEDA {
     }
 
     // Set up the JMX management stuff
-    final TunnelingEventHandler teh = new TunnelingEventHandler(multiplex);
+    final TunnelingEventHandler teh = new TunnelingEventHandler(channel.channel());
     l1Management = new L1Management(teh);
     l1Management.start();
 

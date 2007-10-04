@@ -12,8 +12,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.protocol.tcm.ChannelEvent;
 import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ChannelEventType;
-import com.tc.net.protocol.tcm.ClientMessageChannelMultiplex;
-import com.tc.net.protocol.tcm.MessageChannel;
+import com.tc.net.protocol.tcm.ClientMessageChannel;
 import com.tc.net.protocol.tcm.TCMessage;
 import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.util.concurrent.SetOnceFlag;
@@ -29,7 +28,7 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
     private static final TCLogger logger = TCLogging
             .getLogger(TunnelingEventHandler.class);
 
-    private final ClientMessageChannelMultiplex channel;
+    private final ClientMessageChannel channel;
 
     private TunnelingMessageConnection messageConnection;
 
@@ -43,7 +42,7 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
 
     private boolean sentReadyMessage;
 
-    public TunnelingEventHandler(final ClientMessageChannelMultiplex channel) {
+    public TunnelingEventHandler(final ClientMessageChannel channel) {
         this.channel = channel;
         this.channel.addListener(this);
         acceptOk = false;

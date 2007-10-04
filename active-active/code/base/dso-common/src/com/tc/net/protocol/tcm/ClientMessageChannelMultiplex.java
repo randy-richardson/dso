@@ -17,8 +17,4 @@ public interface ClientMessageChannelMultiplex extends ClientMessageChannel {
   
   public TCMessage createMessage(NodeID id, TCMessageType type);
   
-  public ClientMessageChannel getActiveCoordinator();
-  
-  public ChannelID getActiveActiveChannelID();
-
 }

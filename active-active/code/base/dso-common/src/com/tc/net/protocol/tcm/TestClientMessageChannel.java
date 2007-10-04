@@ -60,6 +60,10 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     return activeCoordinator;
   }
   
+  public ClientMessageChannel getActiveCoordinator() {
+    return this;
+  }
+  
   public boolean isInitConnect() {
     return initConnect;
   }

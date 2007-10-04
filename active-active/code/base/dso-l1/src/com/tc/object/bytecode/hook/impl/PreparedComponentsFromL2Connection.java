@@ -38,5 +38,10 @@ public class PreparedComponentsFromL2Connection {
     }
     return items;
   }
+  
+  public boolean isActiveActive() {
+    ConfigItem[] groups = createConnectionInfoConfigItemByGroup();
+    return (groups.length > 1);
+  }
 
 }

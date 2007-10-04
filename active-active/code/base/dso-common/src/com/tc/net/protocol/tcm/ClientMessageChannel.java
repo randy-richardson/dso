@@ -32,6 +32,8 @@ public interface ClientMessageChannel extends MessageChannel {
   
   public ChannelID getActiveActiveChannelID();
   
+  public ClientMessageChannel getActiveCoordinator();
+  
   public ConnectionAddressProvider getConnectionAddress();
   
 }
