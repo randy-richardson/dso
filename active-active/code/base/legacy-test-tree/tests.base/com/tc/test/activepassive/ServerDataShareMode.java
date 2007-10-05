@@ -4,13 +4,13 @@
  */
 package com.tc.test.activepassive;
 
-public class ActivePassiveSharedDataMode {
+public class ServerDataShareMode {
   public static final String DISK    = "disk-based-active-passive";
   public static final String NETWORK = "networked-active-passive";
 
   private final String       mode;
 
-  public ActivePassiveSharedDataMode(String mode) {
+  public ServerDataShareMode(String mode) {
     if (!mode.equals(DISK) && !mode.equals(NETWORK)) { throw new AssertionError("Unrecognized share data mode [" + mode
                                                                                 + "]"); }
     this.mode = mode;

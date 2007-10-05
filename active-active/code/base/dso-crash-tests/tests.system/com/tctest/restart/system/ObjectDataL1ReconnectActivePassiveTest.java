@@ -4,10 +4,10 @@
  */
 package com.tctest.restart.system;
 
-import com.tc.test.activepassive.ActivePassiveCrashMode;
-import com.tc.test.activepassive.ActivePassivePersistenceMode;
-import com.tc.test.activepassive.ActivePassiveSharedDataMode;
-import com.tc.test.activepassive.ActivePassiveTestSetupManager;
+import com.tc.test.activepassive.ServerCrashMode;
+import com.tc.test.activepassive.ServerPersistenceMode;
+import com.tc.test.activepassive.ServerDataShareMode;
+import com.tc.test.activepassive.MultipleServerTestSetupManager;
 import com.tctest.TestConfigurator;
 import com.tctest.TransparentTestBase;
 import com.tctest.TransparentTestIface;
@@ -42,13 +42,13 @@ public class ObjectDataL1ReconnectActivePassiveTest extends TransparentTestBase 
     return true;
   }
 
-  public void setupActivePassiveTest(ActivePassiveTestSetupManager setupManager) {
+  public void setupActivePassiveTest(MultipleServerTestSetupManager setupManager) {
     setupManager.setServerCount(2);
-    setupManager.setServerCrashMode(ActivePassiveCrashMode.CONTINUOUS_ACTIVE_CRASH);
+    setupManager.setServerCrashMode(ServerCrashMode.CONTINUOUS_ACTIVE_CRASH);
     setupManager.setServerCrashWaitTimeInSec(30);
     // leaving this as a disk-based active-passive test just so we have one
-    setupManager.setServerShareDataMode(ActivePassiveSharedDataMode.DISK);
-    setupManager.setServerPersistenceMode(ActivePassivePersistenceMode.PERMANENT_STORE);
+    setupManager.setServerShareDataMode(ServerDataShareMode.DISK);
+    setupManager.setServerPersistenceMode(ServerPersistenceMode.PERMANENT_STORE);
   }
 
 }

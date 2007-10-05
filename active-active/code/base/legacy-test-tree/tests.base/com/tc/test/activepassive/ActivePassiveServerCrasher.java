@@ -8,14 +8,14 @@ import com.tctest.TestState;
 
 public class ActivePassiveServerCrasher implements Runnable {
   private static boolean                   DEBUG      = false;
-  private final ActivePassiveServerManager serverManger;
+  private final MultipleServerManager serverManger;
   private final long                       serverCrashWaitTimeInSec;
   private final int                        maxCrashCount;
 
   private int                              crashCount = 0;
   private final TestState                  testState;
 
-  public ActivePassiveServerCrasher(ActivePassiveServerManager serverManager, long serverCrashWaitTimeInSec,
+  public ActivePassiveServerCrasher(MultipleServerManager serverManager, long serverCrashWaitTimeInSec,
                                     int maxCrashCount, TestState testState) {
     this.serverManger = serverManager;
     this.serverCrashWaitTimeInSec = serverCrashWaitTimeInSec;

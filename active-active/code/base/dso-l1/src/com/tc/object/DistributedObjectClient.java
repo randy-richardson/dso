@@ -157,18 +157,20 @@ public class DistributedObjectClient extends SEDA {
   public void setPauseListener(PauseListener pauseListener) {
     this.pauseListener = pauseListener;
   }
-  
+
   /*
    * Overwrite this routine to do active-active channel
    */
-  protected ClientMessageChannel createChannel(CommunicationsManager commMgr, PreparedComponentsFromL2Connection connComp, SessionProvider sessionProvider) {
+  protected ClientMessageChannel createChannel(CommunicationsManager commMgr,
+                                               PreparedComponentsFromL2Connection connComp,
+                                               SessionProvider sessionProvider) {
     ClientMessageChannel cmc;
     ConfigItem connectionInfoItem = connComp.createConnectionInfoConfigItem();
     ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
     cmc = commMgr.createClientChannel(sessionProvider, -1, 10000, new ConnectionAddressProvider(connectionInfo));
     return (cmc);
   }
-  
+
   public void start() {
     l1Properties = TCPropertiesImpl.getProperties().getPropertiesFor("l1");
     int maxSize = 50000;
@@ -201,7 +203,8 @@ public class DistributedObjectClient extends SEDA {
 
     logger.debug("Created CommunicationsManager.");
 
-    channel = new DSOClientMessageChannelImpl(createChannel(communicationsManager, connectionComponents, sessionProvider));
+    channel = new DSOClientMessageChannelImpl(createChannel(communicationsManager, connectionComponents,
+                                                            sessionProvider));
     ChannelIDLoggerProvider cidLoggerProvider = new ChannelIDLoggerProvider(channel.getChannelIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 

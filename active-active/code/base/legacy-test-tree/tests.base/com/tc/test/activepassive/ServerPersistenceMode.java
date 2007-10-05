@@ -4,13 +4,13 @@
  */
 package com.tc.test.activepassive;
 
-public class ActivePassivePersistenceMode {
+public class ServerPersistenceMode {
   public static final String PERMANENT_STORE     = "permanent-store";
   public static final String TEMPORARY_SWAP_ONLY = "temporary-swap-only";
 
   private final String       mode;
 
-  public ActivePassivePersistenceMode(String mode) {
+  public ServerPersistenceMode(String mode) {
     if (!mode.equals(PERMANENT_STORE) && !mode.equals(TEMPORARY_SWAP_ONLY)) { throw new AssertionError(
                                                                                                        "Unrecognized persistence mode ["
                                                                                                            + mode + "]"); }

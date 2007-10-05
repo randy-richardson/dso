@@ -26,7 +26,7 @@ import com.tc.simulator.container.ContainerResult;
 import com.tc.simulator.container.ContainerStateFactory;
 import com.tc.simulator.control.Control;
 import com.tc.simulator.listener.ResultsListener;
-import com.tc.test.activepassive.ActivePassiveServerManager;
+import com.tc.test.activepassive.MultipleServerManager;
 import com.tcsimulator.ControlImpl;
 import com.tcsimulator.container.ContainerStateFactoryObject;
 import com.tcsimulator.listener.QueuePrinter;
@@ -71,7 +71,7 @@ public class DistributedTestRunner implements ResultsListener {
   private final boolean                                 isMutatorValidatorTest;
   private final int                                     validatorCount;
   private final boolean                                 isActivePassiveTest;
-  private final ActivePassiveServerManager              serverManager;
+  private final MultipleServerManager              serverManager;
 
   private final int                                     adaptedMutatorCount;
   private final int                                     adaptedValidatorCount;
@@ -94,7 +94,7 @@ public class DistributedTestRunner implements ResultsListener {
                                DSOClientConfigHelper configHelper, Class applicationClass, Map optionalAttributes,
                                ApplicationConfig applicationConfig, boolean startServer,
                                boolean isMutatorValidatorTest, boolean isActivePassiveTest,
-                               ActivePassiveServerManager serverManager, TransparentAppConfig transparentAppConfig)
+                               MultipleServerManager serverManager, TransparentAppConfig transparentAppConfig)
       throws Exception {
     this.optionalAttributes = optionalAttributes;
     this.clientCount = transparentAppConfig.getClientCount();

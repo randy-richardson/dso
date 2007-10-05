@@ -45,7 +45,7 @@ public abstract class ServerCrashingTestBase extends TransparentTestBase {
 
     // for some test cases to enable l1reconnect
     if (enableL1Reconnect()) {
-      setJvmArgsL1Reconnect((ArrayList)jvmArgs);
+      setJvmArgsL1Reconnect((ArrayList) jvmArgs);
     }
 
     // XXX: ERR! HACK! Will collide eventually
@@ -62,7 +62,7 @@ public abstract class ServerCrashingTestBase extends TransparentTestBase {
 
     ((SettableConfigItem) configFactory().l2DSOConfig().listenPort()).setValue(port);
     ((SettableConfigItem) configFactory().l2CommonConfig().jmxPort()).setValue(adminPort);
-    factory.addServerToL1Config(null, port, adminPort);
+    factory.addServerToL1Config(null, port, adminPort, true);
     L1TVSConfigurationSetupManager manager = factory.createL1TVSConfigurationSetupManager();
     setUpControlledServer(factory, new StandardDSOClientConfigHelperImpl(manager), port, adminPort, configFile
         .getAbsolutePath(), jvmArgs);

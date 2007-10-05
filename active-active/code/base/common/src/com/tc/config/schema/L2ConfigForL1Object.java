@@ -14,6 +14,7 @@ import com.tc.config.schema.dynamic.ObjectArrayXPathBasedConfigItem;
 import com.tc.util.Assert;
 import com.terracottatech.config.ActiveServerGroup;
 import com.terracottatech.config.ActiveServerGroups;
+import com.terracottatech.config.Members;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
@@ -30,17 +31,16 @@ import java.util.Set;
  */
 public class L2ConfigForL1Object implements L2ConfigForL1 {
 
-  private static final String           DEFAULT_HOST = "localhost";
+  private static final String         DEFAULT_HOST = "localhost";
 
-  private final ConfigContext           l2sContext;
-  private final ConfigContext           systemContext;
+  private final ConfigContext         l2sContext;
+  private final ConfigContext         systemContext;
 
-  private final ObjectArrayConfigItem   l2Data;
-  private final L2Data                  defaultL2Data;
-  private final ObjectArrayConfigItem[] l2DataByGroup;
-
-  private final Map                     l2DataByName;
-  private final Map                     l2DataByGroupId;
+  private final ObjectArrayConfigItem l2Data;
+  private final L2Data                defaultL2Data;
+  private final Map                   l2DataByName;
+  private final Map                   l2DataByGroupId;
+  private ObjectArrayConfigItem[]     l2DataByGroup;
 
   public L2ConfigForL1Object(ConfigContext l2sContext, ConfigContext systemContext) {
     this(l2sContext, systemContext, null);
@@ -74,13 +74,17 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
           for (int i = 0; i < data.length; ++i) {
             Server l2 = l2Array[i];
             String host = l2.getHost();
-            if (host == null) host = l2.getName();
+            String name = l2.getName();
 
+            // if (host == null) host = l2.getName();
             if (host == null) host = defaultL2Data.host();
+
             int dsoPort = l2.getDsoPort() > 0 ? l2.getDsoPort() : defaultL2Data.dsoPort();
 
+            if (name == null) name = host + ":" + dsoPort;
+
             data[i] = new L2Data(host, dsoPort);
-            l2DataByName.put(host, data[i]);
+            l2DataByName.put(name, data[i]);
           }
         }
 
@@ -91,7 +95,18 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
 
       private void organizeByGroup(XmlObject xmlObject) {
         ActiveServerGroups[] asgsArray = ((Servers) xmlObject).getActiveServerGroupsArray();
-        Assert.assertEquals(1, asgsArray.length);
+        if (asgsArray.length == 0) {
+          asgsArray = new ActiveServerGroups[1];
+          ActiveServerGroups groups = ((Servers) xmlObject).addNewActiveServerGroups();
+          asgsArray[0] = groups;
+          ActiveServerGroup group = groups.addNewActiveServerGroup();
+          Members members = group.addNewMembers();
+          for (Iterator iter = l2DataByName.keySet().iterator(); iter.hasNext();) {
+            String host = (String) iter.next();
+            members.addMember(host);
+          }
+          group.setId(NewActiveServerGroupConfigObject.defaultGroupId);
+        }
         ActiveServerGroup[] asgArray = asgsArray[0].getActiveServerGroupArray();
         Assert.assertNotNull(asgArray);
 
@@ -112,22 +127,6 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
         }
       }
     };
-
-    Set keys = this.l2DataByGroupId.keySet();
-    this.l2DataByGroup = new ObjectArrayConfigItem[keys.size()];
-    int l2DataByGroupPosition = 0;
-    for (Iterator iter = keys.iterator(); iter.hasNext();) {
-      Integer key = (Integer) iter.next();
-      final L2Data[] l2DataArray = (L2Data[]) new ArrayList((List) this.l2DataByGroupId.get(key)).toArray();
-      this.l2DataByGroup[l2DataByGroupPosition] = new ObjectArrayXPathBasedConfigItem(this.l2sContext, ".",
-          new L2Data[] { defaultL2Data }) {
-        protected Object fetchDataFromXmlObject(XmlObject xmlObject) {
-          return l2DataArray;
-        }
-      };
-      l2DataByGroupPosition++;
-    }
-
   }
 
   private int getL2IntDefault(String xpath) {
@@ -143,6 +142,29 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
   }
 
   public ObjectArrayConfigItem[] getL2DataByGroup() {
+    Set keys = this.l2DataByGroupId.keySet();
+    Assert.assertTrue(keys.size() > 0);
+
+    this.l2DataByGroup = new ObjectArrayConfigItem[keys.size()];
+
+    int l2DataByGroupPosition = 0;
+    for (Iterator iter = keys.iterator(); iter.hasNext();) {
+      Integer key = (Integer) iter.next();
+      List l2DataList = (List) this.l2DataByGroupId.get(key);
+      final L2Data[] l2DataArray = new L2Data[l2DataList.size()];
+      int position = 0;
+      for (Iterator iterator = l2DataList.iterator(); iterator.hasNext();) {
+        L2Data data = (L2Data) iterator.next();
+        l2DataArray[position++] = data;
+      }
+      this.l2DataByGroup[l2DataByGroupPosition] = new ObjectArrayXPathBasedConfigItem(this.l2sContext, ".",
+          new L2Data[] { defaultL2Data }) {
+        protected Object fetchDataFromXmlObject(XmlObject xmlObject) {
+          return l2DataArray;
+        }
+      };
+      l2DataByGroupPosition++;
+    }
     return this.l2DataByGroup;
   }
 

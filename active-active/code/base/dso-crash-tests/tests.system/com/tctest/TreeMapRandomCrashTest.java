@@ -4,10 +4,10 @@
  */
 package com.tctest;
 
-import com.tc.test.activepassive.ActivePassiveCrashMode;
-import com.tc.test.activepassive.ActivePassivePersistenceMode;
-import com.tc.test.activepassive.ActivePassiveSharedDataMode;
-import com.tc.test.activepassive.ActivePassiveTestSetupManager;
+import com.tc.test.activepassive.ServerCrashMode;
+import com.tc.test.activepassive.ServerPersistenceMode;
+import com.tc.test.activepassive.ServerDataShareMode;
+import com.tc.test.activepassive.MultipleServerTestSetupManager;
 
 public class TreeMapRandomCrashTest extends TransparentTestBase {
 
@@ -26,12 +26,12 @@ public class TreeMapRandomCrashTest extends TransparentTestBase {
     return true;
   }
 
-  public void setupActivePassiveTest(ActivePassiveTestSetupManager setupManager) {
+  public void setupActivePassiveTest(MultipleServerTestSetupManager setupManager) {
     setupManager.setServerCount(3);
-    setupManager.setServerCrashMode(ActivePassiveCrashMode.RANDOM_SERVER_CRASH);
+    setupManager.setServerCrashMode(ServerCrashMode.RANDOM_SERVER_CRASH);
     setupManager.setServerCrashWaitTimeInSec(30);
-    setupManager.setServerShareDataMode(ActivePassiveSharedDataMode.NETWORK);
-    setupManager.setServerPersistenceMode(ActivePassivePersistenceMode.TEMPORARY_SWAP_ONLY);
+    setupManager.setServerShareDataMode(ServerDataShareMode.NETWORK);
+    setupManager.setServerPersistenceMode(ServerPersistenceMode.TEMPORARY_SWAP_ONLY);
   }
 
 }

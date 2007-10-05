@@ -31,7 +31,7 @@ public class ClusterMembershipEventJMXTest extends TransparentTestBase {
   private int              adminPort;
 
   public ClusterMembershipEventJMXTest() {
-//    this.disableAllUntil("2007-06-25");
+    // this.disableAllUntil("2007-06-25");
   }
 
   public void doSetUp(TransparentTestIface t) throws Exception {
@@ -59,7 +59,7 @@ public class ClusterMembershipEventJMXTest extends TransparentTestBase {
                                                                                                   null,
                                                                                                   new FatalIllegalConfigurationChangeHandler());
 
-    factory.addServerToL1Config(null, port, adminPort);
+    factory.addServerToL1Config(null, port, adminPort, true);
     L1TVSConfigurationSetupManager manager = factory.createL1TVSConfigurationSetupManager();
     setUpControlledServer(factory, new StandardDSOClientConfigHelperImpl(manager), port, adminPort, configFile
         .getAbsolutePath());

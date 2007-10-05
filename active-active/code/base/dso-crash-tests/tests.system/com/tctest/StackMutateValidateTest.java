@@ -3,10 +3,10 @@
  */
 package com.tctest;
 
-import com.tc.test.activepassive.ActivePassiveCrashMode;
-import com.tc.test.activepassive.ActivePassivePersistenceMode;
-import com.tc.test.activepassive.ActivePassiveSharedDataMode;
-import com.tc.test.activepassive.ActivePassiveTestSetupManager;
+import com.tc.test.activepassive.ServerCrashMode;
+import com.tc.test.activepassive.ServerPersistenceMode;
+import com.tc.test.activepassive.ServerDataShareMode;
+import com.tc.test.activepassive.MultipleServerTestSetupManager;
 import com.tctest.runner.TransparentAppConfig;
 
 public class StackMutateValidateTest extends TransparentTestBase {
@@ -27,11 +27,11 @@ public class StackMutateValidateTest extends TransparentTestBase {
     return StackMutateValidateTestApp.class;
   }
 
-  public void setupActivePassiveTest(ActivePassiveTestSetupManager setupManager) {
+  public void setupActivePassiveTest(MultipleServerTestSetupManager setupManager) {
     setupManager.setServerCount(2);
-    setupManager.setServerCrashMode(ActivePassiveCrashMode.CRASH_AFTER_MUTATE);
-    setupManager.setServerShareDataMode(ActivePassiveSharedDataMode.NETWORK);
-    setupManager.setServerPersistenceMode(ActivePassivePersistenceMode.TEMPORARY_SWAP_ONLY);
+    setupManager.setServerCrashMode(ServerCrashMode.CRASH_AFTER_MUTATE);
+    setupManager.setServerShareDataMode(ServerDataShareMode.NETWORK);
+    setupManager.setServerPersistenceMode(ServerPersistenceMode.TEMPORARY_SWAP_ONLY);
   }
 
   protected boolean canRunActivePassive() {

@@ -24,13 +24,13 @@ import java.util.HashSet;
 
 public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl implements
     ClientMessageChannelMultiplex {
-  private static final TCLogger       logger = TCLogging.getLogger(ClientMessageChannelMultiplex.class);
-  private final TCMessageFactory      msgFactory;
-  private final SessionProvider       sessionProvider;
+  private static final TCLogger  logger = TCLogging.getLogger(ClientMessageChannelMultiplex.class);
+  private final TCMessageFactory msgFactory;
+  private final SessionProvider  sessionProvider;
 
-  private CommunicationsManager       communicationsManager;
-  private ClientMessageChannel[]      channels;
-  private GroupID[]                   servers;
+  private CommunicationsManager  communicationsManager;
+  private ClientMessageChannel[] channels;
+  private GroupID[]              servers;
 
   public ClientMessageChannelMultiplexImpl(TCMessageFactory msgFactory, SessionProvider sessionProvider,
                                            final int maxReconnectTries, CommunicationsManager communicationsManager,
@@ -41,14 +41,15 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
 
     this.communicationsManager = communicationsManager;
     this.channels = new ClientMessageChannel[addressProviders.length];
+
     this.servers = new GroupID[addressProviders.length];
 
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager
-          .createClientChannel(this.sessionProvider, maxReconnectTries, 10000, addressProviders[i],
-                               this.msgFactory, new TCMessageRouterImpl(), this, isActiveCoordinator);
-      servers[i] = (GroupID)channels[i].getServerID();
+          .createClientChannel(this.sessionProvider, maxReconnectTries, 10000, addressProviders[i], this.msgFactory,
+                               new TCMessageRouterImpl(), this, isActiveCoordinator);
+      servers[i] = (GroupID) channels[i].getServerID();
     }
     setClientID(ClientID.NULL_ID);
     setServerID(GroupID.NULL_ID);

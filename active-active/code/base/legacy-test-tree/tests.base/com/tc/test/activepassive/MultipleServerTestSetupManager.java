@@ -8,17 +8,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ActivePassiveTestSetupManager {
+public class MultipleServerTestSetupManager {
+  private static final int      DEFAULT_ELECTION_TIME    = 5;
 
-  private int                          serverCount              = -1;
-  private long                         serverCrashWaitTimeInSec = 15;
-  private int                          maxCrashCount            = Integer.MAX_VALUE;
-  private ActivePassiveSharedDataMode  activePassiveMode;
-  private ActivePassivePersistenceMode persistenceMode          = new ActivePassivePersistenceMode(
-                                                                                                   ActivePassivePersistenceMode.TEMPORARY_SWAP_ONLY);
-  private int                          electionTime             = 5;
-  private ActivePassiveCrashMode       crashMode;
-  private List                         activeServerGroups       = new ArrayList();
+  private int                   serverCount              = -1;
+  private long                  serverCrashWaitTimeInSec = 15;
+  private int                   maxCrashCount            = Integer.MAX_VALUE;
+  private ServerDataShareMode   dataShareMode            = new ServerDataShareMode(ServerDataShareMode.DISK);
+  private ServerPersistenceMode persistenceMode          = new ServerPersistenceMode(
+                                                                                     ServerPersistenceMode.TEMPORARY_SWAP_ONLY);
+  private int                   electionTime             = 5;
+  private ServerCrashMode       crashMode;
+  private List                  activeServerGroups       = new ArrayList();
 
   public void setServerCount(int count) {
     if (count < 2) { throw new AssertionError("Server count must be 2 or more:  count=[" + count + "]"); }
@@ -31,7 +32,7 @@ public class ActivePassiveTestSetupManager {
   }
 
   public void setServerCrashMode(String mode) {
-    crashMode = new ActivePassiveCrashMode(mode);
+    crashMode = new ServerCrashMode(mode);
   }
 
   public void setMaxCrashCount(int count) {
@@ -44,21 +45,23 @@ public class ActivePassiveTestSetupManager {
   }
 
   public String getServerCrashMode() {
-    if (crashMode == null) { throw new AssertionError("Server crash mode was not set."); }
+    if (crashMode == null) {
+      crashMode = new ServerCrashMode();
+    }
     return crashMode.getMode();
   }
 
   public void setServerShareDataMode(String mode) {
-    activePassiveMode = new ActivePassiveSharedDataMode(mode);
+    dataShareMode = new ServerDataShareMode(mode);
   }
 
   public boolean isNetworkShare() {
-    if (activePassiveMode == null) { throw new AssertionError("Server share mode was not set."); }
-    return activePassiveMode.isNetworkShare();
+    if (dataShareMode == null) { throw new AssertionError("Server share mode was not set."); }
+    return dataShareMode.isNetworkShare();
   }
 
   public void setServerPersistenceMode(String mode) {
-    persistenceMode = new ActivePassivePersistenceMode(mode);
+    persistenceMode = new ServerPersistenceMode(mode);
   }
 
   public String getServerPersistenceMode() {
@@ -88,6 +91,10 @@ public class ActivePassiveTestSetupManager {
     this.activeServerGroups.add(new Group(membersCount, local_activePassiveMode, local_electionTime));
   }
 
+  public void addActiveServerGroup(int membersCount, String local_activePassiveMode) {
+    this.activeServerGroups.add(new Group(membersCount, local_activePassiveMode, DEFAULT_ELECTION_TIME));
+  }
+
   public int getActiveServerGroupCount() {
     checkServerCount();
     return this.activeServerGroups.size();
@@ -108,9 +115,17 @@ public class ActivePassiveTestSetupManager {
     return ((Group) this.activeServerGroups.get(groupIndex)).getMode();
   }
 
+  public boolean isActiveActive() {
+    return getActiveServerGroupCount() > 1;
+  }
+
+  public boolean isActivePassive() {
+    return !isActiveActive();
+  }
+
   private void checkServerCount() {
     if (this.activeServerGroups.size() == 0) {
-      addActiveServerGroup(this.serverCount, this.activePassiveMode.getMode(), this.electionTime);
+      addActiveServerGroup(this.serverCount, this.dataShareMode.getMode(), this.electionTime);
     }
 
     int totalMemberCount = 0;

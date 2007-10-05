@@ -102,7 +102,7 @@ public class LockManagerSystemTest extends BaseDSOTestCase {
 
     new StartupHelper(group, new StartAction(l2Manager)).startUp();
 
-    factory.addServerToL1Config(null, server.getListenPort(), -1);
+    factory.addServerToL1Config(null, server.getListenPort(), -1, true);
 
     L1TVSConfigurationSetupManager manager = factory.createL1TVSConfigurationSetupManager();
     DSOClientConfigHelper configHelper = new StandardDSOClientConfigHelperImpl(manager);
@@ -430,7 +430,7 @@ public class LockManagerSystemTest extends BaseDSOTestCase {
     public UpdateCheckConfig updateCheckConfig() {
       return realConfig.updateCheckConfig();
     }
-    
+
     private static class L2ConfigOverride implements NewL2DSOConfig {
 
       private final NewL2DSOConfig config;

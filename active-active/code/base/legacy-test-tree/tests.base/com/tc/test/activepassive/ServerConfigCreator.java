@@ -23,13 +23,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.List;
 
-public class ActivePassiveServerConfigCreator {
+public class ServerConfigCreator {
   public static final String                            DEV_MODE  = "development";
   public static final String                            PROD_MODE = "production";
 
   private static TCLogger                               logger    = TCLogging
-                                                                      .getTestingLogger(ActivePassiveServerConfigCreator.class);
+                                                                      .getTestingLogger(ServerConfigCreator.class);
   private final int                                     serverCount;
   private final int[]                                   dsoPorts;
   private final int[]                                   jmxPorts;
@@ -42,13 +44,14 @@ public class ActivePassiveServerConfigCreator {
   private final File                                    tempDir;
   private final TestTVSConfigurationSetupManagerFactory configFactory;
   private final String[]                                dataLocations;
-  private final ActivePassiveTestSetupManager           setupManager;
+  private final MultipleServerTestSetupManager          setupManager;
+  private final List[]                                  groups;
 
-  public ActivePassiveServerConfigCreator(ActivePassiveTestSetupManager setupManager, int[] dsoPorts, int[] jmxPorts,
-                                          int[] l2GroupPorts, String[] serverNames, String configModel,
-                                          File configFile, File tempDir,
-                                          TestTVSConfigurationSetupManagerFactory configFactory) {
+  public ServerConfigCreator(MultipleServerTestSetupManager setupManager, int[] dsoPorts, int[] jmxPorts,
+                             int[] l2GroupPorts, String[] serverNames, List[] groups, String configModel,
+                             File configFile, File tempDir, TestTVSConfigurationSetupManagerFactory configFactory) {
     this.setupManager = setupManager;
+    this.groups = groups;
     this.serverCount = this.setupManager.getServerCount();
     this.dsoPorts = dsoPorts;
     this.jmxPorts = jmxPorts;
@@ -77,8 +80,8 @@ public class ActivePassiveServerConfigCreator {
   }
 
   private void checkPersistenceAndDiskLessMode() {
-    if (!serverDiskless && serverPersistence.equals(ActivePassivePersistenceMode.TEMPORARY_SWAP_ONLY)) { throw new AssertionError(
-                                                                                                                                  "The servers are not running in diskless mode so persistence mode should be set to permanent-store"); }
+    if (!serverDiskless && serverPersistence.equals(ServerPersistenceMode.TEMPORARY_SWAP_ONLY)) { throw new AssertionError(
+                                                                                                                           "The servers are not running in diskless mode so persistence mode should be set to permanent-store"); }
   }
 
   private void checkConfigurationModel() {
@@ -137,32 +140,28 @@ public class ActivePassiveServerConfigCreator {
       ha.setMode(HaConfigBuilder.HA_MODE_DISK_BASED_ACTIVE_PASSIVE);
     }
     ha.setElectionTime(this.setupManager.getElectionTime() + "");
-
     L2SConfigBuilder l2sConfigbuilder = new L2SConfigBuilder();
     l2sConfigbuilder.setL2s(l2s);
     l2sConfigbuilder.setHa(ha);
 
     int indent = 7;
-    int serverNamePosition = 0;
-    GroupsConfigBuilder groups = new GroupsConfigBuilder();
-    int groupCount = this.setupManager.getActiveServerGroupCount();
-    for (int i = 0; i < groupCount; i++) {
+    GroupsConfigBuilder groupsConfigBuilder = new GroupsConfigBuilder();
+    for (int i = 0; i < this.groups.length; i++) {
       GroupConfigBuilder group = new GroupConfigBuilder();
       HaConfigBuilder groupHa = new HaConfigBuilder(indent);
       groupHa.setMode(this.setupManager.getGroupServerShareDataMode(i));
       groupHa.setElectionTime("" + this.setupManager.getGroupElectionTime(i));
       MembersConfigBuilder members = new MembersConfigBuilder();
-      int memberCount = this.setupManager.getGroupMemberCount(i);
-      for (int j = 0; j < memberCount; j++) {
-        members.addMember(this.serverNames[serverNamePosition]);
-        serverNamePosition++;
+      for (Iterator iter = groups[i].iterator(); iter.hasNext();) {
+        String memberName = (String) iter.next();
+        members.addMember(memberName);
       }
       group.setHa(groupHa);
       group.setId(i);
       group.setMembers(members);
-      groups.addGroupConfigBuilder(group);
+      groupsConfigBuilder.addGroupConfigBuilder(group);
     }
-    l2sConfigbuilder.setGroups(groups);
+    l2sConfigbuilder.setGroups(groupsConfigBuilder);
 
     ApplicationConfigBuilder app = ApplicationConfigBuilder.newMinimalInstance();
 
