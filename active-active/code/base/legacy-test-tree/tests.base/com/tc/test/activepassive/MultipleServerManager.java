@@ -481,6 +481,12 @@ public class MultipleServerManager {
     return buffer.toString();
   }
 
+  // TODO: make this work with multiple servers
+  public void crashActive() throws Exception {
+    int activeIndex = 0;
+    crashActive(activeIndices[activeIndex]);
+  }
+
   public void crashActive(int crashIndex) throws Exception {
     if (!testState.isRunning()) {
       debugPrintln("***** test state is not running ... skipping crash active");
@@ -645,9 +651,7 @@ public class MultipleServerManager {
 
   public void crashServer() throws Exception {
     if (serverCrashMode.equals(ServerCrashMode.CONTINUOUS_ACTIVE_CRASH)) {
-      // TODO: make this work with multiple servers
-      int activeIndex = 0;
-      crashActive(activeIndices[activeIndex]);
+      crashActive();
     } else if (serverCrashMode.equals(ServerCrashMode.RANDOM_SERVER_CRASH)) {
       crashRandomServer();
     }
