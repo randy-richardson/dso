@@ -197,7 +197,7 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
     }
 
     multiServerManager = new MultipleServerManager(getTempDirectory(), portChooser, ServerConfigCreator.DEV_MODE,
-                                                   multiServerSetupManager, javaHome, configFactory(), jvmArgs);
+                                                   multiServerSetupManager, javaHome, configFactory(), jvmArgs, mode());
     multiServerManager.addServersToL1Config(configFactory);
   }
 

@@ -28,11 +28,11 @@ import javax.management.MBeanServerInvocationHandler;
 import javax.management.remote.JMXConnector;
 
 public class MultipleServerManager {
-  private static final String                  HOST             = "localhost";
-  private static final String                  SERVER_NAME      = "testserver";
-  private static final String                  CONFIG_FILE_NAME = "active-passive-server-config.xml";
-  private static final boolean                 DEBUG            = false;
-  private static final int                     NULL_VAL         = -1;
+  private static final String                  HOST                   = "localhost";
+  private static final String                  SERVER_NAME            = "testserver";
+  private static final String                  CONFIG_FILE_NAME       = "active-passive-server-config.xml";
+  private static final boolean                 DEBUG                  = false;
+  private static final int                     NULL_VAL               = -1;
 
   private final File                           tempDir;
   private final PortChooser                    portChooser;
@@ -58,26 +58,31 @@ public class MultipleServerManager {
 
   private final List                           errors;
 
-  private int                                  activeIndex      = NULL_VAL;
-  private int                                  lastCrashedIndex = NULL_VAL;
-  private ActivePassiveServerCrasher           serverCrasher;
+  private final int[]                          activeIndices;
+  private int                                  activeIndicesNextIndex = 0;
+  private int                                  lastCrashedIndex       = NULL_VAL;
+  private ServerCrasher                        serverCrasher;
   private int                                  maxCrashCount;
   private final TestState                      testState;
   private Random                               random;
   private long                                 seed;
   private final File                           javaHome;
-  private int                                  pid              = -1;
-  private List                                 jvmArgs          = null;
+  private int                                  pid                    = -1;
+  private List                                 jvmArgs                = null;
   private final List[]                         groups;
+  private final String                         testMode;
 
   public MultipleServerManager(File tempDir, PortChooser portChooser, String configModel,
                                MultipleServerTestSetupManager setupManger, File javaHome,
-                               TestTVSConfigurationSetupManagerFactory configFactory, List extraJvmArgs)
+                               TestTVSConfigurationSetupManagerFactory configFactory, List extraJvmArgs, String testMode)
       throws Exception {
 
     this.jvmArgs = extraJvmArgs;
 
     this.setupManger = setupManger;
+    this.testMode = testMode;
+    this.activeIndices = new int[this.setupManger.getActiveServerGroupCount()];
+    resetActiveIndices();
 
     serverCount = this.setupManger.getServerCount();
 
@@ -108,8 +113,9 @@ public class MultipleServerManager {
     groups = new List[this.setupManger.getActiveServerGroupCount()];
     createServers();
 
-    serverConfigCreator = new ServerConfigCreator(this.setupManger, dsoPorts, jmxPorts, l2GroupPorts, serverNames, groups,
-                                                  this.configModel, configFile, this.tempDir, configFactory);
+    serverConfigCreator = new ServerConfigCreator(this.setupManger, dsoPorts, jmxPorts, l2GroupPorts, serverNames,
+                                                  groups, this.configModel, configFile, this.tempDir, configFactory,
+                                                  this.testMode);
     serverConfigCreator.writeL2Config();
 
     errors = new ArrayList();
@@ -124,8 +130,11 @@ public class MultipleServerManager {
     }
   }
 
-  private void resetActiveIndex() {
-    activeIndex = NULL_VAL;
+  private void resetActiveIndices() {
+    for (int i = 0; i < this.activeIndices.length; i++) {
+      activeIndices[i] = NULL_VAL;
+    }
+    this.activeIndicesNextIndex = 0;
   }
 
   private void resetLastCrashedIndex() {
@@ -226,7 +235,7 @@ public class MultipleServerManager {
   }
 
   public void startServers() throws Exception {
-    if (activeIndex >= 0) { throw new AssertionError("Server(s) has/have been already started"); }
+    verifyActiveIndicesUnset();
 
     for (int i = 0; i < servers.length; i++) {
       servers[i].getServerControl().start();
@@ -241,7 +250,7 @@ public class MultipleServerManager {
       tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
     }
 
-    activeIndex = getActiveIndex();
+    getActiveIndices();
 
     if (serverCrashMode.equals(ServerCrashMode.CONTINUOUS_ACTIVE_CRASH)
         || serverCrashMode.equals(ServerCrashMode.RANDOM_SERVER_CRASH)) {
@@ -249,8 +258,16 @@ public class MultipleServerManager {
     }
   }
 
+  private void verifyActiveIndicesUnset() {
+    for (int i = 0; i < activeIndices.length; i++) {
+      if (activeIndices[i] != NULL_VAL) { throw new AssertionError(
+                                                                   "Server(s) has/have been already started: activeIndices=["
+                                                                       + activeIndicesToString() + "]"); }
+    }
+  }
+
   private void startContinuousCrash() {
-    serverCrasher = new ActivePassiveServerCrasher(this, serverCrashWaitTimeInSec, maxCrashCount, testState);
+    serverCrasher = new ServerCrasher(this, serverCrashWaitTimeInSec, maxCrashCount, testState);
     new Thread(serverCrasher).start();
   }
 
@@ -270,10 +287,9 @@ public class MultipleServerManager {
     }
   }
 
-  private int getActiveIndex() throws Exception {
-    int index = -1;
-    while (index < 0) {
-      System.out.println("Searching for active server... ");
+  private void getActiveIndices() throws Exception {
+    while (activeIndicesNextIndex < activeIndices.length) {
+      System.out.println("Searching for active server(s)... ");
       for (int i = 0; i < jmxPorts.length; i++) {
         if (i != lastCrashedIndex) {
           if (!servers[i].getServerControl().isRunning()) { throw new AssertionError("Server["
@@ -287,22 +303,19 @@ public class MultipleServerManager {
             tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
             isActive = tcServerInfoMBeans[i].isActive();
           }
-          debugPrintln("********  index=[" + index + "]  i=[" + i + "] active=[" + isActive + "]  threadId=["
-                       + Thread.currentThread().getName() + "]");
 
           if (isActive) {
-            if (index < 0) {
-              index = i;
-              debugPrintln("***** active found index=[" + index + "]");
-            } else {
-              throw new Exception("More than one active server found.");
-            }
+            if (activeIndices.length <= activeIndicesNextIndex) { throw new Exception("More than ["
+                                                                                      + activeIndices.length
+                                                                                      + "] active servers found."); }
+
+            debugPrintln("***** active found index=[" + i + "] activeIndicesNextIndex=[" + activeIndicesNextIndex + "]");
+            activeIndices[activeIndicesNextIndex++] = i;
           }
         }
       }
       Thread.sleep(1000);
     }
-    return index;
   }
 
   private void debugPrintln(String s) {
@@ -315,7 +328,7 @@ public class MultipleServerManager {
     while (true) {
       System.out.println("Searching for appropriate passive server(s)... ");
       for (int i = 0; i < jmxPorts.length; i++) {
-        if (i != activeIndex) {
+        if (!activeIndicesContains(i)) {
           if (!servers[i].getServerControl().isRunning()) { throw new AssertionError("Server["
                                                                                      + servers[i].getDsoPort()
                                                                                      + "] is not running as expected!"); }
@@ -339,6 +352,13 @@ public class MultipleServerManager {
       }
       Thread.sleep(1000);
     }
+  }
+
+  private boolean activeIndicesContains(int i) {
+    for (int j = 0; j < activeIndices.length; j++) {
+      if (activeIndices[j] == i) { return true; }
+    }
+    return false;
   }
 
   private TCServerInfoMBean getTcServerInfoMBean(int index) throws IOException {
@@ -376,7 +396,7 @@ public class MultipleServerManager {
           }
         }
 
-        if (i == activeIndex) {
+        if (activeIndicesContains(i)) {
           sc.shutdown();
           continue;
         }
@@ -395,7 +415,7 @@ public class MultipleServerManager {
   public void dumpAllServers(int currentPid, int dumpCount, long dumpInterval) throws Exception {
     pid = currentPid;
     for (int i = 0; i < serverCount; i++) {
-      if (!serverNetworkShare && i != activeIndex) {
+      if (!serverNetworkShare && !activeIndicesContains(i)) {
         debugPrintln("***** skipping dumping server=[" + dsoPorts[i] + "]");
         continue;
       }
@@ -447,49 +467,64 @@ public class MultipleServerManager {
     return pid;
   }
 
-  public void crashActive() throws Exception {
+  private String activeIndicesToString() {
+    StringBuffer buffer = new StringBuffer();
+    boolean first = true;
+    for (int i = 0; i < activeIndices.length; i++) {
+      if (first) {
+        first = false;
+      } else {
+        buffer.append(",");
+      }
+      buffer.append("" + activeIndices[i]);
+    }
+    return buffer.toString();
+  }
+
+  public void crashActive(int crashIndex) throws Exception {
     if (!testState.isRunning()) {
       debugPrintln("***** test state is not running ... skipping crash active");
       return;
     }
 
-    if (activeIndex < 0) { throw new AssertionError("Active index was not set."); }
+    if (activeIndicesNextIndex == 0) { throw new AssertionError("Active index was not set."); }
 
-    System.out.println("Crashing active server: dsoPort=[" + servers[activeIndex].getDsoPort() + "]");
+    System.out.println("Crashing active server: dsoPort=[" + servers[crashIndex].getDsoPort() + "]");
 
     debugPrintln("***** wait to find an appropriate passive server.");
     waitForPassive();
     debugPrintln("***** finished waiting to find an appropriate passive server.");
 
-    verifyActiveServerState();
+    verifyActiveServerState(crashIndex);
 
-    ServerControl server = servers[activeIndex].getServerControl();
+    ServerControl server = servers[crashIndex].getServerControl();
     server.crash();
     debugPrintln("***** Sleeping after crashing active server ");
     waitForServerCrash(server);
     debugPrintln("***** Done sleeping after crashing active server ");
 
-    lastCrashedIndex = activeIndex;
-    resetActiveIndex();
+    lastCrashedIndex = crashIndex;
+    resetActiveIndices();
     debugPrintln("***** lastCrashedIndex[" + lastCrashedIndex + "] ");
 
     debugPrintln("***** about to search for active  threadId=[" + Thread.currentThread().getName() + "]");
-    activeIndex = getActiveIndex();
-    debugPrintln("***** activeIndex[" + activeIndex + "] ");
+
+    getActiveIndices();
+    debugPrintln("***** activeIndices[" + activeIndicesToString() + "] ");
   }
 
-  private void verifyActiveServerState() throws Exception {
-    ServerControl server = servers[activeIndex].getServerControl();
-    if (!server.isRunning()) { throw new AssertionError("Server[" + servers[activeIndex].getDsoPort()
+  private void verifyActiveServerState(int crashIndex) throws Exception {
+    ServerControl server = servers[crashIndex].getServerControl();
+    if (!server.isRunning()) { throw new AssertionError("Server[" + servers[crashIndex].getDsoPort()
                                                         + "] is not running as expected!"); }
-    MBeanServerConnection mbs = jmxConnectors[activeIndex].getMBeanServerConnection();
+    MBeanServerConnection mbs = jmxConnectors[crashIndex].getMBeanServerConnection();
     TCServerInfoMBean mbean = (TCServerInfoMBean) MBeanServerInvocationHandler
         .newProxyInstance(mbs, L2MBeanNames.TC_SERVER_INFO, TCServerInfoMBean.class, true);
     if (!mbean.isActive()) {
-      closeJMXConnector(activeIndex);
-      throw new AssertionError("Server[" + servers[activeIndex].getDsoPort() + "] is not an active server as expected!");
+      closeJMXConnector(crashIndex);
+      throw new AssertionError("Server[" + servers[crashIndex].getDsoPort() + "] is not an active server as expected!");
     }
-    closeJMXConnector(activeIndex);
+    closeJMXConnector(crashIndex);
   }
 
   private void waitForServerCrash(ServerControl server) throws Exception {
@@ -537,15 +572,15 @@ public class MultipleServerManager {
       return;
     }
 
-    if (activeIndex < 0) { throw new AssertionError("Active index was not set."); }
+    if (activeIndicesNextIndex == 0) { throw new AssertionError("Active index was not set."); }
     if (random == null) { throw new AssertionError("Random number generator was not set."); }
 
     debugPrintln("***** Choosing random server... ");
 
     int crashIndex = random.nextInt(serverCount);
 
-    if (crashIndex == activeIndex) {
-      crashActive();
+    if (activeIndicesContains(crashIndex)) {
+      crashActive(crashIndex);
     } else {
       crashPassive(crashIndex);
     }
@@ -610,7 +645,9 @@ public class MultipleServerManager {
 
   public void crashServer() throws Exception {
     if (serverCrashMode.equals(ServerCrashMode.CONTINUOUS_ACTIVE_CRASH)) {
-      crashActive();
+      // TODO: make this work with multiple servers
+      int activeIndex = 0;
+      crashActive(activeIndices[activeIndex]);
     } else if (serverCrashMode.equals(ServerCrashMode.RANDOM_SERVER_CRASH)) {
       crashRandomServer();
     }

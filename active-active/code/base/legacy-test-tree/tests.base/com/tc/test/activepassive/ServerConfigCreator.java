@@ -18,6 +18,7 @@ import com.tc.config.schema.test.SystemConfigBuilder;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.test.TestConfigObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,12 +47,15 @@ public class ServerConfigCreator {
   private final String[]                                dataLocations;
   private final MultipleServerTestSetupManager          setupManager;
   private final List[]                                  groups;
+  private final String                                  testMode;
 
   public ServerConfigCreator(MultipleServerTestSetupManager setupManager, int[] dsoPorts, int[] jmxPorts,
                              int[] l2GroupPorts, String[] serverNames, List[] groups, String configModel,
-                             File configFile, File tempDir, TestTVSConfigurationSetupManagerFactory configFactory) {
+                             File configFile, File tempDir, TestTVSConfigurationSetupManagerFactory configFactory,
+                             String testMode) {
     this.setupManager = setupManager;
     this.groups = groups;
+    this.testMode = testMode;
     this.serverCount = this.setupManager.getServerCount();
     this.dsoPorts = dsoPorts;
     this.jmxPorts = jmxPorts;
@@ -113,7 +117,16 @@ public class ServerConfigCreator {
     L2ConfigBuilder[] l2s = new L2ConfigBuilder[serverCount];
     for (int i = 0; i < serverCount; i++) {
       L2ConfigBuilder l2 = new L2ConfigBuilder();
-      if (serverDiskless) {
+
+      // TODO: need to fix and test this part of code for active-active
+      if (this.testMode.equals(TestConfigObject.TRANSPARENT_TESTS_MODE_ACTIVE_ACTIVE)) {
+        // if group's ha mode is diskless than different data file for each member
+        // if group's ha mode is diskbased than same data file for all members
+        if (!serverDiskless) {
+          dataLocations[i] = dataLocationHome + File.separator + "server-" + i;
+          l2.setData(dataLocations[i]);
+        }
+      } else if (serverDiskless) {
         dataLocations[i] = dataLocationHome + File.separator + "server-" + i;
         l2.setData(dataLocations[i]);
       } else {

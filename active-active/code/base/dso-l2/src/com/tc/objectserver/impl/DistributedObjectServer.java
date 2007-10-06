@@ -630,6 +630,7 @@ public class DistributedObjectServer extends SEDA implements TCDumper {
                                                                                            persistent, consoleLogger);
 
     boolean networkedHA = this.haConfig.isNetworkedActivePassive();
+
     if (networkedHA) {
       this.haConfig.makeAllNodes();
     }

@@ -6,7 +6,7 @@ package com.tc.test.activepassive;
 
 import com.tctest.TestState;
 
-public class ActivePassiveServerCrasher implements Runnable {
+public class ServerCrasher implements Runnable {
   private static boolean                   DEBUG      = false;
   private final MultipleServerManager serverManger;
   private final long                       serverCrashWaitTimeInSec;
@@ -15,7 +15,7 @@ public class ActivePassiveServerCrasher implements Runnable {
   private int                              crashCount = 0;
   private final TestState                  testState;
 
-  public ActivePassiveServerCrasher(MultipleServerManager serverManager, long serverCrashWaitTimeInSec,
+  public ServerCrasher(MultipleServerManager serverManager, long serverCrashWaitTimeInSec,
                                     int maxCrashCount, TestState testState) {
     this.serverManger = serverManager;
     this.serverCrashWaitTimeInSec = serverCrashWaitTimeInSec;
