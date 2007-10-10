@@ -58,16 +58,22 @@ import com.tc.object.bytecode.ByteCodeUtil;
 import com.tc.object.bytecode.ChangeClassNameHierarchyAdapter;
 import com.tc.object.bytecode.ChangeClassNameRootAdapter;
 import com.tc.object.bytecode.ChangePackageClassAdapter;
+import com.tc.object.bytecode.ClassAdapterFactory;
 import com.tc.object.bytecode.Clearable;
 import com.tc.object.bytecode.DataOutputStreamAdapter;
 import com.tc.object.bytecode.DuplicateMethodAdapter;
 import com.tc.object.bytecode.HashtableClassAdapter;
+import com.tc.object.bytecode.JavaLangReflectArrayAdapter;
+import com.tc.object.bytecode.JavaLangReflectFieldAdapter;
 import com.tc.object.bytecode.JavaLangReflectProxyClassAdapter;
 import com.tc.object.bytecode.JavaLangStringAdapter;
 import com.tc.object.bytecode.JavaLangThrowableDebugClassAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentCyclicBarrierDebugClassAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentHashMapAdapter;
+import com.tc.object.bytecode.JavaUtilConcurrentHashMapEntryIteratorAdapter;
+import com.tc.object.bytecode.JavaUtilConcurrentHashMapHashEntryAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentHashMapSegmentAdapter;
+import com.tc.object.bytecode.JavaUtilConcurrentHashMapValueIteratorAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentLinkedBlockingQueueAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentLinkedBlockingQueueClassAdapter;
 import com.tc.object.bytecode.JavaUtilConcurrentLinkedBlockingQueueIteratorClassAdapter;
@@ -168,14 +174,13 @@ import java.util.Set;
  */
 public class BootJarTool {
   public static final String          TC_DEBUG_THROWABLE_CONSTRUCTION = "tc.debug.throwable.construction";
-  
+
   private static final String         EXCESS_CLASSES               = "excess";
   private static final String         MISSING_CLASSES              = "missing";
 
   private final static String         TARGET_FILE_OPTION           = "o";
   private final static boolean        WRITE_OUT_TEMP_FILE          = true;
 
-  private static final String         DEFAULT_CONFIG_PATH          = "default-config.xml";
   private static final String         DEFAULT_CONFIG_SPEC          = "tc-config.xml";
 
   private final ClassLoader           tcLoader;
@@ -389,14 +394,19 @@ public class BootJarTool {
       addInstrumentedHashMap();
       addInstrumentedHashtable();
       addInstrumentedJavaUtilCollection();
+      addReflectionInstrumentation();
+
       addJdk15SpecificPreInstrumentedClasses();
+
 
       addInstrumentedWeakHashMap();
 
       loadTerracottaClass(DebugUtil.class.getName());
       loadTerracottaClass(SessionSupport.class.getName());
       loadTerracottaClass(TCMap.class.getName());
-      loadTerracottaClass("com.tc.util.concurrent.locks.TCLock");
+      if(Vm.isJDK15Compliant()) {
+        loadTerracottaClass("com.tc.util.concurrent.locks.TCLock");
+      }
       loadTerracottaClass(com.tc.util.Stack.class.getName());
       loadTerracottaClass(TCObjectNotSharableException.class.getName());
 
@@ -479,6 +489,7 @@ public class BootJarTool {
 
       loadTerracottaClass(Vm.class.getName());
       loadTerracottaClass(Vm.Version.class.getName());
+      loadTerracottaClass("com.tc.util.runtime.Vm$1");
       loadTerracottaClass(UnknownJvmVersionException.class.getName());
       loadTerracottaClass(UnknownRuntimeVersionException.class.getName());
 
@@ -529,6 +540,28 @@ public class BootJarTool {
     }
 
   }
+
+  private void addReflectionInstrumentation() {
+    if (this.config.reflectionEnabled()) {
+      adaptAndLoad("java.lang.reflect.Field", new JavaLangReflectFieldAdapter());
+      adaptAndLoad("java.lang.reflect.Array", new JavaLangReflectArrayAdapter());
+    }
+  }
+
+  private void adaptAndLoad(String name, ClassAdapterFactory factory) {
+    byte[] bytes = getSystemBytes(name);
+
+    ClassReader cr = new ClassReader(bytes);
+    ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+
+    ClassVisitor cv = factory.create(cw, null);
+    cr.accept(cv, ClassReader.SKIP_FRAMES);
+
+    bytes = cw.toByteArray();
+
+    bootJar.loadClassIntoJar(name, bytes, false);
+  }
+
 
   private final void addManagementClasses() {
     loadTerracottaClass(SessionMonitorMBean.class.getName());
@@ -1630,6 +1663,7 @@ public class BootJarTool {
     loadTerracottaClass("com.tcclient.util.ConcurrentHashMapEntrySetWrapper");
     loadTerracottaClass("com.tcclient.util.ConcurrentHashMapEntrySetWrapper$IteratorWrapper");
 
+    // java.util.concurrent.ConcurrentHashMap
     byte[] bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap");
 
     ClassReader cr = new ClassReader(bytes);
@@ -1646,6 +1680,24 @@ public class BootJarTool {
     bytes = doDSOTransform(spec.getClassName(), bytes);
     bootJar.loadClassIntoJar("java.util.concurrent.ConcurrentHashMap", bytes, true);
 
+    // java.util.concurrent.ConcurrentHashMap$HashEntry
+    bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap$HashEntry");
+    cr = new ClassReader(bytes);
+    cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+    cv = new JavaUtilConcurrentHashMapHashEntryAdapter(cw);
+    cr.accept(cv, ClassReader.SKIP_FRAMES);
+
+    bytes = cw.toByteArray();
+
+    spec = config.getOrCreateSpec("java.util.concurrent.ConcurrentHashMap$HashEntry");
+    spec.addDoNotInstrument(JavaUtilConcurrentHashMapHashEntryAdapter.TC_RAWSETVALUE_METHOD_NAME);
+    spec.setHonorTransient(true);
+    spec.markPreInstrumented();
+    spec.setCallConstructorOnLoad(true);
+    bytes = doDSOTransform(spec.getClassName(), bytes);
+    bootJar.loadClassIntoJar("java.util.concurrent.ConcurrentHashMap$HashEntry", bytes, spec.isPreInstrumented());
+
+    // java.util.concurrent.ConcurrentHashMap$Segment
     bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap$Segment");
     cr = new ClassReader(bytes);
     cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
@@ -1661,6 +1713,37 @@ public class BootJarTool {
     bytes = doDSOTransform(spec.getClassName(), bytes);
     bootJar.loadClassIntoJar("java.util.concurrent.ConcurrentHashMap$Segment", bytes, spec.isPreInstrumented());
 
+    // java.util.concurrent.ConcurrentHashMap$ValueIterator
+    bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap$ValueIterator");
+    cr = new ClassReader(bytes);
+    cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+    cv = new JavaUtilConcurrentHashMapValueIteratorAdapter(cw);
+    cr.accept(cv, ClassReader.SKIP_FRAMES);
+
+    bytes = cw.toByteArray();
+
+    spec = config.getOrCreateSpec("java.util.concurrent.ConcurrentHashMap$ValueIterator");
+    spec.setHonorTransient(true);
+    spec.markPreInstrumented();
+    bytes = doDSOTransform(spec.getClassName(), bytes);
+    bootJar.loadClassIntoJar("java.util.concurrent.ConcurrentHashMap$ValueIterator", bytes, spec.isPreInstrumented());
+
+    // java.util.concurrent.ConcurrentHashMap$EntryIterator
+    bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap$EntryIterator");
+    cr = new ClassReader(bytes);
+    cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+    cv = new JavaUtilConcurrentHashMapEntryIteratorAdapter(cw);
+    cr.accept(cv, ClassReader.SKIP_FRAMES);
+
+    bytes = cw.toByteArray();
+
+    spec = config.getOrCreateSpec("java.util.concurrent.ConcurrentHashMap$EntryIterator");
+    spec.setHonorTransient(true);
+    spec.markPreInstrumented();
+    bytes = doDSOTransform(spec.getClassName(), bytes);
+    bootJar.loadClassIntoJar("java.util.concurrent.ConcurrentHashMap$EntryIterator", bytes, spec.isPreInstrumented());
+
+    // com.tcclient.util.ConcurrentHashMapEntrySetWrapper$EntryWrapper
     bytes = getTerracottaBytes("com.tcclient.util.ConcurrentHashMapEntrySetWrapper$EntryWrapper");
     spec = config.getOrCreateSpec("com.tcclient.util.ConcurrentHashMapEntrySetWrapper$EntryWrapper");
     spec.markPreInstrumented();
@@ -1668,6 +1751,7 @@ public class BootJarTool {
     bootJar.loadClassIntoJar("com.tcclient.util.ConcurrentHashMapEntrySetWrapper$EntryWrapper", bytes, spec
         .isPreInstrumented());
 
+    // java.util.concurrent.ConcurrentHashMap$Values
     bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap$Values");
     spec = config.getOrCreateSpec("java.util.concurrent.ConcurrentHashMap$Values");
     spec.addArrayCopyMethodCodeSpec(SerializationUtil.TO_ARRAY_SIGNATURE);
@@ -1675,6 +1759,7 @@ public class BootJarTool {
     bytes = doDSOTransform(spec.getClassName(), bytes);
     bootJar.loadClassIntoJar("java.util.concurrent.ConcurrentHashMap$Values", bytes, spec.isPreInstrumented());
 
+    // java.util.concurrent.ConcurrentHashMap$KeySet
     bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap$KeySet");
     spec = config.getOrCreateSpec("java.util.concurrent.ConcurrentHashMap$KeySet");
     spec.addArrayCopyMethodCodeSpec(SerializationUtil.TO_ARRAY_SIGNATURE);
@@ -1682,6 +1767,7 @@ public class BootJarTool {
     bytes = doDSOTransform(spec.getClassName(), bytes);
     bootJar.loadClassIntoJar("java.util.concurrent.ConcurrentHashMap$KeySet", bytes, spec.isPreInstrumented());
 
+    // java.util.concurrent.ConcurrentHashMap$HashIterator
     bytes = getSystemBytes("java.util.concurrent.ConcurrentHashMap$HashIterator");
     spec = config.getOrCreateSpec("java.util.concurrent.ConcurrentHashMap$HashIterator");
     spec.addArrayCopyMethodCodeSpec(SerializationUtil.TO_ARRAY_SIGNATURE);
@@ -2280,8 +2366,7 @@ public class BootJarTool {
       if (localConfig.exists()) {
         configSpec = localConfig.getAbsolutePath();
       } else {
-        String packageName = BootJarTool.class.getPackage().getName();
-        configSpec = "resource:///" + packageName.replace('.', '/') + "/" + DEFAULT_CONFIG_PATH;
+        configSpec = StandardTVSConfigurationSetupManagerFactory.DEFAULT_CONFIG_URI;
       }
 
       String[] newArgs = new String[args.length + 2];

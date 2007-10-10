@@ -15,6 +15,7 @@ import com.tc.object.config.spec.CyclicBarrierSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
+import com.tc.util.DebugUtil;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
 import java.lang.reflect.Field;
@@ -48,7 +49,7 @@ public class EhcacheEvictionTestApp extends AbstractErrorCatchingTransparentApp 
    * @param config
    */
   public static void visitL1DSOConfig(final ConfigVisitor visitor, final DSOClientConfigHelper config) {
-    config.addNewModule("clustered-ehcache-1.2.4", "1.0.0");
+    config.addNewModule("clustered-ehcache-1.2.4", "1.0.0.SNAPSHOT");
     config.addAutolock("* *..*.*(..)", ConfigLockLevel.WRITE);
 
     final String testClass = EhcacheEvictionTestApp.class.getName();
@@ -59,6 +60,8 @@ public class EhcacheEvictionTestApp extends AbstractErrorCatchingTransparentApp 
   }
 
   protected void runTest() throws Throwable {
+    DebugUtil.DEBUG = true;
+
     int index = barrier.barrier();
     if (index == 0) {
       // Even though the singleton field of CacheManager is a root, we need to
@@ -107,6 +110,8 @@ public class EhcacheEvictionTestApp extends AbstractErrorCatchingTransparentApp 
     barrier.barrier();
     verifyCacheManagerShutdown();
     barrier.barrier();
+
+    DebugUtil.DEBUG = false;
   }
 
   private void runSimplePutTimeToLiveTimeout(int index) throws Throwable {
