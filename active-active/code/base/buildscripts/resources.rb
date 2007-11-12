@@ -61,6 +61,11 @@ connections.  For example:
 
   tcbuild check_one AssertTest debug=8000
 
+The test.mode=<mode> option can be used to set the transparent tests mode to
+one of 'crash', 'active-passive', or 'normal' (the default).  For example:
+
+  tcbuild check_one TransparentSetTest test.mode=active-passive
+
 NOTE: To override the JDK used for testing, see the JDK SELECTION section below.
 
 check
@@ -151,6 +156,37 @@ create_all_packages
     Assembles, packages, and publishes all possible kits, based on the
     configuration files found under the code/base/buildconfig/distribution
     directory.
+
+DEPLOYING MAVEN ARTIFACTS
+
+dist_maven [maven.repo=URL args...]
+    Deploys all Terracotta Maven artifacts to the Maven repository.
+    If the maven.repo option is specified, it must be a valid URL with a scheme
+    that is understood by the Maven deploy plugin.  If maven.repo is not specified,
+    it defaults to the local Maven repository.
+    Other optional arguments include:
+        maven.repositoryId: Link to a server/id element in the Maven settings.xml
+        maven.version: Specify the version to apply to deployed artifacts (config
+                modules excluded)
+        maven.snapshot: If true, force all deployed artifacts to -SNAPSHOT versions
+
+Config modules are deployed as part of the tcbuild 'compile' phase if and only
+if the maven.repo argument is given.  Therefore, to deploy only config modules
+without going through the full dist_maven process, just add maven.repo=local to
+the tcbuild command line.  For example:
+
+    # Deploy all config modules to the repo on 'myrepo' server
+    tcbuild compile maven.repo=scp://myrepo/maven2
+
+    # Deploy only the clustered-iBatis-2.2.0 module to the local repo
+    tcbuild compile compile_only=clustered-iBatis-2.2.0 maven.repo=local
+
+TIP: To quickly deploy the core artifacts without deploying all of the config
+modules, first make sure that everything is fully compiled, and then run
+dist_maven with the --no-ivy and --no-compile options:
+
+    tcbuild compile  # skip this step if everything is already compiled
+    tcbuild dist_maven --no-ivy --no-compile
 
 RUNNING SERVERS, CLASSES, ETC.
 

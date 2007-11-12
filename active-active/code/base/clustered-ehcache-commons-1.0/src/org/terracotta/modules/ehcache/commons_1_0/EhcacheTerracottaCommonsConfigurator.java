@@ -29,20 +29,28 @@ public abstract class EhcacheTerracottaCommonsConfigurator extends TerracottaCon
     addExportedBundleClass(thisBundle, "net.sf.ehcache.store.TimeExpiryMemoryStore$SpoolingTimeExpiryMap");
     addExportedBundleClass(thisBundle, "org.terracotta.modules.ehcache.commons_1_0.util.Util");
     addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap");
+    addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap$EntriesIterator");
+    addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap$EntrySetWrapper");
+    addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap$EntryWrapper");
+    addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap$KeySetWrapper");
+    addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap$KeysIterator");
+    addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap$ValuesCollectionWrapper");
+    addExportedTcJarClass("com.tcclient.ehcache.TimeExpiryMap$ValuesIterator");
+    addExportedTcJarClass("com.tcclient.cache.CacheConfig");
     addExportedTcJarClass("com.tcclient.cache.CacheData");
     addExportedTcJarClass("com.tcclient.cache.CacheDataStore");
-    addExportedTcJarClass("com.tcclient.cache.CacheDataStore$CacheEntryInvalidator");
-    addExportedTcJarClass("com.tcclient.cache.CacheDataStore$CacheInvalidationTimer");
+    addExportedTcJarClass("com.tcclient.cache.CacheEntryInvalidator");
+    addExportedTcJarClass("com.tcclient.cache.CacheInvalidationTimer");
+    addExportedTcJarClass("com.tcclient.cache.CacheInvalidationTimer$EvictionRunner");
     addExportedTcJarClass("com.tcclient.cache.Expirable");
     addExportedTcJarClass("com.tcclient.cache.Lock");
     addExportedTcJarClass("com.tcclient.cache.Timestamp");
     addExportedTcJarClass("com.tcclient.cache.GlobalKeySet");
-    addExportedTcJarClass("com.tcclient.cache.CacheParticipants");
+    addExportedTcJarClass("com.tc.util.Util");
     
     // explicitly excluding autolocking
     configHelper.addAutoLockExcludePattern("* com.tcclient.cache.CacheData.*(..)");
     configHelper.addAutoLockExcludePattern("* com.tcclient.cache.CacheDataStore.*(..)");
-    configHelper.addAutoLockExcludePattern("* com.tcclient.cache.CacheParticipants.*(..)");
     configHelper.addAutoLockExcludePattern("* com.tcclient.cache.Lock.*(..)");
     configHelper.addAutoLockExcludePattern("* com.tcclient.cache.Timestamp.*(..)");
     configHelper.addAutoLockExcludePattern("* com.tcclient.ehcache..*(..)");
@@ -54,7 +62,10 @@ public abstract class EhcacheTerracottaCommonsConfigurator extends TerracottaCon
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.Status.*(..)");
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.bootstrap.*..*(..)");
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.config.*..*(..)");
-    configHelper.addAutoLockExcludePattern("* net.sf.ehcache.constructs.*..*(..)");
+    configHelper.addAutoLockExcludePattern("* net.sf.ehcache.constructs.asynchronous.*.*(..)");
+    configHelper.addAutoLockExcludePattern("* net.sf.ehcache.constructs.blocking.*.*(..)");
+    configHelper.addAutoLockExcludePattern("* net.sf.ehcache.constructs.concurrent.ConcurrencyUtil.*(..)");
+    configHelper.addAutoLockExcludePattern("* net.sf.ehcache.constructs.concurrent.Sync.*(..)");
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.distribution.*..*(..)");
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.event.*..*(..)");
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.hibernate.*..*(..)");
@@ -62,6 +73,10 @@ public abstract class EhcacheTerracottaCommonsConfigurator extends TerracottaCon
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.management.*..*(..)");
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.store.*..*(..)");
     configHelper.addAutoLockExcludePattern("* net.sf.ehcache.util.*..*(..)");
+    
+    configHelper.addAutolock("* net.sf.ehcache.constructs.concurrent.Mutex.acquire(..)", ConfigLockLevel.WRITE);
+    configHelper.addAutolock("* net.sf.ehcache.constructs.concurrent.Mutex.attempt(..)", ConfigLockLevel.WRITE);
+    configHelper.addAutolock("* net.sf.ehcache.constructs.concurrent.Mutex.release(..)", ConfigLockLevel.WRITE);
 
     // perform the rest of the configuration
     configHelper.addIncludePattern("com.tcclient.cache.*", false, false, false);
@@ -80,25 +95,7 @@ public abstract class EhcacheTerracottaCommonsConfigurator extends TerracottaCon
     
     // autolocking
     configHelper.addAutolock(" * com.tcclient.cache.GlobalKeySet.*(..)", ConfigLockLevel.WRITE);
-    configHelper.addAutolock(" * com.tcclient.cache.GlobalKeySet.allGlobalKeys(..)", ConfigLockLevel.READ);
-//    
-//    configHelper.addAutolock(" * com.tcclient.cache.CacheParticipants.*(..)", ConfigLockLevel.WRITE);
-//    configHelper.addAutolock(" * com.tcclient.cache.CacheParticipants.getCacheParticipants(..)", ConfigLockLevel.READ);
-//    configHelper.addAutolock(" * com.tcclient.cache.CacheParticipants.getNodeId(..)", ConfigLockLevel.READ);
 	}
-  
-  protected Bundle getExportedBundle(final BundleContext context, String targetBundleName) {
-    // find the bundle that contains the replacement classes
-    Bundle[] bundles = context.getBundles();
-    Bundle bundle = null;
-    for (int i = 0; i < bundles.length; i++) {
-      if (targetBundleName.equals(bundles[i].getSymbolicName())) {
-        bundle = bundles[i];
-        break;
-      }
-    }  
-    return bundle;
-  }
   
   protected abstract String getExportedBundleName();
 }

@@ -32,6 +32,7 @@ public class ByteCodeUtil implements Opcodes {
   public static final String  TC_FIELD_PREFIX                   = "$__tc_";
   public static final String  TC_METHOD_PREFIX                  = "__tc_";
   public static final String  METHOD_RENAME_PREFIX              = TC_METHOD_PREFIX + "wrapped_";
+  public static final String  SYNC_METHOD_RENAME_PREFIX         = ByteCodeUtil.METHOD_RENAME_PREFIX + "sync_";
   public static final String  DMI_METHOD_RENAME_PREFIX          = TC_METHOD_PREFIX + "dmi_";
 
   public static final String  VALUES_GETTER                     = TC_METHOD_PREFIX + "getallfields";
@@ -614,5 +615,38 @@ public class ByteCodeUtil implements Opcodes {
     }
 
     return baos.toByteArray();
+  }
+  
+  /**
+   * Assign the default value to the variable
+   * @param variable The local variable to which the default value will be assigned
+   * @param c MethodVisitor
+   * @param type Type of the variable
+   */
+  public static void pushDefaultValue(int variable, MethodVisitor c, Type type) {
+    if (type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY) {
+      c.visitInsn(ACONST_NULL);
+      c.visitVarInsn(ASTORE, variable);
+    } else {
+      c.visitInsn(getConstant0(type));
+      c.visitVarInsn(type.getOpcode(ISTORE), variable);
+    }
+  }
+  
+  /**
+   * Return the constant 0 value according to the type.
+   * @param type
+   */
+  private static int getConstant0(Type type) {
+    if (type.getSort() == Type.INT) { return ICONST_0; }
+    if (type.getSort() == Type.LONG) { return LCONST_0; }
+    if (type.getSort() == Type.SHORT) { return ICONST_0; }
+    if (type.getSort() == Type.DOUBLE) { return DCONST_0; }
+    if (type.getSort() == Type.BOOLEAN) { return ICONST_0; }
+    if (type.getSort() == Type.FLOAT) { return FCONST_0; }
+    if (type.getSort() == Type.BYTE) { return ICONST_0; }
+    if (type.getSort() == Type.CHAR) { return ICONST_0; }
+    
+    throw new AssertionError("Cannot determine constant 0 of type: " + type.getDescriptor());
   }
 }

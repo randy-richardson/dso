@@ -444,6 +444,26 @@ public class ManagerImpl implements Manager {
     return (!(o instanceof Class)) && literals.isLiteralInstance(o);
   }
 
+  public boolean isDsoMonitorEntered(Object o) {
+    String lockName = getLockName(o);
+    if (lockName == null) { return false; }
+    boolean dsoMonitorEntered = txManager.isLockOnTopStack(lockName);
+    
+    if (!dsoMonitorEntered && isManaged(o)) {
+      logger.info("Object " + o + " is a shared object, but a shared lock is not obtained within a locking context. This usually means the object get shared within a synchronized block/method.");
+    }
+    
+    return dsoMonitorEntered;
+  }
+
+  private String getLockName(Object obj) {
+    TCObject tco = lookupExistingOrNull(obj);
+    if (tco != null) {
+      return generateAutolockName(tco);
+    } else if (isLiteralAutolock(obj)) { return generateLiteralLockName(obj); }
+    return null;
+  }
+
   public void monitorEnter(Object obj, int type) {
     if (obj == null) { throw new NullPointerException("monitorEnter called on a null object"); }
 
@@ -615,6 +635,11 @@ public class ManagerImpl implements Manager {
   public Object lookupObject(ObjectID id) throws ClassNotFoundException {
     return this.objectManager.lookupObject(id);
   }
+  
+  public Object lookupObject(ObjectID id, ObjectID parentContext) throws ClassNotFoundException {
+    return this.objectManager.lookupObject(id, parentContext);
+  }
+
 
   public boolean distributedMethodCall(Object receiver, String method, Object[] params, boolean runOnAllNodes) {
     TCObject tco = lookupExistingOrNull(receiver);
@@ -653,6 +678,17 @@ public class ManagerImpl implements Manager {
       return tcobj != null && tcobj.isShared();
     }
     return this.objectManager.isManaged(obj);
+  }
+
+  public boolean isDsoMonitored(Object obj) {
+    if (this.objectManager.isCreationInProgress() || this.txManager.isTransactionLoggingDisabled()) { return false; }
+
+    TCObject tcobj = lookupExistingOrNull(obj);
+    if (tcobj != null) {
+      return tcobj.isShared();
+    } else {
+      return isLiteralAutolock(obj);
+    }
   }
 
   public Object lookupRoot(String name) {
@@ -826,6 +862,11 @@ public class ManagerImpl implements Manager {
 
   public DmiManager getDmiManager() {
     return this.methodCallManager;
+  }
+  
+  public boolean isFieldPortableByOffset(Object pojo, long fieldOffset) {
+    TCObject tcObj = lookupExistingOrNull(pojo);
+    return tcObj != null && tcObj.isFieldPortableByOffset(fieldOffset);
   }
 
 }

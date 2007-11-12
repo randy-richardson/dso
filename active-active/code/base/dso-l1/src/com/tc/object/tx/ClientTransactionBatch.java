@@ -31,11 +31,6 @@ public interface ClientTransactionBatch extends TransactionBatch {
    */
   public void send();
 
-  /**
-   * Adds the set of acknowledged GlobalTransactionIDs to the batch
-   */
-  public void addAcknowledgedTransactionIDs(Collection acknowledged);
-
   public int numberOfTxns();
 
   public int byteSize();

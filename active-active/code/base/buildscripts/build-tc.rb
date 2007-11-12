@@ -169,9 +169,14 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
     end
   end
 
-  # Um. Duh.
+  # clean all under build and depedencies/lib
   def clean
-    FileUtils.rm_rf(File.join(@basedir.to_s, "build"))
+    begin
+      FileUtils.rm_rf(File.join(@basedir.to_s, "build"))
+      FileUtils.rm(File.join(@basedir.to_s, "dependencies", "lib", "*"))
+    rescue Errno::ENOENT => e       
+      # ignore file not found error
+    end
   end
 
   def clean_cache
@@ -294,6 +299,11 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
     end
   end
 
+  def check_ee_build
+    check_short
+    publish_enterprise_packages
+  end
+    
   # A helper method to validate and run a test set. (Validation lets us avoid the case where,
   # for example, you misspell a test name in a list and don't realize it.)
   def validate_and_run(test_set)
@@ -340,8 +350,11 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
   end
 
   # Prepares to run tests in an external tool (i.e., Eclipse).
-  def check_prep(module_name = 'all', test_type = 'all')
+  def check_prep(module_name = 'all', test_type = 'all')    
     depends :init, :compile
+    
+    loud_message "You might need to pass tests-jdk=1.5 if the test is 1.5 compatible and you want L2 to run in process"
+    
     if module_name.downcase == 'all'
       @module_set.each do |mod|
         check_prep(mod.name, test_type)
@@ -419,7 +432,7 @@ END
   # working correctly. We run this test because it's one of the few that's
   # relevant to the monkey system itself.
   def check_monkeytest
-    check_one('UsingCorrect14JVMTest')
+    check_one('AssertTest')
   end
 
   # Target that runs tests for all modules which are not assigned to a module group.
@@ -864,6 +877,7 @@ END
     # This is where the 'run-1.4-tests-with-1.5' property comes into play; we assign the
     # 'tests-1.4' JVM to a 1.4 or 1.5 JVM, based on how this property is set.
     def find_jvms
+      
       return @jvm_set if @jvm_set
 
       @jvm_set = JVMSet.new

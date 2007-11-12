@@ -33,6 +33,8 @@ import com.tc.aspectwerkz.transform.inlining.weaver.MethodCallVisitor;
 import com.tc.aspectwerkz.transform.inlining.weaver.MethodExecutionVisitor;
 import com.tc.aspectwerkz.transform.inlining.weaver.StaticInitializationVisitor;
 import com.tc.exception.TCLogicalSubclassNotPortableException;
+import com.tc.logging.CustomerLogging;
+import com.tc.logging.TCLogger;
 import com.tc.object.bytecode.ByteCodeUtil;
 import com.tc.object.bytecode.ClassAdapterFactory;
 import com.tc.object.bytecode.RenameClassesAdapter;
@@ -47,6 +49,7 @@ import com.tc.util.InitialClassDumper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,7 +60,7 @@ import java.util.Set;
 
 /**
  * A weaving strategy implementing a weaving scheme based on statical compilation, and no reflection.
- *
+ * 
  * @author <a href="mailto:jboner@codehaus.org">Jonas Bon&#233;r </a>
  * @author <a href="mailto:alex@gnilux.com">Alexandre Vasseur </a>
  */
@@ -70,6 +73,8 @@ public class DefaultWeavingStrategy implements WeavingStrategy {
     // ClassCircularityError exception
     InitialClassDumper dummy = InitialClassDumper.INSTANCE;
   }
+
+  private static final TCLogger       consoleLogger = CustomerLogging.getConsoleLogger();
 
   private final DSOClientConfigHelper m_configHelper;
   private final InstrumentationLogger m_logger;
@@ -86,7 +91,7 @@ public class DefaultWeavingStrategy implements WeavingStrategy {
 
   /**
    * Performs the weaving of the target class.
-   *
+   * 
    * @param className
    * @param context
    */
@@ -127,6 +132,17 @@ public class DefaultWeavingStrategy implements WeavingStrategy {
 
       final boolean isDsoAdaptable = m_configHelper.shouldBeAdapted(classInfo);
       final boolean hasCustomAdapter = m_configHelper.hasCustomAdapter(classInfo);
+
+      // CDV-237
+      final String[] missingRoots = m_configHelper.getMissingRootDeclarations(classInfo);
+      for (int i = 0; i < missingRoots.length; i++) {
+        String MESSAGE = "The root expression ''{0}'' meant for the class ''{1}'' "
+                         + "has no effect, make sure that it is a valid expression "
+                         + "and that it is spelled correctly.";
+        Object[] info = { missingRoots[i], classInfo.getName() };
+        String message = MessageFormat.format(MESSAGE, info);
+        consoleLogger.warn(message);
+      }
 
       // TODO match on (within, null, classInfo) should be equivalent to those ones.
       final Set definitions = context.getDefinitions();
@@ -348,7 +364,7 @@ public class DefaultWeavingStrategy implements WeavingStrategy {
 
   /**
    * Filters out the classes that are not eligible for transformation.
-   *
+   * 
    * @param definitions the definitions
    * @param ctxs an array with the contexts
    * @param classInfo the class to filter
@@ -364,7 +380,7 @@ public class DefaultWeavingStrategy implements WeavingStrategy {
 
   /**
    * Filters out the classes that are not eligible for transformation.
-   *
+   * 
    * @param definition the definition
    * @param ctxs an array with the contexts
    * @param classInfo the class to filter

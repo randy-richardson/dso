@@ -191,22 +191,30 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
     return ByteCodeUtil.isPrimitive(t);
   }
 
+  private MethodVisitor ignoreMethodIfNeeded(int access, String name, final String desc, String signature,
+                                             final String[] exceptions, MemberInfo memberInfo) {
+    if (name.startsWith(ByteCodeUtil.TC_METHOD_PREFIX) || doNotInstrument.contains(name + desc)
+        || getTransparencyClassSpec().doNotInstrument(name)) {
+      if (!getTransparencyClassSpec().hasCustomMethodAdapter(memberInfo)) {
+        physicalClassLogger.logVisitMethodIgnoring(name, desc);
+        return cv.visitMethod(access, name, desc, signature, exceptions);
+      }
+    }
+    return null;
+  }
+
   protected MethodVisitor basicVisitMethod(int access, String name, final String desc, String signature,
                                            final String[] exceptions) {
     String originalName = name;
+    MethodVisitor mv = null;
 
     try {
       physicalClassLogger.logVisitMethodBegin(access, name, desc, signature, exceptions);
 
       MemberInfo memberInfo = getInstrumentationSpec().getMethodInfo(access, name, desc);
 
-      if (name.startsWith(ByteCodeUtil.TC_METHOD_PREFIX) || doNotInstrument.contains(name + desc)
-          || getTransparencyClassSpec().doNotInstrument(name)) {
-        if (!getTransparencyClassSpec().hasCustomMethodAdapter(memberInfo)) {
-          physicalClassLogger.logVisitMethodIgnoring(name, desc);
-          return cv.visitMethod(access, name, desc, signature, exceptions);
-        }
-      }
+      mv = ignoreMethodIfNeeded(access, name, desc, signature, exceptions, memberInfo);
+      if (mv != null) { return mv; }
 
       LockDefinition[] locks = getTransparencyClassSpec().lockDefinitionsFor(memberInfo);
       LockDefinition ld = getTransparencyClassSpec().getAutoLockDefinition(locks);
@@ -218,6 +226,7 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
           instrumentationLogger.autolockInserted(this.spec.getClassNameDots(), name, desc, ld);
         }
       }
+      boolean isAutoReadLock = isAutolock && (lockLevel == LockLevel.READ);
 
       if (isAutoSynchronized(ld) && !"<init>".equals(name)) {
         access |= ACC_SYNCHRONIZED;
@@ -227,31 +236,31 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
       physicalClassLogger.logVisitMethodCheckIsLockMethod();
 
       if (!isLockMethod || spec.isClassAdaptable()) {
-        LockDefinition namedLockDefinition = getTransparencyClassSpec().getNonAutoLockDefinition(locks);
-        isLockMethod = (namedLockDefinition != null);
+        isLockMethod = (getTransparencyClassSpec().getNonAutoLockDefinition(locks) != null);
       }
 
-      // if (methodLD != null && (spec.isClassPortable() || (spec.isClassAdaptable() && !methodLD.isAutolock()))
-      // && !name.equals("<init>")) {
+      // handle lock method by re-writing the original method as a wrapper method and rename the original method.
       if (isLockMethod && !"<init>".equals(name)) {
         physicalClassLogger.logVisitMethodCreateLockMethod(name);
         // This method is a lock method.
         Assert.assertNotNull(locks);
         Assert.eval(locks.length > 0 || isLockMethod);
-        createLockMethod(access, name, desc, signature, exceptions, locks);
+        createLockMethod(access, name, desc, signature, exceptions, locks, isAutoReadLock);
 
         logCustomerLockMethod(name, desc, locks);
         name = ByteCodeUtil.METHOD_RENAME_PREFIX + name;
         access |= ACC_PRIVATE;
         access &= (~ACC_PUBLIC);
         access &= (~ACC_PROTECTED);
+        if (isAutoReadLock) {
+          access &= (~ACC_SYNCHRONIZED);
+        }
       } else {
         physicalClassLogger.logVisitMethodNotALockMethod(access, this.spec.getClassNameDots(), name, desc, exceptions);
       }
-      MethodVisitor mv = null;
 
-      boolean hasCustomMethodAdapter = getTransparencyClassSpec().hasCustomMethodAdapter(memberInfo);
-      if (hasCustomMethodAdapter) {
+      // Visit the original method by either using a custom adapter or a TransparencyCodeAdapter or both.
+      if (getTransparencyClassSpec().hasCustomMethodAdapter(memberInfo)) {
         MethodAdapter ma = getTransparencyClassSpec().customMethodAdapterFor(spec.getManagerHelper(), access, name,
                                                                              originalName, desc, signature, exceptions,
                                                                              instrumentationLogger, memberInfo);
@@ -298,16 +307,19 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
   }
 
   private void createLockMethod(int access, String name, String desc, String signature, final String[] exceptions,
-                                LockDefinition[] locks) {
+                                LockDefinition[] locks, boolean skipLocalJVMLock) {
     try {
       physicalClassLogger.logCreateLockMethodBegin(access, name, desc, signature, exceptions, locks);
       doNotInstrument.add(name + desc);
-      Type returnType = Type.getReturnType(desc);
-      if (returnType.getSort() == Type.VOID) {
-        createLockMethodVoid(access, name, desc, signature, exceptions, locks);
-      } else {
-        createLockMethodReturn(access, name, desc, signature, exceptions, locks, returnType);
+      recreateMethod(access, name, desc, signature, exceptions, locks, skipLocalJVMLock);
+      if (skipLocalJVMLock) {
+        access |= ACC_PRIVATE;
+        access &= (~ACC_PUBLIC);
+        access &= (~ACC_PROTECTED);
+
+        createSyncMethod(access, name, desc, signature, exceptions);
       }
+
     } catch (RuntimeException e) {
       handleInstrumentationException(e);
       throw e;
@@ -317,19 +329,95 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
     }
   }
 
+  private String getTCSyncMethodName(String name) {
+    return ByteCodeUtil.SYNC_METHOD_RENAME_PREFIX + name;
+  }
+
+  private void createSyncMethod(int access, String name, String desc, String signature, final String[] exceptions) {
+    Type returnType = Type.getReturnType(desc);
+    // access should have the synchronized modifier
+    MethodVisitor mv = cv.visitMethod(access, getTCSyncMethodName(name), desc, signature, exceptions);
+    mv.visitCode();
+    Label l0 = new Label();
+    mv.visitLabel(l0);
+    callRenamedMethod(access & (~Modifier.SYNCHRONIZED), name, desc, mv);
+    Label l1 = new Label();
+    mv.visitLabel(l1);
+    mv.visitInsn(returnType.getOpcode(IRETURN));
+    Label l2 = new Label();
+    mv.visitLabel(l2);
+    mv.visitLocalVariable("this", "L" + spec.getClassNameSlashes() + ";", null, l0, l2, 0);
+    mv.visitMaxs(1, 1);
+    mv.visitEnd();
+  }
+
+  private void recreateMethod(int access, String name, String desc, String signature, final String[] exceptions,
+                              LockDefinition[] locks, boolean skipLocalJVMLock) {
+    Type returnType = Type.getReturnType(desc);
+    physicalClassLogger.logCreateLockMethodVoidBegin(access, name, desc, signature, exceptions, locks);
+    MethodVisitor c = cv.visitMethod(access & (~Modifier.SYNCHRONIZED), name, desc, signature, exceptions);
+
+    Label l1 = new Label();
+    if (skipLocalJVMLock) {
+      ByteCodeUtil.pushThis(c);
+      c.visitMethodInsn(INVOKESTATIC, "com/tc/object/bytecode/ManagerUtil", "isDsoMonitored", "(Ljava/lang/Object;)Z");
+      c.visitJumpInsn(IFEQ, l1);
+    }
+
+    if (returnType.getSort() == Type.VOID) {
+      addDsoLockMethodInsnVoid(access, name, desc, signature, exceptions, locks, c);
+    } else {
+      addDsoLockMethodInsnReturn(access, name, desc, signature, exceptions, locks, returnType, c);
+    }
+
+    if (skipLocalJVMLock) {
+      c.visitLabel(l1);
+      // access should have the synchronized modifier
+      callRenamedMethod(access, "sync" + "_" + name, desc, c);
+
+      c.visitInsn(returnType.getOpcode(IRETURN));
+    }
+
+    c.visitMaxs(0, 0);
+    c.visitEnd();
+  }
+
+  private int addBooleanLocalVariablesIfMoreThanOneLock(int access, String desc, LockDefinition[] locks,
+                                                        MethodVisitor c, int[] localBooleanVariables) {
+    int nextLocalVariable = ByteCodeUtil.getFirstLocalVariableOffset(access, desc);
+    if (locks.length > 1) {
+      for (int i = 0; i < locks.length; i++) {
+        localBooleanVariables[i] = nextLocalVariable;
+        ByteCodeUtil.pushDefaultValue(localBooleanVariables[i], c, Type.BOOLEAN_TYPE);
+        nextLocalVariable += Type.BOOLEAN_TYPE.getSize();
+      }
+    }
+    return nextLocalVariable;
+  }
+
+  private void startDsoLockTryBlock(int access, String name, String desc, LockDefinition[] locks, MethodVisitor c,
+                                    int[] localBooleanVariables, Label startTryBlockLabel) {
+    if (locks.length > 1) {
+      c.visitLabel(startTryBlockLabel);
+      callTCBeginWithLocks(access, name, desc, locks, c, localBooleanVariables);
+    } else {
+      callTCBeginWithLocks(access, name, desc, locks, c, localBooleanVariables);
+      c.visitLabel(startTryBlockLabel);
+    }
+  }
+
   /**
    * Creates a tc lock method for the given method that returns void.
    */
-  private void createLockMethodVoid(int access, String name, String desc, String signature, final String[] exceptions,
-                                    LockDefinition[] locks) {
-    try {
-      int localVariableOffset = ByteCodeUtil.getLocalVariableOffset(access);
+  private void addDsoLockMethodInsnVoid(int access, String name, String desc, String signature,
+                                        final String[] exceptions, LockDefinition[] locks, MethodVisitor c) {
+    int[] localBooleanVariables = new int[locks.length];
+    int localVariableOffset = addBooleanLocalVariablesIfMoreThanOneLock(access, desc, locks, c, localBooleanVariables);
 
-      physicalClassLogger.logCreateLockMethodVoidBegin(access, name, desc, signature, exceptions, locks);
-      MethodVisitor c = cv.visitMethod(access & (~Modifier.SYNCHRONIZED), name, desc, signature, exceptions);
-      callTCBeginWithLocks(access, name, desc, locks, c);
+    try {
+
       Label l0 = new Label();
-      c.visitLabel(l0);
+      startDsoLockTryBlock(access, name, desc, locks, c, localBooleanVariables, l0);
       callRenamedMethod(access, name, desc, c);
       // This label creation has something to do with try/finally
       Label l1 = new Label();
@@ -343,7 +431,7 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
       c.visitInsn(ATHROW);
       c.visitLabel(l3);
       c.visitVarInsn(ASTORE, 0 + localVariableOffset);
-      callTCCommit(access, name, desc, locks, c);
+      callTCCommit(access, name, desc, locks, c, localBooleanVariables);
       c.visitVarInsn(RET, 0 + localVariableOffset);
       c.visitLabel(l1);
       c.visitJumpInsn(JSR, l3);
@@ -352,7 +440,6 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
       c.visitInsn(RETURN);
       c.visitTryCatchBlock(l0, l2, l2, null);
       c.visitTryCatchBlock(l1, l4, l2, null);
-      c.visitMaxs(0, 0);
     } catch (RuntimeException e) {
       handleInstrumentationException(e);
     } catch (Error e) {
@@ -391,16 +478,15 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
   /**
    * Creates a tc lock method for the given method that returns a value (doesn't return void).
    */
-  private void createLockMethodReturn(int access, String name, String desc, String signature,
-                                      final String[] exceptions, LockDefinition[] locks, Type returnType) {
-    try {
-      physicalClassLogger.logCreateLockMethodReturnBegin(access, name, desc, signature, exceptions, locks);
-      int localVariableOffset = ByteCodeUtil.getLocalVariableOffset(access);
-      MethodVisitor c = cv.visitMethod(access & (~Modifier.SYNCHRONIZED), name, desc, signature, exceptions);
+  private void addDsoLockMethodInsnReturn(int access, String name, String desc, String signature,
+                                          final String[] exceptions, LockDefinition[] locks, Type returnType,
+                                          MethodVisitor c) {
+    int[] localBooleanVariables = new int[locks.length];
+    int localVariableOffset = addBooleanLocalVariablesIfMoreThanOneLock(access, desc, locks, c, localBooleanVariables);
 
-      callTCBeginWithLocks(access, name, desc, locks, c);
+    try {
       Label l0 = new Label();
-      c.visitLabel(l0);
+      startDsoLockTryBlock(access, name, desc, locks, c, localBooleanVariables, l0);
       callRenamedMethod(access, name, desc, c);
       c.visitVarInsn(returnType.getOpcode(ISTORE), 2 + localVariableOffset);
       Label l1 = new Label();
@@ -417,10 +503,10 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
       c.visitInsn(ATHROW);
       c.visitLabel(l1);
       c.visitVarInsn(ASTORE, 0 + localVariableOffset);
-      callTCCommit(access, name, desc, locks, c);
+      callTCCommit(access, name, desc, locks, c, localBooleanVariables);
       c.visitVarInsn(RET, 0 + localVariableOffset);
       c.visitTryCatchBlock(l0, l2, l3, null);
-      c.visitMaxs(0, 0);
+      // c.visitMaxs(0, 0);
     } catch (RuntimeException e) {
       handleInstrumentationException(e);
     } catch (Error e) {
@@ -430,7 +516,8 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
 
   }
 
-  private void callTCBeginWithLocks(int access, String name, String desc, LockDefinition[] locks, MethodVisitor c) {
+  private void callTCBeginWithLocks(int access, String name, String desc, LockDefinition[] locks, MethodVisitor c,
+                                    int[] localBooleanVariables) {
     physicalClassLogger.logCallTCBeginWithLocksStart(access, name, desc, locks, c);
     for (int i = 0; i < locks.length; i++) {
       LockDefinition lock = locks[i];
@@ -446,12 +533,22 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
         physicalClassLogger.logCallTCBeginWithLocksNoAutolock(lock);
         callTCBeginWithLock(lock, c);
       }
+      if (locks.length > 1) {
+        c.visitInsn(ICONST_1);
+        c.visitVarInsn(ISTORE, localBooleanVariables[i]);
+      }
     }
   }
 
-  private void callTCCommit(int access, String name, String desc, LockDefinition[] locks, MethodVisitor c) {
+  private void callTCCommit(int access, String name, String desc, LockDefinition[] locks, MethodVisitor c,
+                            int[] localBooleanVariables) {
     physicalClassLogger.logCallTCCommitBegin(access, name, desc, locks, c);
+    Label returnLabel = new Label();
     for (int i = 0; i < locks.length; i++) {
+      if (locks.length > 1) {
+        c.visitVarInsn(ILOAD, localBooleanVariables[i]);
+        c.visitJumpInsn(IFEQ, returnLabel);
+      }
       LockDefinition lock = locks[i];
       if (lock.isAutolock() && spec.isClassPortable()) {
         if (Modifier.isSynchronized(access) && !Modifier.isStatic(access)) {
@@ -462,6 +559,7 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
         spec.getManagerHelper().callManagerMethod("commitLock", c);
       }
     }
+    c.visitLabel(returnLabel);
   }
 
   private void callTCCommitWithLockName(String lockName, MethodVisitor mv) {

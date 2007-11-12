@@ -26,6 +26,7 @@ public final class NullManager implements Manager {
 
   /**
    * Get instance of the null manager
+   * 
    * @return NullManager
    */
   public static Manager getInstance() {
@@ -214,6 +215,10 @@ public final class NullManager implements Manager {
     throw new UnsupportedOperationException();
   }
 
+  public Object lookupObject(ObjectID id, ObjectID parentContext) {
+    throw new UnsupportedOperationException();
+  }
+
   public final TCProperties getTCProperites() {
     throw new UnsupportedOperationException();
   }
@@ -227,6 +232,18 @@ public final class NullManager implements Manager {
   }
 
   public final int localHeldCount(Object obj, int lockLevel) {
+    throw new UnsupportedOperationException();
+  }
+
+  public boolean isDsoMonitored(Object obj) {
+    return false;
+  }
+
+  public boolean isDsoMonitorEntered(Object obj) {
+    return false;
+  }
+
+  public boolean isFieldPortableByOffset(Object pojo, long fieldOffset) {
     throw new UnsupportedOperationException();
   }
 

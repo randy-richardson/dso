@@ -13,7 +13,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.terracotta.modules.ehcache.commons_1_0.util.Util;
 
-import com.tc.config.lock.LockLevel;
 import com.tc.object.bytecode.ManagerUtil;
 import com.tc.properties.TCProperties;
 import com.tc.util.Assert;
@@ -124,6 +123,9 @@ public class CacheTC implements Ehcache {
   private CacheManager                           cacheManager;
 
   private BootstrapCacheLoader                   bootstrapCacheLoader;
+  
+  private int readLockLevel = Util.getEhcacheReadLockLevel();
+  private int writeLockLevel = Util.getEhcacheWriteLockLevel();
 
   public static CacheTC convert(Ehcache cache) {
     CacheTC tcCache = new CacheTC(cache.getName(), cache.getMaxElementsInMemory(),
@@ -422,17 +424,17 @@ public class CacheTC implements Ehcache {
 
     Object key = element.getObjectKey();
     Object lock = getLockObject(key);
-    ManagerUtil.monitorEnter(lock, LockLevel.WRITE);
+    ManagerUtil.monitorEnter(lock, writeLockLevel);
     try {
       element.resetAccessStatistics();
       boolean elementExists;
-      elementExists = isElementInMemory(key) || isElementOnDisk(key);
+      elementExists = isElementInMemoryUnlock(key) || isElementOnDisk(key);
       if (elementExists) {
         element.updateUpdateStatistics();
       }
       applyDefaultsToElementWithoutLifespanSet(element);
 
-      memoryStore.put(element);
+      memoryStore.putData(element);
       if (elementExists) {
         registeredEventListeners.notifyElementUpdated(element, doNotNotifyCacheReplicators);
       } else {
@@ -441,7 +443,6 @@ public class CacheTC implements Ehcache {
     } finally {
       ManagerUtil.monitorExit(lock);
     }
-
   }
 
   private void applyDefaultsToElementWithoutLifespanSet(Element element) {
@@ -471,11 +472,11 @@ public class CacheTC implements Ehcache {
 
     Object key = element.getObjectKey();
     Object lock = getLockObject(key);
-    ManagerUtil.monitorEnter(lock, LockLevel.WRITE);
+    ManagerUtil.monitorEnter(lock, writeLockLevel);
     try {
       applyDefaultsToElementWithoutLifespanSet(element);
 
-      memoryStore.put(element);
+      memoryStore.putData(element);
     } finally {
       ManagerUtil.monitorExit(lock);
     }
@@ -617,7 +618,7 @@ public class CacheTC implements Ehcache {
   private Element searchInMemoryStore(Object key, boolean updateStatistics) {
     Element element;
     Object lock = getLockObject(key);
-    ManagerUtil.monitorEnter(lock, LockLevel.READ);
+    ManagerUtil.monitorEnter(lock, readLockLevel);
     try {
       if (updateStatistics) {
         element = memoryStore.get(key);
@@ -734,7 +735,7 @@ public class CacheTC implements Ehcache {
     boolean removed = false;
     Element elementFromMemoryStore;
     Object lock = getLockObject(key);
-    ManagerUtil.monitorEnter(lock, LockLevel.WRITE);
+    ManagerUtil.monitorEnter(lock, writeLockLevel);
     try {
       elementFromMemoryStore = memoryStore.remove(key);
     } finally {
@@ -1082,7 +1083,7 @@ public class CacheTC implements Ehcache {
     checkStatus();
     Object key = element.getObjectKey();
     Object lock = getLockObject(key);
-    ManagerUtil.monitorEnter(lock, LockLevel.READ);
+    ManagerUtil.monitorEnter(lock, readLockLevel);
     try {
       return memoryStore.isExpired(element.getObjectKey());
     } finally {
@@ -1175,12 +1176,16 @@ public class CacheTC implements Ehcache {
    */
   public final boolean isElementInMemory(Object key) {
     Object lock = getLockObject(key);
-    ManagerUtil.monitorEnter(lock, LockLevel.READ);
+    ManagerUtil.monitorEnter(lock, writeLockLevel);
     try {
-      return memoryStore.containsKey(key);
+      return isElementInMemoryUnlock(key);
     } finally {
       ManagerUtil.monitorExit(lock);
     }
+  }
+  
+  private boolean isElementInMemoryUnlock(Object key) {
+    return memoryStore.containsKey(key);
   }
 
   /**
@@ -1408,9 +1413,7 @@ public class CacheTC implements Ehcache {
   }
 
   private int getStoreIndex(Object key) {
-    if (this.locks.length == 1) { return 0; }
-    int hashValue = Math.abs(Util.hash(key.hashCode()));
-    return hashValue % this.locks.length;
+    return Util.hash(key, locks.length);
   }
 
   private Object getLockObject(Object key) {
@@ -1419,13 +1422,13 @@ public class CacheTC implements Ehcache {
 
   private void readLockAll() {
     for (int i = 0; i < this.locks.length; i++) {
-      ManagerUtil.monitorEnter(locks[i], LockLevel.READ);
+      ManagerUtil.monitorEnter(locks[i], readLockLevel);
     }
   }
 
   private void writeLockAll() {
     for (int i = 0; i < this.locks.length; i++) {
-      ManagerUtil.monitorEnter(locks[i], LockLevel.WRITE);
+      ManagerUtil.monitorEnter(locks[i], writeLockLevel);
     }
   }
 

@@ -155,6 +155,14 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
     }
   }
 
+  private static Object unwrapValueIfNecessaryFaultBreadth(Object value, ObjectID parentContext) {
+    if (value instanceof ValuesWrapper) {
+      return ((ValuesWrapper) value).getValueFaultBreadth(parentContext);
+    } else {
+      return value;
+    }
+  }
+
   private static Object wrapValueIfNecessary(Object value) {
     if (value instanceof ObjectID) {
       // value cant be NULL_ID as Hashtable doesnt handle null !
@@ -171,11 +179,19 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
   public synchronized Object remove(Object key) {
     if (__tc_isManaged()) {
       ManagerUtil.checkWriteAccess(this);
-      Object removed = unwrapValueIfNecessary(super.remove(key));
-      if (removed != null) {
-        ManagerUtil.logicalInvoke(this, "remove(Ljava/lang/Object;)Ljava/lang/Object;", new Object[] { key });
-      }
-      return removed;
+
+      // XXX: we should really add a removeEntryForKey() method like HashMap to avoid doing two lookups
+      Entry entry = __tc_getEntry(key);
+      if (entry == null) { return null; }
+
+      // read the original key before actually doing the remove()
+      Object origKey = entry.getKey();
+
+      Object removedValue = unwrapValueIfNecessary(super.remove(key));
+
+      ManagerUtil.logicalInvoke(this, "remove(Ljava/lang/Object;)Ljava/lang/Object;", new Object[] { origKey });
+
+      return removedValue;
     } else {
       return super.remove(key);
     }
@@ -194,9 +210,15 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
   public synchronized void __tc_remove_logical(Object key) {
     if (__tc_isManaged()) {
       ManagerUtil.checkWriteAccess(this);
+
+      // XXX: we should really add a removeEntryForKey() method like HashMap to avoid doing two lookups
+      Entry entry = __tc_getEntry(key);
+      if (entry == null) { return; }
+
       Object removed = super.remove(key);
       if (removed != null) {
-        ManagerUtil.logicalInvoke(this, "remove(Ljava/lang/Object;)Ljava/lang/Object;", new Object[] { key });
+        ManagerUtil
+            .logicalInvoke(this, "remove(Ljava/lang/Object;)Ljava/lang/Object;", new Object[] { entry.getKey() });
       }
     } else {
       super.remove(key);
@@ -331,6 +353,13 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
       return value;
     }
 
+    public Object getValueFaultBreadth(ObjectID parentContext) {
+      if (value instanceof ObjectID) {
+        value = ManagerUtil.lookupObjectWithParentContext((ObjectID) value, parentContext);
+      }
+      return value;
+    }
+
     public int hashCode() {
       return getValue().hashCode();
     }
@@ -372,6 +401,16 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
       if (__tc_isManaged()) {
         synchronized (HashtableTC.this) {
           return unwrapValueIfNecessary(entry.getValue());
+        }
+      } else {
+        return entry.getValue();
+      }
+    }
+
+    public Object getValueFaultBreadth() {
+      if (__tc_isManaged()) {
+        synchronized (HashtableTC.this) {
+          return unwrapValueIfNecessaryFaultBreadth(entry.getValue(), __tc_managed().getObjectID());
         }
       } else {
         return entry.getValue();
@@ -431,12 +470,22 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
     }
 
     public boolean remove(Object o) {
+
       if (__tc_isManaged()) {
         synchronized (HashtableTC.this) {
           ManagerUtil.checkWriteAccess(HashtableTC.this);
+
+          if (!(o instanceof Map.Entry)) { return false; }
+
+          Entry entryToRemove = (Entry) o;
+
+          // XXX: two lookup badness!
+          Entry entry = __tc_getEntry(entryToRemove.getKey());
+          if (entry == null) { return false; }
+
           if (entrySet.remove(o)) {
             ManagerUtil.logicalInvoke(HashtableTC.this, "remove(Ljava/lang/Object;)Ljava/lang/Object;",
-                                      new Object[] { ((Map.Entry) o).getKey() });
+                                      new Object[] { entry.getKey() });
             return true;
           }
           return false;
@@ -531,7 +580,13 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
     }
 
     public Object next() {
-      return new EntryWrapper(currentEntry = nextEntry());
+      currentEntry = nextEntry();
+      if (currentEntry instanceof EntryWrapper) {
+        // This check is here since this class is extended by ValuesIterator too.
+        return currentEntry;
+      } else {
+        return new EntryWrapper(currentEntry);
+      }
     }
 
     protected Map.Entry nextEntry() {
@@ -578,6 +633,10 @@ public class HashtableTC extends Hashtable implements TCMap, Manageable, Clearab
 
     public Object next() {
       Map.Entry e = (Map.Entry) super.next();
+      if (e instanceof EntryWrapper) {
+        EntryWrapper ew = (EntryWrapper) e;
+        return ew.getValueFaultBreadth();
+      }
       return e.getValue();
     }
   }

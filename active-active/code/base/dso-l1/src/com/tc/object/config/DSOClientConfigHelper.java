@@ -33,6 +33,8 @@ import java.util.Map;
  */
 public interface DSOClientConfigHelper extends DSOApplicationConfig {
 
+  String[] getMissingRootDeclarations(ClassInfo classInfo);
+
   boolean shouldBeAdapted(ClassInfo classInfo);
 
   boolean isNeverAdaptable(ClassInfo classInfo);
@@ -186,7 +188,7 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig {
 
   void addRepository(String location);
   
-  void addNewModule(String name, String version);
+  void addModule(String name, String version);
 
   boolean removeCustomAdapter(String name);
 

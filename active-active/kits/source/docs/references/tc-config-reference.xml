@@ -289,7 +289,7 @@
          Default: 7
       -->
       <period-days>10</period-days>
-    </update=check>
+    </update-check>
   </servers>
 
   <!-- This section contains settings that affect all clients that connect to the
@@ -342,8 +342,8 @@
 
         The <module> element(s) is optional.
       -->
-      <module name="clustered-apache-struts-1.1" version="1.1.0"/>
-      <module name="clustered-commons-collections-3.1" version="1.0.0"/>
+      <module name="clustered-apache-struts-1.1" version="2.5.0"/>
+      <module name="clustered-commons-collections-3.1" version="2.5.0"/>
 
     </modules>
 
@@ -750,6 +750,11 @@
               <path>*/beanfactory1.xml</path>
               <path>*/beanfactory2.xml</path>
             </paths>
+
+            <!-- Can be used to log the locations of all bean definition
+              resources. This can be useful to help configure your application
+              context paths, above; Optional -->
+            <enable-location-info>false</enable-location-info>
 
             <!-- Specifies list of clustered beans and their configuration for
               this application context. Spring beans with the same name in

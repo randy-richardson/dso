@@ -30,11 +30,12 @@ public class MergeTCToJavaClassAdapter extends ChangeClassNameHierarchyAdapter i
   private final String             tcFullClassSlashes;
   private final Map                instrumentedContext;
   private final Set                visitedMethods;
+  private final String             methodPrefix;
   private String                   superName;
   private TransparencyClassAdapter dsoAdapter;
 
   public MergeTCToJavaClassAdapter(ClassVisitor cv, TransparencyClassAdapter dsoAdapter, String jFullClassDots,
-                                   String tcFullClassDots, ClassNode tcClassNode, Map instrumentedContext) {
+                                   String tcFullClassDots, ClassNode tcClassNode, Map instrumentedContext, String methodPrefix) {
     super(cv);
     
     List jInnerClasses = tcClassNode.innerClasses;
@@ -52,6 +53,12 @@ public class MergeTCToJavaClassAdapter extends ChangeClassNameHierarchyAdapter i
     this.instrumentedContext = instrumentedContext;
     this.visitedMethods = new HashSet();
     this.dsoAdapter = dsoAdapter;
+    this.methodPrefix = methodPrefix;
+  }
+  
+  public MergeTCToJavaClassAdapter(ClassVisitor cv, TransparencyClassAdapter dsoAdapter, String jFullClassDots,
+                                   String tcFullClassDots, ClassNode tcClassNode, Map instrumentedContext) {
+    this(cv, dsoAdapter, jFullClassDots, tcFullClassDots, tcClassNode, instrumentedContext, ByteCodeUtil.TC_METHOD_PREFIX);
   }
 
   public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
@@ -76,7 +83,7 @@ public class MergeTCToJavaClassAdapter extends ChangeClassNameHierarchyAdapter i
 
   private String getNewName(String methodName) {
     if (isInitMethod(methodName)) { return methodName; }
-    return ByteCodeUtil.TC_METHOD_PREFIX + methodName;
+    return this.methodPrefix + methodName;
   }
 
   public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
@@ -87,7 +94,7 @@ public class MergeTCToJavaClassAdapter extends ChangeClassNameHierarchyAdapter i
       List tcMethods = tcClassNode.methods;
       for (Iterator i = tcMethods.iterator(); i.hasNext();) {
         MethodNode mNode = (MethodNode) i.next();
-        if (mNode.name.equals(name) && mNode.desc.equals(desc)) { //
+        if (0 == (mNode.access & ACC_ABSTRACT) && mNode.name.equals(name) && mNode.desc.equals(desc)) {
           mNode.signature = signature;
           return super.visitMethod(ACC_PRIVATE, getNewName(name), desc, signature, exceptions);
         }
@@ -133,7 +140,8 @@ public class MergeTCToJavaClassAdapter extends ChangeClassNameHierarchyAdapter i
     List tcMethods = tcClassNode.methods;
     for (Iterator i = tcMethods.iterator(); i.hasNext();) {
       MethodNode mNode = (MethodNode) i.next();
-      if (isInitMethod(mNode.name) && (visitedMethods.contains(mNode.name + mNode.desc))) {
+      if (((mNode.access & ACC_ABSTRACT) != 0) ||
+          (isInitMethod(mNode.name) && (visitedMethods.contains(mNode.name + mNode.desc)))) {
         continue;
       }
       mNode.accept(new TCSuperClassAdapter(cv));

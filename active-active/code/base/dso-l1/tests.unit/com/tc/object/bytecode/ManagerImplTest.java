@@ -92,7 +92,7 @@ public class ManagerImplTest extends BaseDSOTestCase {
     public void checkReadAccess(Object context) {
       throw new ImplementMe();
     }
-    
+
     public void checkWriteAccess(Object context) {
       throw new ImplementMe();
     }
@@ -173,6 +173,10 @@ public class ManagerImplTest extends BaseDSOTestCase {
     public int localHeldCount(String lockName, int lockLevel) {
       throw new ImplementMe();
     }
+
+    public boolean isLockOnTopStack(String lockName) {
+      return false;
+    }
   }
 
   private static class ObjMgr implements ClientObjectManager {
@@ -207,6 +211,10 @@ public class ManagerImplTest extends BaseDSOTestCase {
     }
 
     public Object lookupObject(ObjectID id) {
+      throw new ImplementMe();
+    }
+    
+    public Object lookupObject(ObjectID id, ObjectID parentContext) {
       throw new ImplementMe();
     }
 
@@ -331,7 +339,7 @@ public class ManagerImplTest extends BaseDSOTestCase {
     public Object createOrReplaceRoot(String rootName, Object root) {
       throw new ImplementMe();
     }
-    
+
     public void storeObjectHierarchy(Object pojo, ApplicationEventContext context) {
       throw new ImplementMe();
     }
@@ -341,8 +349,9 @@ public class ManagerImplTest extends BaseDSOTestCase {
     }
 
     public Object cloneAndInvokeLogicalOperation(Object pojo, String methodName, Object[] parameters) {
-      throw new ImplementMe();    
+      throw new ImplementMe();
     }
+
   }
 
 }

@@ -112,6 +112,10 @@ public class MockMessageChannel implements MessageChannelInternal {
   public NetworkStackID open() {
     throw new ImplementMe();
   }
+  
+  public Class getRegisteredMessageClass(TCMessageType type) {
+    return (Class)this.knownMessageTypes.get(type);
+  }
 
   public TCMessage createMessage(TCMessageType type) {
     Class theClass = (Class) this.knownMessageTypes.get(type);

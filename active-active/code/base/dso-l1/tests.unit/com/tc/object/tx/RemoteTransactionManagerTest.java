@@ -113,7 +113,6 @@ public class RemoteTransactionManagerTest extends TestCase {
 
   public void testSendAckedGlobalTransactionIDs() throws Exception {
     assertTrue(batchSendQueue.isEmpty());
-    Set acknowledged = new HashSet();
     ClientTransaction ctx = makeTransaction();
     CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -125,10 +124,8 @@ public class RemoteTransactionManagerTest extends TestCase {
     assertSame(batch, batchSendQueue.poll(1));
     assertTrue(batchSendQueue.isEmpty());
 
-    assertEquals(acknowledged, batch.ackedTransactions);
-
     // fill the current batch with a bunch of transactions
-    int count = 10;
+    int count = 50;
     for (int i = 0; i < count; i++) {
       ClientTransaction ctx1 = makeTransaction();
       barrier = new CyclicBarrier(2);
@@ -146,7 +143,6 @@ public class RemoteTransactionManagerTest extends TestCase {
 
     // acknowledge the first transaction
     manager.receivedAcknowledgement(SessionID.NULL_ID, ctx.getTransactionID());
-    acknowledged.add(ctx.getTransactionID());
 
     manager.receivedBatchAcknowledgement(batch.batchID);
 
@@ -154,12 +150,6 @@ public class RemoteTransactionManagerTest extends TestCase {
     batch = (TestTransactionBatch) batchSendQueue.poll(1);
     assertNotNull(batch);
     assertTrue(batchSendQueue.isEmpty());
-
-    // The set of acked transactions in the batch should be everything we've
-    // acknowledged so far.
-    assertEquals(acknowledged, batch.ackedTransactions);
-
-    acknowledged.clear();
 
     ctx = makeTransaction();
     barrier = new CyclicBarrier(2);
@@ -177,9 +167,6 @@ public class RemoteTransactionManagerTest extends TestCase {
     batch = (TestTransactionBatch) batchSendQueue.poll(1);
     assertNotNull(batch);
     assertTrue(batchSendQueue.isEmpty());
-    // The set of acked transactions should now be empty, since we've already
-    // sent them down to the server
-    assertEquals(acknowledged, batch.ackedTransactions);
   }
 
   public void testResendOutstandingBasics() throws Exception {
@@ -426,15 +413,13 @@ public class RemoteTransactionManagerTest extends TestCase {
     int num = number.increment();
     LockID lid = new LockID("lock" + num);
     TransactionContext tc = new TransactionContextImpl(lid, TxnType.NORMAL, new LockID[] { lid });
-    ClientTransaction txn = new ClientTransactionImpl(new TransactionID(num), new NullRuntimeLogger(), null);
+    ClientTransaction txn = new ClientTransactionImpl(new TransactionID(num), new NullRuntimeLogger());
     txn.setTransactionContext(tc);
     txn.fieldChanged(new MockTCObject(new ObjectID(num), this), "class", "class.field", new ObjectID(num), -1);
     return txn;
   }
 
   private final class TestTransactionBatch implements ClientTransactionBatch {
-
-    public final Set         ackedTransactions = new HashSet();
 
     public final TxnBatchID  batchID;
 
@@ -492,14 +477,6 @@ public class RemoteTransactionManagerTest extends TestCase {
 
     public TCByteBuffer[] getData() {
       return null;
-    }
-
-    public void addAcknowledgedTransactionIDs(Collection acknowledged) {
-      ackedTransactions.addAll(acknowledged);
-    }
-
-    public Collection getAcknowledgedTransactionIDs() {
-      throw new ImplementMe();
     }
 
     public TxnBatchID getTransactionBatchID() {

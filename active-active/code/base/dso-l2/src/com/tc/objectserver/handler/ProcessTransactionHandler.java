@@ -25,8 +25,6 @@ import com.tc.objectserver.tx.TransactionBatchReader;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
 import com.tc.util.SequenceValidator;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -56,8 +54,7 @@ public class ProcessTransactionHandler extends AbstractEventHandler {
     final CommitTransactionMessageImpl ctm = (CommitTransactionMessageImpl) context;
     try {
       final TransactionBatchReader reader = batchReaderFactory.newTransactionBatchReader(ctm);
-      transactionBatchManager.defineBatch(reader.getNodeID(), reader.getBatchID(), reader.getNumTxns());
-      Collection completedTxnIds = reader.addAcknowledgedTransactionIDsTo(new HashSet());
+      transactionBatchManager.defineBatch(reader.getNodeID(), reader.getNumTxns());
       ServerTransaction txn;
 
       // XXX:: Has to be ordered.
@@ -73,10 +70,10 @@ public class ProcessTransactionHandler extends AbstractEventHandler {
       }
       messageRecycler.addMessage(ctm, txns.keySet());
       if (replicatedObjectMgr.relayTransactions()) {
-        transactionManager.incomingTransactions(nodeID, txns.keySet(), txns.values(), true, completedTxnIds);
+        transactionManager.incomingTransactions(nodeID, txns.keySet(), txns.values(), true);
         txnRelaySink.add(new IncomingTransactionContext(nodeID, ctm, txns));
       } else {
-        transactionManager.incomingTransactions(nodeID, txns.keySet(), txns.values(), false, completedTxnIds);
+        transactionManager.incomingTransactions(nodeID, txns.keySet(), txns.values(), false);
       }
     } catch (Exception e) {
       logger.error("Error reading transaction batch. : ", e);

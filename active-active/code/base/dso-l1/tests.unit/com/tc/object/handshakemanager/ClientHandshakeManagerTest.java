@@ -245,6 +245,10 @@ public class ClientHandshakeManagerTest extends TCTestCase {
       throw new ImplementMe();
     }
 
+    public DNA retrieveWithParentContext(ObjectID id, ObjectID parentContext) {
+      throw new ImplementMe();
+    }
+
   }
 
   private static class TestClientHandshakeMessageFactory implements ClientHandshakeMessageFactory {
@@ -377,6 +381,14 @@ public class ClientHandshakeManagerTest extends TCTestCase {
     }
 
     public void cannotAwardLock(SessionID sessionID, LockID id, ThreadID threadID, int type) {
+      throw new ImplementMe();
+    }
+
+    public void enableStat(LockID lockID, int lockStackTraceDepth, int lockStatCollectFrequency) {
+      throw new ImplementMe();
+    }
+
+    public void disableStat(LockID lockID) {
       throw new ImplementMe();
     }
   }
