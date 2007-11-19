@@ -51,6 +51,7 @@ import com.tc.object.TCClass;
 import com.tc.object.TCObject;
 import com.tc.object.bytecode.AbstractStringBuilderAdapter;
 import com.tc.object.bytecode.AccessibleObjectAdapter;
+import com.tc.object.bytecode.ArrayListAdapter;
 import com.tc.object.bytecode.AtomicIntegerAdapter;
 import com.tc.object.bytecode.AtomicLongAdapter;
 import com.tc.object.bytecode.BufferedWriterAdapter;
@@ -61,7 +62,6 @@ import com.tc.object.bytecode.ClassAdapterFactory;
 import com.tc.object.bytecode.Clearable;
 import com.tc.object.bytecode.DataOutputStreamAdapter;
 import com.tc.object.bytecode.DuplicateMethodAdapter;
-import com.tc.object.bytecode.SetRemoveMethodAdapter;
 import com.tc.object.bytecode.HashtableClassAdapter;
 import com.tc.object.bytecode.JavaLangReflectArrayAdapter;
 import com.tc.object.bytecode.JavaLangReflectFieldAdapter;
@@ -94,6 +94,7 @@ import com.tc.object.bytecode.NullManager;
 import com.tc.object.bytecode.NullTCObject;
 import com.tc.object.bytecode.ReentrantLockClassAdapter;
 import com.tc.object.bytecode.ReentrantReadWriteLockClassAdapter;
+import com.tc.object.bytecode.SetRemoveMethodAdapter;
 import com.tc.object.bytecode.StringBufferAdapter;
 import com.tc.object.bytecode.StringGetCharsAdapter;
 import com.tc.object.bytecode.TCMap;
@@ -290,7 +291,7 @@ public class BootJarTool {
    * Checks if the given bootJarFile is complete; meaning: - All the classes declared in the configurations
    * <additional-boot-jar-classes/> section is present in the boot jar. - And there are no user-classes present in the
    * boot jar that is not declared in the <additional-boot-jar-classes/> section
-   * 
+   *
    * @return <code>true</code> if the boot jar is complete.
    */
   private final boolean isBootJarComplete(File bootJarFile) {
@@ -308,7 +309,7 @@ public class BootJarTool {
    * Scans the boot JAR file for: - User-defined classes that are in the boot JAR but is not defined in the
    * <additional-boot-jar-classes/> section of the config - Class names declared in the config but are not in the boot
    * JAR
-   * 
+   *
    * @throws InvalidBootJarMetaDataException
    */
   private final Map compareBootJarContentsToUserSpec(File bootJarFile) throws InvalidBootJarMetaDataException {
@@ -1973,10 +1974,11 @@ public class BootJarTool {
     spec.addAlwaysLogSpec(SerializationUtil.REMOVE_FIRST_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.REMOVE_LAST_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.REMOVE_AT_SIGNATURE);
-    spec.addIfTrueLogSpec(SerializationUtil.REMOVE_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.REMOVE_RANGE_SIGNATURE);
     spec.addMethodAdapter("listIterator(I)Ljava/util/ListIterator;", new LinkedListAdapter.ListIteratorAdapter());
+    spec.addMethodAdapter(SerializationUtil.REMOVE_SIGNATURE, new LinkedListAdapter.RemoveAdapter());
     spec.addArrayCopyMethodCodeSpec(SerializationUtil.TO_ARRAY_SIGNATURE);
+    spec.addSupportMethodCreator(new LinkedListAdapter.RemoveMethodCreator());
     addSerializationInstrumentedCode(spec);
 
     spec = config.getOrCreateSpec("java.util.Vector", "com.tc.object.applicator.ListApplicator");
@@ -2013,10 +2015,13 @@ public class BootJarTool {
     spec.addAlwaysLogSpec(SerializationUtil.ADD_ALL_AT_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.ADD_ALL_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.REMOVE_AT_SIGNATURE);
-    spec.addIfTrueLogSpec(SerializationUtil.REMOVE_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.REMOVE_RANGE_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.SET_SIGNATURE);
     spec.addAlwaysLogSpec(SerializationUtil.CLEAR_SIGNATURE);
+    if (Vm.isJDK15Compliant()) {
+      spec.addMethodAdapter(SerializationUtil.REMOVE_SIGNATURE, new ArrayListAdapter.RemoveAdaptor());
+      spec.addSupportMethodCreator(new ArrayListAdapter.FastRemoveMethodCreator());
+    }
     spec.addArrayCopyMethodCodeSpec(SerializationUtil.TO_ARRAY_SIGNATURE);
     addSerializationInstrumentedCode(spec);
   }
@@ -2040,13 +2045,13 @@ public class BootJarTool {
     String jMapClassNameDots = "java.util.Hashtable";
     String tcMapClassNameDots = "java.util.HashtableTC";
     Map instrumentedContext = new HashMap();
-    mergeClass(tcMapClassNameDots, jMapClassNameDots, instrumentedContext, HashtableClassAdapter.createMethod());
+    mergeClass(tcMapClassNameDots, jMapClassNameDots, instrumentedContext, HashtableClassAdapter.getMethods());
   }
 
   private final void addInstrumentedLinkedHashMap(Map instrumentedContext) {
     String jMapClassNameDots = "java.util.LinkedHashMap";
     String tcMapClassNameDots = "java.util.LinkedHashMapTC";
-    mergeClass(tcMapClassNameDots, jMapClassNameDots, instrumentedContext, null);
+    mergeClass(tcMapClassNameDots, jMapClassNameDots, instrumentedContext);
   }
 
   private void addInstrumentedReentrantReadWriteLock() {
@@ -2184,21 +2189,30 @@ public class BootJarTool {
     String jMapClassNameDots = "java.util.HashMap";
     String tcMapClassNameDots = "java.util.HashMapTC";
     Map instrumentedContext = new HashMap();
-    mergeClass(tcMapClassNameDots, jMapClassNameDots, instrumentedContext, null);
+    mergeClass(tcMapClassNameDots, jMapClassNameDots, instrumentedContext);
 
     addInstrumentedLinkedHashMap(instrumentedContext);
   }
 
+  private final void mergeClass(String tcClassNameDots, String jClassNameDots, Map instrumentedContext) {
+    mergeClass(tcClassNameDots, jClassNameDots, instrumentedContext, null);
+  }
+
   private final void mergeClass(String tcClassNameDots, String jClassNameDots, Map instrumentedContext,
-                                final MethodNode replacedMethod) {
+                                final MethodNode[] replacedMethods) {
     byte[] tcData = getSystemBytes(tcClassNameDots);
 
     ClassReader tcCR = new ClassReader(tcData);
     ClassNode tcCN = new ClassNode() {
       public MethodVisitor visitMethod(int maccess, String mname, String mdesc, String msignature, String[] mexceptions) {
-        if (replacedMethod != null && mname.equals(replacedMethod.name) && mdesc.equals(replacedMethod.desc)) {
-          methods.add(replacedMethod);
-          return null;
+        if (replacedMethods != null) {
+          for (int i = 0; i < replacedMethods.length; i++) {
+            MethodNode replacedMethod = replacedMethods[i];
+            if (mname.equals(replacedMethod.name) && mdesc.equals(replacedMethod.desc)) {
+              methods.add(replacedMethod);
+              return null;
+            }
+          }
         }
         return super.visitMethod(maccess, mname, mdesc, msignature, mexceptions);
       }
