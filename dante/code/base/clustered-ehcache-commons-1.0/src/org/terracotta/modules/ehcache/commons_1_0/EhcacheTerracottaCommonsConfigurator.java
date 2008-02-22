@@ -83,7 +83,11 @@ public abstract class EhcacheTerracottaCommonsConfigurator extends TerracottaCon
     configHelper.addIncludePattern("com.tcclient.ehcache.*", false, false, false);
     TransparencyClassSpec spec = configHelper.getOrCreateSpec("com.tcclient.cache.CacheDataStore");
     spec.setHonorTransient(true);
-    spec.setCallMethodOnLoad("initialize");
+    /** Changed as an extention to coresident L1. on load is not required, since during faulting 
+     * CacheTC instance is initialized, it will initialize cache store as well. 
+     */
+//    spec.setCallMethodOnLoad("initialize");
+    /** Done coresident L1 changes **/
     spec.addDistributedMethodCall("stopInvalidatorThread", "()V", false);
     spec = configHelper.getOrCreateSpec("com.tcclient.cache.CacheData");
     spec.setCallConstructorOnLoad(true);
@@ -95,6 +99,26 @@ public abstract class EhcacheTerracottaCommonsConfigurator extends TerracottaCon
     
     // autolocking
     configHelper.addAutolock(" * com.tcclient.cache.GlobalKeySet.*(..)", ConfigLockLevel.WRITE);
+
+    /** Changed as an extention to coresident L1 **/
+    addExportedBundleClass(thisBundle,"net.sf.ehcache.store.PartitionedStore");
+    spec = configHelper.getOrCreateSpec("net.sf.ehcache.Cache");
+    spec.setHonorTransient(true);
+    spec = configHelper.getOrCreateSpec(MEMORYSTORE_CLASS_NAME_DOTS);
+    /** net.sf.ehcache.Cache instance is not partitioned across multiple L2s. Per cache there is
+     * only one instance that resides on first L2. Each partitioned store has a reference to 
+     * MemoryStore that internally refers net.sf.ehcache.Cache. Since each difference instance of
+     * PartitionedStore resides on differnt L2, the contained MemoryStore can not have a pesistent
+     * reference to net.sf.ehcache.Cache, which is managed by only one of L2. Hence 'cache'reference
+     * inside MemoryStore is declared as transient and while net.sf.ehcache.Cache is initialized, it
+     * initializes MemoryStore.cache with its own instance.
+     */
+    spec.addTransient("cache");
+    spec.addTransient("status");
+    configHelper.addAutolock("* net.sf.ehcache.CacheManager.*(..)", ConfigLockLevel.WRITE);
+    spec = configHelper.getOrCreateSpec(CACHE_CLASS_NAME_DOTS);
+    spec.setHonorTransient(true);
+    /** Done coresident L1 changes **/
 	}
   
   protected abstract String getExportedBundleName();

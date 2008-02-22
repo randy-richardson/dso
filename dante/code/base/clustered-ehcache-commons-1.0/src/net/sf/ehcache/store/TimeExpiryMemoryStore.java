@@ -7,6 +7,7 @@ package net.sf.ehcache.store;
 import net.sf.ehcache.CacheException;
 import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;
+import net.sf.ehcache.Status;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,12 +28,16 @@ public class TimeExpiryMemoryStore extends MemoryStore {
 
     try {
       map = loadMapInstance(cache.getName());
-      ((SpoolingTimeExpiryMap)map).initialize();
     } catch (CacheException e) {
       LOG.error(cache.getName() + "Cache: Cannot start TimeExpiryMemoryStore. Initial cause was " + e.getMessage(), e);
     }
   }
 
+  public void initialize(int partitionId) {
+	  status = Status.STATUS_ALIVE;
+      ((SpoolingTimeExpiryMap)map).initialize(partitionId);
+	  
+  }
   private long getThreadIntervalSeconds(long threadIntervalSec, long timeToIdleSec, long timeToLiveSec) {
     if (timeToIdleSec <= 0) {
       return timeToLiveSec;
