@@ -255,4 +255,8 @@ public final class NullManager implements Manager {
     //
   }
 
+  public Object getObjectManager() {
+	  throw new UnsupportedOperationException();
+  }
+
 }

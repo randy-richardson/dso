@@ -453,4 +453,5 @@ public interface Manager {
    */
   public boolean isFieldPortableByOffset(Object pojo, long fieldOffset);
 
+  public Object getObjectManager();
 }
