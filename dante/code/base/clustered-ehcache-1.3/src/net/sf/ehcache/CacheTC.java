@@ -11,17 +11,21 @@ import net.sf.ehcache.event.RegisteredEventListeners;
 import net.sf.ehcache.store.DiskStore;
 import net.sf.ehcache.store.MemoryStore;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
+import net.sf.ehcache.store.PartitionedStore;
 import net.sf.ehcache.store.TimeExpiryMemoryStore;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.terracotta.modules.ehcache.commons_1_0.util.Util;
 
+import com.partitions.PartitionManager;
+import com.tc.config.lock.LockLevel;
 import com.tc.object.bytecode.ManagerUtil;
 import com.tc.properties.TCProperties;
 import com.tc.util.Assert;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.server.UID;
@@ -88,7 +92,7 @@ public class CacheTC implements Ehcache {
 
   private String                                 name;
 
-  private Status                                 status;
+  transient private Status                                 status;
 
   private final int                              maxElementsInMemory;
 
@@ -116,9 +120,11 @@ public class CacheTC implements Ehcache {
   /**
    * The {@link MemoryStore} of this {@link CacheTC}. All caches have a memory store.
    */
-  private TimeExpiryMemoryStore                  memoryStore;
-  private final Object[]                         locks;
-
+  /** Changed as an extention to coresident L1. Locks and Memory Store is partitioned to multiple L2.
+   *  Cache instance is not partitioned and it lives  on a single. So it can not be have hard a reference
+   *  to multiple stores each residing on different L2.
+   **/  
+  private transient PartitionedStore 						 stores[];	
   private RegisteredEventListeners               registeredEventListeners;
 
   private final String                           guid                                   = new StringBuffer()
@@ -132,6 +138,8 @@ public class CacheTC implements Ehcache {
   private BootstrapCacheLoader                   bootstrapCacheLoader;
 
   private CacheConfiguration                     configuration;
+  
+  private int 									 concurrency;
 
   public static CacheTC convert(Ehcache cache) {
     CacheTC tcCache = new CacheTC(cache.getName(), cache.getMaxElementsInMemory(),
@@ -324,13 +332,9 @@ public class CacheTC implements Ehcache {
     this.bootstrapCacheLoader = bootstrapCacheLoader;
 
     TCProperties ehcacheProperies = ManagerUtil.getTCProperties().getPropertiesFor("ehcache");
-    int concurrency = ehcacheProperies.getInt("concurrency");
+    concurrency = ehcacheProperies.getInt("concurrency");
     if (concurrency <= 1) {
-      concurrency = 1;
-    }
-    this.locks = new Object[concurrency];
-    for (int i = 0; i < concurrency; i++) {
-      this.locks[i] = new Object();
+    	concurrency = 1;
     }
   }
 
@@ -344,6 +348,17 @@ public class CacheTC implements Ehcache {
          timeToIdleSeconds, false, diskExpiryThreadIntervalSeconds, registeredEventListeners, bootstrapCacheLoader, 0);
   }
 
+  private void initializeIfFaulted() {
+  /** status would be null when an existing cachemanager is faulted from terracotta server **/
+	if(status == null) {
+		synchronized(this) {
+			if(status == null) {
+				changeStatus(Status.STATUS_UNINITIALISED);
+				initialise();
+			}
+		}
+	}
+  }
   /**
    * Newly created caches do not have a {@link net.sf.ehcache.store.MemoryStore} or a
    * {@link net.sf.ehcache.store.DiskStore}. <p/> This method creates those and makes the cache ready to accept
@@ -363,10 +378,41 @@ public class CacheTC implements Ehcache {
         }
       }
 
-      MemoryStore ms = MemoryStore.create(this, null);
-      Assert.post(ms instanceof TimeExpiryMemoryStore);
+      /**
+       * 1. Initialize concurrency
+       * 2. Initialize PartitionStore from different L2. Each PartitionStore is a Root and contains
+       * locks and MemoryStore that are per L2
+       * 3. Since the 'cache' field of memeory store is transient, initialize it with Cache reference
+       * This is a hack as of now as there is not public method exposed to set the 'cache' field inside
+       * MemoryStore.
+       */
 
-      memoryStore = (TimeExpiryMemoryStore) ms;
+      stores = new PartitionedStore[PartitionManager.getNumPartitions()];
+      try {
+    	  Field cacheField = MemoryStore.class.getDeclaredField("cache");
+    	  cacheField.setAccessible(true);
+	      for(int i = 0; i < PartitionManager.getNumPartitions(); i++) {
+	          int oldPartition = PartitionManager.setPartition(i);
+	          ManagerUtil.beginLock(name + i, LockLevel.WRITE);
+	          try {
+	        	  stores[i] = (PartitionedStore)ManagerUtil.lookupRoot(name + i);
+	        	  if(stores[i] == null) {
+	                  MemoryStore ms = MemoryStore.create(this, null);
+	                  Assert.post(ms instanceof TimeExpiryMemoryStore);
+	                  stores[i] = (PartitionedStore)ManagerUtil.createOrReplaceRoot(name + i, new PartitionedStore((TimeExpiryMemoryStore)ms, concurrency));
+	        	  }
+	        	  stores[i].getMemoryStore().initialize(i);
+	        	  cacheField.set(stores[i].getMemoryStore(), this);
+	          }finally {
+	              ManagerUtil.commitLock(name + i);
+	          }
+	          PartitionManager.setPartition(oldPartition);
+	      }
+      }catch(Exception e) {
+    	  LOG.error("Could not set Cache instance inside 'cache' field of net.sf.ehcache.MemoryStore class", e);
+    	  throw new CacheException("Could not set Cache instance inside 'cache' field of net.sf.ehcache.MemoryStore class", e);
+	  }
+
       changeStatus(Status.STATUS_ALIVE);
     }
 
@@ -441,7 +487,8 @@ public class CacheTC implements Ehcache {
     if (element == null) { throw new IllegalArgumentException("Element cannot be null"); }
 
     Object key = element.getObjectKey();
-    Object lock = getLockObject(key);
+    int partition = getPartition(key);
+    Object lock = getLockObject(key, partition);
     ManagerUtil.monitorEnter(lock, writeLockLevel);
     try {
       element.resetAccessStatistics();
@@ -452,7 +499,7 @@ public class CacheTC implements Ehcache {
       }
       applyDefaultsToElementWithoutLifespanSet(element);
 
-      memoryStore.putData(element);
+      stores[partition].getMemoryStore().putData(element);
       if (elementExists) {
         registeredEventListeners.notifyElementUpdated(element, doNotNotifyCacheReplicators);
       } else {
@@ -490,12 +537,13 @@ public class CacheTC implements Ehcache {
     if (element == null) { throw new IllegalArgumentException("Element cannot be null"); }
 
     Object key = element.getObjectKey();
-    Object lock = getLockObject(key);
+    int partition = getPartition(key);
+    Object lock = getLockObject(key, partition);
     ManagerUtil.monitorEnter(lock, writeLockLevel);
     try {
       applyDefaultsToElementWithoutLifespanSet(element);
 
-      memoryStore.putData(element);
+      stores[partition].getMemoryStore().putData(element);
     } finally {
       ManagerUtil.monitorExit(lock);
     }
@@ -578,14 +626,14 @@ public class CacheTC implements Ehcache {
     Object[] keyArrays = null;
     readLockAll();
     try {
-      keyArrays = memoryStore.getKeyArray();
+      for(int i = 0; i < stores.length; i++) {
+    	  keyArrays = stores[i].getMemoryStore().getKeyArray();
+    	  if(keyArrays != null)
+    		  allKeyList.addAll(Arrays.asList(keyArrays));  
+      }
     } finally {
       unlockAll();
     }
-    if (keyArrays == null) { return allKeyList; }
-
-    List keyList = Arrays.asList(keyArrays);
-    allKeyList.addAll(keyList);
     return allKeyList;
   }
 
@@ -603,6 +651,7 @@ public class CacheTC implements Ehcache {
    * @throws IllegalStateException if the cache is not {@link Status#STATUS_ALIVE}
    */
   public final List getKeysWithExpiryCheck() throws IllegalStateException, CacheException {
+	checkStatus();  
     List allKeyList = getKeys();
     // remove keys of expired elements
     ArrayList nonExpiredKeys = new ArrayList(allKeyList.size());
@@ -631,18 +680,20 @@ public class CacheTC implements Ehcache {
   public final List getKeysNoDuplicateCheck() throws IllegalStateException {
     // since overflowToDisk is always false, this is the same
     // as getKeys().
+	checkStatus();  
     return getKeys();
   }
 
   private Element searchInMemoryStore(Object key, boolean updateStatistics) {
     Element element;
-    Object lock = getLockObject(key);
+    int partition = getPartition(key);
+    Object lock = getLockObject(key, partition);
     ManagerUtil.monitorEnter(lock, readLockLevel);
     try {
       if (updateStatistics) {
-        element = memoryStore.get(key);
+        element = stores[partition].getMemoryStore().get(key);
       } else {
-        element = memoryStore.getQuiet(key);
+        element = stores[partition].getMemoryStore().getQuiet(key);
       }
     } finally {
       ManagerUtil.monitorExit(lock);
@@ -753,10 +804,11 @@ public class CacheTC implements Ehcache {
     checkStatus();
     boolean removed = false;
     Element elementFromMemoryStore;
-    Object lock = getLockObject(key);
+    int partition = getPartition(key);
+    Object lock = getLockObject(key, partition);
     ManagerUtil.monitorEnter(lock, writeLockLevel);
     try {
-      elementFromMemoryStore = memoryStore.remove(key);
+      elementFromMemoryStore = stores[partition].getMemoryStore().remove(key);
     } finally {
       ManagerUtil.monitorExit(lock);
     }
@@ -803,7 +855,10 @@ public class CacheTC implements Ehcache {
     checkStatus();
     writeLockAll();
     try {
-      memoryStore.removeAll();
+      for(int i = 0; i < stores.length; i++) {
+    	  PartitionManager.setPartition(i);
+    	  stores[i].getMemoryStore().removeAll();
+      }
     } finally {
       unlockAll();
     }
@@ -817,19 +872,22 @@ public class CacheTC implements Ehcache {
    * @throws IllegalStateException if the cache is not {@link Status#STATUS_ALIVE}
    */
   public void dispose() throws IllegalStateException {
+    checkStatus();
     writeLockAll();
     try {
       synchronized (this) {
-        checkStatus();
-        memoryStore.stopTimeMonitoring();
-        memoryStore.dispose();
+        for(int i = 0; i < stores.length; i++) {	
+        	PartitionManager.setPartition(i);
+        	stores[i].getMemoryStore().stopTimeMonitoring();
+        	stores[i].getMemoryStore().dispose();
+        }
         registeredEventListeners.dispose();
 
         changeStatus(Status.STATUS_SHUTDOWN);
       }
     } finally {
       unlockAll();
-      memoryStore = null;
+      stores = null;
     }
   }
 
@@ -839,10 +897,13 @@ public class CacheTC implements Ehcache {
    * @throws IllegalStateException if the cache is not {@link Status#STATUS_ALIVE}
    */
   public final void flush() throws IllegalStateException, CacheException {
+    checkStatus();
     writeLockAll();
     try {
-      checkStatus();
-      memoryStore.flush();
+      for(int i = 0; i < stores.length; i++) {	
+    	  PartitionManager.setPartition(i);
+    	  stores[i].getMemoryStore().flush();
+      }
     } finally {
       unlockAll();
     }
@@ -884,7 +945,12 @@ public class CacheTC implements Ehcache {
     checkStatus();
     readLockAll();
     try {
-      return memoryStore.getSizeInBytes();
+      int size = 0;	
+      for(int i = 0; i < stores.length; i++) {	
+    	  PartitionManager.setPartition(i);
+    	  size += stores[i].getMemoryStore().getSizeInBytes();
+      }
+      return size;
     } finally {
       unlockAll();
     }
@@ -898,7 +964,12 @@ public class CacheTC implements Ehcache {
    */
   public final long getMemoryStoreSize() throws IllegalStateException {
     checkStatus();
-    return memoryStore.getSize();
+    int size = 0;	
+    for(int i = 0; i < stores.length; i++) {	
+    	PartitionManager.setPartition(i);
+    	size += stores[i].getMemoryStore().getSize();
+    }
+    return size;
   }
 
   /**
@@ -922,6 +993,7 @@ public class CacheTC implements Ehcache {
   }
 
   private void checkStatus() throws IllegalStateException {
+	initializeIfFaulted();  
     if (!status.equals(Status.STATUS_ALIVE)) { throw new IllegalStateException("The " + name + " Cache is not alive."); }
   }
 
@@ -935,7 +1007,13 @@ public class CacheTC implements Ehcache {
    * @deprecated Use {@link net.sf.ehcache.Statistics}
    */
   public final int getHitCount() {
-    return memoryStore.getHitCount();
+	checkStatus();  
+    int count = 0;	
+    for(int i = 0; i < stores.length; i++) {	
+  	  PartitionManager.setPartition(i);
+  	  count += stores[i].getMemoryStore().getHitCount();
+    }
+    return count;
   }
 
   /**
@@ -948,7 +1026,13 @@ public class CacheTC implements Ehcache {
    * @deprecated Use {@link net.sf.ehcache.Statistics}
    */
   public final int getMemoryStoreHitCount() {
-    return memoryStore.getHitCount();
+    checkStatus();  
+    int count = 0;	
+    for(int i = 0; i < stores.length; i++) {	
+    	PartitionManager.setPartition(i);
+    	count += stores[i].getMemoryStore().getHitCount();
+    }
+    return count;
   }
 
   /**
@@ -973,7 +1057,13 @@ public class CacheTC implements Ehcache {
    * @deprecated Use {@link net.sf.ehcache.Statistics}
    */
   public final int getMissCountNotFound() {
-    return memoryStore.getMissCountNotFound();
+	checkStatus();  
+    int count = 0;	
+    for(int i = 0; i < stores.length; i++) {	
+    	PartitionManager.setPartition(i);
+    	count += stores[i].getMemoryStore().getMissCountNotFound();
+    }
+    return count;
   }
 
   /**
@@ -985,7 +1075,13 @@ public class CacheTC implements Ehcache {
    * @deprecated Use {@link net.sf.ehcache.Statistics}
    */
   public final int getMissCountExpired() {
-    return memoryStore.getMissCountExpired();
+	checkStatus();  
+    int count = 0;	
+    for(int i = 0; i < stores.length; i++) {	
+    	PartitionManager.setPartition(i);
+    	count += stores[i].getMemoryStore().getMissCountExpired();
+    }
+    return count;
   }
 
   /**
@@ -1003,6 +1099,7 @@ public class CacheTC implements Ehcache {
    * @throws IllegalArgumentException if an illegal name is used.
    */
   public final void setName(String name) throws IllegalArgumentException {
+//	checkStatus();  
     if (!status.equals(Status.STATUS_UNINITIALISED)) { throw new IllegalStateException(
                                                                                        "Only unitialised caches can have their names set."); }
     if (name == null) { throw new IllegalArgumentException("Cache name cannot be null."); }
@@ -1101,10 +1198,11 @@ public class CacheTC implements Ehcache {
   public final boolean isExpired(Element element) throws IllegalStateException, NullPointerException {
     checkStatus();
     Object key = element.getObjectKey();
-    Object lock = getLockObject(key);
+    int partition = getPartition(key);
+    Object lock = getLockObject(key, partition);
     ManagerUtil.monitorEnter(lock, readLockLevel);
     try {
-      return memoryStore.isExpired(element.getObjectKey());
+      return stores[partition].getMemoryStore().isExpired(element.getObjectKey());
     } finally {
       ManagerUtil.monitorExit(lock);
     }
@@ -1119,7 +1217,7 @@ public class CacheTC implements Ehcache {
    * @throws CloneNotSupportedException
    */
   public final Object clone() throws CloneNotSupportedException {
-    if (memoryStore != null) { throw new CloneNotSupportedException("Cannot clone an initialized cache."); }
+    if (stores != null) { throw new CloneNotSupportedException("Cannot clone an initialized cache."); }
     CacheTC copy = (CacheTC) super.clone();
     RegisteredEventListeners registeredEventListenersFromCopy = copy.getCacheEventNotificationService();
     if (registeredEventListenersFromCopy == null
@@ -1150,8 +1248,10 @@ public class CacheTC implements Ehcache {
    * @throws IllegalStateException if the cache is not {@link Status#STATUS_ALIVE}
    */
   final MemoryStore getMemoryStore() throws IllegalStateException {
-    checkStatus();
-    return memoryStore;
+//    checkStatus();
+//    return memoryStore;
+	  //to be implemented
+	  return null;
   }
 
   /**
@@ -1194,7 +1294,9 @@ public class CacheTC implements Ehcache {
    * @since 1.2
    */
   public final boolean isElementInMemory(Object key) {
-    Object lock = getLockObject(key);
+	checkStatus();  
+    int partition = getPartition(key);
+    Object lock = getLockObject(key, partition);
     ManagerUtil.monitorEnter(lock, readLockLevel);
     try {
       return isElementInMemoryUnlock(key);
@@ -1204,7 +1306,11 @@ public class CacheTC implements Ehcache {
   }
   
   private boolean isElementInMemoryUnlock(Object key) {
-    return memoryStore.containsKey(key);
+	for(int i = 0; i < stores.length; i++) {
+		if(stores[i].getMemoryStore().containsKey(key))
+			return true;
+	}
+	return false;
   }
 
   /**
@@ -1257,7 +1363,10 @@ public class CacheTC implements Ehcache {
 
     writeLockAll();
     try {
-      memoryStore.clearStatistics();
+      for(int i = 0; i < stores.length; i++) {
+    	  PartitionManager.setPartition(i);
+    	  stores[i].getMemoryStore().clearStatistics();
+      }
     } finally {
       unlockAll();
     }
@@ -1287,9 +1396,13 @@ public class CacheTC implements Ehcache {
    * Causes all elements stored in the Cache to be synchronously checked for expiry, and if expired, evicted.
    */
   public void evictExpiredElements() {
+	checkStatus();  
     writeLockAll();
     try {
-      memoryStore.evictExpiredElements();
+      for(int i = 0; i < stores.length; i++) {
+    	  PartitionManager.setPartition(i);
+    	  stores[i].getMemoryStore().evictExpiredElements();
+      }
     } finally {
       unlockAll();
     }
@@ -1304,6 +1417,7 @@ public class CacheTC implements Ehcache {
    *         Element.
    */
   public boolean isKeyInCache(Object key) {
+	checkStatus();  
     return isElementInMemory(key) || isElementOnDisk(key);
   }
 
@@ -1318,12 +1432,19 @@ public class CacheTC implements Ehcache {
    *         Element.
    */
   public boolean isValueInCache(Object value) {
+	checkStatus();  
     boolean isSerializable = value instanceof Serializable;
     List keys;
     if (isSerializable) {
       keys = getKeys();
     } else {
-      keys = Arrays.asList(memoryStore.getKeyArray());
+    	keys = new ArrayList();
+        Object[] keyArrays = null;
+        for(int i = 0; i < stores.length; i++) {
+    	  keyArrays = stores[i].getMemoryStore().getKeyArray();
+    	  if(keyArrays != null)
+    		  keys.addAll(Arrays.asList(keyArrays));  
+        }
     }
 
     for (int i = 0; i < keys.size(); i++) {
@@ -1346,6 +1467,7 @@ public class CacheTC implements Ehcache {
    * for the statistics accuracy of {@link Statistics#STATISTICS_ACCURACY_BEST_EFFORT}.
    */
   public Statistics getStatistics() throws IllegalStateException {
+	checkStatus();  
     int size = 0;
     if (statisticsAccuracy == Statistics.STATISTICS_ACCURACY_BEST_EFFORT) {
       size = getSize();
@@ -1446,28 +1568,44 @@ public class CacheTC implements Ehcache {
   }
 
   private int getStoreIndex(Object key) {
-    return Util.hash(key, locks.length);
+    return Util.hash(key, concurrency);
   }
 
-  private Object getLockObject(Object key) {
-    return this.locks[getStoreIndex(key)];
+  private Object getLockObject(Object key, int partition) {
+	PartitionManager.setPartition(partition);
+    return stores[partition].getLocks()[getStoreIndex(key)]; 
   }
 
   private void readLockAll() {
-    for (int i = 0; i < this.locks.length; i++) {
-      ManagerUtil.monitorEnter(locks[i], readLockLevel);
+	for(int partition = 0; partition < stores.length; partition++)  {
+		PartitionManager.setPartition(partition);
+		Object[] locks = stores[partition].getLocks();
+		for (int i = 0; i < locks.length; i++) {
+			ManagerUtil.monitorEnter(locks[i], readLockLevel);
+		}
     }
   }
 
   private void writeLockAll() {
-    for (int i = 0; i < this.locks.length; i++) {
-      ManagerUtil.monitorEnter(locks[i], writeLockLevel);
+	for(int partition = 0; partition < stores.length; partition++)  {
+		PartitionManager.setPartition(partition);
+		Object[] locks = stores[partition].getLocks();
+		for (int i = 0; i < locks.length; i++) {
+			ManagerUtil.monitorEnter(locks[i], writeLockLevel);
+		}
     }
   }
 
   private void unlockAll() {
-    for (int i = 0; i < this.locks.length; i++) {
-      ManagerUtil.monitorExit(locks[i]);
+	for(int partition = 0; partition < stores.length; partition++)  {
+		PartitionManager.setPartition(partition);
+		Object[] locks = stores[partition].getLocks();
+		for (int i = 0; i < locks.length; i++) {
+			ManagerUtil.monitorExit(locks[i]);		}
     }
+  }
+  
+  private int getPartition(Object key) {
+	  return Util.hash(key, stores.length);
   }
 }
