@@ -353,7 +353,6 @@ public class CacheTC implements Ehcache {
 	if(status == null) {
 		synchronized(this) {
 			if(status == null) {
-				changeStatus(Status.STATUS_UNINITIALISED);
 				initialise();
 			}
 		}
@@ -366,7 +365,7 @@ public class CacheTC implements Ehcache {
    */
   public void initialise() {
     synchronized (this) {
-      if (!status.equals(Status.STATUS_UNINITIALISED)) { throw new IllegalStateException(
+      if (status != null && !status.equals(Status.STATUS_UNINITIALISED)) { throw new IllegalStateException(
                                                                                          "Cannot initialise the "
                                                                                              + name
                                                                                              + " cache because its status is not STATUS_UNINITIALISED"); }
@@ -1100,7 +1099,14 @@ public class CacheTC implements Ehcache {
    */
   public final void setName(String name) throws IllegalArgumentException {
 //	checkStatus();  
-    if (!status.equals(Status.STATUS_UNINITIALISED)) { throw new IllegalStateException(
+	if(status == null) {
+        int oldPartition = PartitionManager.setPartition(0);
+        if(ManagerUtil.lookupRoot(this.name + 0) != null)
+        	throw new IllegalStateException(
+            "Only unitialised caches can have their names set.");
+        PartitionManager.setPartition(oldPartition);
+	}
+	else if (!status.equals(Status.STATUS_UNINITIALISED)) { throw new IllegalStateException(
                                                                                        "Only unitialised caches can have their names set."); }
     if (name == null) { throw new IllegalArgumentException("Cache name cannot be null."); }
     if (name.indexOf('/') != -1) { throw new IllegalArgumentException("Cache name cannot contain '/' characters."); }
