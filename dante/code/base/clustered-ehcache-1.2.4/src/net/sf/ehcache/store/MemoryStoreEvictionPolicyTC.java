@@ -88,5 +88,11 @@ public final class MemoryStoreEvictionPolicyTC {
     }
     return LRU;
   }
+  
+  public boolean equals(Object policy) {
+	  if(!(policy instanceof MemoryStoreEvictionPolicyTC))
+		  return false;
+	  return this.myName.equals(((MemoryStoreEvictionPolicyTC)policy).myName);
+  }
 }
 

@@ -30,6 +30,10 @@ public class EhcacheCacheManagerClassAdapter extends ClassAdapter implements Cla
         && "(Lnet/sf/ehcache/config/Configuration;Ljava/lang/String;Ljava/net/URL;Ljava/io/InputStream;)V".equals(desc)) {
       mv = new InitMethodAdapter(mv);
     }
+    if ("<clinit>".equals(name)) {
+        mv = new ClInitMethodAdaptor(mv);
+    }
+    	
     return mv;
   }
 
@@ -46,6 +50,22 @@ public class EhcacheCacheManagerClassAdapter extends ClassAdapter implements Cla
       } else {
         super.visitMethodInsn(opcode, owner, name, desc);
       }
+    }
+  }
+  
+  private static class ClInitMethodAdaptor extends MethodAdapter implements Opcodes {
+	private boolean firstInstruction = true;  
+    public ClInitMethodAdaptor(MethodVisitor mv) {
+        super(mv);
+    }
+    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+    	if(firstInstruction) {
+    		super.visitInsn(ICONST_0);
+    		super.visitMethodInsn(INVOKESTATIC,"com/partitions/PartitionManager","setPartition","(I)I");
+    		super.visitInsn(POP);
+    		firstInstruction = false;
+    	}
+        super.visitMethodInsn(opcode, owner, name, desc);
     }
   }
 }
