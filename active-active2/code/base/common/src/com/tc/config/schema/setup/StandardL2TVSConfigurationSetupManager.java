@@ -4,12 +4,18 @@
  */
 package com.tc.config.schema.setup;
 
+import org.apache.xmlbeans.XmlBoolean;
+import org.apache.xmlbeans.XmlException;
+import org.apache.xmlbeans.XmlInteger;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlOptions;
 
 import com.tc.capabilities.AbstractCapabilitiesFactory;
 import com.tc.capabilities.Capabilities;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
+import com.tc.config.schema.NewActiveServerGroupConfig;
+import com.tc.config.schema.NewActiveServerGroupsConfig;
+import com.tc.config.schema.NewActiveServerGroupsConfigObject;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewCommonL2ConfigObject;
 import com.tc.config.schema.NewHaConfig;
@@ -28,6 +34,7 @@ import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.object.config.schema.NewL2DSOConfigObject;
 import com.tc.object.config.schema.PersistenceMode;
 import com.tc.util.Assert;
+import com.terracottatech.config.ActiveServerGroups;
 import com.terracottatech.config.Application;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.Ha;
@@ -38,6 +45,7 @@ import com.terracottatech.config.TcConfigDocument;
 import com.terracottatech.config.UpdateCheck;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -54,17 +62,18 @@ import java.util.Set;
 public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfigurationSetupManager implements
     L2TVSConfigurationSetupManager {
 
-  private static TCLogger            logger = TCLogging.getLogger(StandardL2TVSConfigurationSetupManager.class);
+  private static TCLogger                   logger = TCLogging.getLogger(StandardL2TVSConfigurationSetupManager.class);
 
-  private final ConfigurationCreator configurationCreator;
+  private final ConfigurationCreator        configurationCreator;
 
-  private NewSystemConfig            systemConfig;
-  private final Map                  l2ConfigData;
-  private final NewHaConfig          haConfig;
+  private NewSystemConfig                   systemConfig;
+  private final Map                         l2ConfigData;
+  private final NewHaConfig                 haConfig;
+  private final NewActiveServerGroupsConfig activeServerGroupsConfig;
   private final UpdateCheckConfig    updateCheckConfig;
 
-  private final String               thisL2Identifier;
-  private L2ConfigData               myConfigData;
+  private final String                      thisL2Identifier;
+  private L2ConfigData                      myConfigData;
 
   public StandardL2TVSConfigurationSetupManager(ConfigurationCreator configurationCreator, String thisL2Identifier,
                                                 DefaultValueProvider defaultValueProvider,
@@ -81,39 +90,174 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     this.systemConfig = null;
     this.l2ConfigData = new HashMap();
-    this.haConfig = getHaConfig();
-    this.updateCheckConfig = getUpdateCheckConfig();
+    try {
+      this.updateCheckConfig = getUpdateCheckConfig();
+    } catch (XmlException e2) {
+      throw new ConfigurationSetupException(e2);
+    }
 
     this.thisL2Identifier = thisL2Identifier;
     this.myConfigData = null;
 
+    // this sets the beans in each repository
     runConfigurationCreator(this.configurationCreator);
+
+    // do this after runConfigurationCreator method call, after serversBeanRepository is set
+    try {
+      this.haConfig = getHaConfig();
+    } catch (XmlException e1) {
+      throw new ConfigurationSetupException(e1);
+    }
 
     selectL2((Servers) serversBeanRepository().bean(), "the set of L2s known to us");
     validateRestrictions();
+
+    // do this last after everything else is setup
+    try {
+      this.activeServerGroupsConfig = getActiveServerGroupsConfig();
+    } catch (XmlException e) {
+      throw new ConfigurationSetupException(e);
+    }
+
+    // do this after servers and groups have been processed
+    validateGroups();
   }
 
-  private NewHaConfig getHaConfig() {
+  private void validateGroups() throws ConfigurationSetupException {
+    Server[] serverArray = ((Servers) serversBeanRepository().bean()).getServerArray();
+    NewActiveServerGroupConfig[] groupArray = this.activeServerGroupsConfig.getActiveServerGroupArray();
+
+    for (int i = 0; i < serverArray.length; i++) {
+      String serverName = serverArray[i].getName();
+      boolean found = false;
+      int gid = -1;
+      for (int j = 0; j < groupArray.length; j++) {
+        if (isMemberOf(serverName, groupArray[j])) {
+          if (found) { throw new ConfigurationSetupException("Server{" + serverName
+              + "} is part of more than 1 active-server-group:  groups{" + gid + "," + groupArray[j].getId() + "}"); }
+          gid = groupArray[j].getId();
+          found = true;
+        }
+      }
+      if (!found) { throw new ConfigurationSetupException("Server{" + serverName
+          + "} is not part of any active-server-group."); }
+    }
+  }
+
+  private boolean isMemberOf(String serverName, NewActiveServerGroupConfig groupConfig) {
+    String[] members = groupConfig.getMembers().getMemberArray();
+    for (int i = 0; i < members.length; i++) {
+      if (members[i].equals(serverName)) { return true; }
+    }
+    return false;
+  }
+
+  // make sure there is at most one of these
+  private NewActiveServerGroupsConfig getActiveServerGroupsConfig() throws XmlException, ConfigurationSetupException {
+    if (this.haConfig == null) { throw new AssertionError(
+        "Define haConfig before defining activeServerGroupsConfig in the constructor!"); }
+
+    final ActiveServerGroups defaultActiveServerGroups = NewActiveServerGroupsConfigObject
+        .getDefaultActiveServerGroups(defaultValueProvider, serversBeanRepository(), haConfig.getHa());
+
+    ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), ActiveServerGroups.class,
+        new ChildBeanFetcher() {
+          public XmlObject getChild(XmlObject parent) {
+            ActiveServerGroups[] activeServerGroupsArray = ((Servers) parent).getActiveServerGroupsArray();
+            if (activeServerGroupsArray.length > 1) {
+              // TODO: throw this error in a different way?
+              throw new AssertionError(
+                  "You have specified too many ACTIVE SERVER GROUPS elements. There are "
+                      + activeServerGroupsArray.length
+                      + " ACTIVE SERVER GROUPS elements defined in the configuration file. You must indicate at most 1 ACTIVE SERVER GROUPS element.");
+            } else {
+              if (activeServerGroupsArray.length == 0) {
+                activeServerGroupsArray = new ActiveServerGroups[1];
+                activeServerGroupsArray[0] = defaultActiveServerGroups;
+                ((Servers) parent).setActiveServerGroupsArray(activeServerGroupsArray);
+              }
+              return activeServerGroupsArray[0];
+            }
+          }
+        });
+    return new NewActiveServerGroupsConfigObject(createContext(beanRepository, configurationCreator
+        .directoryConfigurationLoadedFrom()), this);
+  }
+
+  // make sure there is at most one of these
+  private NewHaConfig getHaConfig() throws XmlException {
+    final Ha defaultHa = NewHaConfigObject.getDefaultCommonHa(defaultValueProvider, serversBeanRepository());
+
     ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Ha.class,
-                                                                 new ChildBeanFetcher() {
-                                                                   public XmlObject getChild(XmlObject parent) {
-                                                                     return ((Servers) parent).getHa();
-                                                                   }
-                                                                 });
+        new ChildBeanFetcher() {
+          public XmlObject getChild(XmlObject parent) {
+            Ha[] haArray = ((Servers) parent).getHaArray();
+
+            if (haArray.length > 1) {
+              // TODO: throw this error in a different way?
+              throw new AssertionError("You have specified too many HA elements. There are " + haArray.length
+                  + " HA elements defined in the configuration file. You must indicate at most 1 HA element.");
+            } else {
+              if (haArray.length == 0) {
+                haArray = new Ha[1];
+                haArray[0] = defaultHa;
+                ((Servers) parent).setHaArray(haArray);
+              }
+              return haArray[0];
+            }
+          }
+        });
 
     return new NewHaConfigObject(createContext(beanRepository, configurationCreator.directoryConfigurationLoadedFrom()));
   }
 
-  private UpdateCheckConfig getUpdateCheckConfig() {
+  private UpdateCheckConfig getUpdateCheckConfig() throws XmlException {
+    final UpdateCheck defaultUpdateCheck = getDefaultUpdateCheck();
+    
     ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), UpdateCheck.class,
-                                                                 new ChildBeanFetcher() {
-                                                                   public XmlObject getChild(XmlObject parent) {
-                                                                     return ((Servers) parent).getUpdateCheck();
-                                                                   }
-                                                                 });
+      new ChildBeanFetcher() {
+        public XmlObject getChild(XmlObject parent) {
+          UpdateCheck[] ucArray = ((Servers) parent).getUpdateCheckArray();
+  
+          if (ucArray.length > 1) {
+            // TODO: throw this error in a different way?
+            throw new AssertionError(
+                "You have specified too many UpdateCheck elements. There are "
+                    + ucArray.length
+                    + " UpdateCheck elements defined in the configuration file. You must indicate at most 1 UpdateCheck element.");
+          } else {
+            if (ucArray.length == 0) {
+              ucArray = new UpdateCheck[1];
+              ucArray[0] = defaultUpdateCheck;
+              ((Servers) parent).setUpdateCheckArray(ucArray);
+            }
+            return ucArray[0];
+          }
+       }
+    });
 
     return new UpdateCheckConfigObject(createContext(beanRepository, configurationCreator
         .directoryConfigurationLoadedFrom()));
+  }
+  
+  private UpdateCheck getDefaultUpdateCheck() throws XmlException {
+    final int defaultPeriodDays = ((XmlInteger) defaultValueProvider.defaultFor(serversBeanRepository()
+        .rootBeanSchemaType(), "update-check/period-days")).getBigIntegerValue().intValue();
+    final boolean defaultEnabled = ((XmlBoolean) defaultValueProvider.defaultFor(serversBeanRepository()
+        .rootBeanSchemaType(), "update-check/enabled")).getBooleanValue();
+    UpdateCheck uc = UpdateCheck.Factory.newInstance();
+    uc.setEnabled(defaultEnabled);
+    uc.setPeriodDays(defaultPeriodDays);
+    return uc;
+  }
+
+  // called by configObjects that need to create their own context
+  public File getConfigFilePath() {
+    return configurationCreator.directoryConfigurationLoadedFrom();
+  }
+
+  public Ha getCommonHa() {
+    return this.haConfig.getHa();
   }
 
   private class L2ConfigData {
@@ -345,6 +489,10 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   public UpdateCheckConfig updateCheckConfig() {
     return updateCheckConfig;
+  }
+
+  public NewActiveServerGroupsConfig activeServerGroupsConfig() {
+    return activeServerGroupsConfig;
   }
 
   public String[] allCurrentlyKnownServers() {

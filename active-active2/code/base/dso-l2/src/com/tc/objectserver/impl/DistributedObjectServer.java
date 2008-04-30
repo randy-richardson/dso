@@ -12,6 +12,8 @@ import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
 import com.tc.async.api.StageManager;
 import com.tc.async.impl.NullSink;
+import com.tc.config.HaConfig;
+import com.tc.config.HaConfigImpl;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.TCRuntimeException;
@@ -169,8 +171,8 @@ import com.tc.objectserver.tx.TransactionalStagesCoordinatorImpl;
 import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
-import com.tc.properties.TCPropertiesImpl;
 import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
 import com.tc.statistics.beans.impl.StatisticsGatewayMBeanImpl;
@@ -237,6 +239,7 @@ public class DistributedObjectServer implements TCDumper {
   private static final int                     MAX_DEFAULT_COMM_THREADS = 16;
 
   private final L2TVSConfigurationSetupManager configSetupManager;
+  private final HaConfig                       haConfig;
   private final Sink                           httpSink;
   private NetworkListener                      l1Listener;
   private CommunicationsManager                communicationsManager;
@@ -293,6 +296,7 @@ public class DistributedObjectServer implements TCDumper {
     Assert.assertEquals(threadGroup, Thread.currentThread().getThreadGroup());
 
     this.configSetupManager = configSetupManager;
+    this.haConfig = new HaConfigImpl(this.configSetupManager);
     this.connectionPolicy = connectionPolicy;
     this.httpSink = httpSink;
     this.tcServerInfoMBean = tcServerInfoMBean;
@@ -781,7 +785,11 @@ public class DistributedObjectServer implements TCDumper {
                                                                                            reconnectTimeout,
                                                                                            persistent, consoleLogger);
 
-    boolean networkedHA = configSetupManager.haConfig().isNetworkedActivePassive();
+    boolean networkedHA = this.haConfig.isNetworkedActivePassive();
+    if (networkedHA) {
+      this.haConfig.makeAllNodes();
+    }
+
     if (networkedHA) {
       logger.info("L2 Networked HA Enabled ");
       l2Coordinator = new L2HACoordinator(configSetupManager, consoleLogger, this, stageManager, persistor
@@ -815,9 +823,8 @@ public class DistributedObjectServer implements TCDumper {
     lockStatsManager.start(channelManager);
 
     if (networkedHA) {
-      final Node thisNode = makeThisNode(bind);
-      final Node[] allNodes = makeAllNodes();
-      l2Coordinator.start(thisNode, allNodes);
+      final Node thisNode = this.haConfig.makeThisNode();
+      l2Coordinator.start(thisNode, this.haConfig.getAllNodes());
     } else {
       // In non-network enabled HA, Only active server reached here.
       startActiveMode();
@@ -890,8 +897,6 @@ public class DistributedObjectServer implements TCDumper {
   }
 
   private static Node makeNode(NewL2DSOConfig l2, String bind) {
-    // NOTE: until we resolve Tribes stepping on TCComm's port
-    // we'll use TCComm.port + 1 in Tribes
     int dsoPort = l2.listenPort().getInt();
     if (dsoPort == 0) {
       return new Node(l2.host().getString(), dsoPort, bind);

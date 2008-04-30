@@ -121,9 +121,9 @@ public class ActivePassiveServerManager {
     jmxConnectors = new JMXConnector[this.serverCount];
     createServers();
 
-    serverConfigCreator = new ActivePassiveServerConfigCreator(this.serverCount, dsoPorts, jmxPorts, 
+    serverConfigCreator = new ActivePassiveServerConfigCreator(this.setupManger, dsoPorts, jmxPorts, 
                                                                (isProxyL2GroupPorts)? proxyL2GroupPorts: l2GroupPorts,
-                                                               serverNames, serverPersistence, serverNetworkShare,
+                                                               serverNames, 
                                                                this.configModel, configFile, this.tempDir,
                                                                configFactory);
     serverConfigCreator.writeL2Config();
