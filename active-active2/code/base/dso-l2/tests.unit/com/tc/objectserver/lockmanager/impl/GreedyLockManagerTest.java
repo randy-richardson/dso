@@ -931,6 +931,22 @@ public class GreedyLockManagerTest extends TestCase {
       throw new ImplementMe();
     }
 
+    public NodeID getDestinationNodeID() {
+      throw new ImplementMe();
+    }
+
+    public NodeID getSourceNodeID() {
+      throw new ImplementMe();
+    }
+
+    public void setDestinationNodeID(NodeID destination) {
+      throw new ImplementMe();
+    }
+
+    public void setSourceNodeID(NodeID source) {
+      throw new ImplementMe();
+    }
+
   }
 
   private static class TestDeadlockResults implements DeadlockResults {

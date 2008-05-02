@@ -18,5 +18,7 @@ public interface NetworkStackProvider {
    */
   public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection)
       throws StackNotFoundException, IllegalReconnectException;
+  
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean isMultiplexOpen) throws StackNotFoundException, IllegalReconnectException;
 
 }

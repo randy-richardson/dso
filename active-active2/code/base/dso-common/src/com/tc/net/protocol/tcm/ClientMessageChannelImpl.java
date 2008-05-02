@@ -1,11 +1,14 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol.tcm;
 
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
+import com.tc.net.core.ConnectionAddressProvider;
+import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.MessageTransport;
@@ -22,23 +25,35 @@ import java.net.UnknownHostException;
  */
 
 public class ClientMessageChannelImpl extends AbstractMessageChannel implements ClientMessageChannel {
-  private static final TCLogger       logger = TCLogging.getLogger(ClientMessageChannel.class);
-  private final TCMessageFactory      msgFactory;
-  private int                         connectAttemptCount;
-  private int                         connectCount;
-  private ChannelID                   channelID;
-  private final ChannelIDProviderImpl cidProvider;
-  private final SessionProvider       sessionProvider;
-  private SessionID                   channelSessionID = SessionID.NULL_ID;
+  private static final TCLogger               logger           = TCLogging.getLogger(ClientMessageChannel.class);
+  private final TCMessageFactory              msgFactory;
+  private int                                 connectAttemptCount;
+  private int                                 connectCount;
+  private ChannelID                           channelID;
+  private final ChannelIDProviderImpl         cidProvider;
+  private final SessionProvider               sessionProvider;
+  private SessionID                           channelSessionID = SessionID.NULL_ID;
+  private final ClientMessageChannelMultiplex multiplex;
+  private final boolean                       activeCoordinator;
+  private boolean                             initConnect      = true;
 
-  protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router, SessionProvider sessionProvider) {
+  protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router,
+                                     SessionProvider sessionProvider, ConnectionAddressProvider provider,
+                                     ClientMessageChannelMultiplex multiplex, boolean activeCoordinator) {
     super(router, logger, msgFactory);
     this.msgFactory = msgFactory;
     this.cidProvider = new ChannelIDProviderImpl();
     this.sessionProvider = sessionProvider;
-   }
+    this.multiplex = multiplex;
+    this.activeCoordinator = activeCoordinator;
+    
+    // XXX EY setup source/destination NodeID
+    setSourceNodeID(new NodeIDImpl());
+    setDestinationNodeID(new NodeIDImpl());
+  }
 
-  public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException, MaxConnectionsExceededException {
+  public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException,
+      MaxConnectionsExceededException {
     final ChannelStatus status = getStatus();
 
     synchronized (status) {
@@ -50,6 +65,14 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
       this.channelSessionID = sessionProvider.getSessionID();
       return id;
     }
+  }
+
+  public ClientMessageChannelMultiplex getMultiplex() {
+    return this.multiplex;
+  }
+
+  public ChannelID getActiveActiveChannelID() {
+    return getMultiplex().getChannelID();
   }
 
   public void addClassMapping(TCMessageType type, Class msgClass) {
@@ -74,16 +97,16 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   public int getConnectAttemptCount() {
     return this.connectAttemptCount;
   }
-  
+
   /*
-   * Session message filter. 
-   * To drop old session msgs when session changed. 
+   * Session message filter. To drop old session msgs when session changed.
    */
-  public void send (final TCNetworkMessage message) {
-    if (channelSessionID == ((DSOMessageBase)message).getLocalSessionID()) {
-     super.send(message);  
+  public void send(final TCNetworkMessage message) {
+    if (channelSessionID == ((DSOMessageBase) message).getLocalSessionID()) {
+      super.send(message);
     } else {
-      logger.info("Drop old message: "+ ((DSOMessageBase)message).getMessageType() + " Expected "+ channelSessionID + " but got " + ((DSOMessageBase)message).getLocalSessionID());
+      logger.info("Drop old message: " + ((DSOMessageBase) message).getMessageType() + " Expected " + channelSessionID
+                  + " but got " + ((DSOMessageBase) message).getLocalSessionID());
     }
   }
 
@@ -112,18 +135,30 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     return cidProvider;
   }
 
+  public boolean isActiveCoordinator() {
+    return activeCoordinator;
+  }
+  
+  public boolean isInitConnect() {
+    return initConnect;
+  }
+
+  public void connected() {
+    initConnect = false;
+  }
+  
   private static class ChannelIDProviderImpl implements ChannelIDProvider {
 
     private ChannelID channelID = ChannelID.NULL_ID;
-    
+
     private synchronized void setChannelID(ChannelID channelID) {
       this.channelID = channelID;
     }
-    
+
     public synchronized ChannelID getChannelID() {
       return this.channelID;
     }
-    
+
   }
-  
+
 }

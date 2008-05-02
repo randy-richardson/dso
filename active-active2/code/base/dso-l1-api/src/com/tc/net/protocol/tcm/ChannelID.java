@@ -25,7 +25,7 @@ public class ChannelID extends AbstractIdentifier {
     super(id);
   }
 
-  private ChannelID() {
+  protected ChannelID() {
     super();
   }
 

@@ -16,6 +16,7 @@ import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.TCProtocolAdaptor;
+import com.tc.net.protocol.tcm.ClientMessageChannel;
 import com.tc.util.Assert;
 import com.tc.util.TCTimeoutException;
 import com.tc.util.concurrent.TCExceptionResultException;
@@ -36,6 +37,7 @@ public class ClientMessageTransport extends MessageTransportBase {
   private final WireProtocolAdaptorFactory  wireProtocolAdaptorFactory;
   private final SynchronizedBoolean         isOpening                          = new SynchronizedBoolean(false);
   private final int                         callbackPort;
+  private final ClientMessageChannel        channel;
 
   /**
    * Constructor for when you want a transport that isn't connected yet (e.g., in a client). This constructor will
@@ -46,13 +48,15 @@ public class ClientMessageTransport extends MessageTransportBase {
   public ClientMessageTransport(ClientConnectionEstablisher clientConnectionEstablisher,
                                 TransportHandshakeErrorHandler handshakeErrorHandler,
                                 TransportHandshakeMessageFactory messageFactory,
-                                WireProtocolAdaptorFactory wireProtocolAdaptorFactory, int callbackPort) {
+                                WireProtocolAdaptorFactory wireProtocolAdaptorFactory, int callbackPort,
+                                ClientMessageChannel channel) {
 
     super(MessageTransportState.STATE_START, handshakeErrorHandler, messageFactory, false, TCLogging
         .getLogger(ClientMessageTransport.class));
     this.wireProtocolAdaptorFactory = wireProtocolAdaptorFactory;
     this.connectionEstablisher = clientConnectionEstablisher;
     this.callbackPort = callbackPort;
+    this.channel = channel;
   }
 
   /**
@@ -91,6 +95,7 @@ public class ClientMessageTransport extends MessageTransportBase {
         isOpen.set(true);
         NetworkStackID nid = new NetworkStackID(this.connectionId.getChannelID());
         wasOpened = true;
+        channel.connected();
         return (nid);
       } catch (TCTimeoutException e) {
         // DEV-1320
@@ -231,8 +236,12 @@ public class ClientMessageTransport extends MessageTransportBase {
       waitForSynAckResult = new TCFuture(status);
       // get the stack layer list and pass it in
       short stackLayerFlags = getCommunicationStackFlags(this);
-      TransportHandshakeMessage syn = this.messageFactory.createSyn(this.connectionId, getConnection(),
-                                                                    stackLayerFlags, callbackPort);
+      ConnectionID synConnId = this.connectionId;
+      if (!channel.isActiveCoordinator() && channel.isInitConnect()) { // for active-active multiplex
+        synConnId = new ConnectionID(channel.getActiveActiveChannelID().toLong(), ConnectionID.NULL_ID.getServerID());
+      }
+      TransportHandshakeMessage syn = this.messageFactory.createSyn(synConnId, getConnection(), stackLayerFlags,
+                                                                    callbackPort, channel.isInitConnect());
       // send syn message
       this.sendToConnection(syn);
       this.status.synSent();

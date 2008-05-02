@@ -24,6 +24,7 @@ import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.net.protocol.tcm.ChannelIDProvider;
 import com.tc.net.protocol.tcm.ClientMessageChannel;
+import com.tc.net.protocol.tcm.ClientMessageChannelMultiplex;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.MessageMonitor;
 import com.tc.net.protocol.tcm.MockMessageChannel;
@@ -282,6 +283,26 @@ public class ClientServerLockStatisticsTest extends TCTestCase {
     public void unrouteMessageType(TCMessageType type) {
       throw new ImplementMe();
 
+    }
+
+    public void connected() {
+      throw new ImplementMe();
+    }
+
+    public ChannelID getActiveActiveChannelID() {
+      throw new ImplementMe();
+    }
+
+    public ClientMessageChannelMultiplex getMultiplex() {
+      throw new ImplementMe();
+    }
+
+    public boolean isActiveCoordinator() {
+      throw new ImplementMe();
+    }
+
+    public boolean isInitConnect() {
+      throw new ImplementMe();
     }
   }
 

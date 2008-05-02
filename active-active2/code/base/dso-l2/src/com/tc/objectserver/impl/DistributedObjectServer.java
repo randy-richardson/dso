@@ -14,7 +14,6 @@ import com.tc.async.api.StageManager;
 import com.tc.async.impl.NullSink;
 import com.tc.config.HaConfig;
 import com.tc.config.HaConfigImpl;
-import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.TCRuntimeException;
 import com.tc.io.TCFile;
@@ -879,35 +878,6 @@ public class DistributedObjectServer implements TCDumper {
 
   public boolean isBlocking() {
     return startupLock != null && startupLock.isBlocking();
-  }
-
-  private Node[] makeAllNodes() {
-    String[] l2s = configSetupManager.allCurrentlyKnownServers();
-    Node[] rv = new Node[l2s.length];
-    for (int i = 0; i < l2s.length; i++) {
-      NewL2DSOConfig l2;
-      try {
-        l2 = configSetupManager.dsoL2ConfigFor(l2s[i]);
-      } catch (ConfigurationSetupException e) {
-        throw new RuntimeException("Error getting l2 config for: " + l2s[i], e);
-      }
-      rv[i] = makeNode(l2, null);
-    }
-    return rv;
-  }
-
-  private static Node makeNode(NewL2DSOConfig l2, String bind) {
-    int dsoPort = l2.listenPort().getInt();
-    if (dsoPort == 0) {
-      return new Node(l2.host().getString(), dsoPort, bind);
-    } else {
-      return new Node(l2.host().getString(), l2.l2GroupPort().getInt(), bind);
-    }
-  }
-
-  private Node makeThisNode(InetAddress bind) {
-    NewL2DSOConfig l2 = configSetupManager.dsoL2Config();
-    return makeNode(l2, bind.getHostAddress());
   }
 
   public boolean startActiveMode() throws IOException {

@@ -30,8 +30,24 @@ public class TestCommunicationsManager implements CommunicationsManager {
     throw new ImplementMe();
   }
 
+  public ClientMessageChannelMultiplex createClientChannelMultiplex(final SessionProvider sessionProvider,
+                                                                    final int maxReconnectTries, final int timeout,
+                                                                    ConnectionAddressProvider[] addressProviders) {
+    throw new ImplementMe();
+  }
+
+  public ClientMessageChannelMultiplex createClientChannel(SessionProvider sessionProvider, int maxReconnectTries,
+                                                           String hostname, int port, final int timeout,
+                                                           ConnectionAddressProvider addressProvider, int callbackPort,
+                                                           MessageTransportFactory transportFactory,
+                                                           TCMessageFactory msgFactory, TCMessageRouter router,
+                                                           ClientMessageChannelMultiplex multiplex,
+                                                           boolean activeCoordinator) {
+    throw new ImplementMe();
+  }
+
   public ClientMessageChannel createClientChannel(SessionProvider sessionProvider, int maxReconnectTries,
-                                                  String hostname, int port, int timeout,
+                                                  String hostname, int port, final int timeout,
                                                   ConnectionAddressProvider addressProvider) {
     throw new ImplementMe();
   }

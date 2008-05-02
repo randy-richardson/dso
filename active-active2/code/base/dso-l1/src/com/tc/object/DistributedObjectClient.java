@@ -273,6 +273,8 @@ public class DistributedObjectClient extends SEDA {
 
     String serverHost = connectionInfo[0].getHostname();
     int serverPort = connectionInfo[0].getPort();
+    ConnectionAddressProvider[] addrProviders = new ConnectionAddressProvider[1];
+    addrProviders[0] = addrProvider;
 
     int timeout = tcProperties.getInt(TCPropertiesConsts.L1_SOCKET_CONNECT_TIMEOUT);
     if (timeout < 0) { throw new IllegalArgumentException("invalid socket time value: " + timeout); }

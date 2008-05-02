@@ -7,6 +7,9 @@ package com.tc.net.protocol.transport;
 import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import EDU.oswego.cs.dl.util.concurrent.SynchronizedRef;
 
+import com.tc.async.api.Sink;
+import com.tc.exception.ImplementMe;
+import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.core.ConnectionInfo;
@@ -14,19 +17,36 @@ import com.tc.net.core.MockConnectionManager;
 import com.tc.net.core.MockTCConnection;
 import com.tc.net.core.TCConnection;
 import com.tc.net.core.event.TCConnectionEvent;
+import com.tc.net.groups.ClientID;
+import com.tc.net.groups.NodeID;
+import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
+import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.delivery.OOONetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl;
+import com.tc.net.protocol.tcm.ChannelEventListener;
+import com.tc.net.protocol.tcm.ChannelID;
+import com.tc.net.protocol.tcm.ChannelIDProvider;
 import com.tc.net.protocol.tcm.ClientMessageChannel;
+import com.tc.net.protocol.tcm.ClientMessageChannelMultiplex;
 import com.tc.net.protocol.tcm.CommunicationsManager;
 import com.tc.net.protocol.tcm.CommunicationsManagerImpl;
 import com.tc.net.protocol.tcm.NetworkListener;
 import com.tc.net.protocol.tcm.NullMessageMonitor;
+import com.tc.net.protocol.tcm.TCMessage;
+import com.tc.net.protocol.tcm.TCMessageFactory;
+import com.tc.net.protocol.tcm.TCMessageRouter;
+import com.tc.net.protocol.tcm.TCMessageSink;
+import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.object.session.NullSessionManager;
+import com.tc.object.session.SessionID;
+import com.tc.object.session.SessionProvider;
 import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.test.TCTestCase;
 import com.tc.util.TCTimeoutException;
 
+import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 
@@ -61,7 +81,7 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                                       maxRetries, 5000);
     transport = new ClientMessageTransport(cce, handshakeErrorHandler, this.transportMessageFactory,
                                            new WireProtocolAdaptorFactoryImpl(),
-                                           TransportHandshakeMessage.NO_CALLBACK_PORT);
+                                           TransportHandshakeMessage.NO_CALLBACK_PORT, new TestClientMessageChannel());
   }
 
   public void testRoundRobinReconnect() throws Exception {
@@ -126,7 +146,7 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                                       0, 1000);
     transport = new ClientMessageTransport(cce, this.handshakeErrorHandler, this.transportMessageFactory,
                                            new WireProtocolAdaptorFactoryImpl(),
-                                           TransportHandshakeMessage.NO_CALLBACK_PORT);
+                                           TransportHandshakeMessage.NO_CALLBACK_PORT, new TestClientMessageChannel());
     transport.open();
     assertTrue(transport.isConnected());
     listener.stop(5000);
@@ -206,7 +226,7 @@ public class ClientMessageTransportTest extends TCTestCase {
         ClientMessageTransport cmt = new ClientMessageTransport(clientConnectionEstablisher, handshakeErrorHandler,
                                                                 transportMessageFactory,
                                                                 new WireProtocolAdaptorFactoryImpl(),
-                                                                TransportHandshakeMessage.NO_CALLBACK_PORT);
+                                                                TransportHandshakeMessage.NO_CALLBACK_PORT, new TestClientMessageChannel());
         return cmt;
       }
 
@@ -259,6 +279,194 @@ public class ClientMessageTransportTest extends TCTestCase {
 
     public boolean getStackLayerMismatch() {
       return stackLayerMismatch;
+    }
+  }
+  
+  private class TestClientMessageChannel implements ClientMessageChannel {
+    private final TCMessageFactory              msgFactory;
+    private int                                 connectAttemptCount;
+    private int                                 connectCount;
+    private ChannelID                           channelID;
+    private final SessionProvider               sessionProvider;
+    private SessionID                           channelSessionID = SessionID.NULL_ID;
+    private final ClientMessageChannelMultiplex multiplex;
+    private final ConnectionAddressProvider     addrProvider;
+    private final boolean                       activeCoordinator;
+    private boolean                             initConnect      = true;
+    private NodeID                              source;
+    private NodeID                              destination;
+
+    public TestClientMessageChannel() {
+      this(null, null, null, null, null, true);
+    }
+    
+    public TestClientMessageChannel(TCMessageFactory msgFactory, TCMessageRouter router,
+                                       SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
+                                       ClientMessageChannelMultiplex multiplex, boolean activeCoordinator) {
+      this.msgFactory = msgFactory;
+      this.sessionProvider = sessionProvider;
+      this.multiplex = multiplex;
+      this.activeCoordinator = activeCoordinator;
+      this.addrProvider = addrProvider;
+
+      setClientID(ClientID.NULL_ID);
+      // XXX setServerID(GroupID.NULL_ID);
+    }
+
+    public boolean isActiveCoordinator() {
+      return activeCoordinator;
+    }
+    
+    public ClientMessageChannel getActiveCoordinator() {
+      return this;
+    }
+    
+    public boolean isInitConnect() {
+      return initConnect;
+    }
+
+    public void connected() {
+      initConnect = false;
+    }
+
+    public void addClassMapping(TCMessageType type, Class msgClass) {
+      throw new ImplementMe();
+      
+    }
+
+    public ChannelID getActiveActiveChannelID() {
+      return channelID;
+    }
+
+    public ChannelIDProvider getChannelIDProvider() {
+      throw new ImplementMe();
+    }
+
+    public int getConnectAttemptCount() {
+      throw new ImplementMe();
+    }
+
+    public int getConnectCount() {
+      throw new ImplementMe();
+    }
+
+    public ClientMessageChannelMultiplex getMultiplex() {
+      throw new ImplementMe();
+    }
+
+    public void routeMessageType(TCMessageType messageType, Sink destSink, Sink hydrateSink) {
+      throw new ImplementMe();
+      
+    }
+
+    public void routeMessageType(TCMessageType type, TCMessageSink sink) {
+      throw new ImplementMe();
+      
+    }
+
+    public void unrouteMessageType(TCMessageType type) {
+      throw new ImplementMe();
+      
+    }
+
+    public void addAttachment(String key, Object value, boolean replace) {
+      throw new ImplementMe();
+      
+    }
+
+    public void addListener(ChannelEventListener listener) {
+      throw new ImplementMe();
+      
+    }
+
+    public void close() {
+      throw new ImplementMe();
+      
+    }
+
+    public TCMessage createMessage(TCMessageType type) {
+      throw new ImplementMe();
+    }
+
+    public Object getAttachment(String key) {
+      throw new ImplementMe();
+    }
+
+    public ChannelID getChannelID() {
+      throw new ImplementMe();
+    }
+
+    public NodeID getServerID() {
+      throw new ImplementMe();
+    }
+
+    public TCSocketAddress getLocalAddress() {
+      throw new ImplementMe();
+    }
+
+    public TCSocketAddress getRemoteAddress() {
+      throw new ImplementMe();
+    }
+
+    public NodeID getClientID() {
+      throw new ImplementMe();
+    }
+
+    public boolean isClosed() {
+      throw new ImplementMe();
+    }
+
+    public boolean isConnected() {
+      throw new ImplementMe();
+    }
+
+    public boolean isOpen() {
+      throw new ImplementMe();
+    }
+
+    public NetworkStackID open() throws MaxConnectionsExceededException, TCTimeoutException, UnknownHostException, IOException {
+      throw new ImplementMe();
+    }
+
+    public Object removeAttachment(String key) {
+      throw new ImplementMe();
+    }
+
+    public void send(TCNetworkMessage message) {
+      throw new ImplementMe();
+      
+    }
+
+    public void setServerID(NodeID destination) {
+      this.destination = destination;
+    }
+
+    public void setClientID(NodeID source) {
+      this.source = source;
+    }
+
+    public ConnectionAddressProvider getConnectionAddress() {
+      throw new ImplementMe();
+    }
+
+    public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
+      throw new ImplementMe();
+    }
+
+    public NodeID getDestinationNodeID() {
+      throw new ImplementMe();
+    }
+
+    public NodeID getSourceNodeID() {
+      throw new ImplementMe();
+    }
+
+    public void setDestinationNodeID(NodeID destination) {
+      throw new ImplementMe();
+    }
+
+    public void setSourceNodeID(NodeID source) {
+      throw new ImplementMe();
     }
   }
 }

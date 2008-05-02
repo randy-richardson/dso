@@ -83,12 +83,20 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
 
   public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection)
       throws StackNotFoundException, IllegalReconnectException {
+    return attachNewConnection(connectionId, connection, false);
+  }
+
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean newConnect)
+      throws StackNotFoundException , IllegalReconnectException {
     Assert.assertNotNull(connection);
 
     final NetworkStackHarness harness;
     final MessageTransport rv;
-    if (connectionId.isNull()) {
-      connectionId = connectionIdFactory.nextConnectionId();
+    if (newConnect || connectionId.isNull()) {
+      // must supply connectionId if open multiplex channel
+      Assert.assertTrue((newConnect && !connectionId.isNull()) || connectionId.isNull());
+      if (connectionId.isNull())
+        connectionId = connectionIdFactory.nextConnectionId();
 
       rv = messageTransportFactory.createNewTransport(connectionId, connection, createHandshakeErrorHandler(),
                                                       handshakeMessageFactory, transportListeners);

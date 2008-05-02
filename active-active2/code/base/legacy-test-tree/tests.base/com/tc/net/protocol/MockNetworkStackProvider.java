@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol;
 
@@ -20,9 +21,7 @@ public class MockNetworkStackProvider implements NetworkStackProvider {
   public void attachNewConnection(TCConnection connection) throws StackNotFoundException {
     try {
       connectTransportCalls.put(connection);
-      if (throwStackNotFoundException) { 
-          throw new StackNotFoundException(null);
-      }
+      if (throwStackNotFoundException) { throw new StackNotFoundException(null); }
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -36,8 +35,11 @@ public class MockNetworkStackProvider implements NetworkStackProvider {
     throw new ImplementMe();
   }
 
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection) {
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean newConnect) {
     throw new ImplementMe();
   }
 
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection) {
+    throw new ImplementMe();
+  }
 }
