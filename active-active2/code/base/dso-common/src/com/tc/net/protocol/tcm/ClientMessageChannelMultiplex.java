@@ -13,9 +13,7 @@ public interface ClientMessageChannelMultiplex extends ClientMessageChannel {
   
   public ClientMessageChannel getChannel(NodeID id);
   
-  public void broadcast(final TCMessage[] messages);
-  
-  public TCMessage[] createBroadcastMessage(TCMessageType type);
+  public TCMessage createBroadcastMessage(TCMessageType type);
   
   public TCMessage createMessage(NodeID id, TCMessageType type);
   

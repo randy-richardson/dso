@@ -19,6 +19,7 @@ import com.tc.net.protocol.tcm.CommunicationsManagerImpl;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.NetworkListener;
 import com.tc.net.protocol.tcm.NullMessageMonitor;
+import com.tc.net.protocol.tcm.TestClientMessageChannel;
 import com.tc.object.session.NullSessionManager;
 import com.tc.test.TCTestCase;
 import com.tc.util.TCAssertionError;
@@ -236,7 +237,7 @@ public class MessageTransportTest extends TCTestCase {
     this.clientTransport = new ClientMessageTransport(cce, createHandshakeErrorHandler(),
                                                       this.transportHandshakeMessageFactory,
                                                       new WireProtocolAdaptorFactoryImpl(),
-                                                      TransportHandshakeMessage.NO_CALLBACK_PORT, null);
+                                                      TransportHandshakeMessage.NO_CALLBACK_PORT, new TestClientMessageChannel());
     this.clientResponder = new ClientHandshakeMessageResponder(this.clientResponderSentQueue,
                                                                this.clientResponderReceivedQueue,
                                                                this.transportHandshakeMessageFactory,

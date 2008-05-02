@@ -21,5 +21,9 @@ public abstract class TestTransportHandshakeMessage extends TestWireProtocolMess
   public int getMaxConnections() {
     throw new ImplementMe();
   }
+  
+  public void setSendCount(int sendCount) {
+    throw new ImplementMe();
+  }
 
 }

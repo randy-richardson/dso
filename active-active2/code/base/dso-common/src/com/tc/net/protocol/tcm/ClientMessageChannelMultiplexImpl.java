@@ -8,9 +8,11 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
+import com.tc.net.groups.ClientID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
+import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.net.protocol.transport.TransportHandshakeMessage;
 import com.tc.object.session.SessionProvider;
@@ -53,6 +55,8 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
                                                                    this.msgFactory,
                                                                    new TCMessageRouterImpl(), this, isActiveCoordinator);
     }
+    setSourceNodeID(ClientID.NULL_ID);
+    setDestinationNodeID(NodeIDImpl.NULL_ID);
   }
 
   public ClientMessageChannel getActiveCoordinator() {
@@ -84,18 +88,9 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     return null;
   }
 
-  public void broadcast(final TCMessage[] messages) {
-    for (int i = 0; i < messages.length; ++i) {
-      messages[i].send();
-    }
-  }
-  
-  public TCMessage[] createBroadcastMessage(TCMessageType type) {
-    TCMessage[] msgs = new TCMessage[channels.length];
-    for(int i =0; i < channels.length; ++i) {
-      msgs[i] = msgFactory.createMessage(channels[i], type);
-    }
-    return (msgs);
+  public TCMessage createBroadcastMessage(TCMessageType type) {
+    TCMessage rv = msgFactory.createMessage(this, type);
+    return rv;
   }
 
   public TCMessage createMessage(NodeID id, TCMessageType type) {
@@ -113,11 +108,11 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     NetworkStackID nid = null;
     for (int i = 0; i < channels.length; ++i) {
       nid = channels[i].open();
-      // XXX EY more work here to setup NodeID
-      nodeIDs[i] = makeNodeMultiplexId(channels[0].getChannelID(), this.addressProviders[i]);
-      channels[i].setDestinationNodeID(nodeIDs[i]);
-      // XXX EY set source NodeID
+      nodeIDs[i] = channels[i].getDestinationNodeID();
     }
+    setSourceNodeID(new ClientID(getChannelID()));
+    // broadcast destination
+    setDestinationNodeID(new NodeIDImpl(getChannelID().toString(), new byte[0]));
     return nid;
   }
 
@@ -147,6 +142,14 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
       channels[i].routeMessageType(messageType, dest);
   }
 
+  /*
+   * send broadcast message
+   */
+  public void send(final TCNetworkMessage message) {
+    message.setSendCount(channels.length - 1);
+    for (int i = 0; i < channels.length; ++i)
+      channels[i].send(message);
+  }
 
   public void notifyTransportConnected(MessageTransport transport) {
     throw new AssertionError();
