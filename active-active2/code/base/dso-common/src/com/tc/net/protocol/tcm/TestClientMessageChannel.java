@@ -10,8 +10,8 @@ import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.ClientID;
+import com.tc.net.groups.GroupID;
 import com.tc.net.groups.NodeID;
-import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.object.session.SessionID;
@@ -52,12 +52,16 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     this.activeCoordinator = activeCoordinator;
     this.addrProvider = addrProvider;
 
-    setSourceNodeID(ClientID.NULL_ID);
-    setDestinationNodeID(NodeIDImpl.NULL_ID);
+    setClientID(ClientID.NULL_ID);
+    setServerID(GroupID.NULL_ID);
   }
 
   public boolean isActiveCoordinator() {
     return activeCoordinator;
+  }
+  
+  public ClientMessageChannel getActiveCoordinator() {
+    return this;
   }
   
   public boolean isInitConnect() {
@@ -135,7 +139,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public NodeID getDestinationNodeID() {
+  public NodeID getServerID() {
     throw new ImplementMe();
   }
 
@@ -147,7 +151,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public NodeID getSourceNodeID() {
+  public NodeID getClientID() {
     throw new ImplementMe();
   }
 
@@ -176,12 +180,20 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     
   }
 
-  public void setDestinationNodeID(NodeID destination) {
+  public void setServerID(NodeID destination) {
     this.destination = destination;
   }
 
-  public void setSourceNodeID(NodeID source) {
+  public void setClientID(NodeID source) {
     this.source = source;
+  }
+
+  public ConnectionAddressProvider getConnectionAddress() {
+    throw new ImplementMe();
+  }
+
+  public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
+    throw new ImplementMe();
   }
 
 }

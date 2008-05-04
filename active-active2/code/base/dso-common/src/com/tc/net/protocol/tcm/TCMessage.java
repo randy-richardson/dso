@@ -36,5 +36,4 @@ public interface TCMessage extends EventContext {
   public SessionID getLocalSessionID();
 
   public int getTotalLength();
-
 }

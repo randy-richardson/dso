@@ -26,7 +26,6 @@ public abstract class TCMessageImpl extends AbstractTCNetworkMessage implements 
   private final TCMessageType     type;
   private final MessageChannel    channel;
   private int                     nvCount;
-
   private TCByteBufferOutputStream out;
   private TCByteBufferInputStream bbis;
   private int                     messageVersion;

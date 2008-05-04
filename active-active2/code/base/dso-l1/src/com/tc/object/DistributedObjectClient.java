@@ -36,6 +36,7 @@ import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OOOEventHandler;
 import com.tc.net.protocol.delivery.OOONetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl;
+import com.tc.net.protocol.tcm.ClientMessageChannel;
 import com.tc.net.protocol.tcm.CommunicationsManager;
 import com.tc.net.protocol.tcm.CommunicationsManagerImpl;
 import com.tc.net.protocol.tcm.HydrateHandler;
@@ -44,7 +45,6 @@ import com.tc.net.protocol.tcm.MessageMonitorImpl;
 import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.net.protocol.transport.HealthCheckerConfigImpl;
 import com.tc.net.protocol.transport.NullConnectionPolicy;
-import com.tc.net.protocol.transport.TransportHandshakeMessage;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.object.cache.CacheConfigImpl;
@@ -110,8 +110,8 @@ import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.RemoteTransactionManagerImpl;
 import com.tc.object.tx.TransactionBatchAccounting;
 import com.tc.object.tx.TransactionBatchFactory;
-import com.tc.object.tx.TransactionBatchWriter.FoldingConfig;
 import com.tc.object.tx.TransactionBatchWriterFactory;
+import com.tc.object.tx.TransactionBatchWriter.FoldingConfig;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
@@ -202,7 +202,18 @@ public class DistributedObjectClient extends SEDA {
   public void setPauseListener(PauseListener pauseListener) {
     this.pauseListener = pauseListener;
   }
-
+  
+  /*
+   * Overwrite this routine to do active-active channel
+   */
+  protected ClientMessageChannel createChannel(CommunicationsManager commMgr, PreparedComponentsFromL2Connection connComp, SessionProvider sessionProvider) {
+    ClientMessageChannel cmc;
+    ConfigItem connectionInfoItem = connComp.createConnectionInfoConfigItem();
+    ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
+    cmc = commMgr.createClientChannel(sessionProvider, -1, null, 0, 10000, new ConnectionAddressProvider(connectionInfo));
+    return (cmc);
+  }
+  
   private void populateStatisticsRetrievalRegistry(final StatisticsRetrievalRegistry registry,
                                                    final StageManager stageManager,
                                                    final MessageMonitor messageMonitor,
@@ -267,21 +278,15 @@ public class DistributedObjectClient extends SEDA {
 
     logger.debug("Created CommunicationsManager.");
 
-    ConfigItem connectionInfoItem = this.connectionComponents.createConnectionInfoConfigItem();
-    ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
-    ConnectionAddressProvider addrProvider = new ConnectionAddressProvider(connectionInfo);
-
+    ConfigItem[] connectionInfoItems = this.connectionComponents.createConnectionInfoConfigItemByGroup();
+    ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItems[0].getObject();
     String serverHost = connectionInfo[0].getHostname();
     int serverPort = connectionInfo[0].getPort();
-    ConnectionAddressProvider[] addrProviders = new ConnectionAddressProvider[1];
-    addrProviders[0] = addrProvider;
 
     int timeout = tcProperties.getInt(TCPropertiesConsts.L1_SOCKET_CONNECT_TIMEOUT);
     if (timeout < 0) { throw new IllegalArgumentException("invalid socket time value: " + timeout); }
 
-    channel = new DSOClientMessageChannelImpl(communicationsManager
-        .createClientChannel(sessionProvider, -1, serverHost, serverPort, timeout, addrProvider,
-                             TransportHandshakeMessage.NO_CALLBACK_PORT));
+    channel = new DSOClientMessageChannelImpl(createChannel(communicationsManager, connectionComponents, sessionProvider));
     ChannelIDLoggerProvider cidLoggerProvider = new ChannelIDLoggerProvider(channel.getChannelIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 
@@ -491,14 +496,13 @@ public class DistributedObjectClient extends SEDA {
         logger.debug("Channel open");
         break;
       } catch (TCTimeoutException tcte) {
-        consoleLogger.warn("Timeout connecting to server: " + serverHost + ":" + serverPort + ". " + tcte.getMessage());
+        consoleLogger.warn("Timeout connecting to server: " + tcte.getMessage());
         ThreadUtil.reallySleep(5000);
       } catch (ConnectException e) {
-        consoleLogger.warn("Connection refused from server: " + serverHost + ":" + serverPort);
+        consoleLogger.warn("Connection refused from server: " + e);
         ThreadUtil.reallySleep(5000);
       } catch (MaxConnectionsExceededException e) {
-        consoleLogger.warn("Connection refused MAXIMUM CONNECTIONS TO SERVER EXCEEDED: " + serverHost + ":"
-                           + serverPort);
+        consoleLogger.warn("Connection refused MAXIMUM CONNECTIONS TO SERVER EXCEEDED: " + e);
         ThreadUtil.reallySleep(5000);
       } catch (IOException ioe) {
         consoleLogger.warn("IOException connecting to server: " + serverHost + ":" + serverPort + ". "

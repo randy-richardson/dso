@@ -396,6 +396,7 @@ public class TestConfigObject {
   public static final String TRANSPARENT_TESTS_MODE_NORMAL         = "normal";
   public static final String TRANSPARENT_TESTS_MODE_CRASH          = "crash";
   public static final String TRANSPARENT_TESTS_MODE_ACTIVE_PASSIVE = "active-passive";
+  public static final String TRANSPARENT_TESTS_MODE_ACTIVE_ACTIVE  = "active-active";
 
   private static File        baseDir;
 

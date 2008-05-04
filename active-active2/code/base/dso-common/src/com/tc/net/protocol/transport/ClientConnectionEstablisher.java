@@ -55,6 +55,7 @@ public class ClientConnectionEstablisher {
   private Thread                          connectionEstablisher;
 
   private NoExceptionLinkedQueue          reconnectRequest   = new NoExceptionLinkedQueue();  // <ConnectionRequest>
+  private final SynchronizedBoolean       quitReconnect          = new SynchronizedBoolean(false);
 
   public ClientConnectionEstablisher(TCConnectionManager connManager, ConnectionAddressProvider connAddressProvider,
                                      int maxReconnectTries, int timeout) {
@@ -142,6 +143,7 @@ public class ClientConnectionEstablisher {
       for (int i = 0; ((maxReconnectTries < 0) || (i < maxReconnectTries)) && !connected; i++) {
         ConnectionAddressIterator addresses = connAddressProvider.getIterator();
         while (addresses.hasNext() && !connected) {
+          if (quitReconnect.get()) return;
           TCConnection connection = null;
           final ConnectionInfo connInfo = addresses.next();
           try {
@@ -256,6 +258,7 @@ public class ClientConnectionEstablisher {
 
   public void quitReconnectAttempts() {
     putReconnectRequest(new ConnectionRequest(ConnectionRequest.QUIT, null));
+    quitReconnect.set(true);
   }
 
   static class AsyncReconnect implements Runnable {

@@ -9,6 +9,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.ClientID;
+import com.tc.net.groups.GroupID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.groups.NodeIDImpl;
 import com.tc.net.protocol.NetworkStackID;
@@ -24,39 +25,36 @@ import java.util.HashSet;
 
 public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl implements
     ClientMessageChannelMultiplex {
-  private static final TCLogger       logger = TCLogging.getLogger(ClientMessageChannelMultiplex.class);
-  private final TCMessageFactory      msgFactory;
-  private final SessionProvider       sessionProvider;
+  private static final TCLogger  logger = TCLogging.getLogger(ClientMessageChannelMultiplex.class);
+  private final TCMessageFactory msgFactory;
+  private final SessionProvider  sessionProvider;
 
-  private CommunicationsManager       communicationsManager;
-  private ConnectionAddressProvider[] addressProviders;
-  private ClientMessageChannel[]      channels;
-  private NodeID[]                    nodeIDs;
+  private CommunicationsManager  communicationsManager;
+  private ClientMessageChannel[] channels;
+  private GroupID[]              servers;
 
-  public ClientMessageChannelMultiplexImpl(TCMessageFactory msgFactory,
-                                           SessionProvider sessionProvider,
-                                           final int maxReconnectTries,
-                                           CommunicationsManager communicationsManager,
+  public ClientMessageChannelMultiplexImpl(TCMessageFactory msgFactory, SessionProvider sessionProvider,
+                                           final int maxReconnectTries, CommunicationsManager communicationsManager,
                                            ConnectionAddressProvider[] addressProviders) {
     super(msgFactory, null, sessionProvider, null, null, false);
     this.msgFactory = msgFactory;
     this.sessionProvider = sessionProvider;
 
     this.communicationsManager = communicationsManager;
-    this.addressProviders = addressProviders;
     this.channels = new ClientMessageChannel[addressProviders.length];
-    this.nodeIDs = new NodeID[addressProviders.length];
+    this.servers = new GroupID[addressProviders.length];
 
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, -1, null, 0, 10000,
-                                                                   this.addressProviders[i], 
+                                                                   addressProviders[i], 
                                                                    TransportHandshakeMessage.NO_CALLBACK_PORT, null,
                                                                    this.msgFactory,
                                                                    new TCMessageRouterImpl(), this, isActiveCoordinator);
+      servers[i] = (GroupID)channels[i].getServerID();
     }
-    setSourceNodeID(ClientID.NULL_ID);
-    setDestinationNodeID(NodeIDImpl.NULL_ID);
+    setClientID(ClientID.NULL_ID);
+    setServerID(GroupID.NULL_ID);
   }
 
   public ClientMessageChannel getActiveCoordinator() {
@@ -77,13 +75,12 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
   }
 
   public NodeID[] getMultiplexIDs() {
-    return (nodeIDs);
+    return (servers);
   }
 
   public ClientMessageChannel getChannel(NodeID id) {
-    for (int i = 0; i < nodeIDs.length; ++i) {
-      if (id.equals(nodeIDs[i])) { 
-        return (channels[i]); }
+    for (int i = 0; i < servers.length; ++i) {
+      if (id.equals(servers[i])) { return (channels[i]); }
     }
     return null;
   }
@@ -107,12 +104,17 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
       MaxConnectionsExceededException {
     NetworkStackID nid = null;
     for (int i = 0; i < channels.length; ++i) {
-      nid = channels[i].open();
-      nodeIDs[i] = channels[i].getDestinationNodeID();
+      try {
+        nid = channels[i].open();
+      } catch (TCTimeoutException e) {
+        throw new TCTimeoutException(channels[i].getConnectionAddress().toString() + " " + e);
+      } catch (UnknownHostException e) {
+        throw new UnknownHostException(channels[i].getConnectionAddress().toString() + " " + e);
+      } catch (MaxConnectionsExceededException e) {
+        throw new MaxConnectionsExceededException(channels[i].getConnectionAddress().toString() + " " + e);
+      }
     }
-    setSourceNodeID(new ClientID(getChannelID()));
-    // broadcast destination
-    setDestinationNodeID(new NodeIDImpl(getChannelID().toString(), new byte[0]));
+    setClientID(new ClientID(getChannelID()));
     return nid;
   }
 
@@ -136,7 +138,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
       count += channels[i].getConnectAttemptCount();
     return count;
   }
-  
+
   public void routeMessageType(TCMessageType messageType, TCMessageSink dest) {
     for (int i = 0; i < channels.length; ++i)
       channels[i].routeMessageType(messageType, dest);
@@ -206,9 +208,11 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
   private class ChannelEventMiddleMan implements ChannelEventListener {
     private final ChannelEventListener listener;
     private HashSet                    connectedSet = new HashSet();
+    private final ClientMessageChannel channel;
 
-    public ChannelEventMiddleMan(ChannelEventListener listener) {
+    public ChannelEventMiddleMan(ChannelEventListener listener, ClientMessageChannel channel) {
       this.listener = listener;
+      this.channel = channel;
     }
 
     public void notifyChannelEvent(ChannelEvent event) {
@@ -229,17 +233,12 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     }
 
     private void fireEvent(ChannelEvent event) {
-      listener.notifyChannelEvent(event);
+      listener.notifyChannelEvent(new ChannelEventImpl(event.getType(), channel));
     }
   }
 
   public void addListener(ChannelEventListener listener) {
-    if (channels.length == 1) {
-      channels[0].addListener(listener);
-      return;
-    }
-
-    ChannelEventMiddleMan middleman = new ChannelEventMiddleMan(listener);
+    ChannelEventMiddleMan middleman = new ChannelEventMiddleMan(listener, this);
     for (int i = 0; i < channels.length; ++i)
       channels[i].addListener(middleman);
   }

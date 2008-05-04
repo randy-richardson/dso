@@ -9,7 +9,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.ClientID;
-import com.tc.net.groups.NodeIDImpl;
+import com.tc.net.groups.GroupID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.MessageTransport;
@@ -50,8 +50,8 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     this.activeCoordinator = activeCoordinator;
     this.addrProvider = addrProvider;
 
-    setSourceNodeID(ClientID.NULL_ID);
-    setDestinationNodeID(NodeIDImpl.NULL_ID);
+    setClientID(ClientID.NULL_ID);
+    setServerID(new GroupID("", this.addrProvider));
   }
 
   public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException,
@@ -63,12 +63,15 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
       NetworkStackID id = this.sendLayer.open();
       getStatus().open();
       this.channelID = new ChannelID(id.toLong());
-      setSourceNodeID(new ClientID(this.channelID));
-      setDestinationNodeID(new NodeIDImpl(this.channelID.toString(), addrProvider.toString().getBytes()));
+      setClientID(new ClientID(this.channelID));
       this.cidProvider.setChannelID(this.channelID);
       this.channelSessionID = sessionProvider.getSessionID();
       return id;
     }
+  }
+  
+  public ConnectionAddressProvider getConnectionAddress() {
+    return this.addrProvider;
   }
 
   public ClientMessageChannelMultiplex getMultiplex() {
@@ -77,6 +80,10 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
 
   public ChannelID getActiveActiveChannelID() {
     return getMultiplex().getChannelID();
+  }
+  
+  public ClientMessageChannel getActiveCoordinator() {
+    return this;
   }
 
   public void addClassMapping(TCMessageType type, Class msgClass) {

@@ -84,7 +84,8 @@ public class HaConfigImpl implements HaConfig {
         added = true;
       }
     }
-    if (!added) { throw new AssertionError("Node=[] with serverName=[] was not added to any group!"); }
+    if (!added) { throw new AssertionError("Node=[" + node + "] with serverName=[" + serverName
+                                           + "] was not added to any group!"); }
   }
 
   public Node makeThisNode() {

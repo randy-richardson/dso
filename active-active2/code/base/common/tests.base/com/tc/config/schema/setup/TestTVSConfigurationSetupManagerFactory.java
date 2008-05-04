@@ -23,7 +23,10 @@ import com.tc.object.config.schema.NewDSOApplicationConfig;
 import com.tc.object.config.schema.NewL1DSOConfig;
 import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.util.Assert;
+import com.terracottatech.config.ActiveServerGroup;
+import com.terracottatech.config.ActiveServerGroups;
 import com.terracottatech.config.Application;
+import com.terracottatech.config.Members;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
@@ -319,7 +322,7 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   }
 
   private void cleanBeanSetServersIfNeeded(TestConfigBeanSet beanSetArg) {
-    if (beanSetArg == null) { throw new AssertionError("beanSetArg is null"); }
+    Assert.assertNotNull(beanSetArg);
 
     Servers l2s = beanSetArg.serversBean();
     if (l2s.sizeOfServerArray() == 1) {
@@ -332,14 +335,43 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     }
   }
 
+  private void cleanBeanSetServerGroupsIfNeeded(TestConfigBeanSet beanSetArg) {
+    Assert.assertNotNull(beanSetArg);
+
+    Servers l2s = beanSetArg.serversBean();
+    ActiveServerGroups[] groupsArray = l2s.getActiveServerGroupsArray();
+    Assert.assertNotNull(groupsArray);
+    Assert.assertEquals(1, groupsArray.length);
+    ActiveServerGroup[] groupArray = groupsArray[0].getActiveServerGroupArray();
+
+    if (groupArray.length == 1) {
+      Members members = groupArray[0].getMembers();
+      Assert.assertNotNull(members);
+      String[] memberNames = members.getMemberArray();
+      Assert.assertNotNull(memberNames);
+
+      if (memberNames.length == 1 && memberNames[0].equals(TestConfigBeanSet.DEFAULT_SERVER_NAME)) {
+        groupsArray[0].removeActiveServerGroup(0);
+        Assert.assertEquals(0, groupsArray[0].getActiveServerGroupArray().length);
+      }
+    }
+  }
+
+  public void addServerToL1Config(String name, int dsoPort, int jmxPort, boolean onlyOneServerInvolved) {
+    addServerToL1Config(name, dsoPort, jmxPort);
+    addServerGroupToL1Config();
+  }
+
   public void addServerToL1Config(String name, int dsoPort, int jmxPort) {
+    Assert.assertTrue(dsoPort >= 0);
     cleanBeanSetServersIfNeeded(l1_beanSet);
 
     Server newL2 = l1_beanSet.serversBean().addNewServer();
 
-    if (name != null && !name.equals("")) {
-      newL2.setName(name);
+    if (name == null || name.equals("")) {
+      name = TestConfigBeanSet.DEFAULT_HOST;
     }
+    newL2.setName(name);
     newL2.setHost(TestConfigBeanSet.DEFAULT_HOST);
 
     newL2.setDsoPort(dsoPort);
@@ -350,6 +382,46 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
     newL2.setData(BOGUS_FILENAME);
     newL2.setLogs(BOGUS_FILENAME);
+  }
+
+  // should be called after all servers have been added to l1_beanset
+  public void addServerGroupToL1Config() {
+    Server[] serverArray = l1_beanSet.serversBean().getServerArray();
+    Assert.assertNotNull(serverArray);
+    Assert.assertTrue(serverArray.length > 0);
+    String[] memberNames = new String[serverArray.length];
+
+    for (int i = 0; i < serverArray.length; i++) {
+      memberNames[i] = serverArray[i].getName();
+    }
+    addServerGroupToL1Config(0, memberNames);
+  }
+
+  public void addServerGroupToL1Config(int groupId, List members) {
+    String[] memberNames = new String[members.size()];
+    int position = 0;
+    for (Iterator iter = members.iterator(); iter.hasNext();) {
+      memberNames[position++] = (String) iter.next();
+    }
+    addServerGroupToL1Config(groupId, memberNames);
+  }
+
+  public void addServerGroupToL1Config(int groupId, String[] members) {
+    Assert.assertNotNull(members);
+    Assert.assertTrue(members.length > 0);
+    Assert.assertTrue(groupId >= 0);
+    cleanBeanSetServerGroupsIfNeeded(l1_beanSet);
+
+    ActiveServerGroup group = l1_beanSet.serversBean().getActiveServerGroupsArray(0).addNewActiveServerGroup();
+    group.setId(groupId);
+    Members newMembers = group.addNewMembers();
+    for (int i = 0; i < members.length; i++) {
+      String memberName = members[i];
+      if (memberName == null || memberName.equals("")) {
+        memberName = TestConfigBeanSet.DEFAULT_HOST;
+      }
+      newMembers.addMember(members[i]);
+    }
   }
 
   public void setGCEnabled(boolean val) {

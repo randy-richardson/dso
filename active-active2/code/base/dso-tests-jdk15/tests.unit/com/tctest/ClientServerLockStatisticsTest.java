@@ -17,6 +17,7 @@ import com.tc.management.lock.stats.LockStatElement;
 import com.tc.management.lock.stats.LockStatisticsMessage;
 import com.tc.management.lock.stats.LockStatisticsResponseMessage;
 import com.tc.management.lock.stats.TCStackTraceElement;
+import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.ClientID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -303,6 +304,14 @@ public class ClientServerLockStatisticsTest extends TCTestCase {
 
     public boolean isInitConnect() {
       throw new ImplementMe();
+    }
+
+    public ConnectionAddressProvider getConnectionAddress() {
+      throw new ImplementMe();
+    }
+
+    public ClientMessageChannel getActiveCoordinator() {
+      return this;
     }
   }
 

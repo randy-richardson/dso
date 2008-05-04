@@ -27,7 +27,7 @@ public class ClusterMembershipEventJMXTest extends TransparentTestBase {
   private int              adminPort;
 
   public ClusterMembershipEventJMXTest() {
-//    this.disableAllUntil("2007-06-25");
+    // this.disableAllUntil("2007-06-25");
   }
 
   public void doSetUp(TransparentTestIface t) throws Exception {
@@ -50,7 +50,7 @@ public class ClusterMembershipEventJMXTest extends TransparentTestBase {
     configFile = getTempFile("config-file.xml");
     writeConfigFile();
 
-    configFactory().addServerToL1Config(null, port, adminPort);
+    configFactory().addServerToL1Config(null, port, adminPort, true);
     setUpControlledServer(configFactory(), configHelper(), port, adminPort, configFile.getAbsolutePath());
     doSetUp(this);
   }
