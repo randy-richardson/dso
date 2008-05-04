@@ -18,11 +18,14 @@ import com.tc.config.schema.test.SystemConfigBuilder;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.test.TestConfigObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.List;
 
 public class ActivePassiveServerConfigCreator {
   public static final String                            DEV_MODE  = "development";
@@ -43,12 +46,16 @@ public class ActivePassiveServerConfigCreator {
   private final TestTVSConfigurationSetupManagerFactory configFactory;
   private final String[]                                dataLocations;
   private final ActivePassiveTestSetupManager           setupManager;
-
+  private final List[]                                  groups;
+  private final String                                  testMode;
+  
   public ActivePassiveServerConfigCreator(ActivePassiveTestSetupManager setupManager, int[] dsoPorts, int[] jmxPorts,
-                                          int[] l2GroupPorts, String[] serverNames, String configModel,
+                                          int[] l2GroupPorts, String[] serverNames,  List[] groups, String configModel,
                                           File configFile, File tempDir,
-                                          TestTVSConfigurationSetupManagerFactory configFactory) {
+                                          TestTVSConfigurationSetupManagerFactory configFactory, String testMode) {
     this.setupManager = setupManager;
+    this.groups = groups;
+    this.testMode = testMode;
     this.serverCount = this.setupManager.getServerCount();
     this.dsoPorts = dsoPorts;
     this.jmxPorts = jmxPorts;
@@ -110,7 +117,16 @@ public class ActivePassiveServerConfigCreator {
     L2ConfigBuilder[] l2s = new L2ConfigBuilder[serverCount];
     for (int i = 0; i < serverCount; i++) {
       L2ConfigBuilder l2 = new L2ConfigBuilder();
-      if (serverDiskless) {
+
+      // TODO: need to fix and test this part of code for active-active
+      if (this.testMode.equals(TestConfigObject.TRANSPARENT_TESTS_MODE_ACTIVE_ACTIVE)) {
+        // if group's ha mode is diskless than different data file for each member
+        // if group's ha mode is diskbased than same data file for all members
+        if (!serverDiskless) {
+          dataLocations[i] = dataLocationHome + File.separator + "server-" + i;
+          l2.setData(dataLocations[i]);
+        }
+      } else if (serverDiskless) {
         dataLocations[i] = dataLocationHome + File.separator + "server-" + i;
         l2.setData(dataLocations[i]);
       } else {
@@ -137,32 +153,28 @@ public class ActivePassiveServerConfigCreator {
       ha.setMode(HaConfigBuilder.HA_MODE_DISK_BASED_ACTIVE_PASSIVE);
     }
     ha.setElectionTime(this.setupManager.getElectionTime() + "");
-
     L2SConfigBuilder l2sConfigbuilder = new L2SConfigBuilder();
     l2sConfigbuilder.setL2s(l2s);
     l2sConfigbuilder.setHa(ha);
 
     int indent = 7;
-    int serverNamePosition = 0;
-    GroupsConfigBuilder groups = new GroupsConfigBuilder();
-    int groupCount = this.setupManager.getActiveServerGroupCount();
-    for (int i = 0; i < groupCount; i++) {
+    GroupsConfigBuilder groupsConfigBuilder = new GroupsConfigBuilder();
+    for (int i = 0; i < this.groups.length; i++) {
       GroupConfigBuilder group = new GroupConfigBuilder();
       HaConfigBuilder groupHa = new HaConfigBuilder(indent);
       groupHa.setMode(this.setupManager.getGroupServerShareDataMode(i));
       groupHa.setElectionTime("" + this.setupManager.getGroupElectionTime(i));
       MembersConfigBuilder members = new MembersConfigBuilder();
-      int memberCount = this.setupManager.getGroupMemberCount(i);
-      for (int j = 0; j < memberCount; j++) {
-        members.addMember(this.serverNames[serverNamePosition]);
-        serverNamePosition++;
+      for (Iterator iter = groups[i].iterator(); iter.hasNext();) {
+        String memberName = (String) iter.next();
+        members.addMember(memberName);
       }
       group.setHa(groupHa);
       group.setId(i);
       group.setMembers(members);
-      groups.addGroupConfigBuilder(group);
+      groupsConfigBuilder.addGroupConfigBuilder(group);
     }
-    l2sConfigbuilder.setGroups(groups);
+    l2sConfigbuilder.setGroups(groupsConfigBuilder);
 
     ApplicationConfigBuilder app = ApplicationConfigBuilder.newMinimalInstance();
 
