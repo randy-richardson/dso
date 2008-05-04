@@ -44,6 +44,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     this.channels = new ClientMessageChannel[addressProviders.length];
     this.servers = new GroupID[addressProviders.length];
 
+    logger.info("Creat active channels");
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, -1, null, 0, 10000,
@@ -52,6 +53,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
                                                                    this.msgFactory,
                                                                    new TCMessageRouterImpl(), this, isActiveCoordinator);
       servers[i] = (GroupID)channels[i].getServerID();
+      logger.info("Created sub-channel" + i + ":" + addressProviders[i]);
     }
     setClientID(ClientID.NULL_ID);
     setServerID(GroupID.NULL_ID);
@@ -113,7 +115,9 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
       } catch (MaxConnectionsExceededException e) {
         throw new MaxConnectionsExceededException(channels[i].getConnectionAddress().toString() + " " + e);
       }
+      logger.info("Opened sub-channel: "+ channels[i].getConnectionAddress().toString());
     }
+    logger.info("all active sub-channels opened");
     setClientID(new ClientID(getChannelID()));
     return nid;
   }
