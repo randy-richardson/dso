@@ -4,6 +4,7 @@
  */
 package com.tctest;
 
+import com.tc.test.activepassive.ActivePassiveCrashMode;
 import com.tc.test.activepassive.ActivePassivePersistenceMode;
 import com.tc.test.activepassive.ActivePassiveSharedDataMode;
 import com.tc.test.activepassive.ActivePassiveTestSetupManager;
@@ -28,6 +29,7 @@ public class LinkedBlockingQueueActiveActiveTest extends TransparentTestBase {
 
   public void setupActiveActiveTest(ActivePassiveTestSetupManager setupManager) {
     setupManager.setServerCount(2);
+    setupManager.setServerCrashMode(ActivePassiveCrashMode.NO_CRASH);
     setupManager.setServerShareDataMode(ActivePassiveSharedDataMode.DISK);
     setupManager.setServerPersistenceMode(ActivePassivePersistenceMode.PERMANENT_STORE);
     setupManager.addActiveServerGroup(1, ActivePassiveSharedDataMode.DISK, electionTime);

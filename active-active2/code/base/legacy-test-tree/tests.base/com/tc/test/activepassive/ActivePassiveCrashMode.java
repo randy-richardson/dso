@@ -18,10 +18,8 @@ public class ActivePassiveCrashMode {
   }
 
   public ActivePassiveCrashMode(String mode) {
-    if (!mode.equals(CRASH_AFTER_MUTATE) && !mode.equals(CONTINUOUS_ACTIVE_CRASH) && !mode.equals(RANDOM_SERVER_CRASH)) { throw new AssertionError(
-                                                                                                                                                   "Unrecognized crash mode ["
-                                                                                                                                                       + mode
-                                                                                                                                                       + "]"); }
+    if (!mode.equals(CRASH_AFTER_MUTATE) && !mode.equals(CONTINUOUS_ACTIVE_CRASH) && !mode.equals(RANDOM_SERVER_CRASH)
+        && !mode.equals(NO_CRASH)) { throw new AssertionError("Unrecognized crash mode [" + mode + "]"); }
     this.mode = mode;
   }
 
