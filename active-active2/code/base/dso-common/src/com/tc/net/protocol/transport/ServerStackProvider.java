@@ -258,7 +258,7 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
       }
 
       try {
-        this.transport = attachNewConnection(connectionId, syn.getSource());
+        this.transport = attachNewConnection(connectionId, syn.getSource(), syn.isNewConnect());
       } catch (IllegalReconnectException e) {
         logger.warn("Client attempting an illegal reconnect for id " + connectionId + ", " + syn.getSource());
         return;
