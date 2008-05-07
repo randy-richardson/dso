@@ -44,7 +44,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
     this.channels = new ClientMessageChannel[addressProviders.length];
     this.servers = new GroupID[addressProviders.length];
 
-    logger.info("Creat active channels");
+    logger.info("Create active channels");
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, -1, null, 0, 10000,

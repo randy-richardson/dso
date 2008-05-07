@@ -37,7 +37,6 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   private final ClientMessageChannelMultiplex multiplex;
   private final ConnectionAddressProvider     addrProvider;
   private final boolean                       activeCoordinator;
-  private boolean                             initConnect      = true;
 
   protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router,
                                      SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
@@ -148,10 +147,6 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
 
   public boolean isActiveCoordinator() {
     return activeCoordinator;
-  }
-
-  public void connected() {
-    initConnect = false;
   }
 
   private static class ChannelIDProviderImpl implements ChannelIDProvider {

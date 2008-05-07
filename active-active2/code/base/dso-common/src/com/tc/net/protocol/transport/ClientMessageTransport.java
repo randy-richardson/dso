@@ -95,7 +95,6 @@ public class ClientMessageTransport extends MessageTransportBase {
         isOpen.set(true);
         NetworkStackID nid = new NetworkStackID(this.connectionId.getChannelID());
         wasOpened = true;
-        channel.connected();
         return (nid);
       } catch (TCTimeoutException e) {
         // DEV-1320
