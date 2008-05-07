@@ -29,8 +29,4 @@ public class TestSynMessage extends TestTransportHandshakeMessage implements Syn
     return TransportHandshakeMessage.NO_CALLBACK_PORT;
   }
   
-  public boolean isNewConnect() {
-    return false;
-  }
-
 }

@@ -42,7 +42,6 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
   private final short        stackLayerFlags;
   private final short        errorType;
   private final int          callbackPort;
-  private final boolean      newConnect;
 
   TransportMessageImpl(TCConnection source, TCNetworkHeader header, TCByteBuffer[] payload) throws TCProtocolException {
     super(source, header, payload);
@@ -55,7 +54,6 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
 
       this.type = in.readByte();
 
-      this.newConnect = in.readBoolean();
       try {
         this.connectionId = ConnectionID.parse(in.readString());
       } catch (InvalidConnectionIDException e) {
@@ -165,8 +163,4 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
     return this.callbackPort;
   }
   
-  public boolean isNewConnect() {
-    return this.newConnect;
-  }
-
 }

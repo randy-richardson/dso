@@ -244,6 +244,10 @@ public class ServerStackProviderTest extends TCTestCase {
       connId = super.nextConnectionId();
       return connId;
     }
+    
+    public ConnectionID setServerIdToConnectionId(ConnectionID rawID) {
+      return(super.setServerIdToConnectionId(rawID));
+    }
   }
 
 }

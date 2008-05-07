@@ -150,10 +150,6 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     return activeCoordinator;
   }
 
-  public boolean isInitConnect() {
-    return initConnect;
-  }
-
   public void connected() {
     initConnect = false;
   }

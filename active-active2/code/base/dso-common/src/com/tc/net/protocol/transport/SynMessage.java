@@ -8,6 +8,4 @@ public interface SynMessage extends TransportHandshakeMessage {
   
   int getCallbackPort();
   
-  public boolean isNewConnect();
-
 }

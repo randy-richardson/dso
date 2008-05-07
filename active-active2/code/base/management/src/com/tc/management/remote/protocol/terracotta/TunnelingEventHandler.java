@@ -11,7 +11,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.protocol.tcm.ChannelEvent;
 import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ChannelEventType;
-import com.tc.net.protocol.tcm.ClientMessageChannel;
+import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TCMessage;
 import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.util.concurrent.SetOnceFlag;
@@ -25,7 +25,7 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
 
   private static final TCLogger      logger = TCLogging.getLogger(TunnelingEventHandler.class);
 
-    private final ClientMessageChannel channel;
+  private final MessageChannel       channel;
 
   private TunnelingMessageConnection messageConnection;
 
@@ -39,15 +39,15 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
 
   private boolean                    sentReadyMessage;
 
-    public TunnelingEventHandler(final ClientMessageChannel channel) {
-        this.channel = channel;
-        this.channel.addListener(this);
-        acceptOk = false;
-        jmxReadyLock = new Object();
-        localJmxServerReady = new SetOnceFlag();
-        transportConnected = false;
-        sentReadyMessage = false;
-    }
+  public TunnelingEventHandler(final MessageChannel channel) {
+    this.channel = channel;
+    this.channel.addListener(this);
+    acceptOk = false;
+    jmxReadyLock = new Object();
+    localJmxServerReady = new SetOnceFlag();
+    transportConnected = false;
+    sentReadyMessage = false;
+  }
 
   public void handleEvent(final EventContext context) {
     final JmxRemoteTunnelMessage messageEnvelope = (JmxRemoteTunnelMessage) context;
@@ -67,30 +67,12 @@ public final class TunnelingEventHandler extends AbstractEventHandler implements
         } else if (messageConnection == null) {
           logger.warn("Received unexpected data message, connection is not yet established");
         } else {
-            synchronized (this) {
-                if (messageEnvelope.getInitConnection()) {
-                    if (messageConnection != null) {
-                        logger
-                                .warn("Received a client connection initialization, resetting existing connection");
-                        reset();
-                    }
-                    messageConnection = new TunnelingMessageConnection(channel.getActiveCoordinator(),
-                            true);
-                    acceptOk = true;
-                    notifyAll();
-                } else if (messageConnection == null) {
-                    logger
-                            .warn("Received unexpected data message, connection is not yet established");
-                } else {
-                    if (message != null) {
-                        messageConnection.incomingNetworkMessage(message);
-                    } else {
-                        logger
-                                .warn("Received tunneled message with no data, resetting connection");
-                        reset();
-                    }
-                }
-            }
+          if (message != null) {
+            messageConnection.incomingNetworkMessage(message);
+          } else {
+            logger.warn("Received tunneled message with no data, resetting connection");
+            reset();
+          }
         }
       }
     }

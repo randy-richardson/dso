@@ -82,21 +82,18 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
   }
 
   public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection)
-      throws StackNotFoundException, IllegalReconnectException {
-    return attachNewConnection(connectionId, connection, false);
-  }
-
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean newConnect)
       throws StackNotFoundException , IllegalReconnectException {
     Assert.assertNotNull(connection);
 
     final NetworkStackHarness harness;
     final MessageTransport rv;
-    if (newConnect || connectionId.isNull()) {
-      // must supply connectionId if open multiplex channel
-      Assert.assertTrue((newConnect && !connectionId.isNull()) || connectionId.isNull());
-      if (connectionId.isNull())
+    if (connectionId.isNull() || connectionId.isChannelIDNull()) {
+      Assert.assertTrue(connectionId.isChannelIDNull());
+      if (connectionId.isNull()) {
         connectionId = connectionIdFactory.nextConnectionId();
+      } else if (connectionId.isChannelIDNull()) {
+        connectionId = connectionIdFactory.setServerIdToConnectionId(connectionId);
+      }
 
       rv = messageTransportFactory.createNewTransport(connectionId, connection, createHandshakeErrorHandler(),
                                                       handshakeMessageFactory, transportListeners);
@@ -258,7 +255,7 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
       }
 
       try {
-        this.transport = attachNewConnection(connectionId, syn.getSource(), syn.isNewConnect());
+        this.transport = attachNewConnection(connectionId, syn.getSource());
       } catch (IllegalReconnectException e) {
         logger.warn("Client attempting an illegal reconnect for id " + connectionId + ", " + syn.getSource());
         return;

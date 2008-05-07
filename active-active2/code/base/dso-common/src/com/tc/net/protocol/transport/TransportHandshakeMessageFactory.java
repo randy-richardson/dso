@@ -9,7 +9,7 @@ import com.tc.net.core.TCConnection;
 public interface TransportHandshakeMessageFactory {
 
   public TransportHandshakeMessage createSyn(ConnectionID connectionId, TCConnection source, short stackLayerFlags,
-                                             int callbackPort, boolean newConnect);
+                                             int callbackPort);
 
   public TransportHandshakeMessage createAck(ConnectionID connectionId, TCConnection source);
 

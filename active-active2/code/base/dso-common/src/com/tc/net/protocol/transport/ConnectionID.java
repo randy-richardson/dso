@@ -55,6 +55,10 @@ public class ConnectionID {
   public boolean isNull() {
     return NULL_ID.equals(this);
   }
+  
+  public boolean isChannelIDNull() {
+    return (channelID == ChannelID.NULL_ID.toLong());
+  }
 
   public String getServerID() {
     return this.serverID;

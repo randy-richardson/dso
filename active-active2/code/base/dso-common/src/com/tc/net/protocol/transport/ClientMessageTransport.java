@@ -237,11 +237,11 @@ public class ClientMessageTransport extends MessageTransportBase {
       // get the stack layer list and pass it in
       short stackLayerFlags = getCommunicationStackFlags(this);
       ConnectionID synConnId = this.connectionId;
-      if (!channel.isActiveCoordinator() && channel.isInitConnect()) { // for active-active multiplex
+      if (!channel.isActiveCoordinator() && synConnId == null) { // for active-active multiplex
         synConnId = new ConnectionID(channel.getActiveActiveChannelID().toLong(), ConnectionID.NULL_ID.getServerID());
       }
       TransportHandshakeMessage syn = this.messageFactory.createSyn(synConnId, getConnection(), stackLayerFlags,
-                                                                    callbackPort, channel.isInitConnect());
+                                                                    callbackPort);
       // send syn message
       this.sendToConnection(syn);
       this.status.synSent();

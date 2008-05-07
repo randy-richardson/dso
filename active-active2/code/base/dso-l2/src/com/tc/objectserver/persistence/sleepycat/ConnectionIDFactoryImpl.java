@@ -44,6 +44,16 @@ public class ConnectionIDFactoryImpl implements ConnectionIDFactory, DSOChannelM
     fireCreationEvent(rv);
     return rv;
   }
+  
+  public ConnectionID setServerIdToConnectionId(ConnectionID rawID) {
+    Assert.assertNotNull(uid);
+    long clientID = rawID.getChannelID();
+    // Make sure we save the fact that we are giving out this id to someone in the database before giving it out.
+    clientStateStore.saveClientState(new ChannelID(clientID));
+    ConnectionID rv = new ConnectionID(clientID, uid);
+    fireCreationEvent(rv);
+    return rv;
+  }
 
   private void fireCreationEvent(ConnectionID rv) {
     for (Iterator i = listeners.iterator(); i.hasNext();) {
