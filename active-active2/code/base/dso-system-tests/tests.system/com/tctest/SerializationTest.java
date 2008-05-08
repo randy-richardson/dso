@@ -1,5 +1,5 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
  * notice. All rights reserved.
  */
 package com.tctest;
@@ -7,6 +7,7 @@ package com.tctest;
 import org.apache.commons.io.IOUtils;
 
 import com.tc.exception.TCRuntimeException;
+import com.tc.lcp.LinkedJavaProcess;
 import com.tc.object.BaseDSOTestCase;
 import com.tc.object.TestClientObjectManager;
 import com.tc.object.bytecode.Manageable;
@@ -15,7 +16,6 @@ import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.loaders.IsolationClassLoader;
 import com.tc.object.tools.BootJar;
 import com.tc.object.tx.MockTransactionManager;
-import com.tc.process.LinkedJavaProcess;
 import com.tc.process.StreamCollector;
 import com.tc.util.runtime.Vm;
 

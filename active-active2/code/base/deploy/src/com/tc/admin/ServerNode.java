@@ -1,5 +1,5 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
  * notice. All rights reserved.
  */
 package com.tc.admin;
@@ -100,6 +100,7 @@ public class ServerNode extends ComponentNode implements ConnectionListener, Not
   }
 
   void newConnectionContext() {
+    resetBeanProxies();
     String[] creds = ServerConnectionManager.getCachedCredentials(m_connectManager);
     if (creds != null) {
       m_connectManager.setCredentials(creds);
@@ -659,6 +660,7 @@ public class ServerNode extends ComponentNode implements ConnectionListener, Not
   }
 
   private void resetBeanProxies() {
+    m_dsoBean = null;
     m_serverInfoBean = null;
     m_productInfo = null;
   }

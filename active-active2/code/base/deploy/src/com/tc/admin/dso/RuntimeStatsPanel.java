@@ -64,8 +64,10 @@ public class RuntimeStatsPanel extends XContainer implements RuntimeStatisticCon
   private Button                m_clearSamplesButton;
   private Spinner               m_samplePeriodSpinner;
   private Spinner               m_sampleHistorySpinner;
+  protected AxisSpace           m_rangeAxisSpace;
+
   private boolean               m_shouldAutoStart;
-  
+
   protected static Dimension    fDefaultGraphSize                       = new Dimension(
                                                                                         ChartPanel.DEFAULT_MINIMUM_DRAW_WIDTH,
                                                                                         ChartPanel.DEFAULT_MINIMUM_DRAW_HEIGHT);
@@ -114,6 +116,26 @@ public class RuntimeStatsPanel extends XContainer implements RuntimeStatisticCon
     m_sampleHistorySpinner.setModel(new SpinnerNumberModel(Integer.valueOf(getDefaultSampleHistoryMinutes()), Integer
         .valueOf(1), null, Integer.valueOf(SAMPLE_SAMPLE_HISTORY_STEP_SIZE)));
     m_sampleHistorySpinner.addChangeListener(new SampleHistoryChangeHandler());
+  }
+
+  protected ChartPanel createChartPanel(JFreeChart chart) {
+    boolean useBuffer = true;
+    boolean properties = false;
+    boolean save = false;
+    boolean print = false;
+    boolean zoom = false;
+    boolean tooltips = true;
+
+    ChartPanel chartPanel = new ChartPanel(chart, ChartPanel.DEFAULT_WIDTH, ChartPanel.DEFAULT_HEIGHT,
+                                           ChartPanel.DEFAULT_MINIMUM_DRAW_WIDTH,
+                                           ChartPanel.DEFAULT_MINIMUM_DRAW_HEIGHT,
+                                           ChartPanel.DEFAULT_MAXIMUM_DRAW_WIDTH,
+                                           ChartPanel.DEFAULT_MAXIMUM_DRAW_HEIGHT, useBuffer, properties, save, print,
+                                           zoom, tooltips);
+    chartPanel.setRangeZoomable(false);
+    chartPanel.setDomainZoomable(false);
+
+    return chartPanel;
   }
 
   private int getDefaultPollPeriodSeconds() {
@@ -194,7 +216,7 @@ public class RuntimeStatsPanel extends XContainer implements RuntimeStatisticCon
     for (TimeSeries series : seriesArray) {
       series.setMaximumItemCount(maxSampleCount);
     }
-    
+
     m_allCharts.add(chart);
     return chart;
   }
@@ -216,17 +238,17 @@ public class RuntimeStatsPanel extends XContainer implements RuntimeStatisticCon
       fixedRangeAxisSpace = Math.max(fixedRangeAxisSpace, rangeAxisSpace);
     }
 
-    AxisSpace rangeAxisSpace = new AxisSpace();
-    rangeAxisSpace.setLeft(fixedRangeAxisSpace);
-    rangeAxisSpace.setRight(10);
+    m_rangeAxisSpace = new AxisSpace();
+    m_rangeAxisSpace.setLeft(fixedRangeAxisSpace);
+    m_rangeAxisSpace.setRight(5);
 
     Iterator<XYPlot> plotIter = plotList.iterator();
     while (plotIter.hasNext()) {
       XYPlot plot = plotIter.next();
-      plot.setFixedRangeAxisSpace(rangeAxisSpace);
+      plot.setFixedRangeAxisSpace(m_rangeAxisSpace);
     }
-    
-    if(m_shouldAutoStart) {
+
+    if (m_shouldAutoStart) {
       startMonitoringRuntimeStats();
       m_shouldAutoStart = false;
     }

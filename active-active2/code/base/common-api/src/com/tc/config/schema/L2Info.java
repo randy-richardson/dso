@@ -1,5 +1,5 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
  */
 package com.tc.config.schema;
 
@@ -33,6 +33,8 @@ public class L2Info implements java.io.Serializable {
     this.name = name;
     this.host = host;
     this.jmxPort = jmxPort;
+    
+    safeGetHostAddress();
   }
 
   public L2Info(L2Info other) {

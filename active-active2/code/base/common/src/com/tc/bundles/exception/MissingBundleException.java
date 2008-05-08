@@ -1,5 +1,5 @@
 /*
- * All content copyright (c) 2003-2007 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
  * notice. All rights reserved.
  */
 package com.tc.bundles.exception;
@@ -12,7 +12,6 @@ import com.tc.bundles.ResolverUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
@@ -52,14 +51,6 @@ public class MissingBundleException extends BundleException implements BundleExc
       repos.append("+ ").append((String) i.next()).append("\n").append(INDENT + INDENT);
     }
     return repos.toString();
-    // for (int j = 0; j < repositories.size(); j++) {
-    // String root = canonicalPath(repositories.get(j).toString());
-    // String mavenStyle = OSGiToMaven.makeBundlePathname(root, groupId, name, version);
-    // String flatStyle = OSGiToMaven.makeFlatBundlePathname(root, name, version, false);
-    // repos.append("+ ").append(mavenStyle).append("\n").append(INDENT + INDENT);
-    // repos.append("+ ").append(flatStyle).append("\n").append(INDENT + INDENT);
-    // }
-    // return repos.toString();
   }
 
   private String searchAttributes() {
@@ -72,18 +63,10 @@ public class MissingBundleException extends BundleException implements BundleExc
            + "Bundle-Version     : " + MavenToOSGi.projectVersionToBundleVersion(version);
   }
 
-  private String canonicalPath(String path) {
-    try {
-      return (new File(path)).getCanonicalPath();
-    } catch (IOException e) {
-      return path;
-    }
-  }
-
   private String searchedRepositories() {
     final StringBuffer repos = new StringBuffer();
     for (int j = 0; j < repositories.size(); j++) {
-      String root = canonicalPath(repositories.get(j).toString());
+      String root = ResolverUtils.canonicalize(repositories.get(j).toString());
       repos.append("+ ").append(root).append("\n").append(INDENT + INDENT);
     }
     return repos.toString();

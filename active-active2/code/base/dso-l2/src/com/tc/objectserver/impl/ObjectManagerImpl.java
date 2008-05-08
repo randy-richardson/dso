@@ -1,5 +1,5 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
  * notice. All rights reserved.
  */
 package com.tc.objectserver.impl;
@@ -153,7 +153,15 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     out.indent().print("objectStore: ").duplicateAndIndent().visit(objectStore).println();
     out.indent().print("stateManager: ").duplicateAndIndent().visit(stateManager).println();
     try {
-      out.indent().print("roots: ").println(getRoots());
+
+      StringBuffer rootBuff = new StringBuffer();
+      for (Iterator rootIter = getRootNames(); rootIter.hasNext();) {
+        rootBuff.append(rootIter.next());
+        if(rootIter.hasNext()) {
+          rootBuff.append(",");
+        }
+      }
+      out.indent().print("roots: " + rootBuff.toString()).println();
     } catch (Throwable t) {
       logger.error("exception printing roots in ObjectManagerImpl", t);
     }

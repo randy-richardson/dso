@@ -1,5 +1,5 @@
 /*
- * All content copyright (c) 2003-2006 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
  * notice. All rights reserved.
  */
 package com.tc.admin;
@@ -253,6 +253,7 @@ public class ServerConnectionManager implements NotificationListener {
   }
 
   private void startConnect() {
+    if(m_serverHelper == null) return;
     try {
       cancelConnectThread();
       initConnector();
