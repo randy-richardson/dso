@@ -10,6 +10,7 @@ import com.tc.test.AppServerInfo;
 import com.tc.test.TempDirectoryHelper;
 import com.tc.test.TestConfigObject;
 import com.tc.test.server.appserver.glassfishv1.GlassfishV1AppServerFactory;
+import com.tc.test.server.appserver.glassfishv2.GlassfishV2AppServerFactory;
 import com.tc.test.server.appserver.jboss3x.JBoss3xAppServerFactory;
 import com.tc.test.server.appserver.jboss4x.JBoss4xAppServerFactory;
 import com.tc.test.server.appserver.jetty6x.Jetty6xAppServerFactory;
@@ -17,6 +18,7 @@ import com.tc.test.server.appserver.resin3x.Resin3xAppServerFactory;
 import com.tc.test.server.appserver.tomcat5x.Tomcat5xAppServerFactory;
 import com.tc.test.server.appserver.was6x.Was6xAppServerFactory;
 import com.tc.test.server.appserver.wasce1x.Wasce1xAppServerFactory;
+import com.tc.test.server.appserver.weblogic10x.Weblogic10xAppServerFactory;
 import com.tc.test.server.appserver.weblogic8x.Weblogic8xAppServerFactory;
 import com.tc.test.server.appserver.weblogic9x.Weblogic9xAppServerFactory;
 import com.tc.util.Assert;
@@ -64,6 +66,7 @@ public abstract class AppServerFactory {
       case AppServerInfo.WEBLOGIC:
         if ("8".equals(majorVersion)) return new Weblogic8xAppServerFactory(new ProtectedKey());
         if ("9".equals(majorVersion)) return new Weblogic9xAppServerFactory(new ProtectedKey());
+        if ("10".equals(majorVersion)) return new Weblogic10xAppServerFactory(new ProtectedKey());
         break;
       case AppServerInfo.WASCE:
         if ("1".equals(majorVersion)) return new Wasce1xAppServerFactory(new ProtectedKey());
@@ -74,6 +77,7 @@ public abstract class AppServerFactory {
         break;
       case AppServerInfo.GLASSFISH:
         if ("v1".equals(majorVersion)) return new GlassfishV1AppServerFactory(new ProtectedKey());
+        if ("v2".equals(majorVersion)) return new GlassfishV2AppServerFactory(new ProtectedKey());
         break;
       case AppServerInfo.JETTY:
         if ("6".equals(majorVersion)) return new Jetty6xAppServerFactory(new ProtectedKey());

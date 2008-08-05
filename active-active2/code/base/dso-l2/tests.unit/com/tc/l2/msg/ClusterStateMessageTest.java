@@ -4,14 +4,15 @@
  */
 package com.tc.l2.msg;
 
+import com.tc.async.impl.MockSink;
 import com.tc.l2.ha.ClusterState;
 import com.tc.net.protocol.transport.ConnectionID;
 import com.tc.net.protocol.transport.ConnectionIDFactory;
+import com.tc.object.persistence.api.PersistentMapStore;
 import com.tc.objectserver.gtx.GlobalTransactionIDSequenceProvider;
 import com.tc.objectserver.handler.GlobalTransactionIDBatchRequestHandler;
 import com.tc.objectserver.impl.PersistentManagedObjectStore;
 import com.tc.objectserver.impl.TestManagedObjectPersistor;
-import com.tc.objectserver.persistence.api.PersistentMapStore;
 import com.tc.objectserver.persistence.api.Persistor;
 import com.tc.objectserver.persistence.impl.InMemoryPersistor;
 import com.tc.objectserver.persistence.impl.TestMutableSequence;
@@ -50,7 +51,8 @@ public class ClusterStateMessageTest extends TestCase {
   private void resetClusterState(int clusterState) {
     Persistor persistor = new InMemoryPersistor();
     PersistentMapStore clusterStateStore = persistor.getClusterStateStore();
-    ObjectIDSequence oidSequence = new PersistentManagedObjectStore(new TestManagedObjectPersistor(new HashMap()));
+    ObjectIDSequence oidSequence = new PersistentManagedObjectStore(new TestManagedObjectPersistor(new HashMap()),
+                                                                    new MockSink());
     ConnectionIDFactory connectionIdFactory = new ConnectionIDFactoryImpl(persistor.getClientStatePersistor());
     GlobalTransactionIDSequenceProvider gidSequenceProvider = new GlobalTransactionIDBatchRequestHandler(
                                                                                                          new TestMutableSequence());

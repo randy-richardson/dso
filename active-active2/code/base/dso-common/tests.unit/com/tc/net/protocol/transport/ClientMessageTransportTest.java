@@ -41,10 +41,10 @@ public class ClientMessageTransportTest extends TCTestCase {
   private MockTCConnection                   connection;
   private TransportHandshakeMessageFactory   transportMessageFactory;
   private TestTransportHandshakeErrorHandler handshakeErrorHandler;
-  private final int                          maxRetries = 10;
+  private final int                          maxRetries   = 10;
   private MessageTransportFactory            transportFactory;
-  private final int                          timeout    = 3000;
-
+  private final int                          timeout      = 3000;
+  
   public void setUp() {
     DefaultConnectionIdFactory connectionIDProvider = new DefaultConnectionIdFactory();
     this.connectionId = connectionIDProvider.nextConnectionId();
@@ -145,6 +145,7 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                                          new OOONetworkStackHarnessFactory(
                                                                                                            new OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl(),
                                                                                                            null,
+                                                                                                           null,
                                                                                                            new L1ReconnectConfigImpl()),
                                                                          new NullConnectionPolicy(), 0);
 
@@ -170,7 +171,8 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                    new NullMessageMonitor(),
                                                    new OOONetworkStackHarnessFactory(
                                                                                      new OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl(),
-                                                                                     null, new L1ReconnectConfigImpl()),
+                                                                                     null, null,
+                                                                                     new L1ReconnectConfigImpl()),
                                                    new NullConnectionPolicy(), 0);
 
     try {

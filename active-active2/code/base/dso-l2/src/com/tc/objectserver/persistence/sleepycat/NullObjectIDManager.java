@@ -6,8 +6,9 @@ package com.tc.objectserver.persistence.sleepycat;
 
 import com.sleepycat.je.OperationStatus;
 import com.tc.object.ObjectID;
+import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
-import com.tc.util.ObjectIDSet2;
+import com.tc.util.ObjectIDSet;
 import com.tc.util.SyncObjectIdSet;
 
 import java.util.Set;
@@ -18,21 +19,25 @@ public class NullObjectIDManager implements ObjectIDManager {
     // a dummy one, just stop populating and return
     return new Runnable() {
       public void run() {
-        rv.stopPopulating(new ObjectIDSet2());
+        rv.stopPopulating(new ObjectIDSet());
         return;
       }
     };
+  }
+  
+  public Runnable getMapsObjectIDReader(final SyncObjectIdSet rv) {
+    return null;
   }
 
   public OperationStatus deleteAll(PersistenceTransaction tx, Set<ObjectID> oidSet) {
     return OperationStatus.SUCCESS;
   }
 
-  public OperationStatus put(PersistenceTransaction tx, ObjectID objectID) {
+  public OperationStatus put(PersistenceTransaction tx, ManagedObject mo) {
     return OperationStatus.SUCCESS;
   }
-  
-  public void prePutAll(Set<ObjectID> oidSet, ObjectID objectID) {
+
+  public void prePutAll(Set<ObjectID> oidSet, ManagedObject mo) {
     return;
   }
 

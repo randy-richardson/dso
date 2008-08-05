@@ -36,9 +36,9 @@ import javax.management.MBeanNotificationInfo;
 import javax.management.NotCompliantMBeanException;
 
 public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInfoMBean, StateChangeListener {
-  private static final TCLogger                logger = TCLogging.getLogger(TCServerInfo.class);
+  private static final TCLogger                logger          = TCLogging.getLogger(TCServerInfo.class);
 
-  private static final boolean                 DEBUG  = false;
+  private static final boolean                 DEBUG           = false;
 
   private static final MBeanNotificationInfo[] NOTIFICATION_INFO;
   static {
@@ -59,13 +59,15 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
   private StatisticRetrievalAction             cpuSRA;
   private String[]                             cpuNames;
 
+  private static final String[]                EMPTY_CPU_NAMES = {};
+
   public TCServerInfo(final TCServer server, final L2State l2State) throws NotCompliantMBeanException {
     super(TCServerInfoMBean.class, true);
     this.server = server;
     this.l2State = l2State;
     this.l2State.registerStateChangeListener(this);
     productInfo = ProductInfo.getInstance();
-    buildID = makeBuildID(productInfo);
+    buildID = productInfo.buildID();
     nextSequenceNumber = 1;
     stateChangeNotificationInfo = new StateChangeNotificationInfo();
     manager = TCRuntime.getJVMMemoryManager();
@@ -77,10 +79,9 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
       }
     } catch (LinkageError e) {
       /**
-       * it's ok not output any errors or warnings here since when the
-       * CVT is initialized, it will notify about the incapacity of leading
-       * Sigar-based SRAs.
-       **/
+       * it's ok not output any errors or warnings here since when the CVT is initialized, it will notify about the
+       * incapacity of leading Sigar-based SRAs.
+       */
     } catch (Exception e) {
       /**/
     }
@@ -140,7 +141,7 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
   }
 
   public MBeanNotificationInfo[] getNotificationInfo() {
-    return NOTIFICATION_INFO;
+    return Arrays.asList(NOTIFICATION_INFO).toArray(EMPTY_NOTIFICATION_INFO);
   }
 
   public void startBeanShell(int port) {
@@ -165,6 +166,14 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     return buildID;
   }
 
+  public String getPatchVersion() {
+    return productInfo.toShortPatchString();
+  }
+
+  public String getPatchBuildID() {
+    return productInfo.patchBuildID();
+  }
+
   public String getCopyright() {
     return productInfo.copyright();
   }
@@ -182,9 +191,9 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
   }
 
   public String[] getCpuStatNames() {
-    if (cpuNames != null) return cpuNames;
-    if (cpuSRA == null) return cpuNames = new String[0];
-    
+    if (cpuNames != null) return Arrays.asList(cpuNames).toArray(EMPTY_CPU_NAMES);
+    if (cpuSRA == null) return cpuNames = EMPTY_CPU_NAMES;
+
     List list = new ArrayList();
     StatisticData[] statsData = cpuSRA.retrieveStatisticData();
     if (statsData != null) {
@@ -192,33 +201,37 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
         list.add(statsData[i].getElement());
       }
     }
-    return cpuNames = (String[]) list.toArray(new String[0]);
+    return cpuNames = (String[]) list.toArray(EMPTY_CPU_NAMES);
   }
-  
+
   public Map getStatistics() {
     HashMap<String, Object> map = new HashMap<String, Object>();
     MemoryUsage usage = manager.getMemoryUsage();
 
-    map.put(MEMORY_USED, new Long(usage.getUsedMemory()));
-    map.put(MEMORY_MAX, new Long(usage.getMaxMemory()));
+    map.put(MEMORY_USED, Long.valueOf(usage.getUsedMemory()));
+    map.put(MEMORY_MAX, Long.valueOf(usage.getMaxMemory()));
 
-    if(cpuSRA != null) {
+    if (cpuSRA != null) {
       StatisticData[] statsData = getCpuUsage();
       if (statsData != null) {
         map.put(CPU_USAGE, statsData);
       }
     }
-    
+
     return map;
   }
 
+  private long             lastCpuUpdateTime        = System.currentTimeMillis();
+  private StatisticData[]  lastCpuUpdate;
+  private static final int CPU_UPDATE_WINDOW_MILLIS = 1000;
+
   public StatisticData[] getCpuUsage() {
-    if (cpuSRA != null) {
-      return cpuSRA.retrieveStatisticData();
-    }
-    return null;
+    if (cpuSRA == null) return null;
+    if (System.currentTimeMillis() - lastCpuUpdateTime < CPU_UPDATE_WINDOW_MILLIS) { return lastCpuUpdate; }
+    lastCpuUpdateTime = System.currentTimeMillis();
+    return lastCpuUpdate = cpuSRA.retrieveStatisticData();
   }
-  
+
   public String takeThreadDump(long requestMillis) {
     String text = ThreadDumpUtil.getThreadDump();
     logger.info(text);
@@ -243,7 +256,7 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     Arrays.sort(props);
     l.clear();
     l.addAll(Arrays.asList(props));
-    
+
     int maxKeyLen = 0;
     for (String key : l) {
       maxKeyLen = Math.max(key.length(), maxKeyLen);
@@ -263,17 +276,16 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     return sb.toString();
   }
 
-  public String getConfig() {
-    return server.getConfig();
+  public String getPersistenceMode() {
+    return server.getPersistenceMode();
   }
   
-  private static String makeBuildID(final ProductInfo productInfo) {
-    String timeStamp = productInfo.buildTimestampAsString();
-    String revision = productInfo.buildRevision();
-    String user = productInfo.buildUser();
-    String host = productInfo.buildHost();
-    String branch = productInfo.buildBranch();
-    return timeStamp + " (" + revision + " by " + user + "@" + host + " from " + branch + ")";
+  public String getFailoverMode() {
+    return server.getFailoverMode();
+  }
+  
+  public String getConfig() {
+    return server.getConfig();
   }
 
   public String getHealthStatus() {

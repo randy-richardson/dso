@@ -10,7 +10,6 @@ import com.tc.object.TCObject;
 import com.tc.object.bytecode.Manageable;
 import com.tc.object.bytecode.ManagerUtil;
 import com.tc.object.lockmanager.api.LockLevel;
-import com.tc.util.DebugUtil;
 import com.tc.util.concurrent.locks.TCLock;
 import com.tcclient.util.concurrent.locks.ConditionObject;
 
@@ -22,6 +21,14 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
   private ReentrantReadWriteLock.WriteLock writerLock;
   private Sync                             sync;
 
+  public ReentrantReadWriteLock.WriteLock writeLock() {
+    return writerLock;
+  }
+
+  public ReentrantReadWriteLock.ReadLock readLock() {
+    return readerLock;
+  }
+
   private static class DsoLock {
     private final Object lock;
     private final int    lockLevel;
@@ -29,12 +36,6 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
     public DsoLock(Object lock, int lockLevel) {
       this.lock = lock;
       this.lockLevel = lockLevel;
-    }
-    
-    private void logDebug(String message) {
-      if (DebugUtil.DEBUG) {
-        System.err.println(message);
-      }
     }
 
     public void lock() {
@@ -53,10 +54,8 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
 
     public boolean tryLock(long timeout, TimeUnit unit) {
       if (ManagerUtil.isManaged(lock)) {
-        logDebug("Client " + ManagerUtil.getClientID() + " Timestamp before dso tryLock with level " + lockLevel + " -- " + System.currentTimeMillis());
         long timeoutInNanos = TimeUnit.NANOSECONDS.convert(timeout, unit);
         boolean rv = ManagerUtil.tryMonitorEnter(lock, timeoutInNanos, lockLevel);
-        logDebug("Client " + ManagerUtil.getClientID() + " Timestamp after dso tryLock with level " + lockLevel + " -- " + System.currentTimeMillis());
         return rv;
       } else {
         return true;
@@ -75,8 +74,7 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
 
     public String getLockState(int level) {
       return (ManagerUtil.isLocked(lock, level) ? (ManagerUtil.isHeldByCurrentThread(lock, level) ? "[Locally locked]"
-          : "[Remotelly locked]")
-          : "[Unlocked]");
+          : "[Remotelly locked]") : "[Unlocked]");
     }
 
   }
@@ -84,7 +82,7 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
   public static class ReadLock extends ReentrantReadWriteLock.ReadLock implements Manageable {
     private volatile transient TCObject $__tc_MANAGED;
     private transient DsoLock           dsoLock;
-    private Sync                      sync;
+    private Sync                        sync;
 
     protected ReadLock(ReentrantReadWriteLockTC lock, Sync sync) {
       super(lock);
@@ -102,11 +100,9 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
       try {
         dsoLock.lock();
         super.lockInterruptibly();
-      } finally {
-        if (Thread.interrupted()) {
-          unlock();
-          throw new InterruptedException();
-        }
+      } catch (InterruptedException e) {
+        dsoLock.unlock();
+        throw e;
       }
     }
 
@@ -130,13 +126,12 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
       super.unlock();
       dsoLock.unlock();
     }
-    
+
     public void validateInUnLockState() {
       boolean isLocked = sync.getReadLockCount() != 0;
       if (isLocked) { throw new TCObjectNotSharableException(
                                                              "You are attempting to share a ReentrantReadWriteLock.ReadLock when it is in a locked state. Lock cannot be shared while locked."); }
     }
-
 
     public String toString() {
       if (ManagerUtil.isManaged(this)) {
@@ -168,7 +163,7 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
   public static class WriteLock extends ReentrantReadWriteLock.WriteLock implements TCLock, Manageable {
     private volatile transient TCObject $__tc_MANAGED;
     private transient DsoLock           dsoLock;
-    private Sync                      sync;
+    private Sync                        sync;
 
     protected WriteLock(ReentrantReadWriteLockTC lock, Sync sync) {
       super(lock);
@@ -186,11 +181,9 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
       try {
         dsoLock.lock();
         super.lockInterruptibly();
-      } finally {
-        if (Thread.interrupted()) {
-          unlock();
-          throw new InterruptedException();
-        }
+      } catch (InterruptedException e) {
+        dsoLock.unlock();
+        throw e;
       }
     }
 
@@ -226,7 +219,7 @@ public class ReentrantReadWriteLockTC extends ReentrantReadWriteLock {
     public int localHeldCount() {
       return sync.getWriteHoldCount();
     }
-    
+
     public void validateInUnLockState() {
       boolean isLocked = sync.isWriteLocked();
       if (isLocked) { throw new TCObjectNotSharableException(

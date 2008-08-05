@@ -21,25 +21,28 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
 public abstract class AbstractDeploymentTest extends TCTestCase {
 
-  protected Log            logger              = LogFactory.getLog(getClass());
+  protected Log         logger              = LogFactory.getLog(getClass());
 
-  private ServerManager    serverManager;  
+  private ServerManager serverManager;
 
-  Map                      disabledVariants    = new HashMap();
-  List                     disabledJavaVersion = new ArrayList();
+  private final Map     disabledVariants    = new HashMap();
+  private final List    disabledJavaVersion = new ArrayList();
+
+  public static Test suite() {
+    return new ErrorTestSetup(new TestSuite(AbstractDeploymentTest.class));
+  }
 
   public AbstractDeploymentTest() {
-    // need more work to run tests with Jetty
-    // disable for now
-    if (appServerInfo().getId() == AppServerInfo.JETTY) {
-      disableAllUntil(new Date(Long.MAX_VALUE));
-    }
+    //
+  }
 
-    if (isSessionTest() && (appServerInfo().getId() == AppServerInfo.GLASSFISH)) {
-      disableAllUntil(new Date(Long.MAX_VALUE));
-    }
+  public boolean shouldDisable() {
+    return isAllDisabled() || shouldDisableForJavaVersion() || shouldDisableForVariants();
   }
 
   protected void beforeTimeout() throws Throwable {
@@ -160,10 +163,6 @@ public abstract class AbstractDeploymentTest extends TCTestCase {
 
   void disableAllTests() {
     this.disableAllUntil(new Date(Long.MAX_VALUE));
-  }
-
-  public boolean shouldDisable() {
-    return isAllDisabled() || shouldDisableForJavaVersion() || shouldDisableForVariants();
   }
 
   private boolean shouldDisableForVariants() {

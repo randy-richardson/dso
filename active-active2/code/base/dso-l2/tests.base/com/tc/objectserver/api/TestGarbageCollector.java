@@ -8,10 +8,14 @@ import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 
 import com.tc.exception.ImplementMe;
 import com.tc.object.ObjectID;
+import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.core.api.Filter;
-import com.tc.objectserver.core.api.GarbageCollector;
+import com.tc.objectserver.dgc.api.GarbageCollector;
+import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.Assert;
+import com.tc.util.ObjectIDSet;
+import com.tc.util.TCCollections;
 import com.tc.util.concurrent.LifeCycleState;
 import com.tc.util.concurrent.NullLifeCycleState;
 import com.tc.util.concurrent.StoppableThread;
@@ -19,12 +23,11 @@ import com.tc.util.concurrent.StoppableThread;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public class TestGarbageCollector implements GarbageCollector {
-  public Set            collectedObjects = new HashSet();
+  public ObjectIDSet    collectedObjects = new ObjectIDSet();
   private boolean       collected        = false;
   private boolean       isPausing        = false;
   private boolean       isPaused         = false;
@@ -70,7 +73,7 @@ public class TestGarbageCollector implements GarbageCollector {
     initQueues();
   }
 
-  public Set collect(Filter filter, Collection rootIds, Set managedObjectIds) {
+  public ObjectIDSet collect(Filter filter, Collection rootIds, ObjectIDSet managedObjectIds) {
     try {
       collectCalls.put(new CollectCallContext(filter, rootIds, managedObjectIds, objectProvider));
     } catch (InterruptedException e) {
@@ -190,10 +193,6 @@ public class TestGarbageCollector implements GarbageCollector {
     return blockUntilReadyToGCCalls.peek() != null;
   }
 
-  public void notifyGCDeleteStarted() {
-    return;
-  }
-
   public void notifyGCComplete() {
     try {
       isPausing = false;
@@ -236,7 +235,7 @@ public class TestGarbageCollector implements GarbageCollector {
     return out.print(getClass().getName());
   }
 
-  public Set collect(Filter traverser, Collection roots, Set managedObjectIds, LifeCycleState state) {
+  public ObjectIDSet collect(Filter traverser, Collection roots, ObjectIDSet managedObjectIds, LifeCycleState state) {
     return collect(traverser, roots, managedObjectIds);
   }
 
@@ -245,12 +244,11 @@ public class TestGarbageCollector implements GarbageCollector {
 
   }
 
-  // This test is kind of messed up now that I refactored. Needs evaluating.
   public void gc() {
     collect(null, objectProvider.getRootIDs(), objectProvider.getAllObjectIDs(), new NullLifeCycleState());
     this.requestGCPause();
     this.blockUntilReadyToGC();
-    this.notifyGCComplete();
+    this.deleteGarbage(new GCResultContext(1,TCCollections.EMPTY_OBJECT_ID_SET));
   }
 
   public void addNewReferencesTo(Set rescueIds) {
@@ -272,9 +270,8 @@ public class TestGarbageCollector implements GarbageCollector {
 
   }
 
-  public void addListener(ObjectManagerEventListener listener) {
-    throw new ImplementMe();
-
+  public void addListener(GarbageCollectorEventListener listener) {
+    //
   }
 
   public GCStats[] getGarbageCollectorStats() {
@@ -297,4 +294,31 @@ public class TestGarbageCollector implements GarbageCollector {
   public boolean isStarted() {
     return false;
   }
+
+  public boolean deleteGarbage(GCResultContext resultContext) {
+    this.objectProvider.notifyGCComplete(resultContext);
+    this.notifyGCComplete();
+    return true;
+  }
+  
+  public void gcYoung() {
+    throw new ImplementMe();
+  }
+
+  public void notifyNewObjectInitalized(ObjectID id) {
+    // NOP
+  }
+
+  public void notifyObjectCreated(ObjectID id) {
+    // NOP
+  }
+
+  public void notifyObjectsEvicted(Collection evicted) {
+    // NOP
+  }
+
+  public boolean requestGCStart() {
+    throw new ImplementMe();
+  }
+
 }

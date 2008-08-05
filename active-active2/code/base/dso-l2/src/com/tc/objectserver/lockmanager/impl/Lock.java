@@ -17,8 +17,8 @@ import com.tc.object.lockmanager.api.LockContext;
 import com.tc.object.lockmanager.api.LockID;
 import com.tc.object.lockmanager.api.LockLevel;
 import com.tc.object.lockmanager.api.ServerThreadID;
-import com.tc.object.lockmanager.api.ThreadID;
 import com.tc.object.lockmanager.api.TCLockTimer;
+import com.tc.object.lockmanager.api.ThreadID;
 import com.tc.object.lockmanager.api.TimerCallback;
 import com.tc.object.lockmanager.impl.LockHolder;
 import com.tc.object.net.DSOChannelManager;
@@ -225,9 +225,14 @@ public class Lock {
     // it is an error (probably originating from the client side) to
     // request a lock you already hold
     Holder holder = getHolder(txn);
-    if (noBlock && !lockRequestTimeout.needsToWait() && holder == null && (requestedLockLevel != LockLevel.READ || !this.isRead())
+    if (noBlock && !lockRequestTimeout.needsToWait() && holder == null
+        && (requestedLockLevel != LockLevel.READ || !this.isRead())
         && (getHoldersCount() > 0 || hasGreedyHolders())) {
-      cannotAwardAndRespond(txn, requestedLockLevel, lockResponseSink);
+      // These requests are the ones in the wire when the greedy lock was given out to the client.
+      // We can safely ignore it as the clients will be able to award it locally.
+      if (!isPolicyGreedy() || !canAwardGreedilyOnTheClient(txn, requestedLockLevel)) {
+        cannotAwardAndRespond(txn, requestedLockLevel, lockResponseSink);
+      }
       return false;
     }
 
@@ -355,7 +360,6 @@ public class Lock {
       Holder holder = (Holder) currentHolders.next();
       notifyAddPending(holder);
     }
-    threadContext.setWaitingOn(this);
     return request;
   }
 
@@ -394,7 +398,6 @@ public class Lock {
     Holder holder = awardAndRespond(clientTx, txn.getId().getClientThreadID(), greedyLevel, lockResponseSink);
     holder.setSink(lockResponseSink);
     greedyHolders.put(ch, holder);
-    clearWaitingOn(txn);
   }
 
   private void cannotAwardAndRespond(ServerThreadContext txn, int requestedLockLevel, Sink lockResponseSink) {
@@ -489,7 +492,6 @@ public class Lock {
       Sink lockResponseSink = context.getLockResponseSink();
       int lockLevel = context.lockLevel();
       cannotAwardAndRespond(txn, lockLevel, lockResponseSink);
-      clearWaitingOn(txn);
     }
   }
 
@@ -534,7 +536,6 @@ public class Lock {
     waiters.put(txn, waitContext);
 
     scheduleWait(callback, waitTimer, waitContext);
-    txn.setWaitingOn(this);
     removeCurrentHold(txn);
 
     nextPending();
@@ -682,7 +683,6 @@ public class Lock {
     Holder holder = getHolder(threadContext);
 
     Assert.assertNull(holder);
-    threadContext.addLock(this);
     holder = new Holder(this.lockID, threadContext, this.timeout);
     holder.addLockLevel(lockLevel);
     Object prev = this.holders.put(threadContext, holder);
@@ -860,20 +860,18 @@ public class Lock {
     // debug("grantGreedyRequest() - BEGIN -", request);
     ServerThreadContext threadContext = request.getThreadContext();
     awardGreedyAndRespond(threadContext, request.getLockLevel(), request.getLockResponseSink());
-    clearWaitingOn(threadContext);
   }
 
   private void grantRequest(Request request) {
     // debug("grantRequest() - BEGIN -", request);
     ServerThreadContext threadContext = request.getThreadContext();
     awardLock(threadContext, threadContext.getId().getClientThreadID(), request.getLockLevel());
-    clearWaitingOn(threadContext);
     request.execute(lockID);
   }
 
   /**
    * Remove the specified lock hold.
-   * 
+   *
    * @return true if the current hold was an upgrade
    */
   synchronized boolean removeCurrentHold(ServerThreadContext threadContext) {
@@ -881,8 +879,6 @@ public class Lock {
     Holder holder = getHolder(threadContext);
     if (holder != null) {
       this.holders.remove(threadContext);
-      threadContext.removeLock(this);
-      threadContextFactory.removeIfClear(threadContext);
       if (isGreedyRequest(threadContext)) {
         removeGreedyHolder(threadContext.getId().getNodeID());
       }
@@ -913,11 +909,6 @@ public class Lock {
     }
   }
 
-  private void clearWaitingOn(ServerThreadContext threadContext) {
-    threadContext.clearWaitingOn();
-    threadContextFactory.removeIfClear(threadContext);
-  }
-
   synchronized void awardAllReads() {
     // debug("awardAllReads() - BEGIN -");
     List pendingReadLockRequests = new ArrayList(pendingLockRequests.size());
@@ -944,8 +935,6 @@ public class Lock {
           } else {
             grantRequest(request);
           }
-        } else {
-          clearWaitingOn(tid);
         }
       } else {
         grantRequest(request);
@@ -999,7 +988,7 @@ public class Lock {
    * This clears out stuff from the pending and wait lists that belonged to a dead session. It occurs to me that this is
    * a race condition because a request could come in on the connection, then the cleanup could happen, and then the
    * request could be processed. We need to drop requests that are processed after the cleanup
-   * 
+   *
    * @param nid
    */
   synchronized void clearStateForNode(NodeID nid) {
@@ -1046,10 +1035,6 @@ public class Lock {
     for (Iterator i = holders.values().iterator(); i.hasNext();) {
       Holder holder = (Holder) i.next();
       if (holder.getNodeID().equals(nodeID)) {
-        ServerThreadContext txn = holder.getThreadContext();
-        txn.removeLock(this);
-        threadContextFactory.removeIfClear(txn);
-
         i.remove();
       }
     }
@@ -1058,9 +1043,6 @@ public class Lock {
       if (r.getRequesterID().equals(nodeID)) {
         // debug("checkAndClear... removing request = ", r);
         i.remove();
-        ServerThreadContext tid = r.getThreadContext();
-        // debug("checkAndClear... clearing threadContext = ", tid);
-        clearWaitingOn(tid);
         cancelTryLockTimer(r);
       }
     }

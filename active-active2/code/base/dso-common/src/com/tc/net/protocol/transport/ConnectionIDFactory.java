@@ -9,8 +9,10 @@ import java.util.Set;
 public interface ConnectionIDFactory {
 
   public ConnectionID nextConnectionId();
-  
+
   public ConnectionID setServerIdToConnectionId(ConnectionID rawID);
+  
+  public void restoreConnectionId(ConnectionID rv);
   
   public Set loadConnectionIDs();
   

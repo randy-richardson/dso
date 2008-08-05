@@ -14,6 +14,7 @@ import com.tc.config.schema.test.L2SConfigBuilder;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.objectserver.control.ExtraProcessServerControl;
 import com.tc.objectserver.control.NullServerControl;
 import com.tc.objectserver.control.ServerControl;
@@ -24,7 +25,6 @@ import com.tctest.restart.TestThreadGroup;
 import com.terracottatech.config.PersistenceMode;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -74,6 +74,10 @@ public class RestartTestEnvironment {
     this.configFile = new File(this.tempDirectory, "restart-test-config.xml");
   }
 
+  public StandardTVSConfigurationSetupManagerFactory getConfig() {
+    return config;
+  }
+
   public void setIsPersistent(boolean b) {
     isPersistent = b;
   }
@@ -86,7 +90,7 @@ public class RestartTestEnvironment {
     writeL2Config();
     initConfig();
 
-    dbhome = new File(this.tempDirectory, "l2-data/objectdb");
+    dbhome = new File(this.tempDirectory, "l2-data/" + NewL2DSOConfig.OBJECTDB_DIRNAME);
     System.err.println("DBHome: " + dbhome.getAbsolutePath());
     System.out.println("dbhome: " + dbhome);
     if (dbhome.exists()) FileUtils.cleanDirectory(dbhome);
@@ -207,7 +211,7 @@ public class RestartTestEnvironment {
     server.shutdown();
   }
 
-  public ServerControl newExtraProcessServer(List jvmArgs) throws FileNotFoundException {
+  public ServerControl newExtraProcessServer(List jvmArgs) {
     assertServerOff();
     File javaHome = null;
     try {
@@ -223,22 +227,19 @@ public class RestartTestEnvironment {
     return serverWrapper;
   }
 
-  public ServerControl newExtraProcessServer() throws FileNotFoundException {
+  public ServerControl newExtraProcessServer() {
     return (newExtraProcessServer(new ArrayList()));
   }
 
-/*
-Commented out by jvoegele since this method is not called from anywhere and it creates a dependency
-on the deploy module.  The following imports were also removed as a result of removing this method:
-import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.objectserver.control.IntraProcessServerControl;
-
-  public ServerControl newIntraProcessServer() throws ConfigurationSetupException {
-    assertServerOff();
-    this.server = new IntraProcessServerControl(this.config.createL2TVSConfigurationSetupManager(null), "localhost");
-    return serverWrapper;
-  }
-*/
+  /*
+   * Commented out by jvoegele since this method is not called from anywhere and it creates a dependency on the deploy
+   * module. The following imports were also removed as a result of removing this method: import
+   * com.tc.config.schema.setup.ConfigurationSetupException; import
+   * com.tc.objectserver.control.IntraProcessServerControl; public ServerControl newIntraProcessServer() throws
+   * ConfigurationSetupException { assertServerOff(); this.server = new
+   * IntraProcessServerControl(this.config.createL2TVSConfigurationSetupManager(null), "localhost"); return
+   * serverWrapper; }
+   */
 
   private void assertServerNotNull() {
     if (this.server == null) throw new AssertionError("Server is null.");
@@ -352,6 +353,10 @@ import com.tc.objectserver.control.IntraProcessServerControl;
     public int getAdminPort() {
       assertServerNotNull();
       return server.getAdminPort();
+    }
+
+    public int waitFor() throws Exception {
+      return server.waitFor();
     }
   }
 }

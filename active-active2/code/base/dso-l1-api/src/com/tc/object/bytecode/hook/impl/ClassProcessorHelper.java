@@ -45,10 +45,7 @@ import java.util.logging.LogManager;
 public class ClassProcessorHelper {
 
   /** Name reserved for apps running as root web app in a container */
-  public static final String ROOT_WEB_APP_NAME = "ROOT";
-
-  // XXX: remove this!
-  public static volatile boolean             IBM_DEBUG               = false;
+  public static final String                 ROOT_WEB_APP_NAME         = "ROOT";
 
   // Setting this system property will delay the timing of when the DSO client is initialized. With the default
   // behavior, the debug subsystem of the VM will not be started until after the DSO client starts up. This means it is
@@ -159,7 +156,7 @@ public class ClassProcessorHelper {
 
   /**
    * Get resource URL
-   *
+   * 
    * @param name Resource name
    * @param cl Loading classloader
    * @return URL to load resource from
@@ -187,7 +184,7 @@ public class ClassProcessorHelper {
 
   /**
    * Get TC class definition
-   *
+   * 
    * @param name Class name
    * @param cl Classloader
    * @return Class bytes
@@ -310,10 +307,9 @@ public class ClassProcessorHelper {
       Util.exit();
     }
 
-    File[] entries = tcLib.listFiles(new JarFilter());
-
+    File[] entries = tcLib.listFiles(new TcCommonLibQualifier());
     if (entries.length == 0) {
-      Banner.errorBanner("Absolutely no .jar files found in Terracotta common lib directory ["
+      Banner.errorBanner("Absolutely no .jar files or resources directory found in Terracotta common lib directory ["
                          + tcLib.getAbsolutePath() + "]. Please check the value of your " + TC_INSTALL_ROOT_SYSPROP
                          + " system property");
       Util.exit();
@@ -321,9 +317,11 @@ public class ClassProcessorHelper {
 
     URL[] rv = new URL[entries.length];
     for (int i = 0; i < entries.length; i++) {
-      String jar = entries[i].getAbsolutePath().replace(File.separatorChar, '/');
-      rv[i] = new URL("file", "", jar);
+      String entry = entries[i].getCanonicalPath().replace(File.separatorChar, '/');
+      if (entries[i].isDirectory()) entry += "/"; 
+      rv[i] = new URL("file", "", entry);
     }
+    
     return rv;
   }
 
@@ -546,11 +544,13 @@ public class ClassProcessorHelper {
 
   /**
    * Check whether this web app is using DSO sessions
-   *
+   * 
    * @param appName Web app name
    * @return True if DSO sessions enabled
    */
   public static boolean isDSOSessions(String appName) {
+    if (USE_PARTITIONED_CONTEXT) return false;
+
     appName = ("/".equals(appName)) ? ROOT_WEB_APP_NAME : appName;
     try {
       Method m = getContextMethod("isDSOSessions", new Class[] { String.class });
@@ -564,7 +564,7 @@ public class ClassProcessorHelper {
 
   /**
    * WARNING: Used by test framework only
-   *
+   * 
    * @param loader Loader
    * @param context DSOContext
    */
@@ -614,7 +614,7 @@ public class ClassProcessorHelper {
 
   /**
    * Get the DSOContext for this classloader
-   *
+   * 
    * @param cl Loader
    * @return Context
    */
@@ -640,36 +640,12 @@ public class ClassProcessorHelper {
     }
   }
 
-  // XXX: remove this!
-  public static byte[] defineClass0Pre(ClassLoader caller, String name, byte[] b, int off, int len, ProtectionDomain pd) {
-    byte[] rv = _defineClass0Pre(caller, name, b, off, len, pd);
-
-    if (IBM_DEBUG) {
-      StringBuffer msg = new StringBuffer();
-      msg.append("[" + Thread.currentThread().getName() + "] " + name + ": byte[] " + ((rv == b) ? "are" : "are not")
-                 + " equal\n");
-      msg.append("offset: " + off + ", len: " + len + "\n");
-
-      // uncomment this to get the class bytes (provided there is a consistent class name that is crashing the IBM JDK
-
-      // for (int i = 0, n = rv.length; i < n; i++) {
-      // msg.append(rv[i]).append(", ");
-      // }
-      // msg.append("\n");
-
-      System.err.println(msg);
-      System.err.flush();
-    }
-
-    return rv;
-  }
-
   /**
    * byte code instrumentation of class loaded <br>
    * XXX::NOTE:: Do NOT optimize to return same input byte array if the class was instrumented (I can't imagine why we
    * would). Our instrumentation in java.lang.ClassLoader checks the returned byte array to see if the class is
    * instrumented or not to maintain the array offset.
-   *
+   * 
    * @param caller Loader defining class
    * @param name Class name
    * @param b Data
@@ -679,8 +655,7 @@ public class ClassProcessorHelper {
    * @return Modified class array
    * @see ClassLoaderPreProcessorImpl
    */
-  private static byte[] _defineClass0Pre(ClassLoader caller, String name, byte[] b, int off, int len,
-                                         ProtectionDomain pd) {
+  public static byte[] defineClass0Pre(ClassLoader caller, String name, byte[] b, int off, int len, ProtectionDomain pd) {
     if (skipClass(caller)) { return b; }
 
     // needed for JRockit
@@ -689,7 +664,6 @@ public class ClassProcessorHelper {
     if (TRACE) traceLookup(caller, name);
 
     if (isAWDependency(name)) { return b; }
-    if (isDSODependency(name)) { return b; }
 
     if (DELAY_BOOT) {
       init();
@@ -710,18 +684,11 @@ public class ClassProcessorHelper {
 
   /**
    * Post process class during definition
-   *
+   * 
    * @param clazz Class being defined
    * @param caller Classloader doing definition
    */
   public static void defineClass0Post(Class clazz, ClassLoader caller) {
-    if (IBM_DEBUG) {
-      StringBuffer msg = new StringBuffer();
-      msg.append("[" + Thread.currentThread().getName() + "] " + clazz.getName() + " has been defined\n");
-      System.err.println(msg);
-      System.err.flush();
-    }
-
     ClassPostProcessor postProcessor = getPostProcessor(caller);
     if (!initState.isInitialized()) { return; }
 
@@ -764,7 +731,7 @@ public class ClassProcessorHelper {
 
   /**
    * Check whether this is an AspectWerkz dependency
-   *
+   * 
    * @param className Class name
    * @return True if AspectWerkz dependency
    */
@@ -779,23 +746,8 @@ public class ClassProcessorHelper {
   }
 
   /**
-   * Check whether this is a DSO dependency
-   *
-   * @param className Class name
-   * @return True if DSO dependency
-   */
-  public static boolean isDSODependency(final String className) {
-    return false;
-    // return (className == null) || className.startsWith("DO_NOT_USE.") || className.startsWith("com.tc.")
-    // || className.startsWith("org.w3c.dom.") || className.startsWith("org.apache.log4j.")
-    // || className.startsWith("org.apache.commons.io.") || className.startsWith("org.apache.commons.lang.")
-    // || className.startsWith("org.apache.commons.logging.") || className.startsWith("javax.xml.")
-    // || className.startsWith("org.apache.xmlbeans.") || className.startsWith("org.apache.xerces.");
-  }
-
-  /**
    * Get type of lock used by sessions
-   *
+   * 
    * @param appName Web app context
    * @return Lock type
    */
@@ -855,11 +807,12 @@ public class ClassProcessorHelper {
   }
 
   /**
-   * File filter for JAR files
+   * File filter for lib/*.jar files and lib/resources directory
    */
-  public static class JarFilter implements FileFilter {
+  public static class TcCommonLibQualifier implements FileFilter {
     public boolean accept(File pathname) {
-      return pathname.isFile() && pathname.getAbsolutePath().toLowerCase().endsWith(".jar");
+      return (pathname.isDirectory() && pathname.getName().equals("resources"))
+             || (pathname.isFile() && pathname.getAbsolutePath().toLowerCase().endsWith(".jar"));
     }
   }
 

@@ -7,13 +7,10 @@ package org.terracotta.dso;
 import org.apache.commons.io.CopyUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.xmlbeans.XmlError;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlOptions;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -47,8 +44,6 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.internal.core.BinaryMember;
-import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.ui.JavaElementImageDescriptor;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -70,7 +65,6 @@ import org.eclipse.ui.IDecoratorManager;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
@@ -104,11 +98,8 @@ import com.tc.bundles.EmbeddedOSGiEventHandler;
 import com.tc.bundles.EmbeddedOSGiRuntime;
 import com.tc.bundles.Resolver;
 import com.tc.bundles.ResolverUtils;
-import com.tc.bundles.exception.MissingBundleException;
 import com.tc.config.Loader;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
-import com.tc.logging.CustomerLogging;
-import com.tc.logging.LogLevel;
 import com.tc.object.util.JarResourceLoader;
 import com.tc.plugins.ModulesLoader;
 import com.tc.server.ServerConstants;
@@ -162,36 +153,30 @@ import java.util.Properties;
 
 public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaLaunchConfigurationConstants,
     TcPluginStatusConstants {
-  private static TcPlugin           m_plugin;
-  private Loader                    m_configLoader;
-  private CompilationUnitVisitor    m_compilationUnitVisitor;
-  private ResourceListener          m_resourceListener;
-  private ResourceDeltaVisitor      m_resourceDeltaVisitor;
-  private XmlOptions                m_xmlOptions;
-  private DecoratorUpdateAction     m_decoratorUpdateAction;
-  private ArrayList<IProjectAction> m_projectActionList;
-  private ConfigurationEventManager m_configurationEventManager;
+  private static TcPlugin                 m_plugin;
+  private Loader                          m_configLoader;
+  private CompilationUnitVisitor          m_compilationUnitVisitor;
+  private ResourceListener                m_resourceListener;
+  private ResourceDeltaVisitor            m_resourceDeltaVisitor;
+  private XmlOptions                      m_xmlOptions;
+  private DecoratorUpdateAction           m_decoratorUpdateAction;
+  private ArrayList<IProjectAction>       m_projectActionList;
+  private final ConfigurationEventManager m_configurationEventManager;
 
-  public static final String        PLUGIN_ID                           = "org.terracotta.dso";
+  public static final String              PLUGIN_ID                           = "org.terracotta.dso";
 
-  public static final String        DEFAULT_CONFIG_FILENAME             = "tc-config.xml";
-  public static final String        DEFAULT_SERVER_OPTIONS              = "-Xms256m -Xmx256m";
-  public static final boolean       DEFAULT_AUTO_START_SERVER_OPTION    = false;
-  public static final boolean       DEFAULT_WARN_CONFIG_PROBLEMS_OPTION = true;
-  public static final boolean       DEFAULT_QUERY_RESTART_OPTION        = true;
+  public static final String              DEFAULT_CONFIG_FILENAME             = "tc-config.xml";
+  public static final String              DEFAULT_SERVER_OPTIONS              = "-Xms256m -Xmx256m";
+  public static final boolean             DEFAULT_AUTO_START_SERVER_OPTION    = false;
+  public static final boolean             DEFAULT_WARN_CONFIG_PROBLEMS_OPTION = true;
+  public static final boolean             DEFAULT_QUERY_RESTART_OPTION        = true;
 
-  public static final String        SERVER_NAME_LAUNCH_ATTR             = "server.name";
-  public static final String        SERVER_HOST_LAUNCH_ATTR             = "server.host";
-  public static final String        SERVER_JMX_PORT_LAUNCH_ATTR         = "server.jmx-port";
-  public static final String        SERVER_DSO_PORT_LAUNCH_ATTR         = "server.dso-port";
+  public static final String              SERVER_NAME_LAUNCH_ATTR             = "server.name";
+  public static final String              SERVER_HOST_LAUNCH_ATTR             = "server.host";
+  public static final String              SERVER_JMX_PORT_LAUNCH_ATTR         = "server.jmx-port";
+  public static final String              SERVER_DSO_PORT_LAUNCH_ATTR         = "server.dso-port";
 
-  public static final Server        DEFAULT_SERVER_INSTANCE             = createDefaultServerInstance();
-
-  static {
-    CustomerLogging.getConsoleLogger().setLevel(LogLevel.OFF);
-    Logger.getLogger("com.terracottatech").setLevel(Level.OFF);
-    Logger.getLogger("com.tc").setLevel(Level.OFF);
-  }
+  public static final Server              DEFAULT_SERVER_INSTANCE             = createDefaultServerInstance();
 
   public TcPlugin() {
     super();
@@ -263,6 +248,7 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
     return getLocation().append("lib");
   }
 
+  @Override
   public void start(BundleContext context) throws Exception {
     super.start(context);
 
@@ -298,10 +284,11 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
 
     // TODO: REMOVE the following when 3.1 is no longer supported
     // SourceMethod and BinaryMember are internal types
-    manager.registerAdapters(factory, SourceMethod.class);
-    manager.registerAdapters(factory, BinaryMember.class);
+    // manager.registerAdapters(factory, SourceMethod.class);
+    // manager.registerAdapters(factory, BinaryMember.class);
   }
 
+  @Override
   public void stop(BundleContext context) throws Exception {
     ServerTracker.getDefault().shutdownAllServers();
     super.stop(context);
@@ -333,10 +320,24 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
     setup(configFile.getProject(), configFile.getProjectRelativePath().toString());
   }
 
+  public static IWorkbenchWindow getActiveWorkbenchWindow() {
+    return PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+  }
+
+  public static Shell getActiveWorkbenchShell() {
+    IWorkbenchWindow window = getActiveWorkbenchWindow();
+    if (window != null) { return window.getShell(); }
+    return null;
+  }
+
+  public static IWorkbenchPage getActivePage() {
+    IWorkbenchWindow w = getActiveWorkbenchWindow();
+    if (w != null) { return w.getActivePage(); }
+    return null;
+  }
+
   public void addTerracottaNature(IJavaProject currentProject) {
-    IWorkbench workbench = PlatformUI.getWorkbench();
-    IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
-    Shell shell = window != null ? window.getShell() : null;
+    Shell shell = getActiveWorkbenchShell();
 
     try {
       ProjectWizard wizard = new ProjectWizard(currentProject);
@@ -353,9 +354,7 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
   }
 
   public void removeTerracottaNature(IJavaProject javaProject) {
-    IWorkbench workbench = PlatformUI.getWorkbench();
-    IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
-    Shell shell = window != null ? window.getShell() : null;
+    Shell shell = getActiveWorkbenchShell();
 
     try {
       IRunnableWithProgress op = new TCNatureRemover(javaProject);
@@ -453,11 +452,9 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
 
       wc.setAttribute(ATTR_VM_ARGUMENTS, vmargs + origVMArgs);
       wc.setAttribute(ATTR_CLASSPATH_PROVIDER, "org.terracotta.dso.classpathProvider");
-      wc.setAttribute(ATTR_WORKING_DIRECTORY, project.getLocation().append("terracotta").makeAbsolute().toOSString());
+      wc.setAttribute(ATTR_WORKING_DIRECTORY, project.getLocation().makeAbsolute().toOSString());
 
-      ensureRuntimeDirectory(project, monitor);
-
-      return wc.launch(ILaunchManager.DEBUG_MODE, monitor);
+      return wc.launch(ILaunchManager.RUN_MODE, monitor);
     } else {
       System.out.println("No config file specified.  Set in project properties");
       return null;
@@ -497,26 +494,25 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
     } catch (CoreException ce) {
       // this can't happen because server launch configurations are never persisted
     }
-    
+
     Server server = Server.Factory.newInstance();
     server.setName(name);
     server.setHost(host);
-    if(jmxPort > 0) server.setJmxPort(jmxPort);
-    if(dsoPort > 0) server.setDsoPort(dsoPort);
-    
+    if (jmxPort > 0) server.setJmxPort(jmxPort);
+    if (dsoPort > 0) server.setDsoPort(dsoPort);
+
     return server;
   }
-  
+
   public boolean areEquivalentServers(Server server1, Server server2) {
     if (server1 != null && server2 != null) {
       if (StringUtils.equals(server1.getName(), server2.getName())
-          && StringUtils.equals(server1.getHost(), server2.getHost())
-          && server1.getJmxPort() == server2.getJmxPort()
+          && StringUtils.equals(server1.getHost(), server2.getHost()) && server1.getJmxPort() == server2.getJmxPort()
           && server1.getDsoPort() == server2.getDsoPort()) { return true; }
     }
     return false;
   }
-  
+
   public Server getLaunchedServer(IProject project, ILaunch launch) {
     TcConfig config = getConfiguration(project);
 
@@ -525,36 +521,38 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
 
       if (servers != null) {
         Server launchServer = createLaunchServer(launch);
-        Server[] serverArr = servers.getServerArray();
+        Server[] serverArray = servers.getServerArray();
 
-        for (int i = 0; i < serverArr.length; i++) {
-          Server server = serverArr[i];
+        for (int i = 0; i < serverArray.length; i++) {
+          Server server = serverArray[i];
           Server serverCopy = (Server) server.copy();
           replacePatterns(serverCopy);
-          if(areEquivalentServers(launchServer, serverCopy)) {
-            return server;
-          }
+          if (areEquivalentServers(launchServer, serverCopy)) { return server; }
         }
       }
     }
 
     return null;
   }
-  
+
+  /**
+   * This should not be called with a configuration server or any patterns will be overwritten with whatever values
+   * apply at call-time. Clone the configuration server first: Server serverCopy = (Server) server.copy(); Further,
+   * identity comparison should not be used on servers, rather use areEquivalentServers(Server1, Server2).
+   */
   public void replacePatterns(Server server) {
-    if(server != null) {
-      if(server.isSetName()) {
+    if (server != null) {
+      if (server.isSetName()) {
         server.setName(ParameterSubstituter.substitute(server.getName()));
       }
-      if(server.isSetHost()) {
+      if (server.isSetHost()) {
         server.setHost(ParameterSubstituter.substitute(server.getHost()));
       }
-      if(server.isSetBind()) {
+      if (server.isSetBind()) {
         server.setBind(ParameterSubstituter.substitute(server.getBind()));
       }
     }
   }
-  
 
   public Server getAnyServer(IProject project) {
     TcConfig config = getConfiguration(project);
@@ -563,11 +561,12 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
       Servers servers = config.getServers();
 
       if (servers != null) {
-        Server[] serverArr = servers.getServerArray();
+        Server[] serverArray = servers.getServerArray();
 
-        if (serverArr.length > 0) {
-          replacePatterns(serverArr[0]);
-          return serverArr[0];
+        if (serverArray.length > 0) {
+          Server server = (Server) serverArray[0].copy();
+          replacePatterns(server);
+          return server;
         }
       }
     }
@@ -576,7 +575,7 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
   }
 
   public static String getServerName(Server server) {
-    if(server == null) return null;
+    if (server == null) return null;
     String name;
     if (server.isSetName()) {
       name = server.getName();
@@ -586,7 +585,7 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
     }
     return name;
   }
-  
+
   /**
    * Instantiate the config information, either from the serialized form, or directly from the config document.
    */
@@ -607,10 +606,6 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
 
       LineLengths lineLengths = new LineLengths(configFile);
       setSessionProperty(project, CONFIGURATION_LINE_LENGTHS, lineLengths);
-
-      if (m_configLoader.testIsOld(file)) {
-        m_configLoader.updateToCurrent(file);
-      }
 
       clearSAXMarkers(configFile);
 
@@ -640,9 +635,6 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
       }
 
       setBootClassHelper(project, new BootClassHelper(JavaCore.create(project)));
-
-      getConfigurationHelper(project).validateAll();
-      fireConfigurationChange(project);
     }
   }
 
@@ -671,7 +663,8 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
         Modules tmpModules = (Modules) modulesCopy.copy();
         tmpModules.setModuleArray(new Module[] { origModule });
         osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(tmpModules);
-        final Resolver resolver = new Resolver(ResolverUtils.urlsToStrings(osgiRuntime.getRepositories()));
+        String[] repositories = ResolverUtils.urlsToStrings(osgiRuntime.getRepositories());
+        final Resolver resolver = new Resolver(repositories);
         Module[] allModules = tmpModules.getModuleArray();
         ModuleInfo origModuleInfo = modulesConfig.getOrAdd(origModule);
 
@@ -684,11 +677,6 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
               osgiRuntime.installBundle(location.toURL());
             }
           } catch (BundleException be) {
-            if (be instanceof MissingBundleException) {
-              String msg = be.getMessage();
-              msg = msg.substring(0, msg.indexOf(';'));
-              be = new MissingBundleException(msg);
-            }
             moduleInfo.setError(be);
             origModuleInfo.setError(be);
           }
@@ -721,7 +709,7 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
                                   new FakeDSOClientConfigHelper(), new Properties());
 
       URL[] urls = new URL[locations.length];
-      for(int i=0; i<locations.length; i++) {
+      for (int i = 0; i < locations.length; i++) {
         urls[i] = locations[i].toURL();
       }
       osgiRuntime.startBundles(urls, new EmbeddedOSGiEventHandler() {
@@ -835,9 +823,6 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
       }
 
       setBootClassHelper(project, new BootClassHelper(JavaCore.create(project)));
-
-      getConfigurationHelper(project).validateAll();
-      fireConfigurationChange(project);
     }
   }
 
@@ -948,7 +933,7 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
 
     try {
       loadConfiguration(project, xmlText);
-     } catch (XmlException xmle) {
+    } catch (XmlException xmle) {
       LineLengths lineLengths = getConfigurationLineLengths(project);
       handleXmlException(getConfigurationFile(project), lineLengths, xmle);
     } catch (Exception e) {
@@ -999,7 +984,7 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
     Client clients = config.addNewClients();
     clients.setLogs("terracotta/client-logs");
     clients.setStatistics("terracotta/client-statistics/%D");
-    
+
     servers.addNewUpdateCheck().setEnabled(true);
 
     return doc;
@@ -1008,12 +993,15 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
   public TcConfig getConfiguration(IProject project) {
     if (project == null) return null;
 
+    boolean fireChanged = false;
+    TcConfig config = null;
     synchronized (project) {
-      TcConfig config = (TcConfig) getSessionProperty(project, CONFIGURATION);
+      config = (TcConfig) getSessionProperty(project, CONFIGURATION);
 
       if (config == null) {
         try {
           loadConfiguration(project);
+          fireChanged = true;
         } catch (XmlException e) {
           LineLengths lineLengths = getConfigurationLineLengths(project);
           handleXmlException(getConfigurationFile(project), lineLengths, e);
@@ -1026,12 +1014,19 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
         if (config == null) {
           config = BAD_CONFIG;
           setSessionProperty(project, CONFIGURATION, config);
-          fireConfigurationChange(project);
+          fireChanged = true;
         }
       }
-
-      return config;
     }
+
+    if (fireChanged) {
+      if (config != BAD_CONFIG) {
+        getConfigurationHelper(project).validateAll();
+      }
+      fireConfigurationChange(project);
+    }
+
+    return config;
   }
 
   public void handleXmlException(IFile configFile, LineLengths lineLengths, XmlException e) {
@@ -1528,31 +1523,26 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
   }
 
   public ConfigurationEditor openConfigurationEditor(IProject project) throws PartInitException {
-    IWorkbench workbench = PlatformUI.getWorkbench();
-    IWorkbenchWindow wbWin = workbench.getActiveWorkbenchWindow();
+    IWorkbenchPage wbPage = getActivePage();
 
-    if (wbWin != null) {
-      IWorkbenchPage wbPage = wbWin.getActivePage();
+    if (wbPage != null) {
+      IFile configFile = getConfigurationFile(project);
+      FileEditorInput fileEditorInput = new FileEditorInput(configFile);
+      IEditorPart editorPart = wbPage.findEditor(fileEditorInput);
 
-      if (wbPage != null) {
-        IFile configFile = getConfigurationFile(project);
-        FileEditorInput fileEditorInput = new FileEditorInput(configFile);
-        IEditorPart editorPart = wbPage.findEditor(fileEditorInput);
-
-        if (editorPart != null) {
-          if (editorPart instanceof ConfigurationEditor) {
-            wbPage.activate(editorPart);
-            return (ConfigurationEditor) editorPart;
-          } else {
-            wbPage.closeEditor(editorPart, true);
-          }
+      if (editorPart != null) {
+        if (editorPart instanceof ConfigurationEditor) {
+          wbPage.activate(editorPart);
+          return (ConfigurationEditor) editorPart;
+        } else {
+          wbPage.closeEditor(editorPart, true);
         }
+      }
 
-        if (configFile != null) {
-          String configEditorID = "editors.configurationEditor";
+      if (configFile != null) {
+        String configEditorID = "editors.configurationEditor";
 
-          return (ConfigurationEditor) IDE.openEditor(wbPage, configFile, configEditorID, false);
-        }
+        return (ConfigurationEditor) IDE.openEditor(wbPage, configFile, configEditorID, false);
       }
     }
 
@@ -1787,6 +1777,10 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
     return new JavaElementImageDescriptor(getImageDescriptor(path), 0, new Point(16, 16)).createImage(false);
   }
 
+  public static Image createImage(URL path) {
+    return new JavaElementImageDescriptor(ImageDescriptor.createFromURL(path), 0, new Point(16, 16)).createImage(false);
+  }
+
   public String configDocumentAsString(TcConfigDocument configDoc) {
     InputStream is = configDoc.newInputStream(getXmlOptions());
     StringWriter writer = new StringWriter();
@@ -1795,14 +1789,6 @@ public class TcPlugin extends AbstractUIPlugin implements QualifiedNames, IJavaL
     } catch (IOException ioe) {/**/
     }
     return writer.toString();
-  }
-
-  public IFolder ensureRuntimeDirectory(IProject project, IProgressMonitor monitor) throws CoreException {
-    IFolder folder = project.getFolder("terracotta");
-    if (!folder.exists()) {
-      folder.create(true, true, monitor);
-    }
-    return project.getFolder("terracotta");
   }
 }
 

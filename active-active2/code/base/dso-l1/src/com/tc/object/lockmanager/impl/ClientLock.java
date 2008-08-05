@@ -40,9 +40,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimerTask;
-import java.util.Map.Entry;
 
 class ClientLock implements TimerCallback, LockFlushCallback {
   private static final TCLogger       logger                   = TCLogging.getLogger(ClientLock.class);
@@ -60,7 +60,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
   private final TCLockTimer           lockTimer;
 
   private final Greediness            greediness               = new Greediness();
-  private int                         useCount                 = 0;
+  private volatile int                useCount                 = 0;
   private volatile State              state                    = RUNNING;
   private long                        timeUsed                 = System.currentTimeMillis();
   private final ClientLockStatManager lockStatManager;
@@ -124,7 +124,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     final Action action = new Action();
 
     synchronized (this) {
-      waitUntillRunning();
+      waitUntilRunning();
 
       recordLockRequested(requesterID, contextInfo);
       // if it is tryLock and is already being held by other thread of the same node, return
@@ -236,7 +236,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
       changed = false;
       // Examine
       synchronized (this) {
-        waitUntillRunning();
+        waitUntilRunning();
         // debug("unlock - BEGIN - ", id);
         recordLockReleased(threadID);
         action = unlockAction(threadID);
@@ -302,7 +302,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
 
       // Examine
       synchronized (this) {
-        waitUntillRunning();
+        waitUntilRunning();
         checkValidWaitNotifyState(threadID);
         action = waitAction(threadID);
       }
@@ -370,7 +370,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
 
   public synchronized Notify notify(ThreadID threadID, boolean all) {
     boolean isRemote;
-    waitUntillRunning();
+    waitUntilRunning();
 
     checkValidWaitNotifyState(threadID);
     if (!greediness.isNotGreedy()) {
@@ -494,7 +494,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
   }
 
   private void lockLeaseTimeout(LockFlushCallback callback) {
-    if (greediness.isRecalled()) {
+    if (greediness.isGreedyLease()) {
       greediness.leaseTimeout();
       if (canProceedWithRecall()) {
         greediness.startRecallCommit();
@@ -587,16 +587,6 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     return isInterrupted;
   }
 
-  private void scheduleTryLockTimerIfNeeded(TryLockRequest request) {
-    if (waitTimers.containsKey(request)) { return; }
-
-    ThreadID threadID = request.threadID();
-    int lockLevel = request.lockLevel();
-    TimerSpec timeout = request.getTimerSpec();
-    timeout.adjust();
-    scheduleWaitForTryLock(threadID, lockLevel, timeout);
-  }
-
   private void scheduleWaitForTryLock(ThreadID threadID, int lockLevel, TimerSpec timeout) {
     TryLockRequest tryLockWaitRequest = (TryLockRequest) pendingLockRequests.get(threadID);
     scheduleWaitTimeout(tryLockWaitRequest);
@@ -647,10 +637,21 @@ class ClientLock implements TimerCallback, LockFlushCallback {
       Object o = i.next();
       if (isOnlyWaitLockRequest(o)) continue;
       LockRequest lr = (LockRequest) o;
-      if (canAwardGreedilyNow(lr.threadID(), lr.lockLevel())) {
-        awardLock(lr.threadID(), lr.lockLevel());
-      } else if (isTryLockRequest(lr)) {
-        scheduleTryLockTimerIfNeeded((TryLockRequest) lr);
+      if (isTryLockRequest(lr) &&
+          !((TryLockRequest)lr).getTimerSpec().needsToWait() &&
+          isHeld()) {
+        // The tryLock contract stipulates that it should return immediately
+        // and only acquire the lock if it wasn't held at the time of
+        // invocation. Any tryLocks without a timeout that are pending should
+        // thus be rejected as soon as any lock award is handed out when this
+        // lock isn't held yet.
+        cannotAwardLock(lr.threadID(), lr.lockLevel());
+      } else {
+        // Greedily award the lock to the next pending request on the local
+        // JVM if the right conditions are present.
+        if (canAwardGreedilyNow(lr.threadID(), lr.lockLevel())) {
+          awardLock(lr.threadID(), lr.lockLevel());
+        }
       }
     }
   }
@@ -801,19 +802,21 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     return c;
   }
 
-  public synchronized void incUseCount() {
+  public synchronized int incUseCount() {
     if (useCount == Integer.MAX_VALUE) { throw new AssertionError("Lock use count cannot exceed integer max value"); }
     useCount++;
     timeUsed = System.currentTimeMillis();
+    return useCount;
   }
 
-  public synchronized void decUseCount() {
+  public synchronized int decUseCount() {
     if (useCount == 0) { throw new AssertionError("Lock use count is zero"); }
     useCount--;
     timeUsed = System.currentTimeMillis();
+    return useCount;
   }
 
-  public synchronized int getUseCount() {
+  public int getUseCount() {
     return useCount;
   }
 
@@ -841,7 +844,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
 
   private boolean shouldProceedToLease(ThreadID threadID) {
     boolean canOnlyLeaseRead = greediness.isReadOnly();
-    
+
     for (Iterator i = pendingLockRequests.values().iterator(); i.hasNext();) {
       Object o = i.next();
       if (isOnlyWaitLockRequest(o)) {
@@ -1002,7 +1005,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
   }
 
   public synchronized void timerTimeout(Object callbackObject) {
-    waitUntillRunning();
+    waitUntilRunning();
     // debug("waitTimeout() - BEGIN - ", callbackObject);
     if (callbackObject instanceof LockFlushCallback) {
       lockLeaseTimeout((LockFlushCallback) callbackObject);
@@ -1022,6 +1025,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
         int timeoutLockLevel = wlr.lockLevel();
         ThreadID timeoutThreadID = wlr.threadID();
         cannotAwardLock(timeoutThreadID, timeoutLockLevel);
+        return;
       }
     } else if (isOnlyWaitLockRequest(callbackObject)) {
       WaitLockRequest wlr = (WaitLockRequest) callbackObject;
@@ -1042,7 +1046,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
   }
 
   // This method is synchronized such that we can quickly inspect for potential timeouts and only on possible
-  // timeouts we grab the lock.
+  // timeouts we grab the lock. Note useCount is volatile.
   public boolean timedout(long timeoutInterval) {
     if (useCount != 0) { return false; }
     synchronized (this) {
@@ -1170,7 +1174,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     notifyAll();
   }
 
-  private synchronized void waitUntillRunning() {
+  private synchronized void waitUntilRunning() {
     boolean isInterrupted = false;
     while (state != RUNNING) {
       try {
@@ -1343,7 +1347,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
       /*
        * server_level is not changed to NIL_LOCK_LEVEL even though the server will release the lock as we need to know
        * what state we were holding before wait on certain scenarios like server crash etc.
-       * 
+       *
        * @see ClientLockManager.notified
        */
       return this.server_level;
@@ -1420,14 +1424,13 @@ class ClientLock implements TimerCallback, LockFlushCallback {
 
   private static class Greediness {
     /**
-     * The class Greediness models state transition among various states a client lock could be in. A client lock could be in
-     * one of the several states:
-     * 
+     * The class Greediness models state transition among various states a client lock could be in. A client lock could
+     * be in one of the several states: <code>
      * NOT_GREEDY -> GREEDY -> RECALLED -------------------------------
      *                            |                                   |
      *                            |                                   V
      *                            |-------> GREEDY LEASE  ---> RECALL IN PROGRESS
-     *  
+     * </code>
      */
     private static final State NOT_GREEDY         = new State("NOT GREEDY");
     private static final State GREEDY             = new State("GREEDY");
@@ -1455,9 +1458,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     }
 
     void recall(int rlevel) {
-      if (state != GREEDY && state != ON_GREEDY_LEASE) {
-        throw new AssertionError("Performing recall in state " + state);
-      }
+      if (state != GREEDY && state != ON_GREEDY_LEASE) { throw new AssertionError("Performing recall in state " + state); }
       this.recallLevel |= rlevel;
       // It is possible that one thread in a VM requests a READ lock, the server grants the lock
       // greedily with a read level, followed by a recall with a lease time. The state of the lock thus
@@ -1473,9 +1474,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     }
 
     void leaseTimeout() {
-      if (state != ON_GREEDY_LEASE) {
-        throw new AssertionError("Lease time out in state " + state);
-      }
+      if (state != ON_GREEDY_LEASE) { throw new AssertionError("Lease time out in state " + state); }
       state = RECALLED;
     }
 
@@ -1498,7 +1497,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     boolean isGreedy() {
       return (state == GREEDY) || (state == ON_GREEDY_LEASE);
     }
-    
+
     boolean isGreedyState() {
       return (state == GREEDY);
     }
@@ -1522,9 +1521,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     }
 
     void greedyLease() {
-      if (state != RECALLED) {
-        throw new AssertionError("Greedy lease in state " + state);
-      }
+      if (state != RECALLED) { throw new AssertionError("Greedy lease in state " + state); }
       state = ON_GREEDY_LEASE;
     }
 
@@ -1533,16 +1530,13 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     }
 
     void startRecallCommit() {
-      if (state != RECALLED && state != ON_GREEDY_LEASE) {
-        throw new AssertionError("Starting recall commit in state " + state);
-      }
+      if (state != RECALLED && state != ON_GREEDY_LEASE) { throw new AssertionError("Starting recall commit in state "
+                                                                                    + state); }
       state = RECALL_IN_PROGRESS;
     }
 
     void recallComplete() {
-      if (state != RECALL_IN_PROGRESS) {
-        throw new AssertionError("Recall complete in state " + state);
-      }
+      if (state != RECALL_IN_PROGRESS) { throw new AssertionError("Recall complete in state " + state); }
       this.state = NOT_GREEDY;
       this.recallLevel = LockLevel.NIL_LOCK_LEVEL;
       this.level = LockLevel.NIL_LOCK_LEVEL;

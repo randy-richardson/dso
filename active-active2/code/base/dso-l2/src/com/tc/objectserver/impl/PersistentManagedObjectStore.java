@@ -4,30 +4,37 @@
  */
 package com.tc.objectserver.impl;
 
+import com.tc.async.api.Sink;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.ShutdownError;
+import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
+import com.tc.objectserver.persistence.api.PersistentCollectionsUtil;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.Assert;
-import com.tc.util.ObjectIDSet2;
-import com.tc.util.SyncObjectIdSet;
+import com.tc.util.ObjectIDSet;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 public class PersistentManagedObjectStore implements ManagedObjectStore {
 
-  private final SyncObjectIdSet        extantObjectIDs;
   private final ManagedObjectPersistor objectPersistor;
-  private boolean                      inShutdown;
+  private final Sink                   gcDisposerSink;
+  private volatile boolean             inShutdown;
 
-  public PersistentManagedObjectStore(ManagedObjectPersistor persistor) {
+  public PersistentManagedObjectStore(ManagedObjectPersistor persistor, Sink gcDisposerSink) {
     this.objectPersistor = persistor;
-    this.extantObjectIDs = objectPersistor.getAllObjectIDs();
+    this.gcDisposerSink = gcDisposerSink;
+  }
+
+  public int getObjectCount() {
+    return objectPersistor.getObjectCount();
   }
 
   public long nextObjectIDBatch(int batchSize) {
@@ -54,7 +61,6 @@ public class PersistentManagedObjectStore implements ManagedObjectStore {
   public ObjectID getRootID(String name) {
     return objectPersistor.loadRootID(name);
   }
-  
 
   public Map getRootNamesToIDsMap() {
     return objectPersistor.loadRootNamesToIDs();
@@ -62,13 +68,17 @@ public class PersistentManagedObjectStore implements ManagedObjectStore {
 
   public boolean containsObject(ObjectID id) {
     assertNotInShutdown();
-    return extantObjectIDs.contains(id);
+    return objectPersistor.containsObject(id);
   }
 
   public void addNewObject(ManagedObject managed) {
     assertNotInShutdown();
-    boolean result = extantObjectIDs.add(managed.getID());
+    boolean result = objectPersistor.addNewObject(managed.getID());
     Assert.eval(result);
+    if (PersistentCollectionsUtil.isPersistableCollectionType(managed.getManagedObjectState().getType())) {
+      result = this.objectPersistor.addMapTypeObject(managed.getID());
+      Assert.eval(result);
+    }
   }
 
   public void commitObject(PersistenceTransaction tx, ManagedObject managed) {
@@ -81,19 +91,26 @@ public class PersistentManagedObjectStore implements ManagedObjectStore {
     objectPersistor.saveAllObjects(tx, managed);
   }
 
-  public void removeAllObjectsByIDNow(PersistenceTransaction tx, Collection ids) {
+  public void removeAllObjectsByIDNow(PersistenceTransaction tx, SortedSet<ObjectID> ids) {
     assertNotInShutdown();
     this.objectPersistor.deleteAllObjectsByID(tx, ids);
-    basicRemoveAll(ids);
+    this.objectPersistor.removeAllObjectsByID(ids);
+    this.objectPersistor.removeAllMapTypeObject(ids);
   }
 
-  private void basicRemoveAll(Collection ids) {
-    this.extantObjectIDs.removeAll(ids);
-  }
-
-  public ObjectIDSet2 getAllObjectIDs() {
+  /**
+   * This method is used by the GC to trigger removing Garbage.
+   */
+  public void removeAllObjectsByID(GCResultContext gcResult) {
     assertNotInShutdown();
-    return this.extantObjectIDs.snapshot();
+    SortedSet<ObjectID> ids = gcResult.getGCedObjectIDs();
+    this.objectPersistor.removeAllObjectsByID(ids);
+    gcDisposerSink.add(gcResult);
+  }
+
+  public ObjectIDSet getAllObjectIDs() {
+    assertNotInShutdown();
+    return this.objectPersistor.snapshotObjects();
   }
 
   public ManagedObject getObjectByID(ObjectID id) {
@@ -106,19 +123,18 @@ public class PersistentManagedObjectStore implements ManagedObjectStore {
     return rv;
   }
 
-  public synchronized void shutdown() {
+  public void shutdown() {
     assertNotInShutdown();
     this.inShutdown = true;
   }
 
-  public synchronized boolean inShutdown() {
+  public boolean inShutdown() {
     return this.inShutdown;
   }
 
-  public synchronized PrettyPrinter prettyPrint(PrettyPrinter out) {
+  public PrettyPrinter prettyPrint(PrettyPrinter out) {
     PrettyPrinter rv = out;
     out = out.println(getClass().getName()).duplicateAndIndent();
-    out.indent().print("extantObjectIDs: ").visit(extantObjectIDs).println();
     return rv;
   }
 

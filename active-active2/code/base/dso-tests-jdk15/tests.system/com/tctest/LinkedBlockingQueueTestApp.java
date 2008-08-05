@@ -83,14 +83,12 @@ public class LinkedBlockingQueueTestApp extends AbstractTransparentApp {
       if ("STOP".equals(o)) {
         break;
       }
-      WorkItem w = (WorkItem) o;
-      System.out.println("Getting " + w.getI());
     }
   }
 
   private void doPut() throws Exception {
     for (int i = 0; i < numOfPut; i++) {
-      System.out.println("Putting " + i);
+      //System.out.println("Putting " + i);
       queue.put(new WorkItem(i));
       Assert.assertTrue(queue.size() <= CAPACITY);
     }

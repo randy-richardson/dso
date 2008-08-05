@@ -43,7 +43,6 @@ import com.tc.object.tx.optimistic.OptimisticTransactionManagerImpl;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
-import com.tc.util.DebugUtil;
 import com.tc.util.Util;
 import com.tc.util.concurrent.SetOnceFlag;
 import com.tc.util.runtime.Vm;
@@ -529,9 +528,6 @@ public class ManagerImpl implements Manager {
         if (tco.autoLockingDisabled()) { return; }
 
         // don't call this.commit() here, the error handling would happen twice in that case
-        if (DebugUtil.DEBUG) {
-          System.err.println(ManagerUtil.getClientID() + " MEx - " + obj.getClass().getName() + " OID: " + tco.getObjectID());
-        }
         this.txManager.commit(generateAutolockName(tco));
       } else if (isLiteralAutolock(obj)) {
         this.txManager.commit(generateLiteralLockName(obj));
@@ -559,14 +555,7 @@ public class ManagerImpl implements Manager {
     TCObject tco = lookupExistingOrNull(obj);
 
     try {
-      TimerSpec timeout = null;
-      if (timeoutInNanos <= 0) {
-        timeout = new TimerSpec(0);
-      } else {
-        long mills = Util.getMillis(timeoutInNanos);
-        int nanos = Util.getNanos(timeoutInNanos, mills);
-        timeout = new TimerSpec(mills, nanos);
-      }
+      TimerSpec timeout = createTimerSpecFromNanos(timeoutInNanos);
 
       if (tco != null) {
         if (tco.autoLockingDisabled()) { return false; }
@@ -579,8 +568,24 @@ public class ManagerImpl implements Manager {
     return false;
   }
 
+  private TimerSpec createTimerSpecFromNanos(final long timeoutInNanos) {
+    TimerSpec timeout = null;
+    if (timeoutInNanos <= 0) {
+      timeout = new TimerSpec(0);
+    } else {
+      long mills = Util.getMillis(timeoutInNanos);
+      int nanos = Util.getNanos(timeoutInNanos, mills);
+      timeout = new TimerSpec(mills, nanos);
+    }
+    return timeout;
+  }
+
   public boolean tryBeginLock(String lockID, int type) {
     return tryBegin(lockID, type, null, null);
+  }
+
+  public boolean tryBeginLock(String lockID, long timeoutInNanos, int type) {
+    return tryBegin(lockID, type, createTimerSpecFromNanos(timeoutInNanos), null);
   }
 
   public int localHeldCount(Object obj, int lockLevel) {

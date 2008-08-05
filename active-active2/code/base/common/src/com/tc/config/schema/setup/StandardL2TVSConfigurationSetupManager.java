@@ -12,6 +12,8 @@ import org.apache.xmlbeans.XmlOptions;
 
 import com.tc.capabilities.AbstractCapabilitiesFactory;
 import com.tc.capabilities.Capabilities;
+import com.tc.config.schema.ConfigTCProperties;
+import com.tc.config.schema.ConfigTCPropertiesFromObject;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.NewActiveServerGroupConfig;
 import com.tc.config.schema.NewActiveServerGroupsConfig;
@@ -33,6 +35,8 @@ import com.tc.logging.TCLogging;
 import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.object.config.schema.NewL2DSOConfigObject;
 import com.tc.object.config.schema.PersistenceMode;
+import com.tc.properties.TCProperties;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.terracottatech.config.ActiveServerGroups;
 import com.terracottatech.config.Application;
@@ -43,6 +47,7 @@ import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
 import com.terracottatech.config.TcConfigDocument;
 import com.terracottatech.config.UpdateCheck;
+import com.terracottatech.config.TcConfigDocument.TcConfig.TcProperties;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -74,11 +79,22 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   private final String                      thisL2Identifier;
   private L2ConfigData                      myConfigData;
+  private ConfigTCProperties         configTCProperties;
+  private final boolean              thisl2IdentifierSpecified;
 
   public StandardL2TVSConfigurationSetupManager(ConfigurationCreator configurationCreator, String thisL2Identifier,
                                                 DefaultValueProvider defaultValueProvider,
                                                 XmlObjectComparator xmlObjectComparator,
                                                 IllegalConfigurationChangeHandler illegalConfigChangeHandler)
+      throws ConfigurationSetupException {
+    this(configurationCreator, thisL2Identifier, defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler, false);
+  }
+
+  public StandardL2TVSConfigurationSetupManager(ConfigurationCreator configurationCreator, String thisL2Identifier,
+                                                DefaultValueProvider defaultValueProvider,
+                                                XmlObjectComparator xmlObjectComparator,
+                                                IllegalConfigurationChangeHandler illegalConfigChangeHandler,
+                                                boolean thisl2IdentifierSpecified)
       throws ConfigurationSetupException {
     super(defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler);
 
@@ -98,6 +114,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     this.thisL2Identifier = thisL2Identifier;
     this.myConfigData = null;
+    this.thisl2IdentifierSpecified = thisl2IdentifierSpecified;
 
     // this sets the beans in each repository
     runConfigurationCreator(this.configurationCreator);
@@ -109,6 +126,8 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       throw new ConfigurationSetupException(e1);
     }
 
+    this.configTCProperties = new ConfigTCPropertiesFromObject((TcProperties) tcPropertiesRepository().bean());
+    overwriteTcPropertiesFromConfig();
     selectL2((Servers) serversBeanRepository().bean(), "the set of L2s known to us");
     validateRestrictions();
 
@@ -386,7 +405,13 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     if (this.allCurrentlyKnownServers().length == 1) {
       if (servers != null && servers.getServerArray() != null && servers.getServerArray()[0] != null) {
-        this.myConfigData = configDataFor(servers.getServerArray()[0].getName());
+        final String server0Name = servers.getServerArray()[0].getName();
+        if (thisl2IdentifierSpecified && !thisL2Identifier.equals(server0Name)) {
+          throw new ConfigurationSetupException("You have specified server name '" + thisL2Identifier + "' which does not " +
+                                                "exist in the specified tc-config file. \n\n" +
+                                                "Please check your settings and try again");
+        }
+        this.myConfigData = configDataFor(server0Name);
       } else {
         this.myConfigData = configDataFor(null);
       }
@@ -525,6 +550,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     TcConfigDocument doc = TcConfigDocument.Factory.newInstance();
     TcConfigDocument.TcConfig config = doc.addNewTcConfig();
 
+    TcProperties tcProperties = (TcProperties) this.tcPropertiesRepository().bean();
     System system = (System) this.systemBeanRepository().bean();
     Client client = (Client) this.clientBeanRepository().bean();
     Servers servers = (Servers) this.serversBeanRepository().bean();
@@ -534,6 +560,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     if (system != null) config.setSystem(system);
     if (client != null) config.setClients(client);
     if (servers != null) config.setServers(servers);
+    if (tcProperties != null) config.setTcProperties(tcProperties);
     if (application != null) config.setApplication(application);
 
     StringWriter sw = new StringWriter();
@@ -552,6 +579,11 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     } catch (UnsupportedEncodingException uee) {
       throw Assert.failure("This shouldn't be possible", uee);
     }
+  }
+
+  private void overwriteTcPropertiesFromConfig() {
+    TCProperties tcProps = TCPropertiesImpl.getProperties();
+    tcProps.overwriteTcPropertiesFromConfig(this.configTCProperties.getTcPropertiesArray());
   }
 
 }
