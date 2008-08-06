@@ -92,7 +92,6 @@ public class ClientMessageChannelMultiplexTest extends TCTestCase {
                                        final MessageSendAndReceiveWatcher myClientSenderWatcher,
                                        final MessageSendAndReceiveWatcher myServerSenderWatcher) throws IOException {
     NetworkListener l2lsnr;
-    final int ndx = index;
 
     l2lsnr = serverComm.createListener(new NullSessionManager(), new TCSocketAddress(port), false,
                                        new DefaultConnectionIdFactory());
@@ -437,10 +436,6 @@ System.out.print("XXX Wait for channel " + ch);
     return ch;
   }
 
-  private PingMessage createMessage() {
-    return(createMessage(nodeIDs[0]));
-  }
-  
   private PingMessage createMessage(NodeID nid) {
     PingMessage ping = (PingMessage) clientChannel.createMessage(nid, TCMessageType.PING_MESSAGE);
     ping.initialize(sq);
@@ -509,7 +504,6 @@ System.out.print("XXX Wait for channel " + ch);
   }
 
   private void setUpClientReceiveSink(int index, ClientMessageChannel channel, MessageSendAndReceiveWatcher serverWatcher) {
-    final int ndx = index;
     final MessageSendAndReceiveWatcher myServerSenderWatcher = serverWatcher;
     channel.routeMessageType(TCMessageType.PING_MESSAGE, new TCMessageSink() {
       public void putMessage(TCMessage message) throws UnsupportedMessageTypeException {

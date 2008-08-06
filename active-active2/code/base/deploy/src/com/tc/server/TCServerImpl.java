@@ -27,7 +27,6 @@ import com.tc.config.schema.L2Info;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.StringConfigItem;
 import com.tc.config.schema.messaging.http.ConfigServlet;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;

@@ -333,13 +333,33 @@ public class ActivePassiveServerManager {
                  + "]");
 
     activeIndex = getActiveIndex(true);
-
+    
     if (serverCrashMode.equals(ActivePassiveCrashMode.CONTINUOUS_ACTIVE_CRASH)
         || serverCrashMode.equals(ActivePassiveCrashMode.RANDOM_SERVER_CRASH)) {
       startContinuousCrash();
     }
   }
   
+  public void startActiveActiveServers() throws Exception {
+    verifyActiveIndicesUnset();
+
+    for (int i = 0; i < servers.length; i++) {
+      startServer(i);
+    }
+    Thread.sleep(500 * servers.length);
+
+    debugPrintln("***** startServers():  about to search for active  threadId=[" + Thread.currentThread().getName()
+                 + "]");
+
+    
+    getActiveIndices();
+
+    if (serverCrashMode.equals(ActivePassiveCrashMode.CONTINUOUS_ACTIVE_CRASH)
+        || serverCrashMode.equals(ActivePassiveCrashMode.RANDOM_SERVER_CRASH)) {
+      startContinuousCrash();
+    }
+  }
+
   private void verifyActiveIndicesUnset() {
     for (int i = 0; i < activeIndices.length; i++) {
       if (activeIndices[i] != NULL_VAL) { throw new AssertionError(
@@ -369,6 +389,37 @@ public class ActivePassiveServerManager {
     }
   }
 
+  private void getActiveIndices() throws Exception {
+    while (activeIndicesNextIndex < activeIndices.length) {
+      System.out.println("Searching for active server(s)... ");
+      for (int i = 0; i < jmxPorts.length; i++) {
+        if (i != lastCrashedIndex) {
+          if (!servers[i].getServerControl().isRunning()) { throw new AssertionError("Server["
+                                                                                     + servers[i].getDsoPort()
+                                                                                     + "] is not running as expected!"); }
+          boolean isActive;
+          try {
+            isActive = tcServerInfoMBeans[i].isActive();
+          } catch (Exception e) {
+            System.out.println("Need to fetch tcServerInfoMBean for server=[" + dsoPorts[i] + "]...");
+            tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
+            isActive = tcServerInfoMBeans[i].isActive();
+          }
+
+          if (isActive) {
+            if (activeIndices.length <= activeIndicesNextIndex) { throw new Exception("More than ["
+                                                                                      + activeIndices.length
+                                                                                      + "] active servers found."); }
+            
+            debugPrintln("***** active found index=[" + i + "] activeIndicesNextIndex=[" + activeIndicesNextIndex + "]");
+            activeIndices[activeIndicesNextIndex++] = i;
+          }
+        }
+      }
+      Thread.sleep(1000);
+    }
+  }
+
   private int getActiveIndex(boolean allMustBeRunning) throws Exception {
     int index = -1;
     while (index < 0) {
@@ -390,14 +441,16 @@ public class ActivePassiveServerManager {
             tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
             isActive = tcServerInfoMBeans[i].isActive();
           }
+          debugPrintln("********  index=[" + index + "]  i=[" + i + "] active=[" + isActive + "]  threadId=["
+                       + Thread.currentThread().getName() + "]");
 
           if (isActive) {
-            if (activeIndices.length <= activeIndicesNextIndex) { throw new Exception("More than ["
-                                                                                      + activeIndices.length
-                                                                                      + "] active servers found."); }
-            
-            debugPrintln("***** active found index=[" + i + "] activeIndicesNextIndex=[" + activeIndicesNextIndex + "]");
-            activeIndices[activeIndicesNextIndex++] = i;
+            if (index < 0) {
+              index = i;
+              debugPrintln("***** active found index=[" + index + "]");
+            } else {
+              throw new Exception("More than one active server found.");
+            }
           }
         }
       }
@@ -581,8 +634,8 @@ public class ActivePassiveServerManager {
 
   // TODO: make this work with multiple servers
   public void crashActive() throws Exception {
-    int activeIndex = 0;
-    crashActive(activeIndices[activeIndex]);
+    int index = 0;
+    crashActive(activeIndices[index]);
   }
   
   public void crashActive(int crashIndex) throws Exception {

@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ActivePassiveTestSetupManager {
-  private static final int      DEFAULT_ELECTION_TIME    = 5;
   
   private int                          serverCount              = -1;
   private long                         serverCrashWaitTimeInSec = 15;

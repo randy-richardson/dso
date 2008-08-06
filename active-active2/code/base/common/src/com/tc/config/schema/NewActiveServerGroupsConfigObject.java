@@ -4,7 +4,6 @@
  */
 package com.tc.config.schema;
 
-import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.context.ConfigContext;
@@ -25,7 +24,7 @@ public class NewActiveServerGroupsConfigObject extends BaseNewConfigObject imple
   private final int[]                        activeServerGroupIds;
 
   public NewActiveServerGroupsConfigObject(ConfigContext context, StandardL2TVSConfigurationSetupManager setupManager)
-      throws XmlException, ConfigurationSetupException {
+      throws ConfigurationSetupException {
     super(context);
     context.ensureRepositoryProvides(ActiveServerGroups.class);
     final ActiveServerGroups groups = (ActiveServerGroups) context.bean();

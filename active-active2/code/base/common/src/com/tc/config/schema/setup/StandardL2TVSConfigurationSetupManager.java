@@ -132,11 +132,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     validateRestrictions();
 
     // do this last after everything else is setup
-    try {
-      this.activeServerGroupsConfig = getActiveServerGroupsConfig();
-    } catch (XmlException e) {
-      throw new ConfigurationSetupException(e);
-    }
+    this.activeServerGroupsConfig = getActiveServerGroupsConfig();
 
     // do this after servers and groups have been processed
     validateGroups();
@@ -172,7 +168,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   // make sure there is at most one of these
-  private NewActiveServerGroupsConfig getActiveServerGroupsConfig() throws XmlException, ConfigurationSetupException {
+  private NewActiveServerGroupsConfig getActiveServerGroupsConfig() throws ConfigurationSetupException {
     if (this.haConfig == null) { throw new AssertionError(
         "Define haConfig before defining activeServerGroupsConfig in the constructor!"); }
 

@@ -6,7 +6,6 @@ package com.tc.net.protocol.tcm;
 
 import com.tc.async.api.Sink;
 import com.tc.exception.ImplementMe;
-import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.ClientID;
@@ -14,30 +13,16 @@ import com.tc.net.groups.GroupID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
-import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionProvider;
-import com.tc.util.TCTimeoutException;
-
-import java.io.IOException;
-import java.net.UnknownHostException;
 
 /**
  * @author orion
  */
 
 public class TestClientMessageChannel implements ClientMessageChannel {
-  private final TCMessageFactory              msgFactory;
-  private int                                 connectAttemptCount;
-  private int                                 connectCount;
   private ChannelID                           channelID;
-  private final SessionProvider               sessionProvider;
-  private SessionID                           channelSessionID = SessionID.NULL_ID;
-  private final ClientMessageChannelMultiplex multiplex;
-  private final ConnectionAddressProvider     addrProvider;
   private final boolean                       activeCoordinator;
   private boolean                             initConnect      = true;
-  private NodeID                              source;
-  private NodeID                              destination;
 
   public TestClientMessageChannel() {
     this(null, null, null, null, null, true);
@@ -46,11 +31,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
   public TestClientMessageChannel(TCMessageFactory msgFactory, TCMessageRouter router,
                                      SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
                                      ClientMessageChannelMultiplex multiplex, boolean activeCoordinator) {
-    this.msgFactory = msgFactory;
-    this.sessionProvider = sessionProvider;
-    this.multiplex = multiplex;
     this.activeCoordinator = activeCoordinator;
-    this.addrProvider = addrProvider;
 
     setClientID(ClientID.NULL_ID);
     setServerID(GroupID.NULL_ID);
@@ -167,7 +148,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public NetworkStackID open() throws MaxConnectionsExceededException, TCTimeoutException, UnknownHostException, IOException {
+  public NetworkStackID open() {
     throw new ImplementMe();
   }
 
@@ -181,11 +162,11 @@ public class TestClientMessageChannel implements ClientMessageChannel {
   }
 
   public void setServerID(NodeID destination) {
-    this.destination = destination;
+    throw new ImplementMe();
   }
 
   public void setClientID(NodeID source) {
-    this.source = source;
+    throw new ImplementMe();
   }
 
   public ConnectionAddressProvider getConnectionAddress() {

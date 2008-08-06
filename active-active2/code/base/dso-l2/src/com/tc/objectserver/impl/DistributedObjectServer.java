@@ -4,6 +4,9 @@
  */
 package com.tc.objectserver.impl;
 
+import bsh.EvalError;
+import bsh.Interpreter;
+
 import com.tc.async.api.SEDA;
 import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
@@ -179,7 +182,6 @@ import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
-import com.tc.properties.TCPropertiesImpl;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
 import com.tc.statistics.beans.impl.StatisticsGatewayMBeanImpl;
@@ -232,9 +234,6 @@ import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.NotCompliantMBeanException;
 import javax.management.remote.JMXConnectorServer;
-
-import bsh.EvalError;
-import bsh.Interpreter;
 
 /**
  * Startup and shutdown point. Builds and starts the server
