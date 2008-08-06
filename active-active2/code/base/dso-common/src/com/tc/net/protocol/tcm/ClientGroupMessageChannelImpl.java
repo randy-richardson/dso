@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 
-public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl implements
-    ClientMessageChannelMultiplex {
-  private static final TCLogger  logger = TCLogging.getLogger(ClientMessageChannelMultiplex.class);
+public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl implements
+    ClientGroupMessageChannel {
+  private static final TCLogger  logger = TCLogging.getLogger(ClientGroupMessageChannel.class);
   private final TCMessageFactory msgFactory;
   private final SessionProvider  sessionProvider;
 
@@ -33,7 +33,7 @@ public class ClientMessageChannelMultiplexImpl extends ClientMessageChannelImpl 
   private ClientMessageChannel[] channels;
   private GroupID[]              servers;
 
-  public ClientMessageChannelMultiplexImpl(TCMessageFactory msgFactory, SessionProvider sessionProvider,
+  public ClientGroupMessageChannelImpl(TCMessageFactory msgFactory, SessionProvider sessionProvider,
                                            final int maxReconnectTries, CommunicationsManager communicationsManager,
                                            ConnectionAddressProvider[] addressProviders) {
     super(msgFactory, null, sessionProvider, null, null, false);

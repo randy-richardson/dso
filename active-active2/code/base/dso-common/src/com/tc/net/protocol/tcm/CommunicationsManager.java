@@ -38,7 +38,7 @@ public interface CommunicationsManager {
    *        giving up.
    */
   
-  public ClientMessageChannelMultiplex createClientChannelMultiplex(final SessionProvider sessionProvider,
+  public ClientGroupMessageChannel createClientChannelMultiplex(final SessionProvider sessionProvider,
                                                                     final int maxReconnectTries,
                                                                     final int timeout,
                                                                     ConnectionAddressProvider[] addressProviders);
@@ -50,7 +50,7 @@ public interface CommunicationsManager {
                                                                     MessageTransportFactory transportFactory,
                                                                     TCMessageFactory msgFactory,
                                                                     TCMessageRouter router,
-                                                                    ClientMessageChannelMultiplex multiplex,
+                                                                    ClientGroupMessageChannel multiplex,
                                                                     boolean activeCoordinator);
   
   public ClientMessageChannel createClientChannel(SessionProvider sessionProvider, int maxReconnectTries,

@@ -24,7 +24,7 @@ public interface ClientMessageChannel extends MessageChannel {
   
   public boolean isActiveCoordinator();
   
-  public ClientMessageChannelMultiplex getMultiplex();
+  public ClientGroupMessageChannel getMultiplex();
   
   public ChannelID getActiveActiveChannelID();
   

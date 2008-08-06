@@ -30,7 +30,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
   
   public TestClientMessageChannel(TCMessageFactory msgFactory, TCMessageRouter router,
                                      SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
-                                     ClientMessageChannelMultiplex multiplex, boolean activeCoordinator) {
+                                     ClientGroupMessageChannel multiplex, boolean activeCoordinator) {
     this.activeCoordinator = activeCoordinator;
 
     setClientID(ClientID.NULL_ID);
@@ -74,7 +74,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public ClientMessageChannelMultiplex getMultiplex() {
+  public ClientGroupMessageChannel getMultiplex() {
     throw new ImplementMe();
   }
 

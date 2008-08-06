@@ -33,13 +33,13 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   private final ChannelIDProviderImpl         cidProvider;
   private final SessionProvider               sessionProvider;
   private SessionID                           channelSessionID = SessionID.NULL_ID;
-  private final ClientMessageChannelMultiplex multiplex;
+  private final ClientGroupMessageChannel multiplex;
   private final ConnectionAddressProvider     addrProvider;
   private final boolean                       activeCoordinator;
 
   protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router,
                                      SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
-                                     ClientMessageChannelMultiplex multiplex, boolean activeCoordinator) {
+                                     ClientGroupMessageChannel multiplex, boolean activeCoordinator) {
     super(router, logger, msgFactory);
     this.msgFactory = msgFactory;
     this.cidProvider = new ChannelIDProviderImpl();
@@ -72,7 +72,7 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     return this.addrProvider;
   }
 
-  public ClientMessageChannelMultiplex getMultiplex() {
+  public ClientGroupMessageChannel getMultiplex() {
     return this.multiplex;
   }
 

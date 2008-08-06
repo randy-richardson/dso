@@ -25,7 +25,7 @@ import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.net.protocol.tcm.ChannelIDProvider;
 import com.tc.net.protocol.tcm.ClientMessageChannel;
-import com.tc.net.protocol.tcm.ClientMessageChannelMultiplex;
+import com.tc.net.protocol.tcm.ClientGroupMessageChannel;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.MessageMonitor;
 import com.tc.net.protocol.tcm.MockMessageChannel;
@@ -294,7 +294,7 @@ public class ClientServerLockStatisticsTest extends TCTestCase {
       throw new ImplementMe();
     }
 
-    public ClientMessageChannelMultiplex getMultiplex() {
+    public ClientGroupMessageChannel getMultiplex() {
       throw new ImplementMe();
     }
 

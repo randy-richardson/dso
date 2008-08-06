@@ -5,7 +5,7 @@ package com.tc.net.protocol.tcm;
 
 import com.tc.net.groups.NodeID;
 
-public interface ClientMessageChannelMultiplex extends ClientMessageChannel {
+public interface ClientGroupMessageChannel extends ClientMessageChannel {
   
   public ClientMessageChannel[] getChannels();
   

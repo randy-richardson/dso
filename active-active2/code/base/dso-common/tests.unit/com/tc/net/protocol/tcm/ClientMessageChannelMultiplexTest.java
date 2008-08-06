@@ -46,7 +46,7 @@ public class ClientMessageChannelMultiplexTest extends TCTestCase {
   CommunicationsManager[]       serverComms   = new CommunicationsManager[L2_COUNT];
   NetworkListener[]             lsnr          = new NetworkListener[L2_COUNT];
   NodeID[]                      nodeIDs;
-  ClientMessageChannelMultiplex clientChannel;
+  ClientGroupMessageChannel clientChannel;
   SequenceGenerator             sequence;
   MessageSendAndReceiveWatcher[]  clientWatcheres = new MessageSendAndReceiveWatcher[L2_COUNT];
   MessageSendAndReceiveWatcher[]  serverWatcheres = new MessageSendAndReceiveWatcher[L2_COUNT];
@@ -425,12 +425,12 @@ System.out.print("XXX Wait for channel " + ch);
     }
   }
 
-  private ClientMessageChannelMultiplex createClientMessageChannel(int maxReconnectTries) {
+  private ClientGroupMessageChannel createClientMessageChannel(int maxReconnectTries) {
     ConnectionAddressProvider[] addrs = new ConnectionAddressProvider[L2_COUNT];
     for (int i = 0; i < L2_COUNT; ++i) {
       addrs[i] = new ConnectionAddressProvider(new ConnectionInfo[] { new ConnectionInfo("localhost", ports[i]) });
     }
-    ClientMessageChannelMultiplex ch = clientComms.createClientChannelMultiplex(new NullSessionManager(),
+    ClientGroupMessageChannel ch = clientComms.createClientChannelMultiplex(new NullSessionManager(),
                                                                                 maxReconnectTries, WAIT, addrs);
     ch.addClassMapping(TCMessageType.PING_MESSAGE, PingMessage.class);
     return ch;

@@ -154,10 +154,10 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
     }
   }
 
-  public ClientMessageChannelMultiplex createClientChannelMultiplex(final SessionProvider sessionProvider,
+  public ClientGroupMessageChannel createClientChannelMultiplex(final SessionProvider sessionProvider,
                                                                     final int maxReconnectTries, final int timeout,
                                                                     ConnectionAddressProvider[] addressProviders) {
-    ClientMessageChannelMultiplex multiplex = new ClientMessageChannelMultiplexImpl(
+    ClientGroupMessageChannel multiplex = new ClientGroupMessageChannelImpl(
                                                                                     new TCMessageFactoryImpl(
                                                                                                              sessionProvider,
                                                                                                              monitor),
@@ -194,7 +194,7 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                                   ConnectionAddressProvider addressProvider, final int callbackPort,
                                                   MessageTransportFactory transportFactory,
                                                   TCMessageFactory messageFactory, TCMessageRouter router,
-                                                  ClientMessageChannelMultiplex multiplex, boolean activeCoordinator) {
+                                                  ClientGroupMessageChannel multiplex, boolean activeCoordinator) {
 
     TCMessageFactory msgFactory = (messageFactory != null) ? messageFactory : new TCMessageFactoryImpl(sessionProvider,
                                                                                                        monitor);
