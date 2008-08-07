@@ -15,7 +15,7 @@ import java.io.IOException;
 
 class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage, SynAckMessage, AckMessage,
     HealthCheckerProbeMessage {
-  
+
   /**
    * VERSION_1: Transport Handshake Message Version for Terracotta <= 2.5
    * VERSION_2: Transport Handshake Message Version for Terracotta = 2.6
@@ -25,13 +25,13 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
   static final byte          VERSION_2  = 2;
   static final byte          VERSION    = VERSION_2;
 
-
   static final byte          SYN        = 1;
   static final byte          ACK        = 2;
   static final byte          SYN_ACK    = 3;
   static final byte          PING       = 4;
   static final byte          PING_REPLY = 5;
-
+  // syn CientGroup sub-channel except coordinator
+  static final byte          SYN_GROUP  = 6;
   private final byte         version;
   private final byte         type;
   private final ConnectionID connectionId;
@@ -50,7 +50,8 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
       TCByteBufferInputStream in = new TCByteBufferInputStream(payload);
       this.version = in.readByte();
 
-      if (version != VERSION) { throw new TCProtocolException("Version Mismatch for Transport Message Handshake: " + version + " != " + VERSION); }
+      if (version != VERSION) { throw new TCProtocolException("Version Mismatch for Transport Message Handshake: "
+                                                              + version + " != " + VERSION); }
 
       this.type = in.readByte();
 
@@ -91,6 +92,8 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
     switch (type) {
       case SYN:
         return "SYN";
+      case SYN_GROUP:
+        return "SYN_GROUP";
       case ACK:
         return "ACK";
       case SYN_ACK:
@@ -138,6 +141,10 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
     return type == SYN;
   }
 
+  public boolean isSynGroup() {
+    return type == SYN_GROUP;
+  }
+
   public boolean isAck() {
     return type == ACK;
   }
@@ -162,5 +169,5 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
   public int getCallbackPort() {
     return this.callbackPort;
   }
-  
+
 }

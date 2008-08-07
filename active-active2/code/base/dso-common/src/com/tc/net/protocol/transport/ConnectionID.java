@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol.transport;
 
@@ -10,10 +11,10 @@ public class ConnectionID {
   private final long               channelID;
   private final String             serverID;
 
-  public static final ConnectionID NULL_ID = new ConnectionID(ChannelID.NULL_ID.toLong(),
-                                                              "ffffffffffffffffffffffffffffffff");
+  private static final String      NULL_SERVER_ID = "ffffffffffffffffffffffffffffffff";
+  public static final ConnectionID NULL_ID        = new ConnectionID(ChannelID.NULL_ID.toLong(), NULL_SERVER_ID);
 
-  private static final String      SEP     = ".";
+  private static final String      SEP            = ".";
 
   public static ConnectionID parse(String compositeID) throws InvalidConnectionIDException {
     if (compositeID == null) { throw new InvalidConnectionIDException(compositeID, "null connectionID"); }
@@ -48,6 +49,10 @@ public class ConnectionID {
     this.serverID = serverID;
   }
 
+  public ConnectionID(long channelID) {
+    this(channelID, NULL_SERVER_ID);
+  }
+
   public String toString() {
     return "ConnectionID(" + getID() + ")";
   }
@@ -55,9 +60,9 @@ public class ConnectionID {
   public boolean isNull() {
     return NULL_ID.equals(this);
   }
-  
-  public boolean isChannelIDNull() {
-    return (channelID == ChannelID.NULL_ID.toLong());
+
+  public boolean isNewConnectionID() {
+    return (serverID.equals(NULL_SERVER_ID));
   }
 
   public String getServerID() {
@@ -87,7 +92,7 @@ public class ConnectionID {
   }
 
   public String getID() {
-    return channelID + SEP + serverID ;
+    return channelID + SEP + serverID;
   }
 
 }

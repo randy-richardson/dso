@@ -23,6 +23,11 @@ public class MockTransportMessageFactory implements TransportHandshakeMessageFac
     return this.syn;
   }
 
+  public TransportHandshakeMessage createSynGroup(ConnectionID connectionId, TCConnection source, short stackLayerFlags,
+                                             int callbackPort) {
+    throw new UnsupportedOperationException();
+  }
+
   public TransportHandshakeMessage createAck(ConnectionID connectionId, TCConnection source) {
     createAckCalls.put(new CallContext(connectionId, null, source, null, null));
     return this.ack;

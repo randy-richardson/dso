@@ -117,11 +117,11 @@ public class ServerStackProviderTest extends TCTestCase {
                                        new WireProtocolAdaptorFactoryImpl());
 
     MockTCConnection conn = new MockTCConnection();
-    provider.attachNewConnection(connectionID1, conn);
+    provider.attachNewConnection(connectionID1, conn, false);
 
     // trying to attach a stack that wasn't rebuilt at startup should fail.
     try {
-      provider.attachNewConnection(connectionID2, new MockTCConnection());
+      provider.attachNewConnection(connectionID2, new MockTCConnection(), false);
       fail("Expected StackNotFoundException");
     } catch (StackNotFoundException e) {
       // expected.
@@ -130,7 +130,7 @@ public class ServerStackProviderTest extends TCTestCase {
 
   public void testNotifyTransportDisconnected() throws Exception {
     TestTCConnection conn = new TestTCConnection();
-    provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+    provider.attachNewConnection(ConnectionID.NULL_ID, conn, false);
 
     // send a transport disconnected event
     MockMessageTransport transport = new MockMessageTransport();
@@ -151,10 +151,10 @@ public class ServerStackProviderTest extends TCTestCase {
 
   public void testNotifyTransportClose() throws Exception {
     TestTCConnection conn = new TestTCConnection();
-    provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+    provider.attachNewConnection(ConnectionID.NULL_ID, conn, false);
 
     // try looking it up again. Make sure it found what it was looking for.
-    provider.attachNewConnection(connId, conn);
+    provider.attachNewConnection(connId, conn, false);
 
     // send it a transport closed event.
     MockMessageTransport transport = new MockMessageTransport();
@@ -163,7 +163,7 @@ public class ServerStackProviderTest extends TCTestCase {
 
     // make sure that a future lookup throws a StackNotFoundException
     try {
-      provider.attachNewConnection(this.connId, conn);
+      provider.attachNewConnection(this.connId, conn, false);
       fail("Expected StackNotFoundException.");
     } catch (StackNotFoundException e) {
       // expected
@@ -175,14 +175,14 @@ public class ServerStackProviderTest extends TCTestCase {
    */
   public void testRemoveNetworkStack() throws Exception {
     MockTCConnection conn = new MockTCConnection();
-    provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+    provider.attachNewConnection(ConnectionID.NULL_ID, conn, false);
 
     assertEquals(harness, provider.removeNetworkStack(this.connId));
     assertTrue(provider.removeNetworkStack(this.connId) == null);
 
     try {
       // try looking it up again. Make sure it throws an exception
-      provider.attachNewConnection(this.connId, conn);
+      provider.attachNewConnection(this.connId, conn, false);
       fail("Should have thrown an exception.");
     } catch (StackNotFoundException e) {
       // expected
@@ -198,7 +198,7 @@ public class ServerStackProviderTest extends TCTestCase {
 
     MockTCConnection conn = new MockTCConnection();
     try {
-      provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+      provider.attachNewConnection(ConnectionID.NULL_ID, conn, false);
     } catch (StackNotFoundException e) {
       fail("was virgin, should not throw exception");
     } catch (IllegalReconnectException e) {
@@ -213,7 +213,7 @@ public class ServerStackProviderTest extends TCTestCase {
     harness.wasFinalizeStackCalled = false;
 
     try {
-      provider.attachNewConnection(this.connId, conn);
+      provider.attachNewConnection(this.connId, conn, false);
     } catch (StackNotFoundException e) {
       fail("was virgin, should not throw exception");
     } catch (IllegalReconnectException e) {
@@ -229,7 +229,7 @@ public class ServerStackProviderTest extends TCTestCase {
     harness.wasFinalizeStackCalled = false;
 
     try {
-      provider.attachNewConnection(differentConnId, conn);
+      provider.attachNewConnection(differentConnId, conn, false);
       fail("was not virgin and had connId, but should not exist in provider");
     } catch (StackNotFoundException e) {
       // expected

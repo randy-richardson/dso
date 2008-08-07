@@ -16,7 +16,7 @@ public interface NetworkStackProvider {
   /**
    * Takes a new connection and a connectionId. Returns the MessageTransport associated with that id.
    */
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection)
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean isSynGroup)
       throws StackNotFoundException, IllegalReconnectException;
 
 }

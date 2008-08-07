@@ -42,7 +42,7 @@ public class ClientMessageTransport extends MessageTransportBase {
   /**
    * Constructor for when you want a transport that isn't connected yet (e.g., in a client). This constructor will
    * create an unopened MessageTransport.
-   *
+   * 
    * @param commsManager CommmunicationsManager
    */
   public ClientMessageTransport(ClientConnectionEstablisher clientConnectionEstablisher,
@@ -61,7 +61,7 @@ public class ClientMessageTransport extends MessageTransportBase {
 
   /**
    * Blocking open. Causes a connection to be made. Will throw exceptions if the connect fails.
-   *
+   * 
    * @throws TCTimeoutException
    * @throws IOException
    * @throws TCTimeoutException
@@ -207,7 +207,7 @@ public class ClientMessageTransport extends MessageTransportBase {
 
   /**
    * Builds a protocol stack and tries to make a connection. This is a blocking call.
-   *
+   * 
    * @throws TCTimeoutException
    * @throws MaxConnectionsExceededException
    * @throws IOException
@@ -235,12 +235,14 @@ public class ClientMessageTransport extends MessageTransportBase {
       waitForSynAckResult = new TCFuture(status);
       // get the stack layer list and pass it in
       short stackLayerFlags = getCommunicationStackFlags(this);
-      ConnectionID synConnId = this.connectionId;
-      if (!channel.isActiveCoordinator() && synConnId == null) { // for active-active multiplex
-        synConnId = new ConnectionID(channel.getActiveActiveChannelID().toLong(), ConnectionID.NULL_ID.getServerID());
+      TransportHandshakeMessage syn;
+      if (!channel.isActiveCoordinator()) { // for making connection to active-active sub-channels
+        ConnectionID synConnId = (connectionId != null) ? connectionId : new ConnectionID(channel
+            .getActiveActiveChannelID().toLong());
+        syn = this.messageFactory.createSynGroup(synConnId, getConnection(), stackLayerFlags, callbackPort);
+      } else {
+        syn = this.messageFactory.createSyn(connectionId, getConnection(), stackLayerFlags, callbackPort);
       }
-      TransportHandshakeMessage syn = this.messageFactory.createSyn(synConnId, getConnection(), stackLayerFlags,
-                                                                    callbackPort);
       // send syn message
       this.sendToConnection(syn);
       this.status.synSent();

@@ -82,17 +82,17 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
     }
   }
 
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection)
-      throws StackNotFoundException , IllegalReconnectException {
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean isSynGroup)
+      throws StackNotFoundException, IllegalReconnectException {
     Assert.assertNotNull(connection);
 
     final NetworkStackHarness harness;
     final MessageTransport rv;
-    if (connectionId.isNull() || connectionId.isChannelIDNull()) {
-      Assert.assertTrue(connectionId.isChannelIDNull());
-      if (connectionId.isNull()) {
+    if (connectionId.isNewConnectionID()) {
+      if (!isSynGroup) {
+        Assert.assertTrue(connectionId.isNull());
         connectionId = connectionIdFactory.nextConnectionId();
-      } else if (connectionId.isChannelIDNull()) {
+      } else {
         connectionId = connectionIdFactory.setServerIdToConnectionId(connectionId);
       }
 
@@ -237,8 +237,11 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
                                                                       + " While that client is being rejected, everything else should proceed as normal."
                                                                       + " Some possible reasons for this situation might be:"
                                                                       + " the client is from a previous run and can't safely join this newer run; or"
-                                                                      + " the client couldn't reconnect (configurable through several TC properties: '"+ TCPropertiesConsts.L2_L1RECONNECT_ENABLED +"', '"+ TCPropertiesConsts.L2_L1RECONNECT_TIMEOUT_MILLS +"', ...)",
-                                                                  e));
+                                                                      + " the client couldn't reconnect (configurable through several TC properties: '"
+                                                                      + TCPropertiesConsts.L2_L1RECONNECT_ENABLED
+                                                                      + "', '"
+                                                                      + TCPropertiesConsts.L2_L1RECONNECT_TIMEOUT_MILLS
+                                                                      + "', ...)", e));
         }
       }
       return isSynced;
@@ -262,12 +265,11 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
       }
 
       try {
-        this.transport = attachNewConnection(connectionId, syn.getSource());
+        this.transport = attachNewConnection(connectionId, syn.getSource(), syn.isSynGroup());
       } catch (IllegalReconnectException e) {
         logger.warn("Client attempting an illegal reconnect for id " + connectionId + ", " + syn.getSource());
         return;
       }
-
 
       this.transport.setRemoteCallbackPort(syn.getCallbackPort());
 
@@ -300,7 +302,8 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
     }
 
     private boolean verifySyn(WireProtocolMessage message) {
-      return message instanceof TransportHandshakeMessage && ((TransportHandshakeMessage) message).isSyn();
+      return message instanceof TransportHandshakeMessage
+             && (((TransportHandshakeMessage) message).isSyn() || ((TransportHandshakeMessage) message).isSynGroup());
     }
 
     private void sendSynAck(ConnectionID connectionId, TCConnection source) {
