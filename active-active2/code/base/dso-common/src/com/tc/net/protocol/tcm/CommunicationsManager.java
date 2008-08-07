@@ -38,7 +38,7 @@ public interface CommunicationsManager {
    *        giving up.
    */
   
-  public ClientGroupMessageChannel createClientChannelMultiplex(final SessionProvider sessionProvider,
+  public ClientGroupMessageChannel createClientGroupChannel(final SessionProvider sessionProvider,
                                                                     final int maxReconnectTries,
                                                                     final int timeout,
                                                                     ConnectionAddressProvider[] addressProviders);

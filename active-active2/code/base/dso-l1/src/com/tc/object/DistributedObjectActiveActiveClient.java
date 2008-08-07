@@ -39,8 +39,8 @@ public class DistributedObjectActiveActiveClient extends DistributedObjectClient
       addrProviders[i] = new ConnectionAddressProvider(connectionInfo);
     }
 
-    cmc = commMgr.createClientChannelMultiplex(sessionProvider, -1, 10000, addrProviders);
+    cmc = commMgr.createClientGroupChannel(sessionProvider, -1, 10000, addrProviders);
     return (cmc);
   }
-
+  
 }

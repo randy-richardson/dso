@@ -430,7 +430,7 @@ System.out.print("XXX Wait for channel " + ch);
     for (int i = 0; i < L2_COUNT; ++i) {
       addrs[i] = new ConnectionAddressProvider(new ConnectionInfo[] { new ConnectionInfo("localhost", ports[i]) });
     }
-    ClientGroupMessageChannel ch = clientComms.createClientChannelMultiplex(new NullSessionManager(),
+    ClientGroupMessageChannel ch = clientComms.createClientGroupChannel(new NullSessionManager(),
                                                                                 maxReconnectTries, WAIT, addrs);
     ch.addClassMapping(TCMessageType.PING_MESSAGE, PingMessage.class);
     return ch;

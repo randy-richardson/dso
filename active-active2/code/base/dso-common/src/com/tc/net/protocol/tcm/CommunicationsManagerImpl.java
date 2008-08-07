@@ -154,7 +154,7 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
     }
   }
 
-  public ClientGroupMessageChannel createClientChannelMultiplex(final SessionProvider sessionProvider,
+  public ClientGroupMessageChannel createClientGroupChannel(final SessionProvider sessionProvider,
                                                                     final int maxReconnectTries, final int timeout,
                                                                     ConnectionAddressProvider[] addressProviders) {
     ClientGroupMessageChannel multiplex = new ClientGroupMessageChannelImpl(

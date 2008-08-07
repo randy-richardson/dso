@@ -203,6 +203,10 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
     // return the active-coordinator
     return getActiveCoordinator();
   }
+  
+  public ConnectionAddressProvider getConnectionAddress() {
+    return getActiveCoordinator().getConnectionAddress();
+  }
 
   /*
    * As a middleman between ClientHandshakeManager and multiple ClientMessageChannels. Bookkeeping sub-channels' events
