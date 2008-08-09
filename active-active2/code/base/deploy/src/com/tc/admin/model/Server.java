@@ -35,6 +35,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.IOException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.text.MessageFormat;
@@ -72,6 +73,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   protected TCServerInfoMBean             m_serverInfoBean;
   protected DSOMBean                      m_dsoBean;
   protected ObjectManagementMonitorMBean  m_objectManagementMonitorBean;
+  protected boolean                       m_serverDBBackupSupported;
   protected ServerDBBackupMBean           m_serverDBBackupBean;
   protected ServerVersion                 m_productInfo;
   protected List<IBasicObject>            m_roots;
@@ -80,8 +82,8 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   protected long                          m_startTime;
   protected long                          m_activateTime;
   protected String                        m_persistenceMode;
-  protected String                        m_failoverMode;  
-  
+  protected String                        m_failoverMode;
+
   public Server() {
     this(ConnectionContext.DEFAULT_HOST, ConnectionContext.DEFAULT_PORT, ConnectionContext.DEFAULT_AUTO_CONNECT);
   }
@@ -108,6 +110,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   }
 
   private void init() {
+    m_startTime = m_activateTime = -1;    
     m_displayLabel = m_connectManager.toString();
     m_propertyChangeSupport = new PropertyChangeSupport(this);
     m_listenerList = new EventListenerList();
@@ -190,8 +193,18 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
       if (!m_readySet.contains(L2MBeanNames.DSO)) {
         setupFromDSOBean();
       }
+      /*
+       * We don't want to have knowledge of if/how/when MBeans are handled by the server but for backward compatibility
+       * reasons, if the SERVER_DB_BACKUP bean isn't registered by this time, we can remove it from readySet and deal
+       * with it not existing. The set of MBeans already registered at connection time are defined by
+       * L2Management.registerMBeans.
+       */
       if (!m_readySet.contains(L2MBeanNames.SERVER_DB_BACKUP)) {
+        m_serverDBBackupSupported = true;
         getServerDBBackupBean();
+      } else {
+        m_readySet.remove(L2MBeanNames.SERVER_DB_BACKUP);
+        m_serverDBBackupSupported = false;
       }
       setReady(m_readySet.isEmpty());
     } catch (Exception e) {
@@ -298,6 +311,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
 
   public void setHost(String host) {
     getConnectionManager().setHostname(host);
+    m_displayLabel = getConnectionManager().toString();
   }
 
   public String getHost() {
@@ -306,6 +320,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
 
   public void setPort(int port) {
     getConnectionManager().setJMXPortNumber(port);
+    m_displayLabel = getConnectionManager().toString();
   }
 
   public int getPort() {
@@ -317,19 +332,27 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   }
 
   public String getPersistenceMode() {
-    if(m_persistenceMode == null) {
-      m_persistenceMode = getServerInfoBean().getPersistenceMode();
+    if (m_persistenceMode == null) {
+      try {
+        m_persistenceMode = getServerInfoBean().getPersistenceMode();
+      } catch(UndeclaredThrowableException edte) {
+        m_persistenceMode = "unknown";
+      }
     }
     return m_persistenceMode;
   }
-  
+
   public String getFailoverMode() {
-    if(m_failoverMode == null) {
-      m_failoverMode = getServerInfoBean().getFailoverMode();
+    if (m_failoverMode == null) {
+      try {
+        m_failoverMode = getServerInfoBean().getFailoverMode();
+      } catch(UndeclaredThrowableException udte) {
+        m_failoverMode = "unknown";
+      }
     }
     return m_failoverMode;
   }
-  
+
   public String getStatsExportServletURI() {
     Integer dsoPort = getDSOListenPort();
     Object[] args = new Object[] { getHost(), dsoPort.toString() };
@@ -459,14 +482,14 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   }
 
   public long getStartTime() {
-    if(m_startTime == -1) {
+    if (m_startTime == -1) {
       m_startTime = getServerInfoBean().getStartTime();
     }
     return m_startTime;
   }
 
   public long getActivateTime() {
-    if(m_activateTime == -1) {
+    if (m_activateTime == -1) {
       m_activateTime = getServerInfoBean().getActivateTime();
     }
     return m_activateTime;
@@ -796,6 +819,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
 
   synchronized void reset() {
     if (m_roots == null) return;
+    m_startTime = m_activateTime = -1;    
     m_connected = m_ready = false;
     initReadySet();
     m_roots.clear();
@@ -895,7 +919,11 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   }
 
   public int getLiveObjectCount() {
-    return getDSOBean().getLiveObjectCount();
+    try {
+      return getDSOBean().getLiveObjectCount();
+    } catch(UndeclaredThrowableException ute) {
+      return -1;
+    }
   }
 
   public boolean isResident(ObjectID oid) {
@@ -903,6 +931,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   }
 
   public ServerDBBackupMBean getServerDBBackupBean() {
+    if(!m_serverDBBackupSupported) return null;
     if (m_serverDBBackupBean != null) return m_serverDBBackupBean;
     ConnectionContext cc = getConnectionContext();
     m_serverDBBackupBean = MBeanServerInvocationProxy.newMBeanProxy(cc.mbsc, L2MBeanNames.SERVER_DB_BACKUP,
@@ -980,27 +1009,43 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
     }
   }
 
+  public synchronized boolean isDBBackupSupported() {
+    return m_serverDBBackupSupported;
+  }
+  
+  private void ensureDBBackupEnabled() {
+    if(!isDBBackupSupported()) {
+      throw new IllegalStateException("DBBackup not supported");
+    }
+  }
+  
   public void backupDB() throws IOException {
+    ensureDBBackupEnabled();
     getServerDBBackupBean().runBackUp();
   }
 
   public void backupDB(String path) throws IOException {
+    ensureDBBackupEnabled();
     getServerDBBackupBean().runBackUp(path);
   }
 
   public boolean isDBBackupRunning() {
+    ensureDBBackupEnabled();
     return getServerDBBackupBean().isBackUpRunning();
   }
 
   public String getDefaultDBBackupPath() {
+    ensureDBBackupEnabled();
     return getServerDBBackupBean().getDefaultPathForBackup();
   }
 
   public boolean isDBBackupEnabled() {
+    ensureDBBackupEnabled();
     return getServerDBBackupBean().isBackupEnabled();
   }
 
   public String getDBHome() {
+    ensureDBBackupEnabled();
     return getServerDBBackupBean().getDbHome();
   }
 
