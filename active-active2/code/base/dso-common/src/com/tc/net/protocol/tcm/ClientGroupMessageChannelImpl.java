@@ -213,12 +213,12 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
    * Notify connected only when all channel connected. Notify disconnected when any channel disconnected Notify closed
    * when any channel closed
    */
-  private class ChannelEventMiddleMan implements ChannelEventListener {
+  private class ClientGroupMessageChannelEventListener implements ChannelEventListener {
     private final ChannelEventListener listener;
     private HashSet                    connectedSet = new HashSet();
     private final ClientMessageChannel channel;
 
-    public ChannelEventMiddleMan(ChannelEventListener listener, ClientMessageChannel channel) {
+    public ClientGroupMessageChannelEventListener(ChannelEventListener listener, ClientMessageChannel channel) {
       this.listener = listener;
       this.channel = channel;
     }
@@ -246,7 +246,7 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
   }
 
   public void addListener(ChannelEventListener listener) {
-    ChannelEventMiddleMan middleman = new ChannelEventMiddleMan(listener, this);
+    ClientGroupMessageChannelEventListener middleman = new ClientGroupMessageChannelEventListener(listener, this);
     for (int i = 0; i < channels.length; ++i)
       channels[i].addListener(middleman);
   }

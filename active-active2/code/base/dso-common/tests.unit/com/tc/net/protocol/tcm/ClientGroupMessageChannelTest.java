@@ -34,7 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-public class ClientMessageChannelMultiplexTest extends TCTestCase {
+public class ClientGroupMessageChannelTest extends TCTestCase {
   static final int              L2_COUNT      = 5;
   static final int              ITERATIONS    = 100;
   static final int              WAIT_PERIOD   = 100;
@@ -55,7 +55,7 @@ public class ClientMessageChannelMultiplexTest extends TCTestCase {
 
   private int[]                 ports         = new int[L2_COUNT];
 
-  public ClientMessageChannelMultiplexTest() {
+  public ClientGroupMessageChannelTest() {
     // disableAllUntil("2007-10-15");
   }
 
