@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 
-public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl implements
-    ClientGroupMessageChannel {
+public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl implements ClientGroupMessageChannel {
   private static final TCLogger  logger = TCLogging.getLogger(ClientGroupMessageChannel.class);
   private final TCMessageFactory msgFactory;
   private final SessionProvider  sessionProvider;
@@ -34,8 +33,8 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
   private GroupID[]              servers;
 
   public ClientGroupMessageChannelImpl(TCMessageFactory msgFactory, SessionProvider sessionProvider,
-                                           final int maxReconnectTries, CommunicationsManager communicationsManager,
-                                           ConnectionAddressProvider[] addressProviders) {
+                                       final int maxReconnectTries, CommunicationsManager communicationsManager,
+                                       ConnectionAddressProvider[] addressProviders) {
     super(msgFactory, null, sessionProvider, null, null, false);
     this.msgFactory = msgFactory;
     this.sessionProvider = sessionProvider;
@@ -48,11 +47,11 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
     for (int i = 0; i < addressProviders.length; ++i) {
       boolean isActiveCoordinator = (i == 0);
       channels[i] = this.communicationsManager.createClientChannel(this.sessionProvider, -1, null, 0, 10000,
-                                                                   addressProviders[i], 
+                                                                   addressProviders[i],
                                                                    TransportHandshakeMessage.NO_CALLBACK_PORT, null,
-                                                                   this.msgFactory,
-                                                                   new TCMessageRouterImpl(), this, isActiveCoordinator);
-      servers[i] = (GroupID)channels[i].getServerID();
+                                                                   this.msgFactory, new TCMessageRouterImpl(), this,
+                                                                   isActiveCoordinator);
+      servers[i] = (GroupID) channels[i].getServerID();
       logger.info("Created sub-channel" + i + ":" + addressProviders[i]);
     }
     setClientID(ClientID.NULL_ID);
@@ -76,7 +75,7 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
     return (channels);
   }
 
-  public NodeID[] getMultiplexIDs() {
+  public NodeID[] getServerGroupIDs() {
     return (servers);
   }
 
@@ -85,11 +84,6 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
       if (id.equals(servers[i])) { return (channels[i]); }
     }
     return null;
-  }
-
-  public TCMessage createBroadcastMessage(TCMessageType type) {
-    TCMessage rv = msgFactory.createMessage(this, type);
-    return rv;
   }
 
   public TCMessage createMessage(NodeID id, TCMessageType type) {
@@ -115,7 +109,7 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
       } catch (MaxConnectionsExceededException e) {
         throw new MaxConnectionsExceededException(channels[i].getConnectionAddress().toString() + " " + e);
       }
-      logger.info("Opened sub-channel: "+ channels[i].getConnectionAddress().toString());
+      logger.info("Opened sub-channel: " + channels[i].getConnectionAddress().toString());
     }
     logger.info("all active sub-channels opened");
     setClientID(new ClientID(getChannelID()));
@@ -149,12 +143,19 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
   }
 
   /*
-   * send broadcast message
+   * broadcast messages
    */
+  public void broadcast(final TCMessageImpl message) {
+    message.dehydrate();
+    for (int i = 0; i < channels.length; ++i) {
+      TCMessageImpl tcMesg = (TCMessageImpl) channels[i].createMessage(message.getMessageType());
+      tcMesg.cloneAndSend(message);
+    }
+    message.wasSent();
+  }
+
   public void send(final TCNetworkMessage message) {
-    message.setSendCount(channels.length - 1);
-    for (int i = 0; i < channels.length; ++i)
-      channels[i].send(message);
+    getActiveCoordinator().send(message);
   }
 
   public void notifyTransportConnected(MessageTransport transport) {
@@ -203,7 +204,7 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
     // return the active-coordinator
     return getActiveCoordinator();
   }
-  
+
   public ConnectionAddressProvider getConnectionAddress() {
     return getActiveCoordinator().getConnectionAddress();
   }

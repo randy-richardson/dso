@@ -9,10 +9,10 @@ public interface ClientGroupMessageChannel extends ClientMessageChannel {
   
   public ClientMessageChannel[] getChannels();
   
-  public NodeID[] getMultiplexIDs();
+  public NodeID[] getServerGroupIDs();
   
   public ClientMessageChannel getChannel(NodeID id);
   
-  public TCMessage createBroadcastMessage(TCMessageType type);
+  public void broadcast(final TCMessageImpl message);
   
 }

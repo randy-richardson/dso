@@ -74,7 +74,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public ClientGroupMessageChannel getMultiplex() {
+  public ClientGroupMessageChannel getClientGroupMessageChannel() {
     throw new ImplementMe();
   }
 

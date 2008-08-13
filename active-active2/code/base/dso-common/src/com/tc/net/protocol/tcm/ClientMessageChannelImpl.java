@@ -72,12 +72,12 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     return this.addrProvider;
   }
 
-  public ClientGroupMessageChannel getMultiplex() {
+  public ClientGroupMessageChannel getClientGroupMessageChannel() {
     return this.multiplex;
   }
 
   public ChannelID getActiveActiveChannelID() {
-    return getMultiplex().getChannelID();
+    return getClientGroupMessageChannel().getChannelID();
   }
   
   public ClientMessageChannel getActiveCoordinator() {

@@ -294,7 +294,7 @@ public class ClientServerLockStatisticsTest extends TCTestCase {
       throw new ImplementMe();
     }
 
-    public ClientGroupMessageChannel getMultiplex() {
+    public ClientGroupMessageChannel getClientGroupMessageChannel() {
       throw new ImplementMe();
     }
 
