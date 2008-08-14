@@ -11,9 +11,6 @@ public interface TransportHandshakeMessageFactory {
   public TransportHandshakeMessage createSyn(ConnectionID connectionId, TCConnection source, short stackLayerFlags,
                                              int callbackPort);
 
-  public TransportHandshakeMessage createSynGroup(ConnectionID connectionId, TCConnection source, short stackLayerFlags,
-                                             int callbackPort);
-
   public TransportHandshakeMessage createAck(ConnectionID connectionId, TCConnection source);
 
   public TransportHandshakeMessage createSynAck(ConnectionID connectionId, TCConnection source,

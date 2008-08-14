@@ -22,7 +22,6 @@ import com.tc.net.protocol.tcm.CommunicationsManager;
 import com.tc.net.protocol.tcm.CommunicationsManagerImpl;
 import com.tc.net.protocol.tcm.NetworkListener;
 import com.tc.net.protocol.tcm.NullMessageMonitor;
-import com.tc.net.protocol.tcm.TestClientMessageChannel;
 import com.tc.object.session.NullSessionManager;
 import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.test.TCTestCase;
@@ -62,7 +61,7 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                                       maxRetries, 5000);
     transport = new ClientMessageTransport(cce, handshakeErrorHandler, this.transportMessageFactory,
                                            new WireProtocolAdaptorFactoryImpl(),
-                                           TransportHandshakeMessage.NO_CALLBACK_PORT, new TestClientMessageChannel());
+                                           TransportHandshakeMessage.NO_CALLBACK_PORT);
   }
 
   public void testRoundRobinReconnect() throws Exception {
@@ -127,7 +126,7 @@ public class ClientMessageTransportTest extends TCTestCase {
                                                                       0, 1000);
     transport = new ClientMessageTransport(cce, this.handshakeErrorHandler, this.transportMessageFactory,
                                            new WireProtocolAdaptorFactoryImpl(),
-                                           TransportHandshakeMessage.NO_CALLBACK_PORT, new TestClientMessageChannel());
+                                           TransportHandshakeMessage.NO_CALLBACK_PORT);
     transport.open();
     assertTrue(transport.isConnected());
     listener.stop(5000);
@@ -209,7 +208,7 @@ public class ClientMessageTransportTest extends TCTestCase {
         ClientMessageTransport cmt = new ClientMessageTransport(clientConnectionEstablisher, handshakeErrorHandler,
                                                                 transportMessageFactory,
                                                                 new WireProtocolAdaptorFactoryImpl(),
-                                                                TransportHandshakeMessage.NO_CALLBACK_PORT, new TestClientMessageChannel());
+                                                                TransportHandshakeMessage.NO_CALLBACK_PORT);
         return cmt;
       }
 

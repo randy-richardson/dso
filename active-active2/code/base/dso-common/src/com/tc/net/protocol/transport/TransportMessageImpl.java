@@ -30,8 +30,6 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
   static final byte          SYN_ACK    = 3;
   static final byte          PING       = 4;
   static final byte          PING_REPLY = 5;
-  // syn CientGroup sub-channel except coordinator
-  static final byte          SYN_GROUP  = 6;
   private final byte         version;
   private final byte         type;
   private final ConnectionID connectionId;
@@ -92,8 +90,6 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
     switch (type) {
       case SYN:
         return "SYN";
-      case SYN_GROUP:
-        return "SYN_GROUP";
       case ACK:
         return "ACK";
       case SYN_ACK:
@@ -139,10 +135,6 @@ class TransportMessageImpl extends WireProtocolMessageImpl implements SynMessage
 
   public boolean isSyn() {
     return type == SYN;
-  }
-
-  public boolean isSynGroup() {
-    return type == SYN_GROUP;
   }
 
   public boolean isAck() {

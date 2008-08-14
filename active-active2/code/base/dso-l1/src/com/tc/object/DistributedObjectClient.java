@@ -387,7 +387,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     }
 
     // Set up the JMX management stuff
-    final TunnelingEventHandler teh = new TunnelingEventHandler(channel.channel().getActiveCoordinator());
+    final TunnelingEventHandler teh = new TunnelingEventHandler(channel.channel());
     l1Management = new L1Management(teh, statisticsAgentSubSystem, runtimeLogger, manager.getInstrumentationLogger(),
                                     config.rawConfigText(), this);
     l1Management.start(createDedicatedMBeanServer);

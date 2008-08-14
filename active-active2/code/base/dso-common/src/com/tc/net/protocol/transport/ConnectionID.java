@@ -61,7 +61,7 @@ public class ConnectionID {
     return NULL_ID.equals(this);
   }
 
-  public boolean isNewConnectionID() {
+  public boolean isNewConnection() {
     return (serverID.equals(NULL_SERVER_ID));
   }
 

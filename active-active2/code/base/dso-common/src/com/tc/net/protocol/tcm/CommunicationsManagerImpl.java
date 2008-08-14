@@ -39,6 +39,7 @@ import com.tc.net.protocol.transport.TransportHandshakeErrorHandler;
 import com.tc.net.protocol.transport.TransportHandshakeMessage;
 import com.tc.net.protocol.transport.TransportHandshakeMessageFactory;
 import com.tc.net.protocol.transport.TransportMessageFactoryImpl;
+import com.tc.net.protocol.transport.WireProtocolAdaptorFactory;
 import com.tc.net.protocol.transport.WireProtocolAdaptorFactoryImpl;
 import com.tc.net.protocol.transport.WireProtocolMessageSink;
 import com.tc.object.session.SessionProvider;
@@ -155,14 +156,12 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
   }
 
   public ClientGroupMessageChannel createClientGroupChannel(final SessionProvider sessionProvider,
-                                                                    final int maxReconnectTries, final int timeout,
-                                                                    ConnectionAddressProvider[] addressProviders) {
-    ClientGroupMessageChannel multiplex = new ClientGroupMessageChannelImpl(
-                                                                                    new TCMessageFactoryImpl(
-                                                                                                             sessionProvider,
-                                                                                                             monitor),
-                                                                                    sessionProvider, maxReconnectTries,
-                                                                                    this, addressProviders);
+                                                            final int maxReconnectTries, final int timeout,
+                                                            ConnectionAddressProvider[] addressProviders) {
+    ClientGroupMessageChannel multiplex = new ClientGroupMessageChannelImpl(new TCMessageFactoryImpl(sessionProvider,
+                                                                                                     monitor),
+                                                                            sessionProvider, maxReconnectTries, this,
+                                                                            addressProviders);
     return (multiplex);
   }
 
@@ -172,12 +171,12 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
     return createClientChannel(sessionProvider, maxReconnectTries, hostname, port, timeout, addressProvider,
                                TransportHandshakeMessage.NO_CALLBACK_PORT);
   }
-  
-  public ClientMessageChannel createClientChannel(SessionProvider sessionProvider, final int maxReconnectTries,
+
+  public ClientMessageChannel createClientChannel(final SessionProvider sessionProvider, final int maxReconnectTries,
                                                   String hostname, int port, final int timeout,
                                                   ConnectionAddressProvider addressProvider, int callbackPort) {
     return createClientChannel(sessionProvider, maxReconnectTries, hostname, port, timeout, addressProvider,
-                               callbackPort, null, null, null, null, true);
+                               callbackPort, null, null, null);
 
   }
 
@@ -186,26 +185,25 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                                   ConnectionAddressProvider addressProvider,
                                                   MessageTransportFactory transportFactory) {
     return createClientChannel(sessionProvider, maxReconnectTries, hostname, port, timeout, addressProvider,
-                               TransportHandshakeMessage.NO_CALLBACK_PORT, transportFactory, null, null, null, true);
+                               TransportHandshakeMessage.NO_CALLBACK_PORT, transportFactory, null, null);
   }
 
   public ClientMessageChannel createClientChannel(final SessionProvider sessionProvider, final int maxReconnectTries,
                                                   String hostname, int port, final int timeout,
                                                   ConnectionAddressProvider addressProvider, final int callbackPort,
                                                   MessageTransportFactory transportFactory,
-                                                  TCMessageFactory messageFactory, TCMessageRouter router,
-                                                  ClientGroupMessageChannel multiplex, boolean activeCoordinator) {
+                                                  TCMessageFactory messageFactory, TCMessageRouter router) {
 
     TCMessageFactory msgFactory = (messageFactory != null) ? messageFactory : new TCMessageFactoryImpl(sessionProvider,
                                                                                                        monitor);
     TCMessageRouter msgRouter = (router != null) ? router : new TCMessageRouterImpl();
-    
-    ClientMessageChannelImpl rv = new ClientMessageChannelImpl(msgFactory, msgRouter, sessionProvider, addressProvider,
-                                                               multiplex, activeCoordinator);
 
-    if (transportFactory == null) transportFactory = new MessageTransportFactoryImpl(connectionManager, addressProvider,
+    ClientMessageChannelImpl rv = new ClientMessageChannelImpl(msgFactory, msgRouter, sessionProvider, addressProvider);
+
+    if (transportFactory == null) transportFactory = new MessageTransportFactoryImpl(connectionManager,
+                                                                                     addressProvider,
                                                                                      maxReconnectTries, timeout,
-                                                                                     callbackPort, rv);
+                                                                                     callbackPort);
 
     NetworkStackHarness stackHarness = this.stackHarnessFactory.createClientHarness(transportFactory, rv,
                                                                                     new MessageTransportListener[0]);
@@ -302,8 +300,8 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
     ServerStackProvider stackProvider = new ServerStackProvider(TCLogging.getLogger(ServerStackProvider.class),
                                                                 initialConnectionIDs, stackHarnessFactory,
                                                                 channelFactory, transportFactory,
-                                                                this.transportMessageFactory,
-                                                                connectionIdFactory, this.connectionPolicy,
+                                                                this.transportMessageFactory, connectionIdFactory,
+                                                                this.connectionPolicy,
                                                                 new WireProtocolAdaptorFactoryImpl(httpSink),
                                                                 wireProtocolMessageSink);
     return connectionManager.createListener(addr, stackProvider, Constants.DEFAULT_ACCEPT_QUEUE_DEPTH, resueAddr);
@@ -342,17 +340,15 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
     private final int                       maxReconnectTries;
     private final int                       timeout;
     private final int                       callbackPort;
-    private final ClientMessageChannel      channel;
 
     public MessageTransportFactoryImpl(final TCConnectionManager connectionManager,
                                        final ConnectionAddressProvider addressProvider, final int maxReconnectTries,
-                                       final int timeout, int callbackPort, final ClientMessageChannel channel) {
+                                       final int timeout, int callbackPort) {
       this.connectionMgr = connectionManager;
       this.addressProvider = addressProvider;
       this.maxReconnectTries = maxReconnectTries;
       this.timeout = timeout;
       this.callbackPort = callbackPort;
-      this.channel = channel;
     }
 
     public MessageTransport createNewTransport() {
@@ -388,12 +384,21 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                                                                                 addressProvider,
                                                                                                 maxReconnectTries,
                                                                                                 timeout);
-      ClientMessageTransport cmt = new ClientMessageTransport(clientConnectionEstablisher, handshakeErrorHandler,
-                                                              transportMessageFactory,
-                                                              new WireProtocolAdaptorFactoryImpl(), callbackPort,
-                                                              channel);
+      ClientMessageTransport cmt = createClientMessageTransport(clientConnectionEstablisher, handshakeErrorHandler,
+                                                                transportMessageFactory,
+                                                                new WireProtocolAdaptorFactoryImpl(), callbackPort);
       cmt.addTransportListener(connectionHealthChecker);
       return cmt;
+    }
+
+    protected ClientMessageTransport createClientMessageTransport(
+                                                                  ClientConnectionEstablisher clientConnectionEstablisher,
+                                                                  TransportHandshakeErrorHandler handshakeErrorHandler,
+                                                                  TransportHandshakeMessageFactory messageFactory,
+                                                                  WireProtocolAdaptorFactory wireProtocolAdaptorFactory,
+                                                                  int callbackPortNum) {
+      return new ClientMessageTransport(clientConnectionEstablisher, handshakeErrorHandler, transportMessageFactory,
+                                        wireProtocolAdaptorFactory, callbackPortNum);
     }
 
     public MessageTransport createNewTransport(ConnectionID connectionID, TransportHandshakeErrorHandler handler,

@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol.tcm;
 
@@ -13,6 +14,7 @@ import com.tc.exception.ImplementMe;
 import com.tc.logging.TCLogger;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
+import com.tc.net.groups.ClientID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
@@ -42,7 +44,7 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
   private final TCMessageRouter  router;
   private final TCMessageParser  parser;
   private final TCLogger         logger;
-  private NodeID                 source;
+  private ClientID               source;
   private NodeID                 destination;
 
   protected NetworkLayer         sendLayer;
@@ -85,11 +87,11 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     listeners.add(listener);
   }
 
-  public NodeID getClientID() {
+  public ClientID getClientID() {
     return source;
   }
 
-  public void setClientID(NodeID source) {
+  public void setClientID(ClientID source) {
     this.source = source;
   }
 
@@ -107,7 +109,7 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
 
     return rv;
   }
-  
+
   public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
     throw new ImplementMe();
   }
@@ -152,11 +154,11 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     throw new UnsupportedOperationException();
   }
 
-  public NetworkLayer getReceiveLayer(){
-    //this is the topmost layer, it has no parent
+  public NetworkLayer getReceiveLayer() {
+    // this is the topmost layer, it has no parent
     return null;
   }
-  
+
   public void send(final TCNetworkMessage message) {
     if (logger.isDebugEnabled()) {
       final Runnable logMsg = new Runnable() {
@@ -238,23 +240,21 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
   }
 
   /**
-   * this function gets the stack Lyaer Flag
-   * added to build the communctaion stack information
+   * this function gets the stack Lyaer Flag added to build the communctaion stack information
    */
-  public short getStackLayerFlag(){
-    //this is the channel layer
+  public short getStackLayerFlag() {
+    // this is the channel layer
     return TYPE_CHANNEL_LAYER;
   }
-  
+
   /**
-   * this function gets the stack Layer Name
-   * added to build the communctaion stack information
+   * this function gets the stack Layer Name added to build the communctaion stack information
    */
-  public String getStackLayerName(){
-    //this is the channel layer
+  public String getStackLayerName() {
+    // this is the channel layer
     return NAME_CHANNEL_LAYER;
   }
-  
+
   class ChannelStatus {
     private ChannelState state;
 

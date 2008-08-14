@@ -22,14 +22,6 @@ public interface ClientMessageChannel extends MessageChannel {
 
   public ChannelIDProvider getChannelIDProvider();
   
-  public boolean isActiveCoordinator();
-  
-  public ClientGroupMessageChannel getClientGroupMessageChannel();
-  
-  public ChannelID getActiveActiveChannelID();
-  
-  public ClientMessageChannel getActiveCoordinator();
-  
   public ConnectionAddressProvider getConnectionAddress();
   
 }

@@ -20,31 +20,20 @@ import com.tc.object.session.SessionProvider;
  */
 
 public class TestClientMessageChannel implements ClientMessageChannel {
-  private ChannelID                           channelID;
-  private final boolean                       activeCoordinator;
   private boolean                             initConnect      = true;
 
   public TestClientMessageChannel() {
-    this(null, null, null, null, null, true);
+    this(null, null, null, null, null);
   }
   
   public TestClientMessageChannel(TCMessageFactory msgFactory, TCMessageRouter router,
                                      SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
-                                     ClientGroupMessageChannel multiplex, boolean activeCoordinator) {
-    this.activeCoordinator = activeCoordinator;
+                                     ClientGroupMessageChannel multiplex) {
 
     setClientID(ClientID.NULL_ID);
     setServerID(GroupID.NULL_ID);
   }
 
-  public boolean isActiveCoordinator() {
-    return activeCoordinator;
-  }
-  
-  public ClientMessageChannel getActiveCoordinator() {
-    return this;
-  }
-  
   public boolean isInitConnect() {
     return initConnect;
   }
@@ -58,10 +47,6 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     
   }
 
-  public ChannelID getActiveActiveChannelID() {
-    return channelID;
-  }
-
   public ChannelIDProvider getChannelIDProvider() {
     throw new ImplementMe();
   }
@@ -71,10 +56,6 @@ public class TestClientMessageChannel implements ClientMessageChannel {
   }
 
   public int getConnectCount() {
-    throw new ImplementMe();
-  }
-
-  public ClientGroupMessageChannel getClientGroupMessageChannel() {
     throw new ImplementMe();
   }
 
@@ -132,7 +113,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public NodeID getClientID() {
+  public ClientID getClientID() {
     throw new ImplementMe();
   }
 
@@ -165,7 +146,7 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public void setClientID(NodeID source) {
+  public void setClientID(ClientID source) {
     throw new ImplementMe();
   }
 

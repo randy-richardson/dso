@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.net.protocol.tcm;
 
@@ -11,6 +12,7 @@ import com.tc.net.groups.ClientID;
 import com.tc.net.groups.GroupID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
+import com.tc.net.protocol.transport.ConnectionID;
 import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.object.msg.DSOMessageBase;
 import com.tc.object.session.SessionID;
@@ -25,27 +27,22 @@ import java.net.UnknownHostException;
  */
 
 public class ClientMessageChannelImpl extends AbstractMessageChannel implements ClientMessageChannel {
-  private static final TCLogger               logger           = TCLogging.getLogger(ClientMessageChannel.class);
-  private final TCMessageFactory              msgFactory;
-  private int                                 connectAttemptCount;
-  private int                                 connectCount;
-  private ChannelID                           channelID;
-  private final ChannelIDProviderImpl         cidProvider;
-  private final SessionProvider               sessionProvider;
-  private SessionID                           channelSessionID = SessionID.NULL_ID;
-  private final ClientGroupMessageChannel multiplex;
-  private final ConnectionAddressProvider     addrProvider;
-  private final boolean                       activeCoordinator;
+  private static final TCLogger           logger           = TCLogging.getLogger(ClientMessageChannel.class);
+  private final TCMessageFactory          msgFactory;
+  private int                             connectAttemptCount;
+  private int                             connectCount;
+  private ChannelID                       channelID;
+  private final ChannelIDProviderImpl     cidProvider;
+  private final SessionProvider           sessionProvider;
+  private SessionID                       channelSessionID = SessionID.NULL_ID;
+  private final ConnectionAddressProvider addrProvider;
 
   protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router,
-                                     SessionProvider sessionProvider, ConnectionAddressProvider addrProvider,
-                                     ClientGroupMessageChannel multiplex, boolean activeCoordinator) {
+                                     SessionProvider sessionProvider, ConnectionAddressProvider addrProvider) {
     super(router, logger, msgFactory);
     this.msgFactory = msgFactory;
     this.cidProvider = new ChannelIDProviderImpl();
     this.sessionProvider = sessionProvider;
-    this.multiplex = multiplex;
-    this.activeCoordinator = activeCoordinator;
     this.addrProvider = addrProvider;
 
     setClientID(ClientID.NULL_ID);
@@ -58,6 +55,7 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
 
     synchronized (status) {
       if (status.isOpen()) { throw new IllegalStateException("Channel already open"); }
+      ((MessageTransport) this.sendLayer).initConnectionID(new ConnectionID(getClientID().getChannelID().toLong()));
       NetworkStackID id = this.sendLayer.open();
       getStatus().open();
       this.channelID = new ChannelID(id.toLong());
@@ -67,21 +65,9 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
       return id;
     }
   }
-  
+
   public ConnectionAddressProvider getConnectionAddress() {
     return this.addrProvider;
-  }
-
-  public ClientGroupMessageChannel getClientGroupMessageChannel() {
-    return this.multiplex;
-  }
-
-  public ChannelID getActiveActiveChannelID() {
-    return getClientGroupMessageChannel().getChannelID();
-  }
-  
-  public ClientMessageChannel getActiveCoordinator() {
-    return this;
   }
 
   public void addClassMapping(TCMessageType type, Class msgClass) {
@@ -142,10 +128,6 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
 
   public ChannelIDProvider getChannelIDProvider() {
     return cidProvider;
-  }
-
-  public boolean isActiveCoordinator() {
-    return activeCoordinator;
   }
 
   private static class ChannelIDProviderImpl implements ChannelIDProvider {

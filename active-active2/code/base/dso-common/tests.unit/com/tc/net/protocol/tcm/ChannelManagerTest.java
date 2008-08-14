@@ -13,6 +13,7 @@ import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
 import com.tc.net.protocol.TCNetworkMessage;
+import com.tc.net.protocol.transport.ConnectionID;
 import com.tc.net.protocol.transport.DefaultConnectionIdFactory;
 import com.tc.net.protocol.transport.NullConnectionPolicy;
 import com.tc.object.session.NullSessionManager;
@@ -197,6 +198,10 @@ public class ChannelManagerTest extends TestCase {
     }
 
     public NetworkLayer getReceiveLayer() {
+      throw new ImplementMe();
+    }
+    
+    public void initConnectionID(ConnectionID cid) {
       throw new ImplementMe();
     }
   }

@@ -5,6 +5,7 @@ package com.tc.net.protocol.tcm;
 
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
+import com.tc.net.groups.ClientID;
 import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -67,9 +68,9 @@ public interface MessageChannel {
 
   public void close();
   
-  public NodeID getClientID();
+  public ClientID getClientID();
   
-  public void setClientID(NodeID source);
+  public void setClientID(ClientID source);
   
   public NodeID getServerID();
   

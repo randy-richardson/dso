@@ -34,7 +34,7 @@ public class MockNetworkStackProvider implements NetworkStackProvider {
     throw new ImplementMe();
   }
 
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean isSynGroup) {
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection) {
     throw new ImplementMe();
   }
 }

@@ -31,18 +31,16 @@ public class TestCommunicationsManager implements CommunicationsManager {
   }
 
   public ClientGroupMessageChannel createClientGroupChannel(final SessionProvider sessionProvider,
-                                                                    final int maxReconnectTries, final int timeout,
-                                                                    ConnectionAddressProvider[] addressProviders) {
+                                                            final int maxReconnectTries, final int timeout,
+                                                            ConnectionAddressProvider[] addressProviders) {
     throw new ImplementMe();
   }
 
   public ClientGroupMessageChannel createClientChannel(SessionProvider sessionProvider, int maxReconnectTries,
-                                                           String hostname, int port, final int timeout,
-                                                           ConnectionAddressProvider addressProvider, int callbackPort,
-                                                           MessageTransportFactory transportFactory,
-                                                           TCMessageFactory msgFactory, TCMessageRouter router,
-                                                           ClientGroupMessageChannel multiplex,
-                                                           boolean activeCoordinator) {
+                                                       String hostname, int port, final int timeout,
+                                                       ConnectionAddressProvider addressProvider, int callbackPort,
+                                                       MessageTransportFactory transportFactory,
+                                                       TCMessageFactory msgFactory, TCMessageRouter router) {
     throw new ImplementMe();
   }
 

@@ -28,12 +28,6 @@ public class TransportMessageFactoryImpl implements TransportHandshakeMessageFac
                             WireProtocolHeader.PROTOCOL_TRANSPORT_HANDSHAKE, stackLayerFlags, callbackPort);
   }
 
-  public TransportHandshakeMessage createSynGroup(ConnectionID connectionId, TCConnection source, short stackLayerFlags,
-                                             int callbackPort) {
-    return createNewMessage(TransportMessageImpl.SYN_GROUP, connectionId, null, source, false, 0,
-                            WireProtocolHeader.PROTOCOL_TRANSPORT_HANDSHAKE, stackLayerFlags, callbackPort);
-  }
-
   public TransportHandshakeMessage createAck(ConnectionID connectionId, TCConnection source) {
     return createNewMessage(TransportMessageImpl.ACK, connectionId, null, source, false, 0,
                             TransportHandshakeMessage.NO_CALLBACK_PORT);

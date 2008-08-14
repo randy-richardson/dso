@@ -16,6 +16,7 @@ import com.tc.net.protocol.NetworkStackHarnessFactory;
 import com.tc.net.protocol.ProtocolAdaptorFactory;
 import com.tc.net.protocol.StackNotFoundException;
 import com.tc.net.protocol.TCProtocolAdaptor;
+import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.net.protocol.tcm.ServerMessageChannelFactory;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.util.Assert;
@@ -82,15 +83,14 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
     }
   }
 
-  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection, boolean isSynGroup)
+  public MessageTransport attachNewConnection(ConnectionID connectionId, TCConnection connection)
       throws StackNotFoundException, IllegalReconnectException {
     Assert.assertNotNull(connection);
 
     final NetworkStackHarness harness;
     final MessageTransport rv;
-    if (connectionId.isNewConnectionID()) {
-      if (!isSynGroup) {
-        Assert.assertTrue(connectionId.isNull());
+    if (connectionId.isNewConnection()) {
+      if (connectionId.getChannelID() == ChannelID.NULL_ID.toLong()) {
         connectionId = connectionIdFactory.nextConnectionId();
       } else {
         connectionId = connectionIdFactory.setServerIdToConnectionId(connectionId);
@@ -265,7 +265,7 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
       }
 
       try {
-        this.transport = attachNewConnection(connectionId, syn.getSource(), syn.isSynGroup());
+        this.transport = attachNewConnection(connectionId, syn.getSource());
       } catch (IllegalReconnectException e) {
         logger.warn("Client attempting an illegal reconnect for id " + connectionId + ", " + syn.getSource());
         return;
@@ -302,8 +302,7 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
     }
 
     private boolean verifySyn(WireProtocolMessage message) {
-      return message instanceof TransportHandshakeMessage
-             && (((TransportHandshakeMessage) message).isSyn() || ((TransportHandshakeMessage) message).isSynGroup());
+      return message instanceof TransportHandshakeMessage && (((TransportHandshakeMessage) message).isSyn());
     }
 
     private void sendSynAck(ConnectionID connectionId, TCConnection source) {

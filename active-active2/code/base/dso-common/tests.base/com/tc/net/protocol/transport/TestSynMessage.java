@@ -12,10 +12,6 @@ public class TestSynMessage extends TestTransportHandshakeMessage implements Syn
     return true;
   }
 
-  public boolean isSynGroup() {
-    return false;
-  }
-
   public boolean isSynAck() {
     return false;
   }
