@@ -8,8 +8,6 @@ import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlOptions;
 
 import com.tc.util.Assert;
-import com.terracottatech.config.ActiveServerGroup;
-import com.terracottatech.config.ActiveServerGroups;
 import com.terracottatech.config.Application;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.Ha;

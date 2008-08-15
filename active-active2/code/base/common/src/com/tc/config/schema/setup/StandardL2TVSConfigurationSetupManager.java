@@ -114,6 +114,8 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     // this sets the beans in each repository
     runConfigurationCreator(this.configurationCreator);
 
+    this.configTCProperties = new ConfigTCPropertiesFromObject((TcProperties) tcPropertiesRepository().bean());
+    overwriteTcPropertiesFromConfig();
     // do this after runConfigurationCreator method call, after serversBeanRepository is set
     try {
       this.updateCheckConfig = getUpdateCheckConfig();

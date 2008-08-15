@@ -342,7 +342,6 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
     Servers l2s = beanSetArg.serversBean();
     ActiveServerGroups groups = l2s.getActiveServerGroups();
-    Assert.assertNotNull(groups);
     if (groups != null) {
       ActiveServerGroup[] groupArray = groups.getActiveServerGroupArray();
 

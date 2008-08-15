@@ -130,13 +130,12 @@ public class ActivePassiveServerManager {
     createServers();
 
     serverConfigCreator = new ActivePassiveServerConfigCreator(
-                                                               this.serverCount,
+                                                               this.setupManger,
                                                                dsoPorts,
                                                                jmxPorts,
                                                                (isProxyL2GroupPorts) ? proxyL2GroupPorts : l2GroupPorts,
-                                                               serverNames, serverPersistence, serverNetworkShare,
-                                                               this.configModel, configFile, this.tempDir,
-                                                               configFactory);
+                                                               serverNames, groups, this.configModel, configFile,
+                                                               this.tempDir, configFactory, this.testMode);
     serverConfigCreator.writeL2Config();
 
     // setup proxy
