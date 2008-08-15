@@ -94,39 +94,36 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
       }
 
       private void organizeByGroup(XmlObject xmlObject) {
-        ActiveServerGroups[] asgsArray = ((Servers) xmlObject).getActiveServerGroupsArray();
-        if (asgsArray.length == 0) {
-          asgsArray = new ActiveServerGroups[1];
+        ActiveServerGroups asgs = ((Servers) xmlObject).getActiveServerGroups();
+        if (asgs == null) {
           ActiveServerGroups groups = ((Servers) xmlObject).addNewActiveServerGroups();
-          asgsArray[0] = groups;
+          asgs = groups;
           ActiveServerGroup group = groups.addNewActiveServerGroup();
           Members members = group.addNewMembers();
           for (Iterator iter = l2DataByName.keySet().iterator(); iter.hasNext();) {
             String host = (String) iter.next();
             members.addMember(host);
           }
-          group.setId(NewActiveServerGroupConfigObject.defaultGroupId);
         }
-        ActiveServerGroup[] asgArray = asgsArray[0].getActiveServerGroupArray();
+        ActiveServerGroup[] asgArray = asgs.getActiveServerGroupArray();
         Assert.assertNotNull(asgArray);
 
         for (int i = 0; i < asgArray.length; i++) {
-          int groupId = asgArray[i].getId();
           String[] members = asgArray[i].getMembers().getMemberArray();
-          List groupList = (List) l2DataByGroupId.get(new Integer(groupId));
+          List groupList = (List) l2DataByGroupId.get(new Integer(i));
           if (groupList == null) {
             groupList = new ArrayList();
-            l2DataByGroupId.put(new Integer(groupId), groupList);
+            l2DataByGroupId.put(new Integer(i), groupList);
           }
           for (int j = 0; j < members.length; j++) {
             L2Data data = (L2Data) l2DataByName.get(members[j]);
             Assert.assertNotNull(data);
-            data.setGroupId(groupId);
+            data.setGroupId(i);
             groupList.add(data);
           }
         }
       }
-    };
+    };    
   }
 
   private int getL2IntDefault(String xpath) {
@@ -140,8 +137,15 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
   public ObjectArrayConfigItem l2Data() {
     return this.l2Data;
   }
-
+  
   public ObjectArrayConfigItem[] getL2DataByGroup() {
+    if(l2DataByGroup == null)
+      createL2DataByGroup();
+
+    return l2DataByGroup;
+  }
+
+  private void createL2DataByGroup() {
     Set keys = this.l2DataByGroupId.keySet();
     Assert.assertTrue(keys.size() > 0);
 
@@ -165,7 +169,6 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
       };
       l2DataByGroupPosition++;
     }
-    return this.l2DataByGroup;
   }
 
 }

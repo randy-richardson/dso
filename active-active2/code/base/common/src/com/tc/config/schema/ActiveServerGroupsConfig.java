@@ -4,12 +4,8 @@
  */
 package com.tc.config.schema;
 
-public interface NewActiveServerGroupsConfig extends NewConfig {
-  NewActiveServerGroupConfig[] getActiveServerGroupArray();
-
-  int getSmallestGroupId();
+public interface ActiveServerGroupsConfig extends NewConfig {
+  ActiveServerGroupConfig[] getActiveServerGroupArray();
 
   int getActiveServerGroupCount();
-
-  int[] getActiveServerGroupIds();
 }

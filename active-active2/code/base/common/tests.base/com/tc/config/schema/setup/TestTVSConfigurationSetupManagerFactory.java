@@ -8,8 +8,8 @@ import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlOptions;
 import org.apache.xmlbeans.impl.common.XPath;
 
+import com.tc.config.schema.ActiveServerGroupsConfig;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
-import com.tc.config.schema.NewActiveServerGroupsConfig;
 import com.tc.config.schema.NewCommonL1Config;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
@@ -32,6 +32,7 @@ import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.PersistenceMode.Enum;
 
+import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -158,8 +159,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   private final NewCommonL2Config           sampleL2Common;
   private final NewL2DSOConfig              sampleL2DSO;
   private final NewDSOApplicationConfig     sampleDSOApplication;
-  private final NewActiveServerGroupsConfig sampleActiveServerGroups;
   private final NewHaConfig                 sampleHa;
+  private final ActiveServerGroupsConfig    sampleActiveServerGroups;
 
   private final String                      defaultL2Identifier;
 
@@ -298,7 +299,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
   private Object proxify(Class theClass, XmlObject[] destObjects, Object realImplementation, String xpathPrefix) {
     return Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { theClass },
-        new TestConfigObjectInvocationHandler(theClass, destObjects, realImplementation, xpathPrefix));
+                                  new TestConfigObjectInvocationHandler(theClass, destObjects, realImplementation,
+                                                                        xpathPrefix));
   }
 
   private Object proxify(Class theClass, XmlObject destObject, Object realImplementation, String xpathPrefix) {
@@ -339,20 +341,21 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     Assert.assertNotNull(beanSetArg);
 
     Servers l2s = beanSetArg.serversBean();
-    ActiveServerGroups[] groupsArray = l2s.getActiveServerGroupsArray();
-    Assert.assertNotNull(groupsArray);
-    Assert.assertEquals(1, groupsArray.length);
-    ActiveServerGroup[] groupArray = groupsArray[0].getActiveServerGroupArray();
+    ActiveServerGroups groups = l2s.getActiveServerGroups();
+    Assert.assertNotNull(groups);
+    if (groups != null) {
+      ActiveServerGroup[] groupArray = groups.getActiveServerGroupArray();
 
-    if (groupArray.length == 1) {
-      Members members = groupArray[0].getMembers();
-      Assert.assertNotNull(members);
-      String[] memberNames = members.getMemberArray();
-      Assert.assertNotNull(memberNames);
+      if (groupArray.length == 1) {
+        Members members = groupArray[0].getMembers();
+        Assert.assertNotNull(members);
+        String[] memberNames = members.getMemberArray();
+        Assert.assertNotNull(memberNames);
 
-      if (memberNames.length == 1 && memberNames[0].equals(TestConfigBeanSet.DEFAULT_SERVER_NAME)) {
-        groupsArray[0].removeActiveServerGroup(0);
-        Assert.assertEquals(0, groupsArray[0].getActiveServerGroupArray().length);
+        if (memberNames.length == 1 && memberNames[0].equals(TestConfigBeanSet.DEFAULT_SERVER_NAME)) {
+          groups.removeActiveServerGroup(0);
+          Assert.assertEquals(0, groups.getActiveServerGroupArray().length);
+        }
       }
     }
   }
@@ -412,15 +415,17 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     Assert.assertTrue(groupId >= 0);
     cleanBeanSetServerGroupsIfNeeded(l1_beanSet);
 
-    ActiveServerGroup group = l1_beanSet.serversBean().getActiveServerGroupsArray(0).addNewActiveServerGroup();
-    group.setId(groupId);
-    Members newMembers = group.addNewMembers();
-    for (int i = 0; i < members.length; i++) {
-      String memberName = members[i];
-      if (memberName == null || memberName.equals("")) {
-        memberName = TestConfigBeanSet.DEFAULT_HOST;
+    ActiveServerGroups groups = l1_beanSet.serversBean().getActiveServerGroups();
+    if (groups != null) {
+      ActiveServerGroup group = groups.addNewActiveServerGroup();
+      Members newMembers = group.addNewMembers();
+      for (int i = 0; i < members.length; i++) {
+        String memberName = members[i];
+        if (memberName == null || memberName.equals("")) {
+          memberName = TestConfigBeanSet.DEFAULT_HOST;
+        }
+        newMembers.addMember(members[i]);
       }
-      newMembers.addMember(members[i]);
     }
   }
 
@@ -493,9 +498,9 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     return (NewL2DSOConfig) proxify(NewL2DSOConfig.class, allServerBeans(), this.sampleL2DSO, null);
   }
 
-  public NewActiveServerGroupsConfig activeServerGroupsConfig() {
-    return (NewActiveServerGroupsConfig) proxify(NewActiveServerGroupsConfig.class, allServerBeans(),
-        this.sampleActiveServerGroups, null);
+  public ActiveServerGroupsConfig activeServerGroupsConfig() {
+    return (ActiveServerGroupsConfig) proxify(ActiveServerGroupsConfig.class, allServerBeans(),
+                                              this.sampleActiveServerGroups, null);
   }
 
   public NewHaConfig haConfig() {
@@ -546,7 +551,10 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     }
 
     StandardL1TVSConfigurationSetupManager configSetupManager = new StandardL1TVSConfigurationSetupManager(
-        configCreator, this.defaultValueProvider, this.xmlObjectComparator, this.illegalChangeHandler);
+                                                                                                           configCreator,
+                                                                                                           this.defaultValueProvider,
+                                                                                                           this.xmlObjectComparator,
+                                                                                                           this.illegalChangeHandler);
 
     return configSetupManager;
   }
@@ -555,7 +563,19 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
       throws ConfigurationSetupException {
     String effectiveL2Identifier = l2Identifier == null ? this.defaultL2Identifier : l2Identifier;
     return new StandardL2TVSConfigurationSetupManager(this.l2ConfigurationCreator, effectiveL2Identifier,
-        this.defaultValueProvider, this.xmlObjectComparator, this.illegalChangeHandler);
+                                                      this.defaultValueProvider, this.xmlObjectComparator,
+                                                      this.illegalChangeHandler);
   }
 
+  // used for just parsing and verifying tc-config.xml
+  public L2TVSConfigurationSetupManager createL2TVSConfigurationSetupManager(File tcConfig, String l2Identifier)
+      throws ConfigurationSetupException {
+    String effectiveL2Identifier = l2Identifier == null ? this.defaultL2Identifier : l2Identifier;
+    ConfigurationCreator configurationCreator = new StandardXMLFileConfigurationCreator(tcConfig.getAbsolutePath(),
+                                                                                        tcConfig.getParentFile(),
+                                                                                        this.beanFactory);
+    return new StandardL2TVSConfigurationSetupManager(configurationCreator, effectiveL2Identifier,
+                                                      this.defaultValueProvider, this.xmlObjectComparator,
+                                                      this.illegalChangeHandler);
+  }
 }

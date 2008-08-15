@@ -390,7 +390,7 @@ public class TestConfigObject {
   public void addToAppServerClassPath(String cp) {
     extraClassPathForAppServer += File.pathSeparator + cp;
   }
-
+  
   public String linkedChildProcessPath() {
     String out = this.properties.getProperty(LINKED_CHILD_PROCESS_CLASSPATH);
     Assert.assertNotBlank(out);

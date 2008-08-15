@@ -4,7 +4,7 @@
  */
 package com.tc.config;
 
-import com.tc.config.schema.NewActiveServerGroupsConfig;
+import com.tc.config.schema.ActiveServerGroupsConfig;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.net.TCSocketAddress;
@@ -16,11 +16,11 @@ public class HaConfigImpl implements HaConfig {
 
   private final L2TVSConfigurationSetupManager configSetupManager;
   private final ServerGroup[]                  groups;
-  private Node[]                         nodes;
+  private Node[]                               nodes;
 
   public HaConfigImpl(L2TVSConfigurationSetupManager configSetupManager) {
     this.configSetupManager = configSetupManager;
-    NewActiveServerGroupsConfig groupsConfig = this.configSetupManager.activeServerGroupsConfig();
+    ActiveServerGroupsConfig groupsConfig = this.configSetupManager.activeServerGroupsConfig();
     int groupCount = groupsConfig.getActiveServerGroupCount();
     this.groups = new ServerGroup[groupCount];
     for (int i = 0; i < groupCount; i++) {
@@ -41,12 +41,7 @@ public class HaConfigImpl implements HaConfig {
   }
 
   public ServerGroup getActiveCoordinatorGroup() {
-    int activeCoordinatorGroupId = this.configSetupManager.activeServerGroupsConfig().getSmallestGroupId();
-    for (int i = 0; i < this.groups.length; i++) {
-      if (groups[i].getGroupId() == activeCoordinatorGroupId) { return groups[i]; }
-    }
-    throw new AssertionError("Could not find the ActiveServerGroup matching activeCoordinatorGroupId=["
-                             + activeCoordinatorGroupId + "]");
+    return groups != null ? groups[0] : null;
   }
 
   public ServerGroup[] getAllActiveServerGroups() {

@@ -873,12 +873,12 @@
         server configuration from this file.
       </xs:documentation>
     </xs:annotation>
-    <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <xs:sequence minOccurs="0" maxOccurs="1">
       <xs:element name="server" type="server" maxOccurs="unbounded" />
       <xs:element name="active-server-groups" type="active-server-groups" maxOccurs="1" minOccurs="0" />
       <xs:element name="ha" type="ha" maxOccurs="1" minOccurs="0" />
       <xs:element name="update-check" type="update-check" maxOccurs="1" minOccurs="0"></xs:element>
-    </xs:choice>
+    </xs:sequence>
   </xs:complexType>
   
   <xs:complexType name="active-server-groups">
@@ -887,7 +887,7 @@
         </xs:documentation>
     </xs:annotation>
     <xs:sequence maxOccurs="unbounded">
-      <xs:element name="active-server-group" type="active-server-group" maxOccurs="unbounded" />
+      <xs:element name="active-server-group" type="active-server-group" maxOccurs="unbounded" minOccurs="0" />
     </xs:sequence>
   </xs:complexType>
   
@@ -900,12 +900,6 @@
       <xs:element name="members" type="members" minOccurs="0" />
       <xs:element name="ha" type="ha" minOccurs="0" />
     </xs:all>
-    <xs:attribute name="id" type="non-negative-int" default="0" use="optional">
-      <xs:annotation>
-        <xs:documentation>
-        </xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
   </xs:complexType>
   
   <xs:complexType name="members">
@@ -913,7 +907,7 @@
         <xs:documentation>
         </xs:documentation>
     </xs:annotation>
-    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+    <xs:sequence minOccurs="1" maxOccurs="unbounded">
       <xs:element name="member" type="non-blank-token" />
     </xs:sequence>
   </xs:complexType>
