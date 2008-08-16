@@ -11,7 +11,6 @@ import com.tc.logging.TCLogging;
 import com.tc.net.TCSocketAddress;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.core.ConnectionInfo;
-import com.tc.net.groups.NodeID;
 import com.tc.net.protocol.NetworkStackHarnessFactory;
 import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
 import com.tc.net.protocol.tcm.msgs.PingMessage;
@@ -45,7 +44,7 @@ public class ClientGroupMessageChannelTest extends TCTestCase {
   CommunicationsManager          clientComms;
   CommunicationsManager[]        serverComms     = new CommunicationsManager[L2_COUNT];
   NetworkListener[]              lsnr            = new NetworkListener[L2_COUNT];
-  NodeID[]                       nodeIDs;
+  Integer[]                      groupIDs;
   ClientGroupMessageChannel      groupChannel;
   SequenceGenerator              sequence;
   MessageSendAndReceiveWatcher[] clientWatcheres = new MessageSendAndReceiveWatcher[L2_COUNT];
@@ -85,7 +84,7 @@ public class ClientGroupMessageChannelTest extends TCTestCase {
     for (int i = 0; i < L2_COUNT; ++i) {
       setUpClientReceiveSink(i, channels[i], serverWatcheres[i]);
     }
-    nodeIDs = this.groupChannel.getServerGroupIDs();
+    groupIDs = this.groupChannel.getGroupIDs();
   }
 
   private NetworkListener initListener(int index, final CommunicationsManager serverComm, int port,
@@ -403,7 +402,7 @@ public class ClientGroupMessageChannelTest extends TCTestCase {
   }
 
   private PingMessage createAndSendMessage(int channelNum) {
-    PingMessage ping = createMessage(nodeIDs[channelNum]);
+    PingMessage ping = createMessage(groupIDs[channelNum]);
     clientWatcheres[channelNum].addMessageSent(ping);
     ping.send();
     return ping;
@@ -433,8 +432,8 @@ public class ClientGroupMessageChannelTest extends TCTestCase {
     return ch;
   }
 
-  private PingMessage createMessage(NodeID nid) {
-    PingMessage ping = (PingMessage) groupChannel.createMessage(nid, TCMessageType.PING_MESSAGE);
+  private PingMessage createMessage(Integer groupID) {
+    PingMessage ping = (PingMessage) groupChannel.createMessage(groupID, TCMessageType.PING_MESSAGE);
     ping.initialize(sq);
     return ping;
   }
