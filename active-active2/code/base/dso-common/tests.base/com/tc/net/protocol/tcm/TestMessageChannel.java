@@ -141,8 +141,4 @@ public class TestMessageChannel implements MessageChannel {
       this.returnedMessage = returnedMessage;
     }
   }
-
-  public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
-    throw new ImplementMe();
-  }
 }

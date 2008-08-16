@@ -154,8 +154,4 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
-    throw new ImplementMe();
-  }
-
 }

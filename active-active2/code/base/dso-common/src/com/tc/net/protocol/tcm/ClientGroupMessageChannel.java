@@ -13,6 +13,8 @@ public interface ClientGroupMessageChannel extends ClientMessageChannel {
   
   public ClientMessageChannel getChannel(NodeID id);
   
+  public TCMessage createMessage(NodeID sendToNode, TCMessageType type);
+  
   public void broadcast(final TCMessageImpl message);
   
 }

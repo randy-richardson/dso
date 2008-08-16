@@ -158,11 +158,11 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
   public ClientGroupMessageChannel createClientGroupChannel(final SessionProvider sessionProvider,
                                                             final int maxReconnectTries, final int timeout,
                                                             ConnectionAddressProvider[] addressProviders) {
-    ClientGroupMessageChannel multiplex = new ClientGroupMessageChannelImpl(new TCMessageFactoryImpl(sessionProvider,
+    ClientGroupMessageChannel clientGroup = new ClientGroupMessageChannelImpl(new TCMessageFactoryImpl(sessionProvider,
                                                                                                      monitor),
                                                                             sessionProvider, maxReconnectTries, this,
                                                                             addressProviders);
-    return (multiplex);
+    return (clientGroup);
   }
 
   public ClientMessageChannel createClientChannel(final SessionProvider sessionProvider, final int maxReconnectTries,

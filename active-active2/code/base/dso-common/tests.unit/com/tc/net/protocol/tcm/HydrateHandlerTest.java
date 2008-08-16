@@ -178,10 +178,6 @@ public class HydrateHandlerTest extends TCTestCase {
       
     }
 
-    public TCMessage createMessage(NodeID sendToNode, TCMessageType type) {
-      throw new ImplementMe();
-    }
-
   }
 
   private static class Message implements TCMessage {
