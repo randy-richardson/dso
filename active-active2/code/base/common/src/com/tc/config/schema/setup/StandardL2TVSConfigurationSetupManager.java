@@ -237,7 +237,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     return new UpdateCheckConfigObject(createContext(beanRepository, configurationCreator
         .directoryConfigurationLoadedFrom()));
   }
-  
+
   private UpdateCheck getDefaultUpdateCheck() throws XmlException {
     final int defaultPeriodDays = ((XmlInteger) defaultValueProvider.defaultFor(serversBeanRepository()
         .rootBeanSchemaType(), "update-check/period-days")).getBigIntegerValue().intValue();

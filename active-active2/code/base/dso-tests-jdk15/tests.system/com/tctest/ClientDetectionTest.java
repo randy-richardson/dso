@@ -26,9 +26,9 @@ public class ClientDetectionTest extends TransparentTestBase {
   private int              port;
   private File             configFile;
   private int              adminPort;
-
+  
   public ClientDetectionTest() {
-    // disableAllUntil("2007-09-01");
+    //disableAllUntil("2007-09-01");
   }
 
   protected Class getApplicationClass() {
@@ -48,7 +48,7 @@ public class ClientDetectionTest extends TransparentTestBase {
   public void setUp() throws Exception {
     PortChooser pc = new PortChooser();
     port = pc.chooseRandomPort();
-    adminPort = 9520; // pc.chooseRandomPort();
+    adminPort = 9520; //pc.chooseRandomPort();
     configFile = getTempFile("tc-config.xml");
     writeConfigFile();
 
@@ -93,7 +93,8 @@ public class ClientDetectionTest extends TransparentTestBase {
     RootConfigBuilder L1_barrier4 = new RootConfigBuilderImpl(ClientDetectionTestApp.L1Client.class, "barrier4",
                                                               "barrier4");
 
-    out.getApplication().getDSO().setRoots(new RootConfigBuilder[] { testApp_barrier4, L1_barrier4 });
+    out.getApplication().getDSO().setRoots(
+                                           new RootConfigBuilder[] { testApp_barrier4, L1_barrier4 });
 
     return out;
   }

@@ -837,9 +837,7 @@ public class DistributedObjectServer implements TCDumper {
     boolean networkedHA = this.haConfig.isNetworkedActivePassive();
     if (networkedHA) {
       this.haConfig.makeAllNodes();
-    }
 
-    if (networkedHA) {
       logger.info("L2 Networked HA Enabled ");
       l2Coordinator = new L2HACoordinator(configSetupManager, consoleLogger, this, stageManager, persistor
           .getClusterStateStore(), objectManager, transactionManager, gtxm, channelManager, configSetupManager

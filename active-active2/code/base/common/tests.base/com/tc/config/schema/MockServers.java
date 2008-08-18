@@ -375,7 +375,7 @@ public class MockServers implements Servers {
   public UpdateCheck getUpdateCheck() {
     throw new ImplementMe();
   }
-  
+
   public boolean isSetActiveServerGroups() {
     throw new ImplementMe();
   }

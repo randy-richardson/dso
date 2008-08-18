@@ -28,5 +28,4 @@ public class TestSynMessage extends TestTransportHandshakeMessage implements Syn
   public int getCallbackPort() {
     return TransportHandshakeMessage.NO_CALLBACK_PORT;
   }
-  
 }

@@ -81,8 +81,4 @@ public class TestWireProtocolMessage implements WireProtocolMessage {
     return;
   }
 
-  public void setSendCount(int sendCount) {
-    throw new ImplementMe(); 
-  }
-
 }

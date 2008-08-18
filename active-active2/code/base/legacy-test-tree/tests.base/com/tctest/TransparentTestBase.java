@@ -183,7 +183,7 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
       adminPort = helper.getAdminPort();
       ((SettableConfigItem) configFactory().l2DSOConfig().listenPort()).setValue(dsoPort);
       ((SettableConfigItem) configFactory().l2CommonConfig().jmxPort()).setValue(adminPort);
-      if (!canRunL1ProxyConnect()) configFactory().addServerToL1Config(null, dsoPort, adminPort, true);
+      if (!canRunL1ProxyConnect()) configFactory().addServerToL1Config(null, dsoPort, adminPort);
       serverControl = helper.getServerControl();
     } else if (isActivePassive() && canRunActivePassive() || (isActiveActive() && canRunActiveActive())) {
       setUpActivePassiveServers(portChooser, jvmArgs);
@@ -192,7 +192,7 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
       adminPort = portChooser.chooseRandomPort();
       ((SettableConfigItem) configFactory().l2DSOConfig().listenPort()).setValue(dsoPort);
       ((SettableConfigItem) configFactory().l2CommonConfig().jmxPort()).setValue(adminPort);
-      if (!canRunL1ProxyConnect()) configFactory().addServerToL1Config(null, dsoPort, -1, true);
+      if (!canRunL1ProxyConnect()) configFactory().addServerToL1Config(null, dsoPort, -1);
     }
 
     if (canRunL1ProxyConnect()) {
@@ -299,7 +299,7 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
 
     ((SettableConfigItem) configFactory().l2DSOConfig().listenPort()).setValue(dsoPort);
     ((SettableConfigItem) configFactory().l2CommonConfig().jmxPort()).setValue(adminPort);
-    configFactory().addServerToL1Config(null, dsoProxyPort, -1, true);
+    configFactory().addServerToL1Config(null, dsoProxyPort, -1);
   }
 
   protected void setupL1ProxyConnectTest(ProxyConnectManager mgr) {

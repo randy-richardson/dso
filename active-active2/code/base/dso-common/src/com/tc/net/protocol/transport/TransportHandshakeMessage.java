@@ -16,7 +16,7 @@ public interface TransportHandshakeMessage extends WireProtocolMessage {
 
   // XXX: Yuck.
   public boolean isSyn();
-  
+
   public boolean isSynAck();
 
   public boolean isAck();

@@ -10,7 +10,7 @@ public interface ConnectionIDFactory {
 
   public ConnectionID nextConnectionId();
 
-  public ConnectionID setServerIdToConnectionId(ConnectionID rawID);
+  public ConnectionID makeConnectionId(long channelID);
   
   public void restoreConnectionId(ConnectionID rv);
   

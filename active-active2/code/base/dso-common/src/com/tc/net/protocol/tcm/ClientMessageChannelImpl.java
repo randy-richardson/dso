@@ -7,9 +7,7 @@ package com.tc.net.protocol.tcm;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.MaxConnectionsExceededException;
-import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.groups.ClientID;
-import com.tc.net.groups.GroupID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.ConnectionID;
@@ -27,26 +25,23 @@ import java.net.UnknownHostException;
  */
 
 public class ClientMessageChannelImpl extends AbstractMessageChannel implements ClientMessageChannel {
-  private static final TCLogger           logger           = TCLogging.getLogger(ClientMessageChannel.class);
-  private final TCMessageFactory          msgFactory;
-  private int                             connectAttemptCount;
-  private int                             connectCount;
-  private ChannelID                       channelID;
-  private final ChannelIDProviderImpl     cidProvider;
-  private final SessionProvider           sessionProvider;
-  private SessionID                       channelSessionID = SessionID.NULL_ID;
-  private final ConnectionAddressProvider addrProvider;
+  private static final TCLogger       logger           = TCLogging.getLogger(ClientMessageChannel.class);
+  private final TCMessageFactory      msgFactory;
+  private int                         connectAttemptCount;
+  private int                         connectCount;
+  private ChannelID                   channelID;
+  private final ChannelIDProviderImpl cidProvider;
+  private final SessionProvider       sessionProvider;
+  private SessionID                   channelSessionID = SessionID.NULL_ID;
 
   protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router,
-                                     SessionProvider sessionProvider, ConnectionAddressProvider addrProvider) {
+                                     SessionProvider sessionProvider) {
     super(router, logger, msgFactory);
     this.msgFactory = msgFactory;
     this.cidProvider = new ChannelIDProviderImpl();
     this.sessionProvider = sessionProvider;
-    this.addrProvider = addrProvider;
 
     setClientID(ClientID.NULL_ID);
-    setServerID(new GroupID("", this.addrProvider));
   }
 
   public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException,
@@ -64,10 +59,6 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
       this.channelSessionID = sessionProvider.getSessionID();
       return id;
     }
-  }
-
-  public ConnectionAddressProvider getConnectionAddress() {
-    return this.addrProvider;
   }
 
   public void addClassMapping(TCMessageType type, Class msgClass) {

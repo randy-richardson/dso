@@ -4,7 +4,6 @@
 package com.tc.net.protocol;
 
 import com.tc.bytes.TCByteBuffer;
-import com.tc.exception.ImplementMe;
 
 /**
  * @author teck
@@ -65,10 +64,6 @@ public class NullNetworkMessage implements TCNetworkMessage {
 
   public void recycle() {
     return;
-  }
-
-  public void setSendCount(int sendCount) {
-    throw new ImplementMe();
   }
 
 }

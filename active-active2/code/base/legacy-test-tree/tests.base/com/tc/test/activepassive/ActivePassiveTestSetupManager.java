@@ -9,12 +9,11 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ActivePassiveTestSetupManager {
-  
+
   private int                          serverCount              = -1;
   private long                         serverCrashWaitTimeInSec = 15;
   private int                          maxCrashCount            = Integer.MAX_VALUE;
   private ActivePassiveSharedDataMode  activePassiveMode;
-  //private ServerDataShareMode   dataShareMode            = new ServerDataShareMode(ServerDataShareMode.DISK);
   private ActivePassivePersistenceMode persistenceMode          = new ActivePassivePersistenceMode(
                                                                                                    ActivePassivePersistenceMode.TEMPORARY_SWAP_ONLY);
   private int                          electionTime             = 5;
@@ -51,7 +50,6 @@ public class ActivePassiveTestSetupManager {
 
   public void setServerShareDataMode(String mode) {
     activePassiveMode = new ActivePassiveSharedDataMode(mode);
-    //dataShareMode = new ServerDataShareMode(mode);
   }
 
   public boolean isNetworkShare() {
@@ -109,11 +107,11 @@ public class ActivePassiveTestSetupManager {
     checkServerCount();
     return ((Group) this.activeServerGroups.get(groupIndex)).getMode();
   }
-  
+
   public boolean isActiveActive() {
     return getActiveServerGroupCount() > 1;
   }
-  
+
   public boolean isActivePassive() {
     return !isActiveActive();
   }

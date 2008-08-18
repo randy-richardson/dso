@@ -198,7 +198,7 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                                                                                        monitor);
     TCMessageRouter msgRouter = (router != null) ? router : new TCMessageRouterImpl();
 
-    ClientMessageChannelImpl rv = new ClientMessageChannelImpl(msgFactory, msgRouter, sessionProvider, addressProvider);
+    ClientMessageChannelImpl rv = new ClientMessageChannelImpl(msgFactory, msgRouter, sessionProvider);
 
     if (transportFactory == null) transportFactory = new MessageTransportFactoryImpl(connectionManager,
                                                                                      addressProvider,

@@ -93,7 +93,7 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
       if (connectionId.getChannelID() == ChannelID.NULL_ID.toLong()) {
         connectionId = connectionIdFactory.nextConnectionId();
       } else {
-        connectionId = connectionIdFactory.setServerIdToConnectionId(connectionId);
+        connectionId = connectionIdFactory.makeConnectionId(connectionId.getChannelID());
       }
 
       rv = messageTransportFactory.createNewTransport(connectionId, connection, createHandshakeErrorHandler(),

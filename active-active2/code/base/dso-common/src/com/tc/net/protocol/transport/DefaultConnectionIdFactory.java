@@ -20,8 +20,8 @@ public class DefaultConnectionIdFactory implements ConnectionIDFactory {
     return new ConnectionID(sequence++, uid);
   }
   
-  public ConnectionID setServerIdToConnectionId(ConnectionID rawID) {
-    return new ConnectionID(rawID.getChannelID(), uid);
+  public ConnectionID makeConnectionId(long channelID) {
+    throw new UnsupportedOperationException();
   }
 
   public Set loadConnectionIDs() {

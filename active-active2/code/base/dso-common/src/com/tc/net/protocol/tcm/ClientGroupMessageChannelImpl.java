@@ -38,7 +38,7 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
   public ClientGroupMessageChannelImpl(TCMessageFactory msgFactory, SessionProvider sessionProvider,
                                        final int maxReconnectTries, CommunicationsManager communicationsManager,
                                        ConnectionAddressProvider[] addressProviders) {
-    super(msgFactory, null, sessionProvider, null);
+    super(msgFactory, null, sessionProvider);
     this.msgFactory = msgFactory;
     this.sessionProvider = sessionProvider;
 
@@ -99,6 +99,10 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
   public TCMessage createMessage(TCMessageType type) {
     return createMessage(new Integer(0), type);
   }
+  
+  private String connectionInfo(ClientMessageChannel ch) {
+    return (ch.getLocalAddress() + " -> " + ch.getRemoteAddress());
+  }
 
   public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException,
       MaxConnectionsExceededException {
@@ -114,13 +118,13 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
           setClientID(new ClientID(getChannelID()));
         }
       } catch (TCTimeoutException e) {
-        throw new TCTimeoutException(ch.getConnectionAddress().toString() + " " + e);
+        throw new TCTimeoutException(connectionInfo(ch) + " " + e);
       } catch (UnknownHostException e) {
-        throw new UnknownHostException(ch.getConnectionAddress().toString() + " " + e);
+        throw new UnknownHostException(connectionInfo(ch) + " " + e);
       } catch (MaxConnectionsExceededException e) {
-        throw new MaxConnectionsExceededException(ch.getConnectionAddress().toString() + " " + e);
+        throw new MaxConnectionsExceededException(connectionInfo(ch) + " " + e);
       }
-      logger.info("Opened sub-channel: " + ch.getConnectionAddress().toString());
+      logger.info("Opened sub-channel: " + connectionInfo(ch));
     }
     logger.info("all active sub-channels opened");
     return nid;
@@ -217,10 +221,6 @@ public class ClientGroupMessageChannelImpl extends ClientMessageChannelImpl impl
   public ClientMessageChannel channel() {
     // return the active-coordinator
     return getActiveCoordinator();
-  }
-
-  public ConnectionAddressProvider getConnectionAddress() {
-    return getActiveCoordinator().getConnectionAddress();
   }
 
   /*

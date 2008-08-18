@@ -70,7 +70,7 @@ public class DeadClientCrashedServerReconnectTest extends BaseDSOTestCase {
     mgr.proxyUp();
 
     // config for client
-    configFactory().addServerToL1Config(null, proxyPort, jmxPort, true);
+    configFactory().addServerToL1Config(null, proxyPort, jmxPort);
     L1TVSConfigurationSetupManager manager = super.createL1ConfigManager();
 
     DSOClientConfigHelper configHelper = new StandardDSOClientConfigHelperImpl(manager);

@@ -150,8 +150,4 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public ConnectionAddressProvider getConnectionAddress() {
-    throw new ImplementMe();
-  }
-
 }

@@ -5,7 +5,5 @@
 package com.tc.net.protocol.transport;
 
 public interface SynMessage extends TransportHandshakeMessage {
-  
   int getCallbackPort();
-  
 }
