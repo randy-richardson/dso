@@ -3,3 +3,4 @@
 /.tc-build-cache
 /testrun-latest
 /target
+/.svn.output
