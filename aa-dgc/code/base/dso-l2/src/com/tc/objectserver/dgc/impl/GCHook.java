@@ -10,7 +10,7 @@ import com.tc.util.ObjectIDSet;
 
 import java.util.Set;
 
-interface GCHook {
+public interface GCHook {
 
   public ObjectIDSet getGCCandidates();
 
