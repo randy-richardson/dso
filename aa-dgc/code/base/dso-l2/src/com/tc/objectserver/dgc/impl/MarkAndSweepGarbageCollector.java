@@ -133,6 +133,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   private volatile YoungGenChangeCollector         youngGenReferenceCollector  = NULL_YOUNG_CHANGE_COLLECTOR;
   private volatile LifeCycleState                  gcState                     = new NullLifeCycleState();
   private volatile boolean                         started                     = false;
+  private GCHook                                   gcHook;
 
   public MarkAndSweepGarbageCollector(ObjectManager objectManager, ClientStateManager stateManager,
                                       ObjectManagerConfig objectManagerConfig) {
@@ -146,15 +147,18 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
    * For state transition diagram look here. http://intranet.terracotta.lan/xwiki/bin/view/Main/DGC+Lifecycle
    */
   public void gc() {
-    doGC(new FullGCHook(this, this.objectManager, this.stateManager));
+    gcHook = new FullGCHook(this, this.objectManager, this.stateManager);
+    doGC(gcHook);
   }
 
   public void gcYoung() {
-    doGC(new YoungGCHook(this, this.objectManager, this.stateManager, this.youngGenReferenceCollector));
+    gcHook = new YoungGCHook(this, this.objectManager, this.stateManager, this.youngGenReferenceCollector);
+    doGC(gcHook);
   }
 
-  public void doGC(GCHook gcHook) {
-    MarkAndSweepGCAlgorithm gcAlgo = new MarkAndSweepGCAlgorithm(this, gcHook, gcPublisher, gcState, gcIterationCounter
+  public void doGC(GCHook hook) {
+    gcHook = hook;
+    MarkAndSweepGCAlgorithm gcAlgo = new MarkAndSweepGCAlgorithm(this, hook, gcPublisher, gcState, gcIterationCounter
         .incrementAndGet());
     gcAlgo.doGC();
   }
@@ -162,7 +166,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   public boolean deleteGarbage(GCResultContext gcResult) {
     if (requestGCDeleteStart()) {
       youngGenReferenceCollector.removeGarbage(gcResult.getGCedObjectIDs());
-      objectManager.notifyGCComplete(gcResult);
+      gcHook.notifyGCComplete(gcResult);
       notifyGCComplete();
       return true;
     }
@@ -339,7 +343,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     }
   }
 
-  private final static class FullGCHook extends AbstractGCHook {
+  public final static class FullGCHook extends AbstractGCHook {
 
     public FullGCHook(MarkAndSweepGarbageCollector collector, ObjectManager objectManager,
                       ClientStateManager stateManager) {
@@ -358,24 +362,24 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
       return objectManager.getAllObjectIDs();
     }
 
-    public Set getRootObjectIDs(ObjectIDSet candidateIDs) {
-      return objectManager.getRootIDs();
+    public ObjectIDSet getRootObjectIDs(ObjectIDSet candidateIDs) {
+      return new ObjectIDSet(objectManager.getRootIDs());
     }
 
     public Filter getCollectCycleFilter(Set candidateIDs) {
       return NULL_FILTER;
     }
 
-    public Set getObjectReferencesFrom(ObjectID id) {
+    public ObjectIDSet getObjectReferencesFrom(ObjectID id) {
       throttleIfNecessary();
       ManagedObject obj = objectManager.getObjectByIDOrNull(id);
       if (obj == null) {
         logger.warn("Looked up a new Object before its initialized, skipping : " + id);
-        return Collections.EMPTY_SET;
+        return new ObjectIDSet();
       }
       Set references = obj.getObjectReferences();
       objectManager.releaseReadOnly(obj);
-      return references;
+      return new ObjectIDSet(references);
     }
 
     private int request_count = 0;
@@ -386,8 +390,8 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
       }
     }
 
-    public Set getRescueIDs() {
-      Set rescueIds = new ObjectIDSet();
+    public ObjectIDSet getRescueIDs() {
+      ObjectIDSet rescueIds = new ObjectIDSet();
       stateManager.addAllReferencedIdsTo(rescueIds);
       int stateManagerIds = rescueIds.size();
 
@@ -399,9 +403,14 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
       return rescueIds;
     }
+
+    public void notifyGCComplete(GCResultContext gcResult) {
+      objectManager.notifyGCComplete(gcResult);
+    }
+
   }
 
-  private final static class YoungGCHook extends AbstractGCHook {
+  public final static class YoungGCHook extends AbstractGCHook {
 
     private final YoungGenChangeCollector youngGenReferenceCollector;
 
@@ -423,33 +432,33 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
       return (ObjectIDSet) youngGenReferenceCollector.addYoungGenCandidateObjectIDsTo(new ObjectIDSet());
     }
 
-    public Set getRootObjectIDs(ObjectIDSet candidateIDs) {
+    public ObjectIDSet getRootObjectIDs(ObjectIDSet candidateIDs) {
       Set idsInMemory = objectManager.getObjectIDsInCache();
       idsInMemory.removeAll(candidateIDs);
       Set roots = objectManager.getRootIDs();
       Set youngGenRoots = youngGenReferenceCollector.getRememberedSet();
       youngGenRoots.addAll(roots);
       youngGenRoots.addAll(idsInMemory);
-      return youngGenRoots;
+      return new ObjectIDSet(youngGenRoots);
     }
 
     public Filter getCollectCycleFilter(Set candidateIDs) {
       return new SelectiveFilter(candidateIDs);
     }
 
-    public Set getObjectReferencesFrom(ObjectID id) {
+    public ObjectIDSet getObjectReferencesFrom(ObjectID id) {
       ManagedObject obj = objectManager.getObjectFromCacheByIDOrNull(id);
       if (obj == null) {
         // Not in cache, rescue stage to take care of these inward references.
-        return Collections.EMPTY_SET;
+        return new ObjectIDSet();
       }
       Set references = obj.getObjectReferences();
       objectManager.releaseReadOnly(obj);
-      return references;
+      return new ObjectIDSet(references);
     }
 
-    public Set getRescueIDs() {
-      Set rescueIds = new ObjectIDSet();
+    public ObjectIDSet getRescueIDs() {
+      ObjectIDSet rescueIds = new ObjectIDSet();
       stateManager.addAllReferencedIdsTo(rescueIds);
       int stateManagerIds = rescueIds.size();
 
@@ -464,6 +473,12 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
       return rescueIds;
     }
+
+    public void notifyGCComplete(GCResultContext gcResult) {
+      objectManager.notifyGCComplete(gcResult);
+    }
+    
+    
   }
 
   private static class NewReferenceCollector implements ChangeCollector {

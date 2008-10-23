@@ -4,6 +4,7 @@
 package com.tc.objectserver.dgc.impl;
 
 import com.tc.object.ObjectID;
+import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.core.api.Filter;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.util.ObjectIDSet;
@@ -14,7 +15,7 @@ public interface GCHook {
 
   public ObjectIDSet getGCCandidates();
 
-  public Set getRootObjectIDs(ObjectIDSet candidateIDs);
+  public ObjectIDSet getRootObjectIDs(ObjectIDSet candidateIDs);
 
   public GarbageCollectionInfo getGCInfo(int gcIteration);
 
@@ -28,7 +29,9 @@ public interface GCHook {
 
   public void waitUntilReadyToGC();
 
-  public Set getObjectReferencesFrom(ObjectID id);
+  public ObjectIDSet getObjectReferencesFrom(ObjectID id);
 
-  public Set getRescueIDs();
+  public ObjectIDSet getRescueIDs();
+  
+  public void notifyGCComplete(GCResultContext gcResult);
 }
