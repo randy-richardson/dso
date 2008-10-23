@@ -51,6 +51,9 @@ import com.tc.objectserver.core.api.TestDNA;
 import com.tc.objectserver.core.impl.TestManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
+import com.tc.objectserver.dgc.impl.FullGCHook;
+import com.tc.objectserver.dgc.impl.GCHook;
+import com.tc.objectserver.dgc.impl.YoungGenChangeCollector;
 import com.tc.objectserver.gtx.TestGlobalTransactionManager;
 import com.tc.objectserver.impl.InMemoryManagedObjectStore;
 import com.tc.objectserver.impl.ObjectInstanceMonitorImpl;
@@ -1194,7 +1197,7 @@ public class ObjectManagerTest extends BaseDSOTestCase {
 
     gc.allow_blockUntilReadyToGC_ToProceed();
 
-    objectManager.getGarbageCollector().gc();
+    objectManager.getGarbageCollector().doGC(new FullGCHook(objectManager.getGarbageCollector(),objectManager,clientStateManager));
     assertTrue(gc.isCollected());
 
     gc.reset();
@@ -2184,10 +2187,10 @@ public class ObjectManagerTest extends BaseDSOTestCase {
 
     }
 
-    public void gc() {
+    public void doGC(GCHook hook) {
       throw toThrow;
     }
-
+  
     public void addNewReferencesTo(Set rescueIds) {
       // do nothing
 
@@ -2233,9 +2236,6 @@ public class ObjectManagerTest extends BaseDSOTestCase {
       return true;
     }
 
-    public void gcYoung() {
-      // NOP
-    }
 
     public void notifyNewObjectInitalized(ObjectID id) {
       // NOP
@@ -2251,6 +2251,18 @@ public class ObjectManagerTest extends BaseDSOTestCase {
 
     public boolean requestGCStart() {
       return true;
+    }
+
+    public void startMonitoringReferenceChanges() {
+    // NOP 
+    }
+
+    public void stopMonitoringReferenceChanges() {
+     //NOP
+    }
+
+    public YoungGenChangeCollector getYoungGenChangeCollector() {
+      return null;
     }
 
   }
@@ -2278,7 +2290,7 @@ public class ObjectManagerTest extends BaseDSOTestCase {
   private class GCCaller implements Runnable {
 
     public void run() {
-      objectManager.getGarbageCollector().gc();
+      objectManager.getGarbageCollector().doGC(new FullGCHook(objectManager.getGarbageCollector(),objectManager,clientStateManager));
     }
   }
 

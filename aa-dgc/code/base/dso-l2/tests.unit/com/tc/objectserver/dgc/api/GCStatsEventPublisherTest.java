@@ -10,6 +10,7 @@ import com.tc.objectserver.core.impl.TestManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
+import com.tc.objectserver.dgc.impl.FullGCHook;
 import com.tc.objectserver.dgc.impl.MarkAndSweepGarbageCollector;
 import com.tc.objectserver.impl.ObjectManagerConfig;
 import com.tc.objectserver.l1.api.TestClientStateManager;
@@ -46,8 +47,7 @@ public class GCStatsEventPublisherTest extends TestCase {
     this.lookedUp = new HashSet<ObjectID>();
     this.released = new HashSet<ObjectID>();
     this.objectManager = new GCTestObjectManager(lookedUp, released, transactionProvider);
-    this.collector = new MarkAndSweepGarbageCollector(this.objectManager, new TestClientStateManager(),
-                                                      new ObjectManagerConfig(300000, true, true, true, true, 60000));
+    this.collector = new MarkAndSweepGarbageCollector(new ObjectManagerConfig(300000, true, true, true, true, 60000));
     this.objectManager.setGarbageCollector(collector);
     this.objectManager.start();
     this.root1 = createObject(8);
@@ -83,7 +83,7 @@ public class GCStatsEventPublisherTest extends TestCase {
     TestGarbageCollectionInfoCallsListener listener = new TestGarbageCollectionInfoCallsListener();
     collector.addListener(listener);
     collector.start();
-    collector.gc();
+    collector.doGC(new FullGCHook(collector, objectManager,new TestClientStateManager()));
     collector.stop();
     assertEquals(1, listener.startList.size());
     assertEquals(1, listener.markList.size());
@@ -106,7 +106,7 @@ public class GCStatsEventPublisherTest extends TestCase {
     TestGarbageCollectionInfoCallsListener listener = new TestGarbageCollectionInfoCallsListener();
     collector.addListener(listener);
     collector.start();
-    collector.gc();
+    collector.doGC(new FullGCHook(collector, objectManager,new TestClientStateManager()));
     collector.stop();
     assertEquals(1, listener.startList.size());
     assertEquals(1, listener.markList.size());

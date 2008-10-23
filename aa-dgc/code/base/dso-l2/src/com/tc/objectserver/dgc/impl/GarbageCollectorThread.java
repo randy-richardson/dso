@@ -7,21 +7,28 @@ package com.tc.objectserver.dgc.impl;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.impl.ObjectManagerConfig;
+import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.util.concurrent.StoppableThread;
 
 public class GarbageCollectorThread extends StoppableThread {
-  private static final TCLogger  logger   = TCLogging.getLogger(GarbageCollectorThread.class);
+  private static final TCLogger    logger   = TCLogging.getLogger(GarbageCollectorThread.class);
 
-  private final GarbageCollector collector;
-  private final Object           stopLock = new Object();
-  private final long             fullGCSleepTime;
-  private final long             youngGCSleepTime;
+  private final GarbageCollector   collector;
+  private final ObjectManager      objectManager;
+  private final ClientStateManager stateManager;
+  private final Object             stopLock = new Object();
+  private final long               fullGCSleepTime;
+  private final long               youngGCSleepTime;
 
-  public GarbageCollectorThread(ThreadGroup group, String name, GarbageCollector newCollector, ObjectManagerConfig config) {
+  public GarbageCollectorThread(ThreadGroup group, String name, GarbageCollector newCollector,
+                                ObjectManager objectManager, ClientStateManager stateManager, ObjectManagerConfig config) {
     super(group, name);
     this.collector = newCollector;
+    this.objectManager = objectManager;
+    this.stateManager = stateManager;
     fullGCSleepTime = config.gcThreadSleepTime();
     long youngGCTime = -1;
     if (config.isYoungGenDGCEnabled()) {
@@ -76,7 +83,7 @@ public class GarbageCollectorThread extends StoppableThread {
         stopLock.wait(sleepTime);
       }
       if (isStopRequested()) { return; }
-      collector.gcYoung();
+      collector.doGC(new YoungGCHook(collector, objectManager, stateManager));
     } catch (InterruptedException ie) {
       throw new TCRuntimeException(ie);
     }
@@ -88,7 +95,7 @@ public class GarbageCollectorThread extends StoppableThread {
         stopLock.wait(sleepTime);
       }
       if (isStopRequested()) { return; }
-      collector.gc();
+      collector.doGC(new FullGCHook(collector, objectManager, stateManager));
     } catch (InterruptedException ie) {
       throw new TCRuntimeException(ie);
     }

@@ -607,9 +607,7 @@ public class DistributedObjectServer implements TCDumper, ChannelManagerEventLis
                                           persistenceTransactionProvider, faultManagedObjectStage.getSink(),
                                           flushManagedObjectStage.getSink());
     objectManager.setStatsListener(objMgrStats);
-    MarkAndSweepGarbageCollector markAndSweepGarbageCollector = new MarkAndSweepGarbageCollector(objectManager,
-                                                                                                 clientStateManager,
-                                                                                                 objectManagerConfig);
+    MarkAndSweepGarbageCollector markAndSweepGarbageCollector = new MarkAndSweepGarbageCollector(objectManagerConfig);
 
     markAndSweepGarbageCollector.addListener(new GCStatisticsAgentSubSystemEventListener(statisticsAgentSubSystem));
     gcStatsEventPublisher = new GCStatsEventPublisher();
@@ -619,7 +617,7 @@ public class DistributedObjectServer implements TCDumper, ChannelManagerEventLis
 
     l2Management.findObjectManagementMonitorMBean().registerGCController(
                                                                          new GCComptrollerImpl(objectManager
-                                                                             .getGarbageCollector()));
+                                                                             .getGarbageCollector(), objectManager, clientStateManager));
 
     TCProperties cacheManagerProperties = l2Properties.getPropertiesFor("cachemanager");
     CacheConfig cacheConfig = new CacheConfigImpl(cacheManagerProperties);

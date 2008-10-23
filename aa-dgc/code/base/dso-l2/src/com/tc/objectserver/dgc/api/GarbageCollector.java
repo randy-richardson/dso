@@ -6,10 +6,9 @@ package com.tc.objectserver.dgc.api;
 
 import com.tc.object.ObjectID;
 import com.tc.objectserver.context.GCResultContext;
-import com.tc.objectserver.core.api.Filter;
+import com.tc.objectserver.dgc.impl.GCHook;
+import com.tc.objectserver.dgc.impl.YoungGenChangeCollector;
 import com.tc.text.PrettyPrintable;
-import com.tc.util.ObjectIDSet;
-import com.tc.util.concurrent.LifeCycleState;
 import com.tc.util.concurrent.StoppableThread;
 
 import java.util.Collection;
@@ -43,20 +42,10 @@ public interface GarbageCollector extends PrettyPrintable {
    * Called by the GC thread. Notifies the garbage collector that GC is complete.
    */
   public void notifyGCComplete();
-  
-  /**
-   * @param traverser Determines whether or not to traverse a given tree node.
-   * @param roots
-   * @param managedObjects
-   * @return An set on the objects that can be deleted
-   */
-  public ObjectIDSet collect(Filter traverser, Collection roots, ObjectIDSet managedObjectIds);
-
-  public ObjectIDSet collect(Filter traverser, Collection roots, ObjectIDSet managedObjectIds, LifeCycleState state);
 
   public void changed(ObjectID changedObject, ObjectID oldReference, ObjectID newReference);
 
-  public void gc();
+  public void doGC(GCHook hook);
 
   public void addNewReferencesTo(Set rescueIds);
 
@@ -69,6 +58,12 @@ public interface GarbageCollector extends PrettyPrintable {
   public void setState(StoppableThread st);
   
   public void addListener(GarbageCollectorEventListener listener);
+  
+  public void startMonitoringReferenceChanges();
+  
+  public void stopMonitoringReferenceChanges();
+  
+  public YoungGenChangeCollector getYoungGenChangeCollector();
   
   public boolean deleteGarbage(GCResultContext resultContext);
 
@@ -92,10 +87,5 @@ public interface GarbageCollector extends PrettyPrintable {
    */
   public void notifyObjectsEvicted(Collection evicted);
 
-  /**
-   * This is the method called on the collector to do YoungGen collection, collectors that are not interested in doing
-   * YoungGen collection could ignore this call.
-   */
-  public void gcYoung();
 
 }
