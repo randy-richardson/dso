@@ -118,7 +118,7 @@ public class TestManagedObject implements ManagedObject, ManagedObjectReference,
     return removeOnRelease;
   }
 
-  boolean referenced;
+  boolean referenced = false;
 
   public void markReference() {
     referenced = true;
