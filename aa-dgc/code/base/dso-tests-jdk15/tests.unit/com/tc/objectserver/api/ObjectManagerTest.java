@@ -869,7 +869,7 @@ public class ObjectManagerTest extends BaseDSOTestCase {
   public void testObjectManagerBasics() {
     initObjectManager();
     final ObjectID id = new ObjectID(0);
-    ManagedObject mo = new TestManagedObject(id, new ObjectID[0]);
+    ManagedObject mo = new TestManagedObject(id, new ArrayList<ObjectID>());
     objectManager.createObject(mo);
     assertFalse(objectManager.isReferenced(id));
     ManagedObject mo2 = objectManager.getObjectByID(id);
@@ -992,8 +992,8 @@ public class ObjectManagerTest extends BaseDSOTestCase {
 
     ObjectIDSet objectIDs = new ObjectIDSet();
 
-    ManagedObject mo = new TestManagedObject(id, new ObjectID[0]);
-    ManagedObject mo1 = new TestManagedObject(id1, new ObjectID[0]);
+    ManagedObject mo = new TestManagedObject(id, new ArrayList<ObjectID>());
+    ManagedObject mo1 = new TestManagedObject(id1, new ArrayList<ObjectID>());
     objectManager.createObject(mo);
     objectManager.createObject(mo1);
 
@@ -1133,7 +1133,7 @@ public class ObjectManagerTest extends BaseDSOTestCase {
 
   private void createObjects(int num) {
     for (int i = 0; i < num; i++) {
-      TestManagedObject mo = new TestManagedObject(new ObjectID(i), new ObjectID[] {});
+      TestManagedObject mo = new TestManagedObject(new ObjectID(i), new ArrayList<ObjectID>());
       objectManager.createObject(mo);
       objectStore.addNewObject(mo);
     }
@@ -1190,7 +1190,7 @@ public class ObjectManagerTest extends BaseDSOTestCase {
     objectManager.setGarbageCollector(gc);
     objectManager.start();
     final ObjectID id = new ObjectID(0);
-    ManagedObject mo = new TestManagedObject(id, new ObjectID[3]);
+    ManagedObject mo = new TestManagedObject(id, new ArrayList<ObjectID>(3));
     objectManager.createObject(mo);
 
     assertFalse(gc.isCollected());

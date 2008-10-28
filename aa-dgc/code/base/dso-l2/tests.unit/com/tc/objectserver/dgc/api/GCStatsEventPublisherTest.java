@@ -7,9 +7,6 @@ package com.tc.objectserver.dgc.api;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.impl.GCTestObjectManager;
 import com.tc.objectserver.core.impl.TestManagedObject;
-import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
-import com.tc.objectserver.dgc.api.GarbageCollector;
-import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
 import com.tc.objectserver.dgc.impl.FullGCHook;
 import com.tc.objectserver.dgc.impl.MarkAndSweepGarbageCollector;
 import com.tc.objectserver.impl.ObjectManagerConfig;
@@ -18,7 +15,6 @@ import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,9 +53,11 @@ public class GCStatsEventPublisherTest extends TestCase {
   }
 
   private TestManagedObject createObject(int refCount) {
-    ObjectID[] ids = new ObjectID[refCount];
+    ArrayList<ObjectID> ids = new ArrayList<ObjectID>(refCount);
 
-    Arrays.fill(ids, ObjectID.NULL_ID);
+    for (int i = 0; i < refCount; i++) {
+      ids.add(ObjectID.NULL_ID);
+    }
 
     TestManagedObject tmo = new TestManagedObject(nextID(), ids);
     objectManager.createObject(tmo.getID(), tmo.getReference());
@@ -98,11 +96,9 @@ public class GCStatsEventPublisherTest extends TestCase {
     assertEquals(1, listener.cycleCompletedList.size());
 
   }
-  
-  
-  
+
   public void testGarbageCollectorListenerShortCircuit() {
-   
+
     TestGarbageCollectionInfoCallsListener listener = new TestGarbageCollectionInfoCallsListener();
     collector.addListener(listener);
     collector.start();
@@ -116,7 +112,7 @@ public class GCStatsEventPublisherTest extends TestCase {
     assertEquals(1, listener.cycleCompletedList.size());
 
   }
-  
+
   private static class TestGarbageCollectionInfoCallsListener extends TestGarbageCollectorEventListener {
 
     @Override

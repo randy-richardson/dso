@@ -14,9 +14,11 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.l1.api.TestClientStateManager;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
-import java.util.Arrays;
+
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+
 import junit.framework.TestCase;
 
 public class MarkAndSweepGarbageCollectorTest extends TestCase {
@@ -246,9 +248,11 @@ public class MarkAndSweepGarbageCollectorTest extends TestCase {
   }
 
   private TestManagedObject createObject(int refCount) {
-    ObjectID[] ids = new ObjectID[refCount];
+    ArrayList<ObjectID> ids = new ArrayList<ObjectID>(refCount);
 
-    Arrays.fill(ids, ObjectID.NULL_ID);
+    for (int i = 0; i < refCount; i++) {
+      ids.add(ObjectID.NULL_ID);
+    }
 
     TestManagedObject tmo = new TestManagedObject(nextID(), ids);
     objectManager.createObject(tmo.getID(), tmo.getReference());
