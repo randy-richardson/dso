@@ -12,7 +12,7 @@ import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
 import java.util.Iterator;
 import java.util.List;
 
-class GarbageCollectionInfoPublisherImpl implements GarbageCollectionInfoPublisher {
+public class GarbageCollectionInfoPublisherImpl implements GarbageCollectionInfoPublisher {
 
   public List garbageCollectionEventListeners = new CopyOnWriteArrayList();
 
