@@ -14,4 +14,4 @@ level: 1
 # Example:
 #- lib/tc.jar
 files: 
- - lib/tc.jar
+- thirdpartylicenses.txt
