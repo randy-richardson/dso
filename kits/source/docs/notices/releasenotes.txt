@@ -1,5 +1,5 @@
 
-2.7 Release
+2.7.1
 
 
 Documentation: http://www.terracotta.org/web/display/orgsite/Documentation
@@ -7,6 +7,7 @@ Forums:        http://forums.terracotta.org/forums/forums/list.page
 Mailing Lists: http://lists.terracotta.org
 Support:       http://www.terracotta.org/confluence/display/orgsite/Support
 
+- patch1: Updated Third Party License File
 
 
 Copyright (c) 2008, Terracotta, Inc.
