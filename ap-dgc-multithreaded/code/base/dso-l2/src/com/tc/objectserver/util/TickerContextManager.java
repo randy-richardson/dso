@@ -22,10 +22,12 @@ public class TickerContextManager< K extends AbstractTickerContext, T extends Ti
     timerMap.put(tickerContext, timer);
   }
   
-  public void checkTicker(K tickerContext, T currentToken ) {
+  public boolean checkTicker(K tickerContext, T currentToken ) {
     if(tickerContext.checkComplete(currentToken)) {
       timerMap.get(tickerContext).cancel();
+      return true;
     } 
+    return false;
   }
   
   private static class TickerTask<K extends AbstractTickerContext, T extends TickerToken > extends TimerTask {

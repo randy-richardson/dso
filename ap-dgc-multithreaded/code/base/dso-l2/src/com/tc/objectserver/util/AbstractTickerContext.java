@@ -28,12 +28,16 @@ public abstract class AbstractTickerContext<K extends TickerToken> implements Ti
   }
 
   public void waitUntil() throws InterruptedException {
-    lock.wait();
+    synchronized (lock) {
+      lock.wait();
+    }
   }
 
   public boolean checkComplete(K currentToken) {
     if (currentToken.isPrimary() && checkTicks() && processCheckComplete()) {
-      lock.notifyAll();
+      synchronized (lock) {
+        lock.notifyAll();
+      }
       return true;
     } else {
       passToken();
@@ -42,11 +46,9 @@ public abstract class AbstractTickerContext<K extends TickerToken> implements Ti
   }
 
   private boolean checkTicks() {
-    
-    if(tokens.size() < numberOfTokens) {
-      return false;
-    }
-    
+
+    if (tokens.size() < numberOfTokens) { return false; }
+
     int ticks = 0;
     for (Iterator<K> iter = tokens.iterator(); iter.hasNext();) {
       ticks += iter.next().tick();
