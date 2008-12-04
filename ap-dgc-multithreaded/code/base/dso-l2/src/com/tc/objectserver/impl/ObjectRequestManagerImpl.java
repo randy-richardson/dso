@@ -249,6 +249,7 @@ public class ObjectRequestManagerImpl implements ObjectRequestManager, ServerTra
         MessageChannel channel = channelManager.getActiveChannel(clientID);
         messageMap.put(clientID, new BatchAndSend(channel, batchID));
       }
+      
 
       for (Iterator<Map.Entry<ClientID, Set<ObjectID>>> i = clientNewIDsMap.entrySet().iterator(); i.hasNext();) {
         Map.Entry<ClientID, Set<ObjectID>> entry = i.next();
