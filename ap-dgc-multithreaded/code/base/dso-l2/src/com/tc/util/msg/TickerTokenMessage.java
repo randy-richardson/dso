@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.util.msg;
 
@@ -15,14 +16,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class TickerTokenMessage implements GroupMessage {
-  
-  private final boolean dirty;
-  
+public abstract class TickerTokenMessage implements GroupMessage {
+
+  private boolean dirty;
+
   public TickerTokenMessage(boolean dirty) {
     this.dirty = dirty;
   }
-  
+
   public boolean isDirty() {
     return dirty;
   }
@@ -56,15 +57,13 @@ public class TickerTokenMessage implements GroupMessage {
   }
 
   public void hydrate() throws IOException, UnknownNameException {
- // 
-    if(false)
-      throw new IOException();
-    if(false)
-      throw new UnknownNameException(Class.class,(byte)1);
+    // 
+    if (false) throw new IOException();
+    if (false) throw new UnknownNameException(Class.class, (byte) 1);
   }
 
   public void send() {
-   //
+    //
   }
 
   public MessageID getMessageID() {
@@ -72,7 +71,7 @@ public class TickerTokenMessage implements GroupMessage {
   }
 
   public int getType() {
-     return 0;
+    return -1;
   }
 
   public MessageID inResponseTo() {
@@ -87,16 +86,16 @@ public class TickerTokenMessage implements GroupMessage {
     //
   }
 
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-   if(false)
-     throw new IOException();
-   if(false)
-     throw new ClassNotFoundException();
+  public void readExternal(ObjectInput in) throws IOException {
+    this.dirty = in.readBoolean();
   }
 
   public void writeExternal(ObjectOutput out) throws IOException {
-    throw new IOException();
-    
+    out.writeBoolean(this.dirty);
   }
+  
+  protected abstract void basicWriteExternal(ObjectOutput out) throws IOException;
+
+  protected abstract void basicReadExternal(ObjectInput in) throws IOException, ClassNotFoundException;
 
 }
