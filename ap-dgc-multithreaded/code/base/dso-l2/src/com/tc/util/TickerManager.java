@@ -18,7 +18,7 @@ public abstract class TickerManager {
   private final int id;
   private final int timerPeriod;
   private final Map<TickerToken, TCTimer> timerMap = Collections.synchronizedMap(new HashMap<TickerToken, TCTimer>());
-  private final TickerTokenFactory factory;
+  protected final TickerTokenFactory factory;
   private final Map<Class, TallyHandler> tallyTokenMap = Collections.synchronizedMap(new HashMap<Class, TallyHandler>());
   private final Map<Class, TickerCompleteListener> completeTickerMap = Collections.synchronizedMap(new HashMap<Class, TickerCompleteListener>());
   
