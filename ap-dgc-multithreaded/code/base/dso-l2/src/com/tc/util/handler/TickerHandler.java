@@ -20,6 +20,10 @@ public class TickerHandler extends AbstractEventHandler {
     this.tickerFactory = tickerFactory;
   }
   
+  TickerFactory getFactory() {
+    return tickerFactory;
+  }
+  
   @Override
   public void handleEvent(EventContext context) {
     if(context instanceof TickerTokenMessage) {

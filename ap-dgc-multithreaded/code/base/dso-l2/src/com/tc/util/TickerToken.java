@@ -17,18 +17,24 @@ public class TickerToken implements TCSerializable {
 
   protected final Map<Integer, Boolean> tokenStateMap;
   protected final int                   id;
+  protected final int                   tickValue;
 
-  public TickerToken(int id) {
-    this(id, new HashMap<Integer, Boolean>());
+  public TickerToken(int id, int tickValue) {
+    this(id, tickValue, new HashMap<Integer, Boolean>());
   }
 
-  public TickerToken(int id, Map<Integer, Boolean> tokenStateMap) {
+  public TickerToken(int id, int tickValue, Map<Integer, Boolean> tokenStateMap) {
     this.id = id;
+    this.tickValue = tickValue;
     this.tokenStateMap = tokenStateMap;
   }
 
   public int getID() {
     return id;
+  }
+  
+  public int getTickValue() {
+    return tickValue;
   }
 
   public void collectToken(int aId, boolean dirtyState) {

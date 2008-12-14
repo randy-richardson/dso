@@ -8,7 +8,7 @@ import com.tc.util.msg.TickerTokenMessage;
 
 public interface TickerFactory<T extends TickerToken, M extends TickerTokenMessage> {
 
-  public T createTriggerToken(int id);
+  public T createTriggerToken(int id, int tickValue);
   
   public T createToken(M message);
 

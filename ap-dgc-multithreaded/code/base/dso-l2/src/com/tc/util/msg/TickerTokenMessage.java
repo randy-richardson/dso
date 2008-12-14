@@ -4,10 +4,11 @@
  */
 package com.tc.util.msg;
 
+import com.tc.async.api.EventContext;
 import com.tc.net.groups.GroupMessage;
 import com.tc.util.TickerToken;
 
-public interface TickerTokenMessage<T extends TickerToken> extends GroupMessage {
+public interface TickerTokenMessage<T extends TickerToken> extends GroupMessage, EventContext {
   
   public void init(T tickerToken);
   
