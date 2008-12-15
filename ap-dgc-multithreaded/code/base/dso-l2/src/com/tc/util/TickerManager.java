@@ -16,20 +16,23 @@ import java.util.TimerTask;
 
 public abstract class TickerManager {
 
-  private final int id;
-  private final int timerPeriod;
-  private final Map<Integer, TCTimer> timerMap = Collections.synchronizedMap(new HashMap<Integer, TCTimer>());
-  protected final TickerFactory factory;
-  private final Map<Class, TallyHandler> tallyTokenMap = Collections.synchronizedMap(new HashMap<Class, TallyHandler>());
-  private final Map<Class, TickerCompleteListener> completeTickerMap = Collections.synchronizedMap(new HashMap<Class, TickerCompleteListener>());
-  private final Counter tickValue = new Counter();
+  private final int                                id;
+  private final int                                timerPeriod;
+  private final Map<Integer, TCTimer>              timerMap          = Collections
+                                                                         .synchronizedMap(new HashMap<Integer, TCTimer>());
+  protected final TickerFactory                    factory;
+  private final Map<Class, TallyHandler>           tallyTokenMap     = Collections
+                                                                         .synchronizedMap(new HashMap<Class, TallyHandler>());
+  private final Map<Class, TickerCompleteListener> completeTickerMap = Collections
+                                                                         .synchronizedMap(new HashMap<Class, TickerCompleteListener>());
+  private final Counter                            tickValue         = new Counter();
 
-  public TickerManager(int id, int timerPeriod,TickerFactory factory) {
+  public TickerManager(int id, int timerPeriod, TickerFactory factory) {
     this.id = id;
     this.factory = factory;
     this.timerPeriod = timerPeriod;
   }
-  
+
   public TickerFactory getFactory() {
     return this.factory;
   }
@@ -71,35 +74,34 @@ public abstract class TickerManager {
           dirty = true;
         }
       }
-      if(!dirty && evaluateComplete(token)) {
-        complete( token );
+      if (!dirty && evaluateComplete(token)) {
+        complete(token);
         return;
       }
     }
     send(token);
   }
-  
+
   public abstract boolean evaluateComplete(TickerToken token);
-  
-  private void complete(TickerToken token ) {
+
+  private void complete(TickerToken token) {
     TCTimer t = timerMap.remove(token.getTickValue());
     System.out.println("id: " + id + " Timer value: " + t + " tickValue: " + token.getTickValue());
-    if(t != null) {
-      
+    if (t != null) {
+
       t.cancel();
     }
     completeTickerMap.get(token.getClass()).complete();
-    
-    
+
   }
 
   private static class TickerTask extends TimerTask {
 
-    private final TickerManager      manager;
+    private final TickerManager manager;
     private final TickerFactory factory;
-    private final Map                timerMap;
-    private final TCTimer            timer;
-    private final Counter            tickValue;
+    private final Map           timerMap;
+    private final TCTimer       timer;
+    private final Counter       tickValue;
 
     private TickerTask(Counter tickValue, TickerManager manager, TickerFactory factory, Map timerMap, TCTimer timer) {
       this.tickValue = tickValue;
@@ -110,7 +112,7 @@ public abstract class TickerManager {
     }
 
     public void run() {
-      TickerToken token = factory.createTriggerToken(manager.getId(),  tickValue.increment());   
+      TickerToken token = factory.createTriggerToken(manager.getId(), tickValue.increment());
       System.out.println("Put into timer map: tickValue: " + token.getTickValue() + " timer: " + timer);
       timerMap.put(token.getTickValue(), timer);
       manager.send(token);
