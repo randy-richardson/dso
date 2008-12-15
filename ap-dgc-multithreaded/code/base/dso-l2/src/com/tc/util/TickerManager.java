@@ -73,6 +73,7 @@ public abstract class TickerManager {
       }
       if(!dirty && evaluateComplete(token)) {
         complete( token );
+        return;
       }
     }
     send(token);
@@ -82,7 +83,7 @@ public abstract class TickerManager {
   
   private void complete(TickerToken token ) {
     TCTimer t = timerMap.remove(token.getTickValue());
-    System.out.println("Timer value: " + t + " tickValue: " + token.getTickValue());
+    System.out.println("id: " + id + " Timer value: " + t + " tickValue: " + token.getTickValue());
     if(t != null) {
       
       t.cancel();
