@@ -22,8 +22,10 @@ import com.terracotta.session.util.Timestamp;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -48,9 +50,9 @@ public class TerracottaSessionManager implements SessionManager {
   private final boolean                debugSessions;
   private final String                 sessionCookieName;
   private final String                 sessionUrlPathParamTag;
-  private final boolean                      usesStandardUrlPathParam;
+  private final boolean                usesStandardUrlPathParam;
   private int                          serverHopsDetected = 0;
-
+  private final boolean                sessionLocking;
 
   private static final Set             excludedVHosts     = loadExcludedVHosts();
 
@@ -72,6 +74,7 @@ public class TerracottaSessionManager implements SessionManager {
     this.logger = ManagerUtil.getLogger("com.tc.tcsession." + contextMgr.getAppName());
     this.reqeustLogEnabled = cp.getRequestLogBenchEnabled();
     this.invalidatorLogEnabled = cp.getInvalidatorLogBenchEnabled();
+    this.sessionLocking = ManagerUtil.isApplicationSessionLocked(contextMgr.getAppName());
 
     // XXX: If reasonable, we should move this out of the constructor -- leaking a reference to "this" to another thread
     // within a constructor is a bad practice (note: although "this" isn't explicitly based as arg, it is available and
@@ -117,14 +120,17 @@ public class TerracottaSessionManager implements SessionManager {
                                                                                  + "=");
   }
 
+  public boolean isApplicationSessionLocked() {
+    return sessionLocking;
+  }
+
   private static Set loadExcludedVHosts() {
     String list = ManagerUtil.getTCProperties().getProperty(TCPropertiesConsts.SESSION_VHOSTS_EXCLUDED, true);
     list = (list == null) ? "" : list.replaceAll("\\s", "");
 
     Set set = new TreeSet();
     String[] vhosts = list.split(",");
-    for (int i = 0; i < vhosts.length; i++) {
-      String vhost = vhosts[i];
+    for (String vhost : vhosts) {
       if (vhost != null && vhost.length() > 0) {
         set.add(vhost);
       }
@@ -527,8 +533,7 @@ public class TerracottaSessionManager implements SessionManager {
         logger.info("SESSION INVALIDATOR: started");
       }
 
-      for (int i = 0, n = keys.length; i < n; i++) {
-        final String key = keys[i];
+      for (final String key : keys) {
         try {
           final SessionId id = idGenerator.makeInstanceFromInternalKey(key);
           final Timestamp dtm = store.findTimestampUnlocked(id);
@@ -628,7 +633,9 @@ public class TerracottaSessionManager implements SessionManager {
     }
   }
 
-  // XXX: move this method?
+  private static final Map<String, Boolean> clusteredApps = new ConcurrentHashMap<String, Boolean>();
+
+  // XXX: move this method? And the static cache!
   public static boolean isDsoSessionApp(HttpServletRequest request) {
     Assert.pre(request != null);
 
@@ -638,7 +645,17 @@ public class TerracottaSessionManager implements SessionManager {
     if (hostHeader != null && excludedVHosts.contains(hostHeader)) { return false; }
 
     final String appName = DefaultContextMgr.computeAppName(request);
-    return ClassProcessorHelper.isDSOSessions(appName);
+
+    Boolean clustered = clusteredApps.get(appName);
+    if (clustered != null) { return clustered.booleanValue(); }
+
+    clustered = Boolean.valueOf(ClassProcessorHelper.isDSOSessions(appName));
+    Boolean prevValue = clusteredApps.put(appName, clustered);
+    if (prevValue != null && !clustered.equals(prevValue)) {
+      // This shouldn't happen
+      throw new AssertionError("Got differing response for [" + appName + "], was " + prevValue);
+    }
+    return clustered.booleanValue();
   }
 
   private static final class NullRequestTracker implements RequestTracker {

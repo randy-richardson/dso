@@ -7,7 +7,10 @@ package com.tc.l2.msg;
 import com.tc.bytes.TCByteBuffer;
 import com.tc.bytes.TCByteBufferFactory;
 import com.tc.bytes.TCByteBufferTestUtil;
+import com.tc.io.TCByteBufferInputStream;
+import com.tc.io.TCByteBufferOutputStream;
 import com.tc.net.ClientID;
+import com.tc.net.GroupID;
 import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.gtx.GlobalTransactionID;
@@ -19,12 +22,6 @@ import com.tc.objectserver.tx.TestCommitTransactionMessage;
 import com.tc.objectserver.tx.TestCommitTransactionMessageFactory;
 import com.tc.objectserver.tx.TestServerTransaction;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -40,7 +37,7 @@ public class RelayedCommitTransactionMessageTest extends TestCase {
 
   public void setUp() {
     testCommitTransactionMessage = (TestCommitTransactionMessage) new TestCommitTransactionMessageFactory()
-        .newCommitTransactionMessage();
+        .newCommitTransactionMessage(GroupID.NULL_ID);
     testCommitTransactionMessage.setBatch(new TestTransactionBatch(new TCByteBuffer[] { TCByteBufferFactory
         .getInstance(false, 3452) }), new ObjectStringSerializer());
     testCommitTransactionMessage.setChannelID(new ClientID(new ChannelID(channelId)));
@@ -94,13 +91,12 @@ public class RelayedCommitTransactionMessageTest extends TestCase {
   }
 
   private RelayedCommitTransactionMessage writeAndRead(RelayedCommitTransactionMessage rctm) throws Exception {
-    ByteArrayOutputStream bo = new ByteArrayOutputStream();
-    ObjectOutput oo = new ObjectOutputStream(bo);
-    oo.writeObject(rctm);
+    TCByteBufferOutputStream bo = new TCByteBufferOutputStream();
+    rctm.serializeTo(bo);
     System.err.println("Written : " + rctm);
-    ByteArrayInputStream bi = new ByteArrayInputStream(bo.toByteArray());
-    ObjectInput oi = new ObjectInputStream(bi);
-    RelayedCommitTransactionMessage rctm1 = (RelayedCommitTransactionMessage) oi.readObject();
+    TCByteBufferInputStream bi = new TCByteBufferInputStream(bo.toArray());
+    RelayedCommitTransactionMessage rctm1 = new RelayedCommitTransactionMessage();
+    rctm1.deserializeFrom(bi);
     System.err.println("Read : " + rctm1);
     return rctm1;
   }

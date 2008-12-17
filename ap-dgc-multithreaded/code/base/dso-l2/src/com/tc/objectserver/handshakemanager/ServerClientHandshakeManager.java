@@ -10,7 +10,6 @@ import com.tc.async.impl.NullSink;
 import com.tc.logging.TCLogger;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
-import com.tc.net.ServerID;
 import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.net.protocol.transport.ConnectionID;
 import com.tc.object.lockmanager.api.LockContext;
@@ -23,12 +22,12 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.lockmanager.api.LockManager;
 import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.util.SequenceValidator;
-import com.tc.util.TCTimer;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Timer;
 import java.util.TimerTask;
 
 public class ServerClientHandshakeManager {
@@ -37,12 +36,13 @@ public class ServerClientHandshakeManager {
   private static final State             STARTING                          = new State("STARTING");
   private static final State             STARTED                           = new State("STARTED");
   private static final int               BATCH_SEQUENCE_SIZE               = 10000;
+  static final int                       RECONNECT_WARN_INTERVAL           = 15000;
 
   public static final Sink               NULL_SINK                         = new NullSink();
 
   private State                          state                             = INIT;
 
-  private final TCTimer                  timer;
+  private final Timer                    timer;
   private final ReconnectTimerTask       reconnectTimerTask;
   private final ClientStateManager       clientStateManager;
   private final LockManager              lockManager;
@@ -57,13 +57,12 @@ public class ServerClientHandshakeManager {
   private final boolean                  persistent;
   private final ServerTransactionManager transactionManager;
   private final TCLogger                 consoleLogger;
-  private final ServerID                 serverNodeID;
 
   public ServerClientHandshakeManager(TCLogger logger, DSOChannelManager channelManager,
                                       ServerTransactionManager transactionManager, SequenceValidator sequenceValidator,
                                       ClientStateManager clientStateManager, LockManager lockManager,
-                                      Sink lockResponseSink, Sink oidRequestSink, TCTimer timer, long reconnectTimeout,
-                                      boolean persistent, TCLogger consoleLogger, ServerID serverNodeID) {
+                                      Sink lockResponseSink, Sink oidRequestSink, Timer timer, long reconnectTimeout,
+                                      boolean persistent, TCLogger consoleLogger) {
     this.logger = logger;
     this.channelManager = channelManager;
     this.transactionManager = transactionManager;
@@ -77,7 +76,6 @@ public class ServerClientHandshakeManager {
     this.persistent = persistent;
     this.consoleLogger = consoleLogger;
     this.reconnectTimerTask = new ReconnectTimerTask(this, timer);
-    this.serverNodeID = serverNodeID;
   }
 
   public synchronized boolean isStarting() {
@@ -172,7 +170,7 @@ public class ServerClientHandshakeManager {
 
     // NOTE: handshake ack message initialize()/send() must be done atomically with making the channel active
     // and is thus done inside this channel manager call
-    channelManager.makeChannelActive(clientID, persistent, serverNodeID);
+    channelManager.makeChannelActive(clientID, persistent);
 
     if (clientsRequestingObjectIDSequence.remove(clientID)) {
       oidRequestSink.add(new ObjectIDBatchRequestImpl(clientID, BATCH_SEQUENCE_SIZE));
@@ -190,10 +188,10 @@ public class ServerClientHandshakeManager {
         this.clientStateManager.shutdownNode(deadClient);
         i.remove();
       }
-      logger.info("Reconnect window closed. All dead clients removed.");
+      consoleLogger.info("Reconnect window closed. All dead clients removed.");
       start();
     } else {
-      logger.info("Reconnect window closed, but server already started.");
+      consoleLogger.info("Reconnect window closed, but server already started.");
     }
   }
 
@@ -221,13 +219,22 @@ public class ServerClientHandshakeManager {
             .getChannelID())));
       }
 
-      consoleLogger.info("Starting reconnect window: " + this.reconnectTimeout + " ms.");
-      timer.schedule(reconnectTimerTask, this.reconnectTimeout);
+      consoleLogger.info("Starting reconnect window: " + this.reconnectTimeout + " ms. Waiting for "
+                         + existingUnconnectedClients.size() + " clients to connect. ");
+      if (this.reconnectTimeout < RECONNECT_WARN_INTERVAL) {
+        timer.schedule(reconnectTimerTask, this.reconnectTimeout);
+      } else {
+        timer.schedule(reconnectTimerTask, RECONNECT_WARN_INTERVAL, RECONNECT_WARN_INTERVAL);
+      }
     }
   }
 
   private void assertInit() {
     if (state != INIT) throw new AssertionError("Should be in STARTING state: " + state);
+  }
+
+  synchronized int getUnconnectedClientsSize() {
+    return existingUnconnectedClients.size();
   }
 
   /**
@@ -237,19 +244,37 @@ public class ServerClientHandshakeManager {
    */
   private static class ReconnectTimerTask extends TimerTask {
 
-    private final TCTimer                      timer;
+    private final Timer                        timer;
     private final ServerClientHandshakeManager handshakeManager;
+    private long                               timeToWait;
 
-    private ReconnectTimerTask(ServerClientHandshakeManager handshakeManager, TCTimer timer) {
+    private ReconnectTimerTask(ServerClientHandshakeManager handshakeManager, Timer timer) {
       this.handshakeManager = handshakeManager;
       this.timer = timer;
+      timeToWait = handshakeManager.reconnectTimeout;
+    }
+
+    public void setTimeToWait(long timeToWait) {
+      this.timeToWait = timeToWait;
     }
 
     public void run() {
-      timer.cancel();
-      handshakeManager.notifyTimeout();
+      timeToWait -= RECONNECT_WARN_INTERVAL;
+      if (timeToWait > 0 && handshakeManager.getUnconnectedClientsSize() > 0) {
+        handshakeManager.consoleLogger.info("Reconnect window active.  Waiting for "
+                                            + handshakeManager.getUnconnectedClientsSize() + " clients to connect. "
+                                            + timeToWait + " ms remaining.");
+        if (timeToWait < RECONNECT_WARN_INTERVAL) {
+          cancel();
+          ReconnectTimerTask task = new ReconnectTimerTask(handshakeManager, timer);
+          task.setTimeToWait(timeToWait);
+          timer.schedule(task, timeToWait);
+        }
+      } else {
+        timer.cancel();
+        handshakeManager.notifyTimeout();
+      }
     }
-
   }
 
   private static class State {

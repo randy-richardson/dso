@@ -3,12 +3,11 @@
  */
 package com.tc.util.msg;
 
+import com.tc.io.TCByteBufferInput;
+import com.tc.io.TCByteBufferOutput;
 import com.tc.net.groups.AbstractGroupMessage;
 import com.tc.net.groups.MessageID;
 import com.tc.util.TickerToken;
-
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 
 public abstract class TickerTokenMessageImpl<T extends TickerToken>  extends AbstractGroupMessage implements TickerTokenMessage<T> {
   
@@ -26,16 +25,6 @@ public abstract class TickerTokenMessageImpl<T extends TickerToken>  extends Abs
     super(type, requestID);
   }
   
-  @Override
-  protected void basicReadExternal(int msgType, ObjectInput in) {
-    //
-  }
-
-  @Override
-  protected void basicWriteExternal(int msgType, ObjectOutput out) {
-    //
-  }
-
   public T getTickerToken() {
     return this.tickerToken;
   }
@@ -44,6 +33,13 @@ public abstract class TickerTokenMessageImpl<T extends TickerToken>  extends Abs
     this.tickerToken = aTickerToken;
   }
 
+  protected void basicDeserializeFrom(TCByteBufferInput in) {
+    //
+  }
+
+  protected void basicSerializeTo(TCByteBufferOutput out) {
+    //
+  }
 
 
 }

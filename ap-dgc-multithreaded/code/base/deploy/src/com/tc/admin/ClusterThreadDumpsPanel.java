@@ -33,12 +33,14 @@ import javax.swing.JFileChooser;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.event.TreeModelEvent;
+import javax.swing.event.TreeModelListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
-public class ClusterThreadDumpsPanel extends XContainer {
+public class ClusterThreadDumpsPanel extends XContainer implements TreeModelListener {
   private AdminClientContext     m_acc;
   private ClusterThreadDumpsNode m_clusterThreadDumpsNode;
   private Button                 m_threadDumpButton;
@@ -69,6 +71,7 @@ public class ClusterThreadDumpsPanel extends XContainer {
 
     m_threadDumpButton = (Button) findComponent("TakeThreadDumpButton");
     m_threadDumpButton.addActionListener(new ThreadDumpButtonHandler());
+    m_threadDumpButton.setText(m_acc.getString("thread.dump.take"));
 
     ScrollPane itemScroller = (ScrollPane) findComponent("ThreadDumpItemScroller");
     itemScroller.setItem(m_threadDumpTree = new XTree());
@@ -76,6 +79,7 @@ public class ClusterThreadDumpsPanel extends XContainer {
     m_threadDumpTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
     m_threadDumpTree.setModel(m_threadDumpTreeModel = new XTreeModel());
     m_threadDumpTree.setShowsRootHandles(true);
+    m_threadDumpTreeModel.addTreeModelListener(this);
     m_threadDumpTree.setPopupMenu(createTreePopup());
 
     m_threadDumpTextArea = (XTextArea) findComponent("ThreadDumpTextArea");
@@ -109,6 +113,7 @@ public class ClusterThreadDumpsPanel extends XContainer {
 
     public void actionPerformed(ActionEvent e) {
       ThreadDumpTreeNode tdtn = (ThreadDumpTreeNode) m_threadDumpTree.getLastSelectedPathComponent();
+      tdtn.cancel();
       m_threadDumpTreeModel.removeNodeFromParent(tdtn);
     }
   }
@@ -121,6 +126,10 @@ public class ClusterThreadDumpsPanel extends XContainer {
 
     public void actionPerformed(ActionEvent e) {
       XRootNode root = (XRootNode) m_threadDumpTreeModel.getRoot();
+      for (int i = 0; i < root.getChildCount(); i++) {
+        ClusterThreadDumpEntry ctde = (ClusterThreadDumpEntry) root.getChildAt(i);
+        ctde.cancel();
+      }
       root.removeAllChildren();
       m_threadDumpTreeModel.nodeStructureChanged(root);
     }
@@ -145,47 +154,64 @@ public class ClusterThreadDumpsPanel extends XContainer {
     return m_acc.getPrefs().node(ClusterThreadDumpsPanel.class.getName());
   }
 
+  private boolean isWaiting() {
+    return m_threadDumpButton.getText().equals(m_acc.getString("cancel"));
+  }
+  
   private class ThreadDumpButtonHandler implements ActionListener {
     public void actionPerformed(ActionEvent ae) {
-      ClusterThreadDumpEntry tde = m_clusterThreadDumpsNode.takeThreadDump();
       XTreeNode root = (XTreeNode) m_threadDumpTreeModel.getRoot();
+      if (!isWaiting()) {
+        m_exportButton.setEnabled(false);
+        m_threadDumpButton.setText(m_acc.getString("cancel"));
 
-      m_threadDumpTreeModel.insertNodeInto(tde, root, root.getChildCount());
-      TreePath treePath = new TreePath(tde.getPath());
-      m_threadDumpTree.expandPath(treePath);
-      m_threadDumpTree.setSelectionPath(treePath);
-      m_exportButton.setEnabled(true);
+        ClusterThreadDumpEntry tde = m_clusterThreadDumpsNode.takeThreadDump();
+        m_threadDumpTreeModel.insertNodeInto(tde, root, root.getChildCount());
+        TreePath treePath = new TreePath(tde.getPath());
+        m_threadDumpTree.expandPath(treePath);
+        m_threadDumpTree.setSelectionPath(treePath);
+      } else {
+        ClusterThreadDumpEntry tde = (ClusterThreadDumpEntry) root.getLastChild();
+        tde.cancel();
+      }
     }
   }
 
   private class ThreadDumpTreeSelectionListener implements TreeSelectionListener {
     public void valueChanged(TreeSelectionEvent e) {
-      if (m_lastSelectedThreadDumpTreeNode != null) {
-        m_lastSelectedThreadDumpTreeNode.setViewPosition(m_threadDumpTextScroller.getViewport().getViewPosition());
-      }
-      ThreadDumpTreeNode tdtn = (ThreadDumpTreeNode) m_threadDumpTree.getLastSelectedPathComponent();
-      if (tdtn != null) {
-        m_threadDumpTextArea.setText(tdtn.getContent());
-        final Point viewPosition = tdtn.getViewPosition();
-        if (viewPosition != null) {
-          SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-              m_threadDumpTextScroller.getViewport().setViewPosition(viewPosition);
-            }
-          });
-        }
-      }
+      ThreadDumpTreeNode tdtn = updateSelectedContent();
       m_lastSelectedThreadDumpTreeNode = tdtn;
       setControlsEnabled(tdtn != null);
     }
   }
 
+  private static final Point ORIGIN = new Point();
+
+  private ThreadDumpTreeNode updateSelectedContent() {
+    if (m_lastSelectedThreadDumpTreeNode != null) {
+      m_lastSelectedThreadDumpTreeNode.setViewPosition(m_threadDumpTextScroller.getViewport().getViewPosition());
+    }
+    ThreadDumpTreeNode tdtn = (ThreadDumpTreeNode) m_threadDumpTree.getLastSelectedPathComponent();
+    if (tdtn != null) {
+      m_threadDumpTextArea.setText(tdtn.getContent());
+      final Point viewPosition = tdtn.getViewPosition();
+      if (viewPosition != null && !viewPosition.equals(ORIGIN)) {
+        SwingUtilities.invokeLater(new Runnable() {
+          public void run() {
+            m_threadDumpTextScroller.getViewport().setViewPosition(viewPosition);
+          }
+        });
+      }
+    }
+    return tdtn;
+  }
+
   private void setControlsEnabled(boolean haveSelection) {
-    m_exportButton.setEnabled(haveSelection);
     m_deleteAction.setEnabled(haveSelection);
     m_deleteAllAction.setEnabled(haveSelection);
     m_exportAsTextAction.setEnabled(haveSelection);
     if (!haveSelection) {
+      m_exportButton.setEnabled(haveSelection);
       m_threadDumpTextArea.setText("");
     }
   }
@@ -242,5 +268,45 @@ public class ClusterThreadDumpsPanel extends XContainer {
     m_lastExportDir = file.getParentFile();
     fos.write(m_lastSelectedThreadDumpTreeNode.getContent().getBytes("UTF-8"));
     fos.close();
+  }
+
+  public void treeNodesChanged(TreeModelEvent e) {
+    ClusterThreadDumpEntry tde = (ClusterThreadDumpEntry) e.getTreePath().getPathComponent(1);
+    boolean isDone = tde.isDone();
+    m_exportButton.setEnabled(isDone);
+    if (isDone) {
+      updateSelectedContent();
+      m_threadDumpButton.setText(m_acc.getString("thread.dump.take"));
+    }
+  }
+
+  public void treeNodesInserted(TreeModelEvent e) {
+    /**/
+  }
+
+  public void treeNodesRemoved(TreeModelEvent e) {
+    /**/
+  }
+
+  public void treeStructureChanged(TreeModelEvent e) {
+    /**/
+  }
+
+  public void tearDown() {
+    super.tearDown();
+
+    m_acc = null;
+    m_clusterThreadDumpsNode = null;
+    m_threadDumpButton = null;
+    m_threadDumpTree = null;
+    m_threadDumpTreeModel = null;
+    m_threadDumpTextArea = null;
+    m_threadDumpTextScroller = null;
+    m_lastSelectedThreadDumpTreeNode = null;
+    m_exportButton = null;
+    m_lastExportDir = null;
+    m_deleteAction = null;
+    m_deleteAllAction = null;
+    m_exportAsTextAction = null;
   }
 }

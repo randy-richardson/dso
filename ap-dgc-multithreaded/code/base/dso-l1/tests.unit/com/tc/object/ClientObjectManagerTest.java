@@ -31,7 +31,6 @@ import com.tc.object.tx.MockTransactionManager;
 import com.tc.util.Counter;
 import com.tc.util.concurrent.ThreadUtil;
 
-import java.util.HashSet;
 import java.util.Map;
 
 public class ClientObjectManagerTest extends BaseDSOTestCase {
@@ -67,8 +66,8 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     objectFactory.tcObject = tcObject;
 
     mgr = new ClientObjectManagerImpl(remoteObjectManager, clientConfiguration, idProvider, cache, runtimeLogger,
-                                      new TestChannelIDProvider(), classProvider, classFactory, objectFactory,
-                                      new PortabilityImpl(clientConfiguration), null, null);
+                                      new ClientIDProviderImpl(new TestChannelIDProvider()), classProvider,
+                                      classFactory, objectFactory, new PortabilityImpl(clientConfiguration), null, null);
     mgr.setTransactionManager(new MockTransactionManager());
   }
 
@@ -92,9 +91,14 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
 
     // re-init manager
     TestMutualReferenceObjectFactory testMutualReferenceObjectFactory = new TestMutualReferenceObjectFactory();
-    ClientObjectManagerImpl clientObjectManager = new ClientObjectManagerImpl(remoteObjectManager, clientConfiguration,
-                                                                              idProvider, cache, runtimeLogger,
-                                                                              new TestChannelIDProvider(),
+    ClientObjectManagerImpl clientObjectManager = new ClientObjectManagerImpl(
+                                                                              remoteObjectManager,
+                                                                              clientConfiguration,
+                                                                              idProvider,
+                                                                              cache,
+                                                                              runtimeLogger,
+                                                                              new ClientIDProviderImpl(
+                                                                                                       new TestChannelIDProvider()),
                                                                               classProvider, classFactory,
                                                                               testMutualReferenceObjectFactory,
                                                                               new PortabilityImpl(clientConfiguration),
@@ -188,7 +192,6 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     RuntimeException expect = new RuntimeException();
     this.tcObject.setHydrateException(expect);
 
-
     TestDNA dna = newEmptyDNA();
     prepareObjectLookupResults(dna);
 
@@ -196,7 +199,7 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
       mgr.lookup(objectID);
       fail("no exception");
     } catch (Exception e) {
-      if (! (e == expect || e.getCause() == expect)) {
+      if (!(e == expect || e.getCause() == expect)) {
         fail(e);
       }
     }
@@ -208,7 +211,7 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
       mgr.lookup(objectID);
       fail("no exception");
     } catch (Exception e) {
-      if (! (e == expect || e.getCause() == expect)) {
+      if (!(e == expect || e.getCause() == expect)) {
         fail(e);
       }
     }
@@ -231,11 +234,6 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     // make sure the first caller has called down into the remote object manager
     remoteObjectManager.retrieveRootIDCalls.take();
     assertNull(remoteObjectManager.retrieveRootIDCalls.poll(0));
-
-    // now make sure that concurrent reconnect activity doesn't block
-    mgr.pause();
-    mgr.starting();
-    mgr.getAllObjectIDsAndClear(new HashSet());
   }
 
   /**
@@ -436,26 +434,26 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
         if (getLocalDepthCounter().get() == 0) {
           TCField[] tcFields = new TCField[] { new MockTCField("object") };
           TCClass tcClass = new MockTCClass(clientObjectManager, true, true, true, tcFields);
-          tcObj = new TCObjectPhysical(clientObjectManager.getReferenceQueue(), id, null, tcClass, isNew);
+          tcObj = new TCObjectPhysical(id, null, tcClass, isNew);
           tcObj.setReference("object", new ObjectID(2));
           getLocalDepthCounter().increment();
         } else {
           TCField[] tcFields = new TCField[] { new MockTCField("object") };
           TCClass tcClass = new MockTCClass(clientObjectManager, true, true, true, tcFields);
-          tcObj = new TCObjectPhysical(clientObjectManager.getReferenceQueue(), id, null, tcClass, isNew);
+          tcObj = new TCObjectPhysical(id, null, tcClass, isNew);
           getLocalDepthCounter().increment();
         }
       } else if (id.toLong() == 2) {
         if (getLocalDepthCounter().get() == 0) {
           TCField[] tcFields = new TCField[] { new MockTCField("object") };
           TCClass tcClass = new MockTCClass(clientObjectManager, true, true, true, tcFields);
-          tcObj = new TCObjectPhysical(clientObjectManager.getReferenceQueue(), id, null, tcClass, isNew);
+          tcObj = new TCObjectPhysical(id, null, tcClass, isNew);
           tcObj.setReference("object", new ObjectID(1));
           getLocalDepthCounter().increment();
         } else {
           TCField[] tcFields = new TCField[] { new MockTCField("object") };
           TCClass tcClass = new MockTCClass(clientObjectManager, true, true, true, tcFields);
-          tcObj = new TCObjectPhysical(clientObjectManager.getReferenceQueue(), id, null, tcClass, isNew);
+          tcObj = new TCObjectPhysical(id, null, tcClass, isNew);
           getLocalDepthCounter().increment();
         }
       }

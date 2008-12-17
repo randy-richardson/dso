@@ -25,6 +25,9 @@ import java.util.regex.Pattern;
  * Utility class to retrieve the build information for the product.
  */
 public final class ProductInfo {
+  private static final String ENTERPRISE = "Enterprise";
+  private static final String OPENSOURCE = "Opensource";
+
   private static final ResourceBundleHelper bundleHelper                 = new ResourceBundleHelper(ProductInfo.class);
 
   private static final String               DATE_FORMAT                  = "yyyyMMdd-HHmmss";
@@ -65,6 +68,7 @@ public final class ProductInfo {
   private final String                      patchUser;
   private final Date                        patchTimestamp;
   private final String                      patchRevision;
+  private final String                      patchEERevision;
   private final String                      patchBranch;
 
   private String                            version;
@@ -98,7 +102,7 @@ public final class ProductInfo {
     // Get all release build properties
     this.version = getBuildProperty(properties, BUILD_DATA_VERSION_KEY, UNKNOWN_VALUE);
     this.maven_version = getBuildProperty(properties, BUILD_DATA_MAVEN_VERSION_KEY, UNKNOWN_VALUE);
-    this.edition = getBuildProperty(properties, BUILD_DATA_EDITION_KEY, "opensource");
+    this.edition = getBuildProperty(properties, BUILD_DATA_EDITION_KEY, OPENSOURCE);
 
     this.timestamp = parseTimestamp(getBuildProperty(properties, BUILD_DATA_TIMESTAMP_KEY, null));
     this.host = getBuildProperty(properties, BUILD_DATA_HOST_KEY, UNKNOWN_VALUE);
@@ -113,6 +117,7 @@ public final class ProductInfo {
     this.patchUser = getPatchProperty(properties, BUILD_DATA_USER_KEY, UNKNOWN_VALUE);
     this.patchTimestamp = parseTimestamp(getPatchProperty(properties, BUILD_DATA_TIMESTAMP_KEY, null));
     this.patchRevision = getPatchProperty(properties, BUILD_DATA_REVISION_KEY, UNKNOWN_VALUE);
+    this.patchEERevision = getPatchProperty(properties, BUILD_DATA_EE_REVISION_KEY, UNKNOWN_VALUE);
     this.patchBranch = getPatchProperty(properties, BUILD_DATA_BRANCH_KEY, UNKNOWN_VALUE);
 
     Matcher matcher = KITIDPATTERN.matcher(maven_version);
@@ -264,13 +269,17 @@ public final class ProductInfo {
   public String patchRevision() {
     return patchRevision;
   }
+  
+  public String patchEERevision() {
+    return patchEERevision;
+  }
 
   public String patchBranch() {
     return patchBranch;
   }
 
   public String toShortString() {
-    return moniker + " " + ("opensource".equals(edition) ? "" : (edition + " ")) + version;
+    return moniker + " " + (OPENSOURCE.equals(edition) ? "" : (edition + " ")) + version;
   }
 
   public String toLongString() {
@@ -280,7 +289,7 @@ public final class ProductInfo {
   public String buildID() {
     if (buildID == null) {
       String rev = revision;
-      if (edition.indexOf("Enterprise") >= 0) {
+      if (ENTERPRISE.equals(edition)) {
         rev = ee_revision + "-" + revision;
       }
       buildID = buildTimestampAsString() + " (Revision " + rev + " by " + user + "@" + host + " from " + branch + ")";
@@ -297,7 +306,12 @@ public final class ProductInfo {
   }
 
   public String patchBuildID() {
-    return patchTimestampAsString() + " (Revision " + patchRevision + " by " + patchUser + "@" + patchHost + " from "
+    String rev = patchRevision;
+    if (ENTERPRISE.equals(edition)) {
+      rev = patchEERevision + "-" + patchRevision;
+    }
+
+    return patchTimestampAsString() + " (Revision " + rev + " by " + patchUser + "@" + patchHost + " from "
            + patchBranch + ")";
   }
 

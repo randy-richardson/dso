@@ -20,38 +20,41 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
 
   private final static String PARENT_CONCURRENT_HASH_MAP_FIELD_NAME = "parentMap";
 
-  public final static String TC_ORIG_GET_METHOD_NAME                = ByteCodeUtil.TC_METHOD_PREFIX + "origGet";
-  public final static String TC_ORIG_GET_METHOD_DESC                = "(Ljava/lang/Object;I)Ljava/lang/Object;";
+  public final static String  TC_ORIG_GET_METHOD_NAME               = ByteCodeUtil.TC_METHOD_PREFIX + "origGet";
+  public final static String  TC_ORIG_GET_METHOD_DESC               = "(Ljava/lang/Object;I)Ljava/lang/Object;";
 
-  public final static String TC_PUT_METHOD_NAME                     = ByteCodeUtil.TC_METHOD_PREFIX + "put";
-  public final static String TC_PUT_METHOD_DESC                     = "(Ljava/lang/Object;ILjava/lang/Object;Z)Ljava/lang/Object;";
+  public final static String  TC_PUT_METHOD_NAME                    = ByteCodeUtil.TC_METHOD_PREFIX + "put";
+  public final static String  TC_PUT_METHOD_DESC                    = "(Ljava/lang/Object;ILjava/lang/Object;Z)Ljava/lang/Object;";
 
-  public final static String TC_ORIG_PUT_METHOD_NAME                = ByteCodeUtil.TC_METHOD_PREFIX + "origPut";
-  public final static String TC_ORIG_PUT_METHOD_DESC                = "(Ljava/lang/Object;ILjava/lang/Object;Z)Ljava/lang/Object;";
+  public final static String  TC_ORIG_PUT_METHOD_NAME               = ByteCodeUtil.TC_METHOD_PREFIX + "origPut";
+  public final static String  TC_ORIG_PUT_METHOD_DESC               = "(Ljava/lang/Object;ILjava/lang/Object;Z)Ljava/lang/Object;";
 
-  public final static String TC_ORIG_REMOVE_METHOD_NAME             = ByteCodeUtil.TC_METHOD_PREFIX + "origRemove";
-  public final static String TC_ORIG_REMOVE_METHOD_DESC             = "(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;";
+  public final static String  TC_ORIG_REMOVE_METHOD_NAME            = ByteCodeUtil.TC_METHOD_PREFIX + "origRemove";
+  public final static String  TC_ORIG_REMOVE_METHOD_DESC            = "(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;";
+
+  public final static String  TC_ORIG_CLEAR_METHOD_NAME             = ByteCodeUtil.TC_METHOD_PREFIX + "origClear";
+  public final static String  TC_ORIG_CLEAR_METHOD_DESC             = "()V";
+
+  public final static String  TC_NULL_RETURN_REMOVE_METHOD_NAME     = "nullReturnRemove";
+  public final static String  TC_NULL_RETURN_REMOVE_METHOD_DESC     = "(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;";
+
+  public final static String  TC_NULL_RETURN_PUT_METHOD_NAME        = "nullReturnPut";
+  public final static String  TC_NULL_RETURN_PUT_METHOD_DESC        = "(Ljava/lang/Object;ILjava/lang/Object;Z)Ljava/lang/Object;";
   
-  public final static String TC_ORIG_CLEAR_METHOD_NAME             = ByteCodeUtil.TC_METHOD_PREFIX + "origClear";
-  public final static String TC_ORIG_CLEAR_METHOD_DESC             = "()V";
-
-  public final static String TC_NULLOLDVALUE_REMOVE_METHOD_NAME     = ByteCodeUtil.TC_METHOD_PREFIX + "nulloldvalueRemove";
-  public final static String TC_NULLOLDVALUE_REMOVE_METHOD_DESC     = "(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;";
-
   private final static String TC_CLEAR_METHOD_NAME                  = ByteCodeUtil.TC_METHOD_PREFIX + "clear";
   private final static String TC_CLEAR_METHOD_DESC                  = "()V";
 
-  public final static String TC_READLOCK_METHOD_NAME                = ByteCodeUtil.TC_METHOD_PREFIX + "readLock";
-  public final static String TC_READLOCK_METHOD_DESC                = "()V";
+  public final static String  TC_READLOCK_METHOD_NAME               = ByteCodeUtil.TC_METHOD_PREFIX + "readLock";
+  public final static String  TC_READLOCK_METHOD_DESC               = "()V";
 
-  public final static String TC_READUNLOCK_METHOD_NAME              = ByteCodeUtil.TC_METHOD_PREFIX + "readUnlock";
-  public final static String TC_READUNLOCK_METHOD_DESC              = "()V";
+  public final static String  TC_READUNLOCK_METHOD_NAME             = ByteCodeUtil.TC_METHOD_PREFIX + "readUnlock";
+  public final static String  TC_READUNLOCK_METHOD_DESC             = "()V";
 
-  public final static String INITIAL_TABLE_METHOD_NAME              = "initTable";
-  public final static String INITIAL_TABLE_METHOD_DESC              = "(I)V";
+  public final static String  INITIAL_TABLE_METHOD_NAME             = "initTable";
+  public final static String  INITIAL_TABLE_METHOD_DESC             = "(I)V";
 
-  public final static String CONCURRENT_HASH_MAP_SEGMENT_SLASH      = "java/util/concurrent/ConcurrentHashMap$Segment";
-  public final static String INIT_DESC                              = "(" + PARENT_CONCURRENT_HASH_MAP_FIELD_TYPE
+  public final static String  CONCURRENT_HASH_MAP_SEGMENT_SLASH     = "java/util/concurrent/ConcurrentHashMap$Segment";
+  public final static String  INIT_DESC                             = "(" + PARENT_CONCURRENT_HASH_MAP_FIELD_TYPE
                                                                       + "IF)V";
 
   public JavaUtilConcurrentHashMapSegmentAdapter(ClassVisitor cv) {
@@ -78,27 +81,29 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
       if ("<init>".equals(name) && "(IF)V".equals(desc)) {
         description = INIT_DESC;
       }
-      
+
       MethodVisitor mv = super.visitMethod(access, name, description, signature, exceptions);
       if ("put".equals(name) && "(Ljava/lang/Object;ILjava/lang/Object;Z)Ljava/lang/Object;".equals(desc)) {
         return new MulticastMethodVisitor(new MethodVisitor[] {
           // rename the original, totally un-instrumented put method so that it can be used by the CHM applicator
           super.visitMethod(ACC_SYNTHETIC, TC_ORIG_PUT_METHOD_NAME, TC_ORIG_PUT_METHOD_DESC, null, null),
+          // create an adapted put method that returns nulls for the old values and thus doesn't fault them in
+          new PutNullOldValueMethodAdapter(new PutMethodAdapter(new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, super.visitMethod(ACC_SYNTHETIC, TC_NULL_RETURN_PUT_METHOD_NAME, TC_NULL_RETURN_PUT_METHOD_DESC, null, null), false))),
           // adapt the put method
-          new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, new PutMethodAdapter(mv), false),
+          new PutMethodAdapter(new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, mv, false)),
           // This creates the identical copy of the put() method of Segments except that it does not lock and does
           // not invoke the instrumented version of the logicalInvoke(). The reason that it does not require
           // locking is because it is called from the __tc_rehash() instrumented method and the lock is grabbed
           // at the __tc_rehash() method already.
-          new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, new RemoveLockUnlockMethodAdapter(super.visitMethod(ACC_SYNTHETIC, TC_PUT_METHOD_NAME, TC_PUT_METHOD_DESC, null, null)), false)});
+          new RemoveLockUnlockMethodAdapter(new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, super.visitMethod(ACC_SYNTHETIC, TC_PUT_METHOD_NAME, TC_PUT_METHOD_DESC, null, null), false))});
       } else if ("remove".equals(name) && "(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;".equals(desc)) {
         return new MulticastMethodVisitor(new MethodVisitor[] {
           // rename the original, totally un-instrumented remove method so that it can be used by the CHM applicator
           super.visitMethod(ACC_SYNTHETIC, TC_ORIG_REMOVE_METHOD_NAME, TC_ORIG_REMOVE_METHOD_DESC, null, null),
           // create an adapted remove method that returns nulls for the old values and thus doesn't fault them in
-          new RemoveNullOldValueMethodAdapter(new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, new RemoveMethodAdapter(super.visitMethod(ACC_SYNTHETIC, TC_NULLOLDVALUE_REMOVE_METHOD_NAME, TC_NULLOLDVALUE_REMOVE_METHOD_DESC, null, null)), false)),
+          new RemoveNullOldValueMethodAdapter(new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, new RemoveMethodAdapter(super.visitMethod(ACC_SYNTHETIC, TC_NULL_RETURN_REMOVE_METHOD_NAME, TC_NULL_RETURN_REMOVE_METHOD_DESC, null, null)), false)),
           // adapt the remove method
-          new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, new RemoveMethodAdapter(mv), false)});
+          new RemoveMethodAdapter(new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, mv, false))});
       }
 
       final MethodVisitor visitor;
@@ -107,36 +112,40 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
           new ClearMethodAdapter(mv),
           super.visitMethod(ACC_SYNTHETIC, TC_ORIG_CLEAR_METHOD_NAME, TC_ORIG_CLEAR_METHOD_DESC, null, null),
           // Again, this method does not require locking as it is called by __tc_rehash() which grabs the lock already.
-          new RemoveLockUnlockMethodAdapter(super.visitMethod(ACC_SYNTHETIC, TC_CLEAR_METHOD_NAME, TC_CLEAR_METHOD_DESC, null, null))});
+          new RemoveLockUnlockMethodAdapter(newLazyValuesAdapter(access, desc, super.visitMethod(ACC_SYNTHETIC, TC_CLEAR_METHOD_NAME, TC_CLEAR_METHOD_DESC, null, null)))});
       } else if ("replace".equals(name) && "(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;".equals(desc)) {
-        visitor = new ReplaceMethodAdapter(mv);
+        visitor = new ReplaceMethodAdapter(newLazyValuesAdapter(access, desc, mv));
       } else if ("replace".equals(name) && "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;)Z".equals(desc)) {
-        visitor = new ReplaceIfValueEqualMethodAdapter(mv);
+        visitor = new ReplaceIfValueEqualMethodAdapter(newLazyValuesAdapter(access, desc, mv));
       } else if ("<init>".equals(name) && "(IF)V".equals(desc)) {
-        visitor = new InitMethodAdapter(mv);
+        visitor = new InitMethodAdapter(newLazyValuesAdapter(access, desc, mv));
       } else if ("readValueUnderLock".equals(name) && "(Ljava/util/concurrent/ConcurrentHashMap$HashEntry;)Ljava/lang/Object;".equals(desc)) {
-        visitor = new ReadValueUnderLockMethodAdapter(mv);
+        visitor = new ReadValueUnderLockMethodAdapter(newLazyValuesAdapter(access, desc, mv));
       } else {
         visitor = mv;
       }
-      
+
       if ("rehash".equals(name) && "()V".equals(desc)) {
         return visitor;
       } else {
-        return new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, visitor, false);
+        return visitor == mv ? newLazyValuesAdapter(access, desc, mv) : visitor;
       }
     }
   }
-  
+
+  private JavaUtilConcurrentHashMapLazyValuesMethodAdapter newLazyValuesAdapter(int access, String desc, MethodVisitor mv) {
+    return new JavaUtilConcurrentHashMapLazyValuesMethodAdapter(access, desc, mv, false);
+  }
+
   private String getNewName(String methodName) {
     return ByteCodeUtil.TC_METHOD_PREFIX + methodName;
   }
-  
+
   private MethodVisitor addWrapperMethod(int access, String name, String desc, String signature, String[] exceptions) {
     createWrapperMethod(access, name, desc, signature, exceptions);
     return cv.visitMethod(ACC_PRIVATE, getNewName(name), desc, signature, exceptions);
   }
-  
+
   private void createWrapperMethod(int access, String name, String desc, String signature, String[] exceptions) {
     Type[] params = Type.getArgumentTypes(desc);
     Type returnType = Type.getReturnType(desc);
@@ -207,7 +216,7 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
     createUnlockMethod();
     createTCReadLockMethod();
     createTCReadUnlockMethod();
-    
+
     super.visitField(ACC_FINAL + ACC_SYNTHETIC, PARENT_CONCURRENT_HASH_MAP_FIELD_NAME,
                      "Ljava/util/concurrent/ConcurrentHashMap;", null, null);
     super.visitEnd();
@@ -264,7 +273,7 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
     mv.visitMaxs(1, 1);
     mv.visitEnd();
   }
-  
+
   private void createUnlockMethod() {
     MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "unlock", "()V", null, null);
     mv.visitCode();
@@ -286,7 +295,7 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
     mv.visitMaxs(1, 1);
     mv.visitEnd();
   }
-  
+
   private void createTCReadUnlockMethod() {
     MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, TC_READUNLOCK_METHOD_NAME, TC_READUNLOCK_METHOD_DESC, null, null);
     mv.visitCode();
@@ -311,7 +320,7 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
     mv.visitMaxs(0, 0);
     mv.visitEnd();
   }
-  
+
   private static class InitMethodAdapter extends MethodAdapter implements Opcodes {
     public InitMethodAdapter(MethodVisitor mv) {
       super(mv);
@@ -352,10 +361,10 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
     public PutMethodAdapter(MethodVisitor mv) {
       super(mv);
     }
-    
+
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
       super.visitFieldInsn(opcode, owner, name, desc);
-      
+
       if (PUTFIELD == opcode && "java/util/concurrent/ConcurrentHashMap$HashEntry".equals(owner)
           && "value".equals(name) && "Ljava/lang/Object;".equals(desc)) {
         addFoundLogicalInvokePutMethodCall();
@@ -591,13 +600,161 @@ public class JavaUtilConcurrentHashMapSegmentAdapter extends ClassAdapter implem
     }
   }
 
-  private static class RemoveNullOldValueMethodAdapter extends MethodAdapter implements Opcodes {
+  private static class PutNullOldValueMethodAdapter extends MethodAdapter implements Opcodes {
     private boolean previousIsHashEntryValue = false;
     
-    public RemoveNullOldValueMethodAdapter(MethodVisitor mv) {
+    public PutNullOldValueMethodAdapter(MethodVisitor mv) {
       super(mv);
     }
     
+    private void restorePreviousHashEntryValue() {
+      if (previousIsHashEntryValue) {
+        super.visitFieldInsn(GETFIELD, "java/util/concurrent/ConcurrentHashMap$HashEntry", "value", "Ljava/lang/Object;");
+      }
+      previousIsHashEntryValue = false;
+    }
+
+    public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+      if (GETFIELD == opcode
+          && "java/util/concurrent/ConcurrentHashMap$HashEntry".equals(owner)
+          && "value".equals(name)
+          && "Ljava/lang/Object;".equals(desc)) {
+        previousIsHashEntryValue = true;
+      } else {
+        restorePreviousHashEntryValue();
+        super.visitFieldInsn(opcode, owner, name, desc);
+      }
+    }
+
+    public void visitVarInsn(int opcode, int var) {
+      if (previousIsHashEntryValue && ASTORE == opcode) {
+        super.visitInsn(POP);
+        super.visitInsn(ACONST_NULL);
+        previousIsHashEntryValue = false;
+      } else {
+        restorePreviousHashEntryValue();
+      }
+      super.visitVarInsn(opcode, var);
+    }
+
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+      restorePreviousHashEntryValue();
+      return super.visitAnnotation(desc, visible);
+    }
+
+    public AnnotationVisitor visitAnnotationDefault() {
+      restorePreviousHashEntryValue();
+      return super.visitAnnotationDefault();
+    }
+
+    public void visitAttribute(Attribute attr) {
+      restorePreviousHashEntryValue();
+      super.visitAttribute(attr);
+    }
+
+    public void visitCode() {
+      restorePreviousHashEntryValue();
+      super.visitCode();
+    }
+
+    public void visitEnd() {
+      restorePreviousHashEntryValue();
+      super.visitEnd();
+    }
+
+    public void visitFrame(int type, int local, Object[] local2, int stack, Object[] stack2) {
+      restorePreviousHashEntryValue();
+      super.visitFrame(type, local, local2, stack, stack2);
+    }
+
+    public void visitIincInsn(int var, int increment) {
+      restorePreviousHashEntryValue();
+      super.visitIincInsn(var, increment);
+    }
+
+    public void visitInsn(int opcode) {
+      restorePreviousHashEntryValue();
+      super.visitInsn(opcode);
+    }
+
+    public void visitIntInsn(int opcode, int operand) {
+      restorePreviousHashEntryValue();
+      super.visitIntInsn(opcode, operand);
+    }
+
+    public void visitJumpInsn(int opcode, Label label) {
+      restorePreviousHashEntryValue();
+      super.visitJumpInsn(opcode, label);
+    }
+
+    public void visitLabel(Label label) {
+      restorePreviousHashEntryValue();
+      super.visitLabel(label);
+    }
+
+    public void visitLdcInsn(Object cst) {
+      restorePreviousHashEntryValue();
+      super.visitLdcInsn(cst);
+    }
+
+    public void visitLineNumber(int line, Label start) {
+      restorePreviousHashEntryValue();
+      super.visitLineNumber(line, start);
+    }
+
+    public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
+      restorePreviousHashEntryValue();
+      super.visitLocalVariable(name, desc, signature, start, end, index);
+    }
+
+    public void visitLookupSwitchInsn(Label dflt, int[] keys, Label[] labels) {
+      restorePreviousHashEntryValue();
+      super.visitLookupSwitchInsn(dflt, keys, labels);
+    }
+
+    public void visitMaxs(int maxStack, int maxLocals) {
+      restorePreviousHashEntryValue();
+      super.visitMaxs(maxStack, maxLocals);
+    }
+
+    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+      restorePreviousHashEntryValue();
+      super.visitMethodInsn(opcode, owner, name, desc);
+    }
+
+    public void visitMultiANewArrayInsn(String desc, int dims) {
+      restorePreviousHashEntryValue();
+      super.visitMultiANewArrayInsn(desc, dims);
+    }
+
+    public AnnotationVisitor visitParameterAnnotation(int parameter, String desc, boolean visible) {
+      restorePreviousHashEntryValue();
+      return super.visitParameterAnnotation(parameter, desc, visible);
+    }
+
+    public void visitTableSwitchInsn(int min, int max, Label dflt, Label[] labels) {
+      restorePreviousHashEntryValue();
+      super.visitTableSwitchInsn(min, max, dflt, labels);
+    }
+
+    public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
+      restorePreviousHashEntryValue();
+      super.visitTryCatchBlock(start, end, handler, type);
+    }
+
+    public void visitTypeInsn(int opcode, String type) {
+      restorePreviousHashEntryValue();
+      super.visitTypeInsn(opcode, type);
+    }
+  }
+
+  private static class RemoveNullOldValueMethodAdapter extends MethodAdapter implements Opcodes {
+    private boolean previousIsHashEntryValue = false;
+
+    public RemoveNullOldValueMethodAdapter(MethodVisitor mv) {
+      super(mv);
+    }
+
     private void restorePreviousHashEntryValue() {
       if (previousIsHashEntryValue) {
         super.visitFieldInsn(GETFIELD, "java/util/concurrent/ConcurrentHashMap$HashEntry", "value", "Ljava/lang/Object;");

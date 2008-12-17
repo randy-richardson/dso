@@ -5,12 +5,12 @@
 package com.tc.object.lockmanager.api;
 
 import com.tc.logging.DumpHandler;
+import com.tc.net.NodeID;
 import com.tc.object.lockmanager.impl.GlobalLockInfo;
 import com.tc.object.session.SessionID;
 import com.tc.object.tx.TimerSpec;
 import com.tc.text.PrettyPrintable;
-
-import java.util.Collection;
+import com.tc.util.runtime.LockInfoByThreadID;
 
 /**
  * Simple lock manager for the client
@@ -18,18 +18,12 @@ import java.util.Collection;
  */
 public interface ClientLockManager extends DumpHandler, PrettyPrintable {
 
-  public void pause();
-
-  public void starting();
-
-  public void unpause();
-
-  public boolean isStarting();
-
   /**
    * obtain a lock
    */
   public void lock(LockID id, ThreadID threadID, int lockType, String lockObjectType, String contextInfo);
+
+  public void lockInterruptibly(LockID id, ThreadID threadID, int lockType, String lockObjectType, String contextInfo) throws InterruptedException;
 
   public boolean tryLock(LockID id, ThreadID threadID, TimerSpec timeout, int lockType, String lockObjectType);
 
@@ -41,9 +35,9 @@ public interface ClientLockManager extends DumpHandler, PrettyPrintable {
   /**
    * awards the lock to the threadID
    */
-  public void awardLock(SessionID sessionID, LockID id, ThreadID threadID, int type);
+  public void awardLock(NodeID nid, SessionID sessionID, LockID id, ThreadID threadID, int type);
 
-  public void cannotAwardLock(SessionID sessionID, LockID id, ThreadID threadID, int type);
+  public void cannotAwardLock(NodeID nid, SessionID sessionID, LockID id, ThreadID threadID, int type);
 
   public LockID lockIDFor(String id);
 
@@ -68,24 +62,7 @@ public interface ClientLockManager extends DumpHandler, PrettyPrintable {
    */
   public void recall(LockID lockID, ThreadID threadID, int level, int leaseTimeInMs);
 
-  /**
-   * Adds all lock waits to the given collection and returns that collection.
-   */
-  public Collection addAllWaitersTo(Collection c);
-
-  /**
-   * Adds all held locks to the given collection and returns that collection.
-   */
-  public Collection addAllHeldLocksTo(Collection c);
-
-  /**
-   * Causes all pending lock requests to be added to the collection.
-   */
-  public Collection addAllPendingLockRequestsTo(Collection c);
-
-  public void addAllHeldLocksAndPendingLockRequestsTo(Collection heldLocks, Collection pendingLocks);
-
-  public Collection addAllPendingTryLockRequestsTo(Collection c);
+  public void addAllLocksTo(LockInfoByThreadID lockInfo);
 
   public int queueLength(LockID lockID, ThreadID threadID);
 

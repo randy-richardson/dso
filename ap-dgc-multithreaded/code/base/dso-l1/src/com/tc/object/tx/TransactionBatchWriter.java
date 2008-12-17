@@ -12,6 +12,7 @@ import com.tc.io.TCByteBufferOutputStream.Mark;
 import com.tc.lang.Recyclable;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.net.GroupID;
 import com.tc.object.ObjectID;
 import com.tc.object.TCClass;
 import com.tc.object.TCObject;
@@ -26,8 +27,8 @@ import com.tc.object.lockmanager.api.Notify;
 import com.tc.object.msg.CommitTransactionMessage;
 import com.tc.object.msg.CommitTransactionMessageFactory;
 import com.tc.properties.TCProperties;
-import com.tc.properties.TCPropertiesImpl;
 import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.tc.util.Conversion;
 import com.tc.util.SequenceGenerator;
@@ -47,33 +48,35 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 public class TransactionBatchWriter implements ClientTransactionBatch {
-  private static final boolean                  DEBUG                     = TCPropertiesImpl.getProperties()
-                                                                              .getBoolean(TCPropertiesConsts.L1_TRANSACTIONMANAGER_FOLDING_DEBUG);
+  private static final boolean                  DEBUG                  = TCPropertiesImpl
+                                                                           .getProperties()
+                                                                           .getBoolean(
+                                                                                       TCPropertiesConsts.L1_TRANSACTIONMANAGER_FOLDING_DEBUG);
 
-  private static final TCLogger                 logger                    = TCLogging
-                                                                              .getLogger(TransactionBatchWriter.class);
+  private static final TCLogger                 logger                 = TCLogging
+                                                                           .getLogger(TransactionBatchWriter.class);
 
+  private final GroupID                         groupID;
   private final CommitTransactionMessageFactory commitTransactionMessageFactory;
   private final TxnBatchID                      batchID;
-  private final LinkedHashMap                   transactionData           = new LinkedHashMap();
-  private final Map                             foldingKeys               = new HashMap();
+  private final LinkedHashMap                   transactionData        = new LinkedHashMap();
+  private final Map                             foldingKeys            = new HashMap();
   private final ObjectStringSerializer          serializer;
   private final DNAEncoding                     encoding;
-  private final List                            batchDataOutputStreams    = new ArrayList();
+  private final List                            batchDataOutputStreams = new ArrayList();
 
   private final boolean                         foldingEnabled;
   private final int                             foldingObjectLimit;
   private final int                             foldingLockLimit;
 
-  private short                                 outstandingWriteCount     = 0;
-  private int                                   bytesWritten              = 0;
+  private short                                 outstandingWriteCount  = 0;
+  private int                                   bytesWritten           = 0;
+  private int                                   numTxns                = 0;
 
-  private int                                   numFolded                 = 0;
-  private int                                   numTxns                   = 0;
-
-  public TransactionBatchWriter(TxnBatchID batchID, ObjectStringSerializer serializer, DNAEncoding encoding,
-                                CommitTransactionMessageFactory commitTransactionMessageFactory,
+  public TransactionBatchWriter(GroupID groupID, TxnBatchID batchID, ObjectStringSerializer serializer,
+                                DNAEncoding encoding, CommitTransactionMessageFactory commitTransactionMessageFactory,
                                 FoldingConfig foldingConfig) {
+    this.groupID = groupID;
     this.batchID = batchID;
     this.encoding = encoding;
     this.commitTransactionMessageFactory = commitTransactionMessageFactory;
@@ -84,13 +87,9 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     this.foldingObjectLimit = foldingConfig.getObjectLimit();
   }
 
+  @Override
   public synchronized String toString() {
-    return super.toString() + "[" + this.batchID + ", isEmpty=" + isEmpty() + ", numTxnsBeforeFolding=" + numTxns
-           + ", numFolds=" + numFolded;
-  }
-
-  public synchronized int numberOfFolds() {
-    return numFolded;
+    return super.toString() + "[" + this.batchID + ", isEmpty=" + isEmpty() + ", numTxnsBeforeFolding=" + numTxns;
   }
 
   public TxnBatchID getTransactionBatchID() {
@@ -123,7 +122,8 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     if (outstandingWriteCount == 0) removed.recycle();
   }
 
-  private TransactionBuffer getOrCreateBuffer(ClientTransaction txn, SequenceGenerator sequenceGenerator) {
+  private TransactionBuffer getOrCreateBuffer(ClientTransaction txn, SequenceGenerator sequenceGenerator,
+                                              TransactionIDGenerator tidGenerator) {
     if (foldingEnabled) {
       final boolean exceedsLimits = exceedsLimits(txn);
 
@@ -208,6 +208,7 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     // if we are here, we are not folding
     SequenceID sid = new SequenceID(sequenceGenerator.getNextSequence());
     txn.setSequenceID(sid);
+    txn.setTransactionID(tidGenerator.nextTransactionID());
     if (DEBUG) logger.info("NOT folding, created new sequence " + sid);
 
     TransactionBuffer txnBuffer = new TransactionBuffer(sid, newOutputStream(), serializer, encoding);
@@ -233,10 +234,10 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
   }
 
   private void log_incomingTxn(ClientTransaction txn, boolean exceedsLimits, boolean scanForClose) {
-    logger.info("incoming txn [" + txn.getTransactionID() + " locks=" + txn.getAllLockIDs() + ", oids="
-                + txn.getChangeBuffers().keySet() + ", dmi=" + txn.getDmiDescriptors() + ", roots=" + txn.getNewRoots()
-                + ", notifies=" + txn.getNotifies() + ", type=" + txn.getLockType() + "] exceedsLimit="
-                + exceedsLimits + ", scanForClose=" + scanForClose);
+    logger.info("incoming txn@" + System.identityHashCode(txn) + "[" + txn.getTransactionID() + " locks="
+                + txn.getAllLockIDs() + ", oids=" + txn.getChangeBuffers().keySet() + ", dmi="
+                + txn.getDmiDescriptors() + ", roots=" + txn.getNewRoots() + ", notifies=" + txn.getNotifies()
+                + ", type=" + txn.getLockType() + "] exceedsLimit=" + exceedsLimits + ", scanForClose=" + scanForClose);
   }
 
   private void closeDependentKeys(Collection dependentKeys) {
@@ -270,12 +271,13 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     return false;
   }
 
-  public synchronized boolean addTransaction(ClientTransaction txn, SequenceGenerator sequenceGenerator) {
+  public synchronized boolean addTransaction(ClientTransaction txn, SequenceGenerator sequenceGenerator,
+                                             TransactionIDGenerator tidGenerator) {
     numTxns++;
 
     removeEmptyDeltaDna(txn);
 
-    TransactionBuffer txnBuffer = getOrCreateBuffer(txn, sequenceGenerator);
+    TransactionBuffer txnBuffer = getOrCreateBuffer(txn, sequenceGenerator, tidGenerator);
 
     bytesWritten += txnBuffer.write(txn);
 
@@ -319,7 +321,7 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
   }
 
   public synchronized void send() {
-    CommitTransactionMessage msg = this.commitTransactionMessageFactory.newCommitTransactionMessage();
+    CommitTransactionMessage msg = this.commitTransactionMessageFactory.newCommitTransactionMessage(groupID);
     msg.setBatch(this, serializer);
     msg.send();
   }
@@ -374,10 +376,10 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     private final Mark                     startMark;
     private final SetOnceFlag              committed            = new SetOnceFlag();
 
-    // Maintaining hard references so that it doesn't get GC'ed on us
-    private final IdentityHashMap          references           = new IdentityHashMap();
     private final Map                      writers              = new LinkedHashMap();
 
+    // Maintaining hard references so that it doesn't get GC'ed on us
+    private final IdentityHashMap          references           = new IdentityHashMap();
     private boolean                        needsCopy            = false;
     private int                            headerLength         = UNINITIALIZED_LENGTH;
     private int                            txnCount             = 0;
@@ -427,7 +429,8 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     }
 
     String dump() {
-      return " { " + sequenceID + " , Objects in Txn = " + references.size() + " }";
+      return " { " + sequenceID + " , Txns in Buffer = " + references.size() + " , Objects in (Folded) Txn : "
+             + writers.size() + " }";
     }
 
     SequenceID getSequenceID() {
@@ -435,6 +438,13 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     }
 
     int write(ClientTransaction txn) {
+      // Holding on the object references, this method could be called more than once for folded transactions.
+
+      // By definition on the second and subsequent calls will have repeated object references in it, so put() to the
+      // map here to not store dupes.
+
+      // XXX: As an optimization the set of "new" objects could probably be computed when finding the fold target
+      // instead of just always put()'ing here
       for (Iterator i = txn.getReferencesOfObjectsInTxn().iterator(); i.hasNext();) {
         this.references.put(i.next(), null);
       }
@@ -503,7 +513,10 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
       // TransactionBatchReader as well
       // /////////////////////////////////////////////////////////////////////////////////////////
 
-      output.writeLong(txn.getTransactionID().toLong());
+      TransactionID tid = txn.getTransactionID();
+      if (tid.isNull()) { throw new AssertionError("Writing Transaction with null Transaction ID : " + txn.toString()); }
+      
+      output.writeLong(tid.toLong());
       output.writeByte(txn.getLockType().getType());
       txnCountMark = output.mark();
       output.writeInt(UNINITIALIZED_LENGTH);
@@ -646,7 +659,8 @@ public class TransactionBatchWriter implements ClientTransactionBatch {
     }
 
     public static FoldingConfig createFromProperties(TCProperties props) {
-      return new FoldingConfig(props.getBoolean(TCPropertiesConsts.L1_TRANSACTIONMANAGER_FOLDING_ENABLED), props.getInt(TCPropertiesConsts.L1_TRANSACTIONMANAGER_FOLDING_OBJECT_LIMIT), props
+      return new FoldingConfig(props.getBoolean(TCPropertiesConsts.L1_TRANSACTIONMANAGER_FOLDING_ENABLED), props
+          .getInt(TCPropertiesConsts.L1_TRANSACTIONMANAGER_FOLDING_OBJECT_LIMIT), props
           .getInt(TCPropertiesConsts.L1_TRANSACTIONMANAGER_FOLDING_LOCK_LIMIT));
     }
   }

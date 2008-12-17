@@ -12,15 +12,14 @@ import com.tc.util.ClassUtils;
 
 import gnu.trove.THashMap;
 
-import java.lang.ref.ReferenceQueue;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TCObjectPhysical extends TCObjectImpl {
   private Map references = null;
 
-  public TCObjectPhysical(ReferenceQueue queue, ObjectID id, Object peer, TCClass tcc, boolean isNew) {
-    super(queue, id, peer, tcc, isNew);
+  public TCObjectPhysical(ObjectID id, Object peer, TCClass tcc, boolean isNew) {
+    super(id, peer, tcc, isNew);
   }
 
   private Map getReferences() {
@@ -46,6 +45,7 @@ public class TCObjectPhysical extends TCObjectImpl {
     }
   }
 
+  @Override
   public void resolveAllReferences() {
     TCClass tcc = getTCClass();
 
@@ -58,6 +58,7 @@ public class TCObjectPhysical extends TCObjectImpl {
     }
   }
 
+  @Override
   public ArrayIndexOutOfBoundsException checkArrayIndex(int index) {
     Object[] po = (Object[]) getPeerObject();
     if (index >= po.length || index < 0) {
@@ -67,6 +68,7 @@ public class TCObjectPhysical extends TCObjectImpl {
     return null;
   }
 
+  @Override
   public final void resolveArrayReference(int index) {
     this.markAccessed();
 
@@ -89,12 +91,14 @@ public class TCObjectPhysical extends TCObjectImpl {
     }
   }
 
+  @Override
   public ObjectID setReference(String fieldName, ObjectID id) {
     synchronized (getResolveLock()) {
       return (ObjectID) getReferences().put(fieldName, id);
     }
   }
 
+  @Override
   public void setArrayReference(int index, ObjectID id) {
     synchronized (getResolveLock()) {
       Object[] po = (Object[]) getPeerObject();
@@ -104,6 +108,7 @@ public class TCObjectPhysical extends TCObjectImpl {
     }
   }
 
+  @Override
   public void clearReference(String fieldName) {
     synchronized (getResolveLock()) {
       if (hasReferences()) {
@@ -112,6 +117,7 @@ public class TCObjectPhysical extends TCObjectImpl {
     }
   }
 
+  @Override
   public final void resolveReference(String fieldName) {
     synchronized (getResolveLock()) {
       this.markAccessed();
@@ -144,25 +150,27 @@ public class TCObjectPhysical extends TCObjectImpl {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void literalValueChanged(Object newValue, Object oldValue) {
     getObjectManager().getTransactionManager().literalValueChanged(this, newValue, oldValue);
-    setPeerObject(newValue == null ? null : new WeakObjectReference(getObjectID(), newValue, getObjectManager()
-        .getReferenceQueue()));
+    setPeerObject(newValue == null ? null : getObjectManager().newWeakObjectReference(getObjectID(), newValue));
   }
 
   /**
    * Unlike literalValueChange, this method is not synchronized on getResolveLock() because this method is called by the
    * applicator thread which has been synchronized on getResolveLock() in TCObjectImpl.hydrate().
    */
+  @Override
   public void setLiteralValue(Object newValue) {
-    setPeerObject(newValue == null ? null : new WeakObjectReference(getObjectID(), newValue, getObjectManager()
-        .getReferenceQueue()));
+    setPeerObject(newValue == null ? null : getObjectManager().newWeakObjectReference(getObjectID(), newValue));
   }
 
+  @Override
   protected boolean isEvictable() {
     return true;
   }
 
+  @Override
   protected int clearReferences(Object pojo, int toClear) {
     if (tcClazz.isIndexed()) {
       if (ClassUtils.isPrimitiveArray(pojo)) return 0;
@@ -203,7 +211,7 @@ public class TCObjectPhysical extends TCObjectImpl {
     int cleared = 0;
     for (int i = 0; i < fields.length; i++) {
       TCField field = fields[i];
-      if (field.isFinal() || !field.canBeReference()) continue;
+      if (!field.canBeReference()) continue;
       if (fieldValues == null) {
         // lazy instantiation. TODO:: Add a new method in TransparentAccess __tc_getFieldNoResolve()
         fieldValues = new HashMap();

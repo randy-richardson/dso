@@ -19,6 +19,11 @@ public class ProductInfoTest extends TestCase {
       ProductInfo info = new ProductInfo(buildData, patchData);
       verifyOpenSourceBuildData(info);
       verifyPatchInfo(info);
+      assertEquals("20080620-235959 (Revision 12112 by thepatchuser@thepatchhost from thepatchbranch)", info
+                   .patchBuildID());
+      assertEquals(
+                   "Patch Level 5, as of 20080620-235959 (Revision 12112 by thepatchuser@thepatchhost from thepatchbranch)",
+                   info.toLongPatchString());
     } catch (Exception e) {
       fail(e.getMessage());
     }
@@ -42,6 +47,12 @@ public class ProductInfoTest extends TestCase {
       ProductInfo info = new ProductInfo(buildData, patchData);
       verifyEnterpriseBuildData(info);
       verifyPatchInfo(info);
+      assertEquals("20080620-235959 (Revision 9999-12112 by thepatchuser@thepatchhost from thepatchbranch)", info
+                   .patchBuildID());
+      assertEquals(
+                   "Patch Level 5, as of 20080620-235959 (Revision 9999-12112 by thepatchuser@thepatchhost from thepatchbranch)",
+                   info.toLongPatchString());
+
     } catch (Exception e) {
       fail(e.getMessage());
     }
@@ -63,11 +74,12 @@ public class ProductInfoTest extends TestCase {
     assertTrue(copyright.indexOf("Terracotta, Inc.") >= 0);
     assertTrue(copyright.indexOf("All rights reserved.") >= 0);
 
-    assertEquals("opensource", info.edition());
+    assertEquals("Opensource", info.edition());
     assertEquals("1.2", info.kitID());
     assertEquals("Unlimited development", info.license());
     assertEquals("1.2.3-SNAPSHOT", info.mavenArtifactsVersion());
     assertEquals("Terracotta", info.moniker());
+    System.out.println(info.toLongString());
     assertEquals("Terracotta 1.2.3-SNAPSHOT, as of 20080616-130651 (Revision 12345 by theuser@thehost from thebranch)",
                  info.toLongString());
     assertEquals("Terracotta 1.2.3-SNAPSHOT", info.toShortString());
@@ -90,32 +102,28 @@ public class ProductInfoTest extends TestCase {
     assertTrue(copyright.indexOf("Terracotta, Inc.") >= 0);
     assertTrue(copyright.indexOf("All rights reserved.") >= 0);
 
-    assertEquals("Enterprise Edition", info.edition());
+    assertEquals("Enterprise", info.edition());
     assertEquals("1.2", info.kitID());
     assertEquals("Unlimited development", info.license());
     assertEquals("1.2.3-SNAPSHOT", info.mavenArtifactsVersion());
     assertEquals("Terracotta", info.moniker());
     assertEquals(
-                 "Terracotta Enterprise Edition 1.2.3-SNAPSHOT, as of 20080616-130651 (Revision 98765-12345 by theuser@thehost from thebranch)",
+                 "Terracotta Enterprise 1.2.3-SNAPSHOT, as of 20080616-130651 (Revision 98765-12345 by theuser@thehost from thebranch)",
                  info.toLongString());
-    assertEquals("Terracotta Enterprise Edition 1.2.3-SNAPSHOT", info.toShortString());
+    assertEquals("Terracotta Enterprise 1.2.3-SNAPSHOT", info.toShortString());
     assertEquals("1.2.3-SNAPSHOT", info.version());
   }
 
   private void verifyPatchInfo(ProductInfo info) {
     assertEquals(true, info.isPatched());
     assertEquals("thepatchbranch", info.patchBranch());
-    assertEquals("20080620-235959 (Revision 12112 by thepatchuser@thepatchhost from thepatchbranch)", info
-        .patchBuildID());
     assertEquals("thepatchhost", info.patchHost());
     assertEquals("5", info.patchLevel());
     assertEquals("12112", info.patchRevision());
+    assertEquals("9999", info.patchEERevision());
     assertEquals(toDate(2008, 5, 20, 23, 59, 59), info.patchTimestamp());
     assertEquals("20080620-235959", info.patchTimestampAsString());
     assertEquals("thepatchuser", info.patchUser());
-    assertEquals(
-                 "Patch Level 5, as of 20080620-235959 (Revision 12112 by thepatchuser@thepatchhost from thepatchbranch)",
-                 info.toLongPatchString());
     assertEquals("Patch Level 5", info.toShortPatchString());
   }
 
@@ -129,6 +137,7 @@ public class ProductInfoTest extends TestCase {
     assertEquals(null, info.patchTimestamp());
     assertEquals(ProductInfo.UNKNOWN_VALUE, info.patchTimestampAsString());
     assertEquals(ProductInfo.UNKNOWN_VALUE, info.patchUser());
+    assertEquals(ProductInfo.UNKNOWN_VALUE, info.patchEERevision());
     assertEquals("Patch Level [unknown], as of [unknown] (Revision [unknown] by [unknown]@[unknown] from [unknown])",
                  info.toLongPatchString());
     assertEquals("Patch Level [unknown]", info.toShortPatchString());

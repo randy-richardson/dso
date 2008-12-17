@@ -32,7 +32,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.Serializable;
+import java.text.NumberFormat;
 
+import javax.swing.JFormattedTextField;
 import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
@@ -67,6 +69,7 @@ public class RootsPanel extends XContainer {
     
     InspectObjectAction inspectAction = new InspectObjectAction();
     m_inspectObjectField = (XTextField) findComponent("InspectObjectField");
+    m_inspectObjectField.setFocusLostBehavior(JFormattedTextField.PERSIST);
     m_inspectObjectField.addActionListener(new InspectFieldHandler());
     m_inspectObjectField.getDocument().addDocumentListener(inspectAction);
     m_inspectObjectButton = (XButton) findComponent("InspectObjectButton");
@@ -89,7 +92,7 @@ public class RootsPanel extends XContainer {
     private long fObjectID;
 
     InspectObjectAction() {
-      super("Show...");
+      super(AdminClient.getContext().getMessage("roots.inspect.show"));
     }
 
     public void actionPerformed(ActionEvent ae) {
@@ -149,12 +152,13 @@ public class RootsPanel extends XContainer {
   }
 
   private void updateLiveObjectCount() {
-    m_liveObjectCountValueLabel.setText(Integer.toString(m_clusterNode.getLiveObjectCount()));
+    int count = m_clusterNode.getLiveObjectCount();
+    m_liveObjectCountValueLabel.setText(NumberFormat.getNumberInstance().format(count));
   }
 
   public void setObjects(IBasicObject[] roots) {
-    updateLiveObjectCount();
     m_objectSetPanel.setObjects(m_clusterNode, roots);
+    updateLiveObjectCount();
   }
 
   public void clearModel() {
@@ -168,6 +172,7 @@ public class RootsPanel extends XContainer {
 
   public void add(IBasicObject root) {
     m_objectSetPanel.add(root);
+    updateLiveObjectCount();
   }
   
   private class LiveObjectHelpAction implements ActionListener {
@@ -180,9 +185,8 @@ public class RootsPanel extends XContainer {
     }
     
     public void actionPerformed(ActionEvent e) {
-      String kitID =getKitID();
-      String loc = "http://www.terracotta.org/kit/reflector?kitID=" + kitID
-                   + "&pageID=ConsoleGuide#AdminConsoleGuide-Roots";
+      String kitID = getKitID();
+      String loc = AdminClient.getContext().format("console.guide.url", kitID) + "#AdminConsoleGuide-Roots";
       BrowserLauncher.openURL(loc);
     }
   }

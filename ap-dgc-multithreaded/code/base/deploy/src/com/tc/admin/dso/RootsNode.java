@@ -9,6 +9,7 @@ import com.tc.admin.AdminClientContext;
 import com.tc.admin.ClusterNode;
 import com.tc.admin.common.BasicWorker;
 import com.tc.admin.common.ComponentNode;
+import com.tc.admin.common.ExceptionHelper;
 import com.tc.admin.common.XAbstractAction;
 import com.tc.admin.common.XTreeNode;
 import com.tc.admin.model.IBasicObject;
@@ -21,6 +22,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -43,12 +45,25 @@ public class RootsNode extends ComponentNode implements RootCreationListener, Pr
   public RootsNode(ClusterNode clusterNode) {
     super();
     m_acc = AdminClient.getContext();
-    setLabel(m_acc.getMessage("dso.roots"));
     m_clusterNode = clusterNode;
+    setLabel(m_acc.getMessage("dso.roots"));
     clusterNode.getClusterModel().addPropertyChangeListener(this);
     init();
   }
 
+  String getBaseLabel() {
+    return AdminClient.getContext().getMessage("dso.roots");
+  }
+  
+  
+  private void updateLabel() {
+    int rootCount = getRootCount();
+    String suffix = rootCount == 1 ? m_acc.getMessage("dso.roots.suffix.singular") : m_acc
+        .getMessage("dso.roots.suffix.plural");
+    setLabel(getBaseLabel() + " (" + rootCount + " " + suffix + ")");
+    nodeChanged();
+  }
+  
   IClusterModel getClusterModel() {
     return m_clusterNode.getClusterModel();
   }
@@ -95,13 +110,17 @@ public class RootsNode extends ComponentNode implements RootCreationListener, Pr
       m_clusterNode.getClusterModel().addRootCreationListener(RootsNode.this);
       Exception e = getException();
       if (e != null) {
-        m_acc.log(e);
+        Throwable rootCause = ExceptionHelper.getRootCause(e);
+        if (!(rootCause instanceof IOException)) {
+          m_acc.log(e);
+        }
       } else {
         m_roots = getResult();
         initMenu();
         if (m_rootsPanel != null) {
           m_rootsPanel.setObjects(m_roots);
         }
+        updateLabel();
       }
    }
   }
@@ -163,13 +182,17 @@ public class RootsNode extends ComponentNode implements RootCreationListener, Pr
     protected void finished() {
       Exception e = getException();
       if (e != null) {
-        m_acc.log(e);
+        Throwable rootCause = ExceptionHelper.getRootCause(e);
+        if (!(rootCause instanceof IOException)) {
+          m_acc.log(e);
+        }
       } else {
         ((RootsPanel) getComponent()).setObjects(m_roots);
         getModel().nodeStructureChanged(RootsNode.this);
         if (isExpanded) {
           m_acc.expand(RootsNode.this);
         }
+        updateLabel();
       }
       m_acc.unblock();
       m_acc.clearStatus();
@@ -240,6 +263,7 @@ public class RootsNode extends ComponentNode implements RootCreationListener, Pr
       ((RootsPanel) getComponent()).add(m_root);
 
       m_acc.setStatus(m_acc.getMessage("dso.root.new") + m_root);
+      updateLabel();
     }
   }
 }

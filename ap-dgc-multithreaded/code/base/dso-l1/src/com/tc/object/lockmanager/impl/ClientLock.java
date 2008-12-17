@@ -28,6 +28,8 @@ import com.tc.util.Assert;
 import com.tc.util.State;
 import com.tc.util.TCAssertionError;
 import com.tc.util.Util;
+import com.tc.util.runtime.LockInfoByThreadID;
+import com.tc.util.runtime.LockState;
 
 import gnu.trove.TIntStack;
 
@@ -40,32 +42,32 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimerTask;
+import java.util.Map.Entry;
 
 class ClientLock implements TimerCallback, LockFlushCallback {
-  private static final TCLogger       logger                   = TCLogging.getLogger(ClientLock.class);
+  private static final TCLogger                     logger                   = TCLogging.getLogger(ClientLock.class);
 
-  private static final State          RUNNING                  = new State("RUNNING");
-  private static final State          PAUSED                   = new State("PAUSED");
+  private static final State                        RUNNING                  = new State("RUNNING");
+  private static final State                        PAUSED                   = new State("PAUSED");
 
-  private final Map                   holders                  = Collections.synchronizedMap(new HashMap());
-  private final Set                   rejectedLockRequesterIDs = new HashSet();
-  private final LockID                lockID;
-  private final Map                   waitLocksByRequesterID   = new HashMap();
-  private final Map                   pendingLockRequests      = new LinkedHashMap();
-  private final Map                   waitTimers               = new HashMap();
-  private final RemoteLockManager     remoteLockManager;
-  private final TCLockTimer           lockTimer;
+  private final Map/*<ThreadID, LockHold>*/         holders                  = Collections.synchronizedMap(new HashMap());
+  private final Set/*<ThreadID>*/                   rejectedLockRequesterIDs = new HashSet();
+  private final LockID                              lockID;
+  private final Map/*<ThreadID, Object>*/           waitLocksByRequesterID   = new HashMap();
+  private final Map/*<ThreadID, LockRequest>*/      pendingLockRequests      = new LinkedHashMap();
+  private final Map/*<WaitLockRequest, TimerTask>*/ waitTimers               = new HashMap();
+  private final RemoteLockManager                   remoteLockManager;
+  private final TCLockTimer                         lockTimer;
 
-  private final Greediness            greediness               = new Greediness();
-  private volatile int                useCount                 = 0;
-  private volatile State              state                    = RUNNING;
-  private long                        timeUsed                 = System.currentTimeMillis();
-  private final ClientLockStatManager lockStatManager;
-  private final String                lockObjectType;
-  private TimerTask                   recallTimerTask;
+  private final Greediness                          greediness               = new Greediness();
+  private volatile int                              useCount                 = 0;
+  private volatile State                            state                    = RUNNING;
+  private long                                      timeUsed                 = System.currentTimeMillis();
+  private final ClientLockStatManager               lockStatManager;
+  private final String                              lockObjectType;
+  private TimerTask                                 recallTimerTask;
 
   ClientLock(LockID lockID, String lockObjectType, RemoteLockManager remoteLockManager, TCLockTimer waitTimer,
              ClientLockStatManager lockStatManager) {
@@ -97,29 +99,41 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     lockStatManager.recordLockHopped(lockID, threadID);
   }
 
-  boolean tryLock(ThreadID threadID, TimerSpec timeout, int lockType) {
-    lock(threadID, lockType, timeout, true, LockContextInfo.NULL_LOCK_CONTEXT_INFO);
+  public boolean tryLock(ThreadID threadID, TimerSpec timeout, int lockType) {
+    try {
+      lock(threadID, lockType, timeout, true, false, LockContextInfo.NULL_LOCK_CONTEXT_INFO);
+    } catch (InterruptedException e) {
+      throw new AssertionError("InterruptedException thrown from non-interruptible lock request");
+    }
     return isHeldBy(threadID, lockType);
   }
 
+  public void lockInterruptibly(ThreadID threadID, int lockType, String contextInfo) throws InterruptedException {
+    lock(threadID, lockType, null, false, true, contextInfo);
+  }
+  
   public void lock(ThreadID threadID, int lockType, String contextInfo) {
-    lock(threadID, lockType, null, false, contextInfo);
+    try {
+      lock(threadID, lockType, null, false, false, contextInfo);
+    } catch (InterruptedException e) {
+      throw new AssertionError("InterruptedException thrown from non-interruptible lock request");
+    }
   }
 
-  private void lock(ThreadID threadID, final int lockType, TimerSpec timeout, boolean noBlock, String contextInfo) {
+  private void lock(ThreadID threadID, final int lockType, TimerSpec timeout, boolean noBlock, boolean interruptible, String contextInfo) throws InterruptedException {
     int effectiveType = lockType;
     if (LockLevel.isSynchronous(lockType)) {
       if (!LockLevel.isSynchronousWrite(lockType)) { throw new AssertionError(
                                                                               "Only Synchronous WRITE lock is supported now"); }
       effectiveType = LockLevel.WRITE;
     }
-    basicLock(threadID, effectiveType, timeout, noBlock, contextInfo);
+    basicLock(threadID, effectiveType, timeout, noBlock, interruptible, contextInfo);
     if (effectiveType != lockType) {
       awardSynchronous(threadID, effectiveType);
     }
   }
 
-  private void basicLock(ThreadID requesterID, int lockType, TimerSpec timeout, boolean noBlock, String contextInfo) {
+  private void basicLock(ThreadID requesterID, int lockType, TimerSpec timeout, boolean noBlock, boolean interruptible, String contextInfo) throws InterruptedException {
     final Object waitLock;
     final Action action = new Action();
 
@@ -200,6 +214,27 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     boolean isInterrupted = false;
     if (noBlock) {
       isInterrupted = waitForTryLock(requesterID, waitLock);
+    } else if (interruptible) {
+      try {
+        waitForLockInterruptibly(requesterID, lockType, waitLock);
+      } catch (InterruptedException e) {
+        synchronized (this) {
+          // The following is *NOT* meant to be short-circuit logic, do not change '|' for '||'
+          if ((waitLocksByRequesterID.remove(requesterID) == null)
+             | (pendingLockRequests.remove(requesterID) == null)) {
+            /* The lock was awarded by the server without us noticing. Swallow
+             * the exception and return normally.  We also self interrupt 
+             * so that that later code correctly `sees' the exception.
+             */
+            Thread.currentThread().interrupt();
+            return;
+          }
+        }
+        synchronized (waitLock) {
+          waitLock.notifyAll();
+        }
+        throw e;
+      }
     } else {
       isInterrupted = waitForLock(requesterID, lockType, waitLock);
     }
@@ -221,11 +256,8 @@ class ClientLock implements TimerCallback, LockFlushCallback {
    * @returns true if the greedy lock should be let go.
    */
   private synchronized boolean isGreedyRecallNeeded(ThreadID threadID, int level) {
-    if (greediness.isGreedy()) {
-      // We let the lock recalled if the request is for WRITE and we hold a Greedy READ
-      if (LockLevel.isWrite(level) && greediness.isReadOnly()) { return true; }
-    }
-    return false;
+    // We let the lock recalled if the request is for WRITE and we hold a Greedy READ
+    return greediness.isGreedy() && LockLevel.isWrite(level) && greediness.isReadOnly();
   }
 
   public void unlock(ThreadID threadID) {
@@ -515,8 +547,8 @@ class ClientLock implements TimerCallback, LockFlushCallback {
       waitLock = waitLocksByRequesterID.remove(threadID);
       if (waitLock == null && !threadID.equals(ThreadID.VM_ID)) {
         // Not waiting for this lock
-        throw new LockNotPendingError("Attempt to award a lock that isn't pending [lockID: " + lockID + ", level: "
-                                      + level + ", requesterID: " + threadID + "]");
+        remoteLockManager.releaseLock(lockID, threadID);
+        return;
       }
       if (LockLevel.isGreedy(level)) {
         Assert.assertEquals(threadID, ThreadID.VM_ID);
@@ -587,6 +619,18 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     return isInterrupted;
   }
 
+  private void waitForLockInterruptibly(ThreadID threadID, int lockType, Object waitLock) throws InterruptedException {
+    // debug("waitForLockInterruptibly() - BEGIN - ", requesterID, LockLevel.toString(type));
+    // We need to check if the respond has returned already before we do a wait
+    while (!isHeldBy(threadID, lockType)) {
+      synchronized (waitLock) {
+        if (!isHeldBy(threadID, lockType)) {
+          waitLock.wait();
+        }
+      }
+    }
+  }
+  
   private void scheduleWaitForTryLock(ThreadID threadID, int lockLevel, TimerSpec timeout) {
     TryLockRequest tryLockWaitRequest = (TryLockRequest) pendingLockRequests.get(threadID);
     scheduleWaitTimeout(tryLockWaitRequest);
@@ -761,27 +805,40 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     return c;
   }
 
-  public synchronized void addAllHeldLocksAndPendingLockRequestsTo(Collection heldLocks, Collection pendingLocks) {
-    for (Iterator i = holders.keySet().iterator(); i.hasNext();) {
-      ThreadID threadID = (ThreadID) i.next();
-      LockHold hold = (LockHold) holders.get(threadID);
+  /**
+   * Gather all lock information and add it to lockInfo. Used by threadDump utils to tell about distributed
+   * held/waiting-on/wating-to lock for each thread.
+   */
+  public synchronized void addAllLocksTo(LockInfoByThreadID lockInfo) {
+    if (greediness.isGreedy()) {
+     lockInfo.addLock(LockState.HOLDING, ThreadID.VM_ID, this.lockID.toString());
+    }
+    
+    for (Iterator i = holders.entrySet().iterator(); i.hasNext();) {
+      Map.Entry e = (Map.Entry) i.next();
+      LockHold hold = (LockHold) e.getValue();
       if (hold.isHolding() && hold.getServerLevel() != LockLevel.NIL_LOCK_LEVEL) {
-        heldLocks.add(new LockRequest(this.lockID, threadID, hold.getServerLevel(), lockObjectType));
+        ThreadID threadID = (ThreadID) e.getKey();
+        lockInfo.addLock(LockState.HOLDING, threadID, this.lockID.toString());
       }
     }
     for (Iterator i = pendingLockRequests.values().iterator(); i.hasNext();) {
       LockRequest request = (LockRequest) i.next();
-      if (isWaitLockRequest(request)) continue;
-      pendingLocks.add(request);
+      if (isWaitLockRequest(request)) {
+        lockInfo.addLock(LockState.WAITING_ON, request.threadID(), this.lockID.toString());
+      } else {
+        lockInfo.addLock(LockState.WAITING_TO, request.threadID(), this.lockID.toString());
+      }
     }
   }
-  
+
   public synchronized Collection addHoldersToAsLockRequests(Collection c) {
     if (greediness.isNotGreedy()) {
-      for (Iterator i = holders.keySet().iterator(); i.hasNext();) {
-        ThreadID threadID = (ThreadID) i.next();
-        LockHold hold = (LockHold) holders.get(threadID);
+      for (Iterator i = holders.entrySet().iterator(); i.hasNext();) {
+        Map.Entry e = (Map.Entry) i.next();
+        LockHold hold = (LockHold) e.getValue();
         if (hold.isHolding() && hold.getServerLevel() != LockLevel.NIL_LOCK_LEVEL) {
+          ThreadID threadID = (ThreadID) e.getKey();
           c.add(new LockRequest(this.lockID, threadID, hold.getServerLevel(), lockObjectType));
         }
       }
@@ -974,17 +1031,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
     if (holder != null && holder.isHolding()) { return holder.isLastLockSynchronouslyHeld(); }
     return false;
   }
-
-  /*
-   * @returns true if the greedy lock should be let go.
-   */
-  // private synchronized boolean isGreedyRecallNeeded(ThreadID threadID, int level) {
-  // if (greediness.isGreedy()) {
-  // // We let the lock recalled if the request is for WRITE and we hold a Greedy READ
-  // if (LockLevel.isWrite(level) && greediness.isReadOnly()) { return true; }
-  // }
-  // return false;
-  // }
+  
   private boolean isWriteHeld() {
     synchronized (holders) {
       for (Iterator it = holders.values().iterator(); it.hasNext();) {
@@ -1055,7 +1102,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
   }
 
   public synchronized boolean isClear() {
-    return (holders.isEmpty() && greediness.isNotGreedy() && (pendingLockRequests.size() == 0) && (useCount == 0));
+    return (holders.isEmpty() && greediness.isNotGreedy() && pendingLockRequests.isEmpty() && (useCount == 0));
   }
 
   // This method is synchronized such that we can quickly inspect for potential timeouts and only on possible
@@ -1063,8 +1110,8 @@ class ClientLock implements TimerCallback, LockFlushCallback {
   public boolean timedout(long timeoutInterval) {
     if (useCount != 0) { return false; }
     synchronized (this) {
-      return (holders.isEmpty() && greediness.isGreedy() && (pendingLockRequests.size() == 0) && (useCount == 0) && ((System
-          .currentTimeMillis() - timeUsed) > timeoutInterval));
+      return (holders.isEmpty() && greediness.isGreedy() && pendingLockRequests.isEmpty() && (useCount == 0)
+          && ((System.currentTimeMillis() - timeUsed) > timeoutInterval));
     }
   }
 
@@ -1360,6 +1407,7 @@ class ClientLock implements TimerCallback, LockFlushCallback {
       /*
        * server_level is not changed to NIL_LOCK_LEVEL even though the server will release the lock as we need to know
        * what state we were holding before wait on certain scenarios like server crash etc.
+       * 
        * @see ClientLockManager.notified
        */
       return this.server_level;

@@ -47,12 +47,6 @@ public class ClassProcessorHelper {
   /** Name reserved for apps running as root web app in a container */
   public static final String                 ROOT_WEB_APP_NAME         = "ROOT";
 
-  // Setting this system property will delay the timing of when the DSO client is initialized. With the default
-  // behavior, the debug subsystem of the VM will not be started until after the DSO client starts up. This means it is
-  // impossible to use the debugger during dso client startup. Setting this flag to true will allow debugging, but at
-  // the expense of the fixes applied for CDV-424 and DEV-959
-  private static final String                TC_BOOT_DEBUG_SYSPROP     = "tc.boot.debug";
-
   // Directory where Terracotta jars (and dependencies) can be found
   private static final String                TC_INSTALL_ROOT_SYSPROP   = "tc.install-root";
 
@@ -65,11 +59,11 @@ public class ClassProcessorHelper {
 
   private static final String                TC_DSO_GLOBALMODE_SYSPROP = "tc.dso.globalmode";
 
+  private static final String                TC_LOADER_DEBUG_SYSPROP   = "tc.loader.debug";
+
   // Used for converting resource names into class names
   private static final String                CLASS_SUFFIX              = ".class";
   private static final int                   CLASS_SUFFIX_LENGTH       = CLASS_SUFFIX.length();
-
-  private static final boolean               DELAY_BOOT;
 
   private static final boolean               GLOBAL_MODE_DEFAULT       = true;
 
@@ -85,7 +79,8 @@ public class ClassProcessorHelper {
   private static final Map                   contextMap                = new WeakHashMap();
   private static final Map                   partitionedContextMap     = new HashMap();
 
-  private static final StandardClassProvider globalProvider            = new StandardClassProvider();
+  private static final StandardClassProvider globalProvider            = new StandardClassProvider(Boolean
+                                                                           .getBoolean(TC_LOADER_DEBUG_SYSPROP));
 
   private static URLClassLoader              tcLoader;
   private static DSOContext                  globalContext;
@@ -95,7 +90,7 @@ public class ClassProcessorHelper {
 
   private static final String                PARTITIONED_MODE_SEP      = "#";
 
-  private static boolean                     systemLoaderInitialized   = false;
+  private static volatile boolean            systemLoaderInitialized   = false;
 
   static {
 
@@ -107,8 +102,6 @@ public class ClassProcessorHelper {
       // TC functionalities. This is needed for the IBM JDK when Hashtable is
       // instrumented for auto-locking in the bootjar.
       Class.forName(DSOContext.class.getName());
-
-      DELAY_BOOT = Boolean.valueOf(System.getProperty(TC_BOOT_DEBUG_SYSPROP)).booleanValue();
 
       String global = System.getProperty(TC_DSO_GLOBALMODE_SYSPROP, null);
       if (global != null) {
@@ -296,7 +289,7 @@ public class ClassProcessorHelper {
     if (tcHomeDir == null) {
       ClassLoader classPathLoader = sun.misc.Launcher.getLauncher().getClassLoader();
       URL[] systemURLS = ((URLClassLoader) classPathLoader).getURLs();
-      return (URL[]) systemURLS.clone();
+      return systemURLS.clone();
     }
 
     File tcLib = new File(tcHomeDir, "lib");
@@ -318,10 +311,10 @@ public class ClassProcessorHelper {
     URL[] rv = new URL[entries.length];
     for (int i = 0; i < entries.length; i++) {
       String entry = entries[i].getCanonicalPath().replace(File.separatorChar, '/');
-      if (entries[i].isDirectory()) entry += "/"; 
+      if (entries[i].isDirectory()) entry += "/";
       rv[i] = new URL("file", "", entry);
     }
-    
+
     return rv;
   }
 
@@ -395,7 +388,7 @@ public class ClassProcessorHelper {
     return c.getDeclaredMethod(name, args);
   }
 
-  public static void init() {
+  public static void initialize() {
     if (initState.attemptInit()) {
       try {
         // This avoids a deadlock (see LKC-853, LKC-1387)
@@ -665,9 +658,12 @@ public class ClassProcessorHelper {
 
     if (isAWDependency(name)) { return b; }
 
-    if (DELAY_BOOT) {
-      init();
-    }
+    /*
+     * This current initialization strategy has one slight shortcoming.  JVMTI agents cannot
+     * attach while initialization is in progress.
+     */
+    initialize();
+
     if (!initState.isInitialized()) { return b; }
 
     ManagerUtil.enable();
@@ -754,6 +750,10 @@ public class ClassProcessorHelper {
   public static int getSessionLockType(String appName) {
     return globalContext.getSessionLockType(appName);
   }
+  
+  public static boolean isApplicationSessionLocked(String appName) {
+    return globalContext.isApplicationSessionLocked(appName);
+  }
 
   private static void traceNamedLoader(final NamedClassLoader ncl) {
     trace("loader[" + ncl + "] of type[" + ncl.getClass().getName() + "] registered as["
@@ -769,30 +769,8 @@ public class ClassProcessorHelper {
     TRACE_STREAM.flush();
   }
 
-  public static void loggingInitialized() {
-    if (DELAY_BOOT) return;
-
-    final boolean attempt;
-
-    synchronized (ClassProcessorHelper.class) {
-      attempt = systemLoaderInitialized;
-    }
-
-    if (attempt) init();
-  }
-
   public static void systemLoaderInitialized() {
-    if (DELAY_BOOT) return;
-
-    final boolean attempt;
-
-    synchronized (ClassProcessorHelper.class) {
-      if (systemLoaderInitialized) { throw new AssertionError("already set"); }
-      systemLoaderInitialized = true;
-      attempt = !inLoggingStaticInit();
-    }
-
-    if (attempt) init();
+    systemLoaderInitialized = true;
   }
 
   private static final boolean inLoggingStaticInit() {
@@ -820,13 +798,14 @@ public class ClassProcessorHelper {
    * ClassProcessorHelper initialization state
    */
   public static final class State {
-    private final int NOT_INTIALIZED = 0;
-    private final int INITIALIZING   = 1;
-    private final int INITIALIZED    = 2;
-    private int       state          = NOT_INTIALIZED;
+    private static final int NOT_INITIALIZED = 0;
+    private static final int INITIALIZING    = 1;
+    private static final int INITIALIZED     = 2;
+
+    private int state = NOT_INITIALIZED;
 
     final synchronized boolean attemptInit() {
-      if (state == NOT_INTIALIZED) {
+      if ((state == NOT_INITIALIZED) && systemLoaderInitialized && !inLoggingStaticInit() ) {
         state = INITIALIZING;
         return true;
       }

@@ -168,7 +168,33 @@ public class HashMapTC extends HashMap implements TCMap, Manageable, Clearable {
   }
 
   public void putAll(Map map) {
-    super.putAll(map);
+    if (__tc_isManaged()) {
+      int numKeysToBeAdded = map.size();
+      if (numKeysToBeAdded == 0)
+        return;
+
+      /*
+       * This logic duplicated from HashMap super implementation
+       * see explanation there
+       */
+      if (numKeysToBeAdded > threshold) {
+        int targetCapacity = (int)(numKeysToBeAdded / loadFactor + 1);
+        if (targetCapacity > MAXIMUM_CAPACITY)
+          targetCapacity = MAXIMUM_CAPACITY;
+        int newCapacity = table.length;
+        while (newCapacity < targetCapacity)
+          newCapacity <<= 1;
+        if (newCapacity > table.length)
+          resize(newCapacity);
+      }
+
+      for (Iterator i = map.entrySet().iterator(); i.hasNext(); ) {
+        Map.Entry e = (Map.Entry) i.next();
+        __tc_put_logical(e.getKey(), e.getValue());
+      }
+    } else {
+      super.putAll(map);
+    }
   }
 
   public Object remove(Object key) {
@@ -266,11 +292,11 @@ public class HashMapTC extends HashMap implements TCMap, Manageable, Clearable {
         return __tc_getAllEntriesSnapshotInternal();
       }
     } else {
-      return __tc_getAllEntriesSnapshotInternal();
+      return super.entrySet();
     }
   }
 
-  public Collection __tc_getAllEntriesSnapshotInternal() {
+  private Collection __tc_getAllEntriesSnapshotInternal() {
     EntrySetWrapper entrySet = (EntrySetWrapper)super.entrySet();
     return new ArrayList(entrySet.__tc_getLocalEntries());
   }
@@ -281,7 +307,7 @@ public class HashMapTC extends HashMap implements TCMap, Manageable, Clearable {
         return __tc_getAllLocalEntriesSnapshotInternal();
       }
     } else {
-      return __tc_getAllLocalEntriesSnapshotInternal();
+      return super.entrySet();
     }
   }
 
@@ -561,8 +587,10 @@ public class HashMapTC extends HashMap implements TCMap, Manageable, Clearable {
           Map.Entry e = (Map.Entry) o;
           Object key = e.getKey();
           if (!HashMapTC.this.containsKey(key)) { return false; }
-          Object value = HashMapTC.this.get(key);
-          return value == e.getValue() || (value != null && value.equals(e.getValue()));
+          
+          Map.Entry candidate = HashMapTC.this.getEntry(key);
+          lookUpAndStoreIfNecessary(candidate);
+          return candidate.equals(e);
         }
       } else {
         return entries.contains(o);
@@ -573,17 +601,18 @@ public class HashMapTC extends HashMap implements TCMap, Manageable, Clearable {
       return new UnwrappedEntriesIterator(entries.iterator());
     }
 
-    // FIXME:: DEV-1883 This is removing the keys and not the exact mapping, if I am not wrong, original hashmap checks
-    // if the values are the same too.
     public boolean remove(Object o) {
       if (__tc_isManaged()) {
         synchronized (__tc_managed().getResolveLock()) {
           if (!(o instanceof Map.Entry)) return false;
           Map.Entry e = (Map.Entry) o;
-          Object key = e.getKey();
-          int sizeB4 = size();
-          HashMapTC.this.remove(key);
-          return (sizeB4 != size());
+          if (contains(e)) {
+            int sizeB4 = size();
+            HashMapTC.this.remove(e.getKey());
+            return (sizeB4 != size());
+          } else {
+            return false;
+          }
         }
       } else {
         return entries.remove(o);

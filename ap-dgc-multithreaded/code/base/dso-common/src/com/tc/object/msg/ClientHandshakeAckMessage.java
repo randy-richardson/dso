@@ -4,21 +4,15 @@
  */
 package com.tc.object.msg;
 
-import com.tc.net.NodeID;
-import com.tc.net.ServerID;
-import com.tc.net.protocol.tcm.MessageChannel;
+import com.tc.net.protocol.tcm.TCMessage;
 
 import java.util.Set;
 
-public interface ClientHandshakeAckMessage {
-  public void send();
+public interface ClientHandshakeAckMessage extends TCMessage {
 
   public boolean getPersistentServer();
 
-  public void initialize(boolean persistent, Set allNodes, String thisNodeID, String serverVersion,
-                         ServerID serverNodeID);
-
-  public MessageChannel getChannel();
+  public void initialize(boolean persistent, Set allNodes, String thisNodeID, String serverVersion);
 
   public String[] getAllNodes();
 
@@ -26,7 +20,4 @@ public interface ClientHandshakeAckMessage {
 
   public String getServerVersion();
 
-  public NodeID getSourceNodeID();
-
-  public ServerID getServerNodeID();
 }

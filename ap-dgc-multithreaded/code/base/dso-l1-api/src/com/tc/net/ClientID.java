@@ -9,10 +9,9 @@ import com.tc.io.TCByteBufferOutput;
 import com.tc.net.protocol.tcm.ChannelID;
 
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.Serializable;
 
-public class ClientID implements NodeID {
+public class ClientID implements NodeID, Serializable {
 
   public static final ClientID NULL_ID = new ClientID(ChannelID.NULL_ID);
 
@@ -50,24 +49,11 @@ public class ClientID implements NodeID {
   public ChannelID getChannelID() {
     return channelID;
   }
-
-  /**
-   * FIXME::Two difference serialization mechanisms are implemented since these classes are used with two different
-   * implementation of comms stack.
-   */
-
-  public void readExternal(ObjectInput in) throws IOException {
-    this.channelID = new ChannelID(in.readLong());
+  
+  public long toLong() {
+    return channelID.toLong();
   }
 
-  public void writeExternal(ObjectOutput out) throws IOException {
-    out.writeLong(this.channelID.toLong());
-  }
-
-  /**
-   * FIXME::Two difference serialization mechanisms are implemented since these classes are used with two different
-   * implementation of comms stack.
-   */
   public Object deserializeFrom(TCByteBufferInput serialInput) throws IOException {
     this.channelID = new ChannelID(serialInput.readLong());
     return this;
@@ -77,14 +63,14 @@ public class ClientID implements NodeID {
     serialOutput.writeLong(this.channelID.toLong());
   }
 
-  public byte getType() {
-    return L1_NODE_TYPE;
+  public byte getNodeType() {
+    return CLIENT_NODE_TYPE;
   }
 
   public int compareTo(Object o) {
     NodeID n = (NodeID) o;
-    if(getType() != n.getType()) {
-      return getType() - n.getType();
+    if(getNodeType() != n.getNodeType()) {
+      return getNodeType() - n.getNodeType();
     }
     ClientID c = (ClientID) n;
     return this.channelID.compareTo(c.channelID);

@@ -6,16 +6,16 @@
 #  All rights reserved.
 #
 
-if [ $# -eq 0 ]; then
+if test "$#" = "0"; then 
   echo "usage: dso-java [-options] class [args...]"
   exit 0
 fi
 
-ARGS=($*)
-for ((i=0; i<${#ARGS[@]}; i++)); do 
-  case "${ARGS[$i]}" in 
-  -D*) export JAVA_OPTS="${JAVA_OPTS} ${ARGS[$i]}" ;;
-    *) class="${class} ${ARGS[$i]}" ;;
+ARGS=$*
+for i in ${ARGS}; do
+  case "${i}" in 
+  -D*) export JAVA_OPTS="${JAVA_OPTS} ${i}" ;;
+    *) class="${class} ${i}" ;;
   esac 
 done
 

@@ -42,17 +42,19 @@ import com.tc.net.protocol.transport.NullConnectionPolicy;
 import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.object.session.NullSessionManager;
 import com.tc.object.session.SessionManagerImpl;
+import com.tc.object.session.SessionProvider;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.handler.ReceiveGroupMessageHandler;
 import com.tc.objectserver.handler.TCGroupHandshakeMessageHandler;
 import com.tc.objectserver.handler.TCGroupMemberDiscoveryHandler;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
-import com.tc.properties.TCPropertiesImpl;
 import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.tc.util.TCTimeoutException;
 import com.tc.util.UUID;
+import com.tc.util.sequence.Sequence;
 import com.tc.util.sequence.SimpleSequence;
 
 import java.io.IOException;
@@ -189,9 +191,10 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
 
     l2Properties = TCPropertiesImpl.getProperties().getPropertiesFor("l2");
     communicationsManager = new CommunicationsManagerImpl(new NullMessageMonitor(), networkStackHarnessFactory,
-                                                          this.connectionPolicy,
+                                                          this.connectionPolicy, 0,
                                                           new HealthCheckerConfigImpl(l2Properties
-                                                              .getPropertiesFor("healthcheck.l2"), "TCGroupManager"));
+                                                              .getPropertiesFor("healthcheck.l2"), "TCGroupManager"),
+                                                          thisNodeID);
 
     groupListener = communicationsManager.createListener(new NullSessionManager(), socketAddress, true,
                                                          new DefaultConnectionIdFactory());
@@ -360,10 +363,15 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     }
   }
 
-  public void sendAll(GroupMessage msg) throws GroupException {
+  public void sendAll(GroupMessage msg) {
+    sendAll(msg, members.keySet());
+  }
+
+  public void sendAll(GroupMessage msg, Set nodeIDs) {
     for (TCGroupMember m : members.values()) {
+      if (!nodeIDs.contains(m.getPeerNodeID())) continue;
       if (m.isReady()) {
-        m.send(msg);
+        m.sendIgnoreNotReady(msg);
       } else {
         logger.warn("Send to a not ready member " + m);
       }
@@ -401,13 +409,17 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
   }
 
   public GroupResponse sendAllAndWaitForResponse(GroupMessage msg) throws GroupException {
+    return sendAllAndWaitForResponse(msg, members.keySet());
+  }
+
+  public GroupResponse sendAllAndWaitForResponse(GroupMessage msg, Set nodeIDs) throws GroupException {
     if (logger.isDebugEnabled()) logger.debug(getNodeID() + " : Sending to ALL and Waiting for Response : "
                                               + msg.getMessageID());
     GroupResponseImpl groupResponse = new GroupResponseImpl(this);
     MessageID msgID = msg.getMessageID();
     GroupResponse old = pendingRequests.put(msgID, groupResponse);
     Assert.assertNull(old);
-    groupResponse.sendAll(msg);
+    groupResponse.sendAll(msg, nodeIDs);
     groupResponse.waitForResponses(getNodeID());
     pendingRequests.remove(msgID);
     return groupResponse;
@@ -419,9 +431,13 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     if (isStopped.get()) return;
 
     int maxReconnectTries = isUseOOOLayer ? -1 : 0;
-    ClientMessageChannel channel = communicationsManager
-        .createClientChannel(new SessionManagerImpl(new SimpleSequence()), maxReconnectTries, null, -1, 10000,
-                             addrProvider, groupPort);
+    SessionProvider sessionProvider = new SessionManagerImpl(new SessionManagerImpl.SequenceFactory() {
+      public Sequence newSequence() {
+        return new SimpleSequence();
+      }
+    });
+    ClientMessageChannel channel = communicationsManager.createClientChannel(sessionProvider, maxReconnectTries, null,
+                                                                             -1, 10000, addrProvider);
 
     channel.addClassMapping(TCMessageType.GROUP_WRAPPER_MESSAGE, TCGroupMessageWrapper.class);
     channel.routeMessageType(TCMessageType.GROUP_WRAPPER_MESSAGE, receiveGroupMessageStage.getSink(), hydrateStage
@@ -657,12 +673,17 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
       }
     }
 
-    public synchronized void sendAll(GroupMessage msg) throws GroupException {
+    public synchronized void sendAll(GroupMessage msg) {
+      sendAll(msg, manager.members.keySet());
+    }
+
+    public synchronized void sendAll(GroupMessage msg, Set nodeIDs) {
       for (TCGroupMember m : manager.getMembers()) {
+        if (!nodeIDs.contains(m.getPeerNodeID())) continue;
         if (m.isReady()) {
           Assert.assertNotNull(m.getPeerNodeID());
           waitFor.add(m.getPeerNodeID());
-          m.send(msg);
+          m.sendIgnoreNotReady(msg);
         } else {
           logger.warn("SendAllAndWait to a not ready member " + m);
         }

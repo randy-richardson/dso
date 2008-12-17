@@ -103,7 +103,7 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
       harness = (NetworkStackHarness) harnesses.get(connectionId);
 
       if (harness == null) {
-        throw new StackNotFoundException(connectionId);
+        throw new StackNotFoundException(connectionId, connection.getRemoteAddress());
       } else {
         rv = harness.attachNewConnection(connection);
         connectionIdFactory.restoreConnectionId(connectionId);
@@ -321,8 +321,9 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
         synAck = handshakeMessageFactory.createSynAck(connectionId, errorContext, source, isMaxConnectionsExceeded,
                                                       maxConnections);
       } else {
+        int callbackPort = source.getLocalAddress().getPort();
         synAck = handshakeMessageFactory.createSynAck(connectionId, source, isMaxConnectionsExceeded, maxConnections,
-                                                      source.getLocalAddress().getPort());
+                                                      callbackPort);
       }
       sendMessage(synAck);
     }

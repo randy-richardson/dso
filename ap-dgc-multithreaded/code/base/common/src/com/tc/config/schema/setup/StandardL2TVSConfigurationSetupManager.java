@@ -77,25 +77,15 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   private final ActiveServerGroupsConfig activeServerGroupsConfig;
   private final UpdateCheckConfig        updateCheckConfig;
 
-  private final String                   thisL2Identifier;
+  private String                         thisL2Identifier;
   private L2ConfigData                   myConfigData;
   private ConfigTCProperties             configTCProperties;
-  private final boolean                  thisl2IdentifierSpecified;
 
   public StandardL2TVSConfigurationSetupManager(ConfigurationCreator configurationCreator, String thisL2Identifier,
                                                 DefaultValueProvider defaultValueProvider,
                                                 XmlObjectComparator xmlObjectComparator,
                                                 IllegalConfigurationChangeHandler illegalConfigChangeHandler)
       throws ConfigurationSetupException {
-    this(configurationCreator, thisL2Identifier, defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler,
-         false);
-  }
-
-  public StandardL2TVSConfigurationSetupManager(ConfigurationCreator configurationCreator, String thisL2Identifier,
-                                                DefaultValueProvider defaultValueProvider,
-                                                XmlObjectComparator xmlObjectComparator,
-                                                IllegalConfigurationChangeHandler illegalConfigChangeHandler,
-                                                boolean thisl2IdentifierSpecified) throws ConfigurationSetupException {
     super(defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler);
 
     Assert.assertNotNull(configurationCreator);
@@ -109,7 +99,6 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     this.thisL2Identifier = thisL2Identifier;
     this.myConfigData = null;
-    this.thisl2IdentifierSpecified = thisl2IdentifierSpecified;
 
     // this sets the beans in each repository
     runConfigurationCreator(this.configurationCreator);
@@ -142,11 +131,18 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     // do this after servers and groups have been processed
     validateGroups();
+    validateDSOClusterPersistenceMode();
+  }
+
+  public String getL2Identifier() {
+    return this.thisL2Identifier;
   }
 
   private void validateGroups() throws ConfigurationSetupException {
     Server[] serverArray = ((Servers) serversBeanRepository().bean()).getServerArray();
     ActiveServerGroupConfig[] groupArray = this.activeServerGroupsConfig.getActiveServerGroupArray();
+
+    validateGroupNames(groupArray);
 
     for (int i = 0; i < serverArray.length; i++) {
       String serverName = serverArray[i].getName();
@@ -163,6 +159,20 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       }
       if (!found) { throw new ConfigurationSetupException("Server{" + serverName
                                                           + "} is not part of any active-server-group."); }
+    }
+  }
+
+  private void validateGroupNames(ActiveServerGroupConfig[] groupArray) throws ConfigurationSetupException {
+    HashSet list = new HashSet();
+    for (int i = 0; i < groupArray.length; i++) {
+      String grpName = groupArray[i].getGroupName();
+      if (grpName != null) {
+        if (list.contains(grpName)) { throw new ConfigurationSetupException(
+                                                                            "Group Name {"
+                                                                                + grpName
+                                                                                + "} is part of more than 1 active-server-group groups"); }
+        list.add(grpName);
+      }
     }
   }
 
@@ -358,8 +368,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                   + "However, this server couldn't figure out which one it is -- it thinks it's "
                                                   + "called '"
                                                   + name
-                                                  + "' (which, by default, is the host name of this machine), but you've only "
-                                                  + "created <server> elements in the config file called "
+                                                  + "', but you've only created <server> elements in the config file called "
                                                   + list
                                                   + ".\n\nPlease re-start the server with a '-n <name>' argument on the command line to tell this "
                                                   + "server which one it is, or change the 'name' attributes of the <server> "
@@ -379,12 +388,16 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     if (this.allCurrentlyKnownServers().length == 1) {
       if (servers != null && servers.getServerArray() != null && servers.getServerArray()[0] != null) {
         final String server0Name = servers.getServerArray()[0].getName();
-        if (thisl2IdentifierSpecified && !thisL2Identifier.equals(server0Name)) { throw new ConfigurationSetupException(
-                                                                                                                        "You have specified server name '"
-                                                                                                                            + thisL2Identifier
-                                                                                                                            + "' which does not "
-                                                                                                                            + "exist in the specified tc-config file. \n\n"
-                                                                                                                            + "Please check your settings and try again"); }
+        if (thisL2Identifier == null) {
+          this.thisL2Identifier = server0Name;
+        } else {
+          if (!thisL2Identifier.equals(server0Name)) { throw new ConfigurationSetupException(
+                                                                                             "You have specified server name '"
+                                                                                                 + thisL2Identifier
+                                                                                                 + "' which does not "
+                                                                                                 + "exist in the specified tc-config file. \n\n"
+                                                                                                 + "Please check your settings and try again"); }
+        }
         this.myConfigData = configDataFor(server0Name);
       } else {
         this.myConfigData = configDataFor(null);
@@ -398,10 +411,20 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   private void validateRestrictions() throws ConfigurationSetupException {
     validateLicenseModuleRestrictions();
-    validateDSOClusterPersistenceMode();
   }
 
   private void validateDSOClusterPersistenceMode() throws ConfigurationSetupException {
+    ActiveServerGroupConfig[] groupArray = this.activeServerGroupsConfig.getActiveServerGroupArray();
+
+    Map<String, Boolean> serversToMode = new HashMap<String, Boolean>();
+    for (int i = 0; i < groupArray.length; i++) {
+      boolean isNwAP = groupArray[i].getHa().isNetworkedActivePassive();
+      String[] members = groupArray[i].getMembers().getMemberArray();
+      for (int j = 0; j < members.length; j++) {
+        serversToMode.put(members[j], isNwAP);
+      }
+    }
+
     if (super.serversBeanRepository().bean() != null) {
       Server[] servers = ((Servers) super.serversBeanRepository().bean()).getServerArray();
       Set badServers = new HashSet();
@@ -420,8 +443,8 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
           L2ConfigData data = configDataFor(name);
 
           Assert.assertNotNull(data);
-          if (!haConfig.isNetworkedActivePassive()
-              && !(data.dsoL2Config().persistenceMode().getObject().equals(PersistenceMode.PERMANENT_STORE))) {
+          boolean isNwAP = serversToMode.get(name);
+          if (!isNwAP && !(data.dsoL2Config().persistenceMode().getObject().equals(PersistenceMode.PERMANENT_STORE))) {
             badServers.add(name);
           }
         }

@@ -28,8 +28,6 @@ import com.tc.statistics.beans.StatisticsMBeanNames;
 import com.tc.stats.DSOClassInfo;
 import com.tc.stats.DSOMBean;
 import com.tc.stats.DSORootMBean;
-import com.tc.stats.statistics.CountStatistic;
-import com.tc.stats.statistics.Statistic;
 import com.tc.util.ProductInfo;
 
 import java.beans.PropertyChangeEvent;
@@ -78,7 +76,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   protected ObjectManagementMonitorMBean  m_objectManagementMonitorBean;
   protected boolean                       m_serverDBBackupSupported;
   protected ServerDBBackupMBean           m_serverDBBackupBean;
-  protected ProductVersion                 m_productInfo;
+  protected ProductVersion                m_productInfo;
   protected List<IBasicObject>            m_roots;
   protected Map<ObjectName, IBasicObject> m_rootMap;
   protected LogListener                   m_logListener;
@@ -185,6 +183,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   }
 
   private void connectionEstablished() {
+    if (m_readySet == null) return;
     try {
       ObjectName mbsd = getConnectionContext().queryName("JMImplementation:type=MBeanServerDelegate");
       getConnectionContext().addNotificationListener(mbsd, this);
@@ -214,6 +213,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
   protected void setConnected(boolean connected) {
     boolean oldConnected;
     synchronized (this) {
+      if (m_readySet == null) { return; }
       oldConnected = m_connected;
       m_connected = connected;
     }
@@ -536,7 +536,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
     return m_activateTime;
   }
 
-  public CountStatistic getTransactionRate() {
+  public long getTransactionRate() {
     return getDSOBean().getTransactionRate();
   }
 
@@ -556,7 +556,7 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
     return getServerInfoBean().getStatistics();
   }
 
-  public Statistic[] getDSOStatistics(String[] names) {
+  public Number[] getDSOStatistics(String[] names) {
     return getDSOBean().getStatistics(names);
   }
 
@@ -566,9 +566,9 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
     return result;
   }
 
-  public Map<IClient, CountStatistic> getAllPendingTransactionsCount() {
-    Map<ObjectName, CountStatistic> map = getDSOBean().getAllPendingTransactionsCount();
-    Map<IClient, CountStatistic> result = new HashMap<IClient, CountStatistic>();
+  public Map<IClient, Long> getAllPendingTransactionsCount() {
+    Map<ObjectName, Long> map = getDSOBean().getAllPendingTransactionsCount();
+    Map<IClient, Long> result = new HashMap<IClient, Long>();
     Iterator<DSOClient> clientIter = m_clients.iterator();
     while (clientIter.hasNext()) {
       DSOClient client = clientIter.next();
@@ -1119,4 +1119,82 @@ public class Server implements IServer, NotificationListener, ManagedObjectFacad
     m_productInfo = null;
     m_logListener = null;
   }
+
+  public void setFaultDebug(boolean faultDebug) {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) {
+      serverInfo.setFaultDebug(faultDebug);
+    }
+  }
+
+  public boolean getFaultDebug() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) { return serverInfo.getFaultDebug(); }
+    return false;
+  }
+
+  public boolean getFlushDebug() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) { return serverInfo.getFlushDebug(); }
+    return false;
+  }
+
+  public void setFlushDebug(boolean flushDebug) {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) {
+      serverInfo.setFlushDebug(flushDebug);
+    }
+  }
+
+  public boolean getRequestDebug() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) { return serverInfo.getRequestDebug(); }
+    return false;
+  }
+
+  public void setRequestDebug(boolean requestDebug) {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) {
+      serverInfo.setRequestDebug(requestDebug);
+    }
+  }
+
+  public boolean getBroadcastDebug() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) { return serverInfo.getBroadcastDebug(); }
+    return false;
+  }
+
+  public void setBroadcastDebug(boolean broadcastDebug) {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) {
+      serverInfo.setBroadcastDebug(broadcastDebug);
+    }
+  }
+
+  public boolean getCommitDebug() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) { return serverInfo.getCommitDebug(); }
+    return false;
+  }
+
+  public void setCommitDebug(boolean commitDebug) {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) {
+      serverInfo.setCommitDebug(commitDebug);
+    }
+  }
+
+  public int getGarbageCollectionInterval() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) { return serverInfo.getGarbageCollectionInterval(); }
+    return -1;
+  }
+
+  public boolean isGarbageCollectionEnabled() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo != null) { return serverInfo.isGarbageCollectionEnabled(); }
+    return false;
+  }
+
 }

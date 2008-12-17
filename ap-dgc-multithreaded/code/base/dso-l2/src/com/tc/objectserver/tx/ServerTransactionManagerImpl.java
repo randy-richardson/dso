@@ -28,6 +28,7 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.l1.impl.TransactionAcknowledgeAction;
 import com.tc.objectserver.lockmanager.api.LockManager;
 import com.tc.objectserver.managedobject.BackReferences;
+import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.api.TransactionStore;
@@ -92,11 +93,14 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
   private volatile long                                 lastStatsTime            = 0;
   private Object                                        statsLock                = new Object();
 
+  private final ObjectStatsRecorder                     objectStatsRecorder;
+
   public ServerTransactionManagerImpl(ServerGlobalTransactionManager gtxm, TransactionStore transactionStore,
                                       LockManager lockManager, ClientStateManager stateManager,
                                       ObjectManager objectManager, TransactionalObjectManager txnObjectManager,
                                       TransactionAcknowledgeAction action, Counter transactionRateCounter,
-                                      ChannelStats channelStats, ServerTransactionManagerConfig config) {
+                                      ChannelStats channelStats, ServerTransactionManagerConfig config,
+                                      ObjectStatsRecorder objectStatsRecorder) {
     this.gtxm = gtxm;
     this.lockManager = lockManager;
     this.objectManager = objectManager;
@@ -112,6 +116,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     }
     this.commitLoggingEnabled = config.isPrintCommitsEnabled();
     this.broadcastStatsLoggingEnabled = config.isPrintBroadcastStatsEnabled();
+    this.objectStatsRecorder = objectStatsRecorder;
   }
 
   public void enableTransactionLogger() {
@@ -250,7 +255,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     } else {
       logger.warn("Not adding to Waiting for Ack since Waiter not found in the states map: " + waiter);
     }
-    if (isActive() && waitee.getType() == NodeID.L1_NODE_TYPE) {
+    if (isActive() && waitee.getNodeType() == NodeID.CLIENT_NODE_TYPE) {
       channelStats.notifyTransactionBroadcastedTo(waitee);
     }
   }
@@ -272,10 +277,10 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
   private void acknowledge(NodeID waiter, TransactionID txnID) {
     final ServerTransactionID serverTxnID = new ServerTransactionID(waiter, txnID);
     totalPendingTransactions.decrementAndGet();
-    fireTransactionCompleteEvent(serverTxnID);
-    if (isActive() && waiter.getType() == NodeID.L1_NODE_TYPE) {
+    if (isActive() && waiter.getNodeType() == NodeID.CLIENT_NODE_TYPE) {
       action.acknowledgeTransaction(serverTxnID);
     }
+    fireTransactionCompleteEvent(serverTxnID);
   }
 
   public void acknowledgement(NodeID waiter, TransactionID txnID, NodeID waitee) {
@@ -283,7 +288,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     // NOTE ::Sometime you can get double notification for the same txn in server restart cases. In those cases the
     // accounting could be messed up. The counter is set to have a minimum bound of zero to avoid ugly negative values.
     // @see ChannelStatsImpl
-    if (isActive() && waitee.getType() == NodeID.L1_NODE_TYPE) {
+    if (isActive() && waitee.getNodeType() == NodeID.CLIENT_NODE_TYPE) {
       channelStats.notifyTransactionAckedFrom(waitee);
     }
 
@@ -320,7 +325,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
       DNA change = new VersionizedDNAWrapper(orgDNA, version, true);
       ManagedObject mo = (ManagedObject) objects.get(change.getObjectID());
       mo.apply(change, txnID, includeIDs, instanceMonitor, !active);
-      if (broadcastStatsLoggingEnabled) {
+      if (broadcastStatsLoggingEnabled || objectStatsRecorder.getBroadcastDebug()) {
         // This ugly code exists so that Broadcast change handler can log more stats about the broadcasts that are
         // taking place there. This type info was lost from the DNA in one of the performance optimizations that we did.
         DNAImpl dnaImpl = (DNAImpl) orgDNA;

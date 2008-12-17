@@ -7,12 +7,14 @@ package com.tc.objectserver.persistence.sleepycat;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.StatsConfig;
 import com.sleepycat.je.Transaction;
 import com.tc.io.serializer.api.StringIndex;
 import com.tc.l2.state.StateManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.persistence.api.PersistentMapStore;
+import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.api.ClassPersistor;
 import com.tc.objectserver.persistence.api.ClientStatePersistor;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
@@ -27,13 +29,14 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.text.Banner;
 import com.tc.util.Assert;
+import com.tc.util.concurrent.ThreadUtil;
 import com.tc.util.sequence.MutableSequence;
 
 import java.io.File;
-import java.io.IOException;
 
 public class SleepycatPersistor implements Persistor {
   private static final int                     DEFAULT_CAPACITY = 50000;
+  private static final TCLogger                statsLogger      = TCLogging.getLogger(SleepycatPersistor.class);
 
   private final StringIndexPersistor           stringIndexPersistor;
   private final StringIndex                    stringIndex;
@@ -52,12 +55,12 @@ public class SleepycatPersistor implements Persistor {
   // only for tests
   public SleepycatPersistor(TCLogger logger, DBEnvironment env, SerializationAdapterFactory serializationAdapterFactory)
       throws TCDatabaseException {
-    this(logger, env, serializationAdapterFactory, null);
+    this(logger, env, serializationAdapterFactory, null, new ObjectStatsRecorder());
   }
 
   public SleepycatPersistor(TCLogger logger, DBEnvironment env,
-                            SerializationAdapterFactory serializationAdapterFactory, File l2DataPath)
-      throws TCDatabaseException {
+                            SerializationAdapterFactory serializationAdapterFactory, File l2DataPath,
+                            ObjectStatsRecorder objectStatsRecorder) throws TCDatabaseException {
 
     open(env, logger);
     this.env = env;
@@ -89,7 +92,7 @@ public class SleepycatPersistor implements Persistor {
                                                                  env.getRootDatabase(), rootDBCursorConfig,
                                                                  this.persistenceTransactionProvider,
                                                                  this.sleepycatCollectionsPersistor, env
-                                                                     .isParanoidMode());
+                                                                     .isParanoidMode(), objectStatsRecorder);
     this.clientStatePersistor = new ClientStatePersistorImpl(
                                                              logger,
                                                              this.persistenceTransactionProvider,
@@ -107,7 +110,28 @@ public class SleepycatPersistor implements Persistor {
     this.classPersistor = new ClassPersistorImpl(this.persistenceTransactionProvider, logger, env.getClassDatabase());
     this.clusterStateStore = new SleepycatMapStore(this.persistenceTransactionProvider, logger, env
         .getClusterStateStoreDatabase());
+    startStatsLoggerIfNeeded();
+  }
 
+  private void startStatsLoggerIfNeeded() {
+    if (TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_BDB_JE_STATS_LOGGING_ENABLED)) {
+      Thread t = new Thread("Berkeley DB JE Stats printer") {
+        public void run() {
+          StatsConfig sc = new StatsConfig();
+          sc.setClear(true);
+          while (true) {
+            ThreadUtil.reallySleep(5000);
+            try {
+              statsLogger.info("BDB JE Stats in last 5 secs : " + env.getStats(sc));
+            } catch (TCDatabaseException e) {
+              statsLogger.error("Error trying to get stats : " + e);
+            }
+          }
+        }
+      };
+      t.setDaemon(true);
+      t.start();
+    }
   }
 
   private void open(DBEnvironment dbenv, TCLogger logger) throws TCDatabaseException {
@@ -249,7 +273,7 @@ public class SleepycatPersistor implements Persistor {
   /**
    * This is only exposed for tests.
    */
-  public SerializationAdapter getSerializationAdapter() throws IOException {
+  public SerializationAdapter getSerializationAdapter() {
     return this.managedObjectPersistor.getSerializationAdapter();
   }
 

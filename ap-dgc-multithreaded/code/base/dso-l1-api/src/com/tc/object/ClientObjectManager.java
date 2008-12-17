@@ -14,9 +14,7 @@ import com.tc.object.tx.ClientTransactionManager;
 import com.tc.object.util.ToggleableStrongReference;
 import com.tc.text.PrettyPrintable;
 
-import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.util.Collection;
 
 /**
  * Manages client-side (L1) object state in a VM.
@@ -217,14 +215,6 @@ public interface ClientObjectManager extends DumpHandler, PrettyPrintable {
   public TCObject lookupExistingOrNull(Object pojo);
 
   /**
-   * Get all IDs currently in the cache and add to c. Clear all from remote object manager.
-   * 
-   * @param c Collection to collect IDs in
-   * @return c
-   */
-  public Collection getAllObjectIDsAndClear(Collection c);
-
-  /**
    * Create new peer object instance for the clazz, referred to through a WeakReference.
    * 
    * @param clazz The kind of class
@@ -271,31 +261,9 @@ public interface ClientObjectManager extends DumpHandler, PrettyPrintable {
   public ClientTransactionManager getTransactionManager();
 
   /**
-   * Get the reference queue for weakly referenced peers
-   * 
-   * @return Reference queue
-   */
-  public ReferenceQueue getReferenceQueue();
-
-  /**
    * Shutdown the client object manager
    */
   public void shutdown();
-
-  /**
-   * Unpause, moving state to running
-   */
-  public void unpause();
-
-  /**
-   * Pause client object manager, for use while starting
-   */
-  public void pause();
-
-  /**
-   * Change to STARTING state
-   */
-  public void starting();
 
   /**
    * @return True if creation in progress
@@ -359,5 +327,14 @@ public interface ClientObjectManager extends DumpHandler, PrettyPrintable {
    * @return the toggle reference
    */
   ToggleableStrongReference getOrCreateToggleRef(ObjectID objectID, Object peer);
+
+  /**
+   * Create new WeakReference wrapper for the given id and peer object.
+   * 
+   * @param objectID The TCObjet
+   * @param peer The peer object
+   * @return the weak reference
+   */
+  WeakReference newWeakObjectReference(ObjectID objectID, Object peer);
 
 }

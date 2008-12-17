@@ -14,8 +14,6 @@ import com.tc.management.beans.logging.RuntimeOutputOptionsMBean;
 import com.tc.object.ObjectID;
 import com.tc.statistics.StatisticData;
 import com.tc.stats.DSOClientMBean;
-import com.tc.stats.statistics.CountStatistic;
-import com.tc.stats.statistics.Statistic;
 import com.tc.util.ProductInfo;
 
 import java.beans.PropertyChangeEvent;
@@ -203,7 +201,7 @@ public class DSOClient implements IClient, NotificationListener {
     return getRemoteAddress();
   }
 
-  public Statistic[] getDSOStatistics(String[] names) {
+  public Number[] getDSOStatistics(String[] names) {
     return delegate.getStatistics(names);
   }
 
@@ -231,7 +229,7 @@ public class DSOClient implements IClient, NotificationListener {
     return getL1InfoBean().getCpuUsage();
   }
 
-  public CountStatistic getTransactionRate() {
+  public long getTransactionRate() {
     return delegate.getTransactionRate();
   }
 
@@ -260,7 +258,7 @@ public class DSOClient implements IClient, NotificationListener {
   }
 
   public String takeThreadDump(long requestMillis) {
-    return l1InfoBean != null ? l1InfoBean.takeThreadDump(requestMillis) : null;
+    return l1InfoBean != null ? l1InfoBean.takeThreadDump(requestMillis) : "";
   }
 
   public int getLiveObjectCount() {

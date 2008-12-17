@@ -9,8 +9,6 @@ import com.tc.objectserver.api.GCStats;
 import com.tc.objectserver.api.NoSuchObjectException;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.stats.DSOClassInfo;
-import com.tc.stats.statistics.CountStatistic;
-import com.tc.stats.statistics.Statistic;
 
 import java.io.IOException;
 import java.util.Map;
@@ -91,9 +89,9 @@ public interface IServer extends IClusterNode, ManagedObjectFacadeProvider {
 
   Map getServerStatistics();
 
-  Statistic[] getDSOStatistics(String[] names);
+  Number[] getDSOStatistics(String[] names);
 
-  Map<IClient, CountStatistic> getAllPendingTransactionsCount() ;
+  Map<IClient, Long> getAllPendingTransactionsCount() ;
   
   Map<IClient, Integer> getClientLiveObjectCount();
   
@@ -137,5 +135,29 @@ public interface IServer extends IClusterNode, ManagedObjectFacadeProvider {
 
   String getDBHome();
   
+  boolean isGarbageCollectionEnabled();
+  
+  int getGarbageCollectionInterval();
+
   void disconnect();
+  
+  void setFaultDebug(boolean faultDebug);
+  
+  boolean getFaultDebug();
+  
+  void setRequestDebug(boolean requestDebug);
+  
+  boolean getRequestDebug();
+  
+  void setFlushDebug(boolean flushDebug);
+  
+  boolean getFlushDebug();
+
+  boolean getBroadcastDebug();
+
+  void setBroadcastDebug(boolean broadcastDebug);
+
+  boolean getCommitDebug();
+
+  void setCommitDebug(boolean commitDebug);
 }

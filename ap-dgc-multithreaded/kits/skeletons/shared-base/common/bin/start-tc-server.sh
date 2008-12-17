@@ -34,7 +34,7 @@ start=true
 while "$start"
 do
 "${JAVA_HOME}/bin/java" \
-   -server -Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError \
+   -server -Xms512m -Xmx512m -XX:NewRatio=3 -XX:MaxTenuringThreshold=15 -XX:+HeapDumpOnOutOfMemoryError \
    -Dcom.sun.management.jmxremote \
    -Dtc.install-root="${TC_INSTALL_DIR}" \
    ${JAVA_OPTS} \
@@ -42,8 +42,8 @@ do
    com.tc.server.TCServerMain "$@"
  exitValue=$?
  start=false;
- if [ "$exitValue" == 11 ]
- then
+
+ if test "$exitValue" = "11"; then
    start=true;
    echo "start-tc-server: Restarting the server..."
  fi

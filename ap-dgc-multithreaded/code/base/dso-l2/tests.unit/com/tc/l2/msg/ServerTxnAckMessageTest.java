@@ -6,7 +6,10 @@ package com.tc.l2.msg;
 
 import com.tc.bytes.TCByteBuffer;
 import com.tc.bytes.TCByteBufferFactory;
+import com.tc.io.TCByteBufferInputStream;
+import com.tc.io.TCByteBufferOutputStream;
 import com.tc.net.ClientID;
+import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 import com.tc.net.groups.AbstractGroupMessage;
@@ -21,12 +24,6 @@ import com.tc.objectserver.tx.TestCommitTransactionMessage;
 import com.tc.objectserver.tx.TestCommitTransactionMessageFactory;
 import com.tc.objectserver.tx.TestServerTransaction;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,7 +40,7 @@ public class ServerTxnAckMessageTest extends TestCase {
 
   public void setUp() {
     TestCommitTransactionMessage testCommitTransactionMessage = (TestCommitTransactionMessage) new TestCommitTransactionMessageFactory()
-        .newCommitTransactionMessage();
+        .newCommitTransactionMessage(GroupID.NULL_ID);
     testCommitTransactionMessage.setBatch(new TestTransactionBatch(new TCByteBuffer[] { TCByteBufferFactory
         .getInstance(false, 3452) }), new ObjectStringSerializer());
     testCommitTransactionMessage.setChannelID(new ClientID(new ChannelID(channelId)));
@@ -96,13 +93,12 @@ public class ServerTxnAckMessageTest extends TestCase {
   }
 
   private ServerTxnAckMessage writeAndRead(ServerTxnAckMessage stam) throws Exception {
-    ByteArrayOutputStream bo = new ByteArrayOutputStream();
-    ObjectOutput oo = new ObjectOutputStream(bo);
-    oo.writeObject(stam);
+    TCByteBufferOutputStream bo = new TCByteBufferOutputStream();
+    stam.serializeTo(bo);
     System.err.println("Written : " + stam);
-    ByteArrayInputStream bi = new ByteArrayInputStream(bo.toByteArray());
-    ObjectInput oi = new ObjectInputStream(bi);
-    ServerTxnAckMessage stam1 = (ServerTxnAckMessage) oi.readObject();
+    TCByteBufferInputStream bi = new TCByteBufferInputStream(bo.toArray());
+    ServerTxnAckMessage stam1 = new ServerTxnAckMessage();
+    stam1.deserializeFrom(bi);
     System.err.println("Read : " + stam1);
     return stam1;
   }

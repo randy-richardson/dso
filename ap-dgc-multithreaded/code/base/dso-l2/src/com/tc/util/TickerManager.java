@@ -4,8 +4,6 @@
  */
 package com.tc.util;
 
-import com.tc.util.TCTimer;
-import com.tc.util.TCTimerImpl;
 import com.tc.util.msg.TickerTokenMessage;
 
 import java.util.Collections;

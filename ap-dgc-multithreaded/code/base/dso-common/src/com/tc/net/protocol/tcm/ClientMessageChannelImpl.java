@@ -8,6 +8,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
 import com.tc.net.MaxConnectionsExceededException;
+import com.tc.net.NodeID;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.ConnectionID;
@@ -32,14 +33,15 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   private ChannelID                   channelID;
   private final ChannelIDProviderImpl cidProvider;
   private final SessionProvider       sessionProvider;
-  private SessionID                   channelSessionID = SessionID.NULL_ID;
+  private volatile SessionID          channelSessionID = SessionID.NULL_ID;
 
   protected ClientMessageChannelImpl(TCMessageFactory msgFactory, TCMessageRouter router,
-                                     SessionProvider sessionProvider) {
-    super(router, logger, msgFactory);
+                                     SessionProvider sessionProvider, NodeID remoteNodeID) {
+    super(router, logger, msgFactory, remoteNodeID);
     this.msgFactory = msgFactory;
     this.cidProvider = new ChannelIDProviderImpl();
     this.sessionProvider = sessionProvider;
+    this.sessionProvider.initProvider(remoteNodeID);
   }
 
   public NetworkStackID open() throws TCTimeoutException, UnknownHostException, IOException,
@@ -48,13 +50,14 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
 
     synchronized (status) {
       if (status.isOpen()) { throw new IllegalStateException("Channel already open"); }
-      ((MessageTransport) this.sendLayer).initConnectionID(new ConnectionID((((ClientID)getLocalNodeID()).getChannelID().toLong())));
+      ((MessageTransport) this.sendLayer).initConnectionID(new ConnectionID((((ClientID) getLocalNodeID())
+          .getChannelID().toLong())));
       NetworkStackID id = this.sendLayer.open();
       getStatus().open();
       this.channelID = new ChannelID(id.toLong());
       setLocalNodeID(new ClientID(this.channelID));
       this.cidProvider.setChannelID(this.channelID);
-      this.channelSessionID = sessionProvider.getSessionID();
+      this.channelSessionID = sessionProvider.getSessionID(getRemoteNodeID());
       return id;
     }
   }
@@ -101,7 +104,7 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
 
   public void notifyTransportDisconnected(MessageTransport transport) {
     // Move channel to new session
-    channelSessionID = sessionProvider.nextSessionID();
+    channelSessionID = sessionProvider.nextSessionID(getRemoteNodeID());
     logger.info("ClientMessageChannel moves to " + channelSessionID);
     this.fireTransportDisconnectedEvent();
   }
@@ -132,7 +135,7 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     }
 
   }
-  
+
   // for testing purpose
   protected SessionID getSessionID() {
     return channelSessionID;
