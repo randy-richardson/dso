@@ -5,22 +5,22 @@ package com.tc.util.handler;
 
 import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.EventContext;
-import com.tc.util.TickerFactory;
-import com.tc.util.TickerManager;
+import com.tc.util.TickerTokenFactory;
+import com.tc.util.TickerTokenManager;
 import com.tc.util.TickerToken;
 import com.tc.util.msg.TickerTokenMessage;
 
-public class TickerHandler extends AbstractEventHandler {
+public class TickerTokenMessageHandler extends AbstractEventHandler {
 
-  private TickerManager tickerManager;
-  private TickerFactory tickerFactory;
+  private TickerTokenManager tickerManager;
+  private TickerTokenFactory tickerFactory;
   
-  public TickerHandler(TickerManager tickerManager, TickerFactory tickerFactory) {
+  public TickerTokenMessageHandler(TickerTokenManager tickerManager, TickerTokenFactory tickerFactory) {
     this.tickerManager = tickerManager;
     this.tickerFactory = tickerFactory;
   }
   
-  TickerFactory getFactory() {
+  TickerTokenFactory getFactory() {
     return tickerFactory;
   }
   

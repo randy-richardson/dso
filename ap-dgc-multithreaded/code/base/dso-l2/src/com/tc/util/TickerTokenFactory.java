@@ -6,7 +6,7 @@ package com.tc.util;
 
 import com.tc.util.msg.TickerTokenMessage;
 
-public interface TickerFactory<T extends TickerToken, M extends TickerTokenMessage> {
+public interface TickerTokenFactory<T extends TickerToken, M extends TickerTokenMessage> {
 
   public T createTriggerToken(int id, int tickValue);
   
