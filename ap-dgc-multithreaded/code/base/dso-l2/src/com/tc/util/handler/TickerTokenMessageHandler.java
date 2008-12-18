@@ -29,7 +29,7 @@ public class TickerTokenMessageHandler extends AbstractEventHandler {
     if(context instanceof TickerTokenMessage) {
       TickerTokenMessage message = (TickerTokenMessage)context;
       TickerToken token = tickerFactory.createToken(message);
-      tickerManager.recieve(token);
+      tickerManager.receive(token);
     }
    
   }
