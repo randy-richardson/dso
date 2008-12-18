@@ -4,54 +4,20 @@
  */
 package com.tc.util;
 
-import com.tc.io.TCByteBufferInput;
-import com.tc.io.TCByteBufferOutput;
-import com.tc.io.TCSerializable;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * this interface is to collect all tokens and update these content.
  */
-public class TickerToken implements TCSerializable {
+public interface TickerToken {
 
-  protected final Map<Integer, Boolean> tokenStateMap;
-  protected final int                   id;
-  protected final int                   tickValue;
-
-  public TickerToken(int id, int tickValue) {
-    this(id, tickValue, new HashMap<Integer, Boolean>());
-  }
-
-  public TickerToken(int id, int tickValue, Map<Integer, Boolean> tokenStateMap) {
-    this.id = id;
-    this.tickValue = tickValue;
-    this.tokenStateMap = tokenStateMap;
-  }
-
-  public int getID() {
-    return id;
-  }
+  public int getPrimaryID();
   
-  public int getTickValue() {
-    return tickValue;
-  }
+  public int getPrimaryTickValue();
 
-  public void collectToken(int aId, boolean dirtyState) {
-    tokenStateMap.put(aId, dirtyState);
-  }
+  public void collectToken(int aId, boolean dirtyState);
+  
+  public Map<Integer, Boolean> getTokenStateMap();
 
-  public Map<Integer, Boolean> getTokenStateMap() {
-    return tokenStateMap;
-  }
-
-  public Object deserializeFrom(TCByteBufferInput serialInput) {
-
-    return null;
-  }
-
-  public void serializeTo(TCByteBufferOutput serialOutput) {
-    //
-  }
-
+ 
 }
