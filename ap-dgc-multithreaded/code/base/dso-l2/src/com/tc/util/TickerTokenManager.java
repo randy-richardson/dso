@@ -16,16 +16,16 @@ import java.util.TimerTask;
 
 public abstract class TickerTokenManager<T extends TickerToken, M extends TickerTokenMessage> {
 
-  private final int                                id;
-  private final int                                timerPeriod;
-  private final Map<Integer, TCTimer>              timerMap          = Collections
-                                                                         .synchronizedMap(new HashMap<Integer, TCTimer>());
-  protected final TickerTokenFactory<T, M>              factory;
-  private final Map<Class, TickerTokenHandler>           tallyTokenMap     = Collections
-                                                                         .synchronizedMap(new HashMap<Class, TickerTokenHandler>());
+  private final int                                    id;
+  private final int                                    timerPeriod;
+  private final Map<Class, TCTimer>                    timerMap          = Collections
+                                                                             .synchronizedMap(new HashMap<Class, TCTimer>());
+  protected final TickerTokenFactory<T, M>             factory;
+  private final Map<Class, TickerTokenHandler>         tallyTokenMap     = Collections
+                                                                             .synchronizedMap(new HashMap<Class, TickerTokenHandler>());
   private final Map<Class, TickerTokenCompleteHandler> completeTickerMap = Collections
-                                                                         .synchronizedMap(new HashMap<Class, TickerTokenCompleteHandler>());
-  private final Counter                            tickValue         = new Counter();
+                                                                             .synchronizedMap(new HashMap<Class, TickerTokenCompleteHandler>());
+  private final Counter                                tickValue         = new Counter();
 
   public TickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory) {
     this.id = id;
@@ -65,7 +65,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
 
   public abstract void sendMessage(M message);
 
-  public void recieve(T token) {
+  public void receive(T token) {
     int cid = token.getPrimaryID();
     if (cid == this.id) {
       boolean dirty = false;
@@ -78,14 +78,15 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
         complete(token);
         return;
       }
+    } else {
+      send(token);
     }
-    send(token);
   }
 
   public abstract boolean evaluateComplete(T token);
 
   private void complete(T token) {
-    TCTimer t = timerMap.remove(token.getPrimaryTickValue());
+    TCTimer t = timerMap.remove(token.getClass());
     System.out.println("id: " + id + " Timer value: " + t + " tickValue: " + token.getPrimaryTickValue());
     if (t != null) {
 
@@ -99,11 +100,12 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
 
     private final TickerTokenManager<T, M> manager;
     private final TickerTokenFactory<T, M> factory;
-    private final Map           timerMap;
-    private final TCTimer       timer;
-    private final Counter       tickValue;
+    private final Map                      timerMap;
+    private final TCTimer                  timer;
+    private final Counter                  tickValue;
 
-    private TickerTask(Counter tickValue, TickerTokenManager manager, TickerTokenFactory factory, Map timerMap, TCTimer timer) {
+    private TickerTask(Counter tickValue, TickerTokenManager manager, TickerTokenFactory factory, Map timerMap,
+                       TCTimer timer) {
       this.tickValue = tickValue;
       this.manager = manager;
       this.factory = factory;
@@ -114,7 +116,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
     public void run() {
       T token = factory.createTriggerToken(manager.getId(), tickValue.increment());
       System.out.println("Put into timer map: tickValue: " + token.getPrimaryTickValue() + " timer: " + timer);
-      timerMap.put(token.getPrimaryTickValue(), timer);
+      timerMap.put(token.getClass(), timer);
       manager.send(token);
     }
 
