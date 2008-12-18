@@ -3,10 +3,8 @@
  */
 package com.tc.util;
 
-public class TestTickerTokenCompleteHandler implements TickerTokenCompleteHandler {
-
-  public void complete() {
-    //
-  }
-
+public interface TallyHandler {
+  
+  public boolean isDirtyAndClear();
+  
 }

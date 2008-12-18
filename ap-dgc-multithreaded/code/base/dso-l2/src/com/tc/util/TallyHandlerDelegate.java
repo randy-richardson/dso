@@ -5,7 +5,7 @@ package com.tc.util;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TickerTokenHandlerDelegate {
+public class TallyHandlerDelegate implements TallyHandler {
 
   private AtomicBoolean dirty = new AtomicBoolean(false);
   

@@ -3,7 +3,7 @@
  */
 package com.tc.util;
 
-public interface TickerTokenCompleteHandler {
+public interface TickerCompleteListener {
   
   public void complete();
 
