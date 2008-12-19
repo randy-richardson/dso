@@ -3,8 +3,8 @@
  */
 package com.tc.util;
 
-public interface TickerTokenCompleteHandler {
+public interface TickerTokenCompleteHandler<T extends TickerToken> {
   
-  public void complete();
+  public void complete(T token);
 
 }

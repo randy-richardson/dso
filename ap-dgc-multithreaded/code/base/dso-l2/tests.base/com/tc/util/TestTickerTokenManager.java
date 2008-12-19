@@ -5,7 +5,7 @@ package com.tc.util;
 
 import java.util.Queue;
 
-public class TestTickerTokenManager extends TickerTokenManager<TestTickerToken, TestTickerTokenMessage> implements TickerTokenCompleteHandler {
+public class TestTickerTokenManager extends TickerTokenManager<TestTickerToken, TestTickerTokenMessage> {
   
   private final Queue<TestTickerTokenMessage> mQueue;
   
@@ -23,10 +23,5 @@ public class TestTickerTokenManager extends TickerTokenManager<TestTickerToken, 
   public void sendMessage(TestTickerTokenMessage message) {
     mQueue.add(message);
   }
-
-  public void complete() {
-    //
-  }
-
   
 }

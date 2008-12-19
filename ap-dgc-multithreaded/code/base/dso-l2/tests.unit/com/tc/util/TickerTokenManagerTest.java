@@ -5,6 +5,7 @@
 package com.tc.util;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -13,12 +14,43 @@ import junit.framework.TestCase;
 
 public class TickerTokenManagerTest extends TestCase {
 
-  private static final int                    NUMBER_OF_HANDLERS = 10;
+  private static final int NUMBER_OF_HANDLERS = 10;
 
- 
   public void test() {
-   createTickerTuples();
-   //TODO:
+    List<TickerTuple> tuples = createTickerTuples();
+
+    TestTickerTokenManager tickerTokenManager = tuples.get(0).getTickerTokenManager();
+    TestTickerTokenCompleteHandler completeHandler = new TestTickerTokenCompleteHandler(tickerTokenManager, tuples);
+    tickerTokenManager.addTickerTokenCompleteHandler(TestTickerToken.class, completeHandler);
+    tickerTokenManager.startTicker();
+
+  }
+
+  private static class TestTickerTokenCompleteHandler implements TickerTokenCompleteHandler<TestTickerToken> {
+
+    private final TestTickerTokenManager manager;
+    private final List<TickerTuple> tuples;
+
+    public TestTickerTokenCompleteHandler(TestTickerTokenManager manager, List<TickerTuple> tuples) {
+      this.manager = manager;
+      this.tuples = tuples;
+    }
+
+    public void complete(TestTickerToken token) {
+      assertEquals(token.getTokenStateMap().size(), NUMBER_OF_HANDLERS);
+
+      for (Iterator<Boolean> iter = token.getTokenStateMap().values().iterator(); iter.hasNext();) {
+        assertFalse(iter.next());
+      }
+      
+      assertEquals(manager.getId(), token.getPrimaryID());
+      
+      for(Iterator<TickerTuple> iter = tuples.iterator(); iter.hasNext();) {
+        TickerTuple tuple = iter.next();
+        assertEquals(tuple.getMessageQueue().size(), 1);
+      }
+    }
+
   }
 
   private List<TickerTuple> createTickerTuples() {
@@ -27,11 +59,7 @@ public class TickerTokenManagerTest extends TestCase {
     for (int i = 0; i < NUMBER_OF_HANDLERS; i++) {
       final Queue<TestTickerTokenMessage> mQueue = new LinkedBlockingQueue<TestTickerTokenMessage>();
       final TestTickerTokenManager manager = new TestTickerTokenManager(i, 100, new TestTickerTokenFactory(), mQueue);
-      final TestTickerTokenHandler handler = new TestTickerTokenHandler(i);
-      final TestTickerTokenCompleteHandler completeHandler = new TestTickerTokenCompleteHandler();
-      manager.addTickerTokenHandler(TestTickerToken.class, handler);
-      manager.addTickerTokenCompleteHandler(TestTickerToken.class, completeHandler);
-      TickerTuple tickerTuple = new TickerTuple(mQueue, manager, completeHandler, handler);
+      TickerTuple tickerTuple = new TickerTuple(mQueue, manager);
       tickerTuples.add(tickerTuple);
     }
     return tickerTuples;
@@ -39,22 +67,12 @@ public class TickerTokenManagerTest extends TestCase {
 
   private static class TickerTuple {
 
-    public TestTickerTokenCompleteHandler getTickerTokenCompleteHandler() {
-      return tickerTokenCompleteHandler;
-    }
+    private final Queue<TestTickerTokenMessage> messageQueue;
+    private final TestTickerTokenManager        tickerTokenManager;
 
-    private final Queue<TestTickerTokenMessage>  messageQueue;
-    private final TestTickerTokenCompleteHandler tickerTokenCompleteHandler;
-    private final TestTickerTokenManager         tickerTokenManager;
-    private final TestTickerTokenHandler         tickerTokenHandler;
-
-    public TickerTuple(Queue<TestTickerTokenMessage> messageQueue, TestTickerTokenManager tickerTokenManager,
-                       TestTickerTokenCompleteHandler tickerTokenCompleteHandler,
-                       TestTickerTokenHandler tickerTokenHandler) {
+    public TickerTuple(Queue<TestTickerTokenMessage> messageQueue, TestTickerTokenManager tickerTokenManager) {
       this.messageQueue = messageQueue;
       this.tickerTokenManager = tickerTokenManager;
-      this.tickerTokenCompleteHandler = tickerTokenCompleteHandler;
-      this.tickerTokenHandler = tickerTokenHandler;
     }
 
     public Queue<TestTickerTokenMessage> getMessageQueue() {
@@ -65,9 +83,6 @@ public class TickerTokenManagerTest extends TestCase {
       return tickerTokenManager;
     }
 
-    public TestTickerTokenHandler getTickerTokenHandler() {
-      return tickerTokenHandler;
-    }
   }
 
 }

@@ -61,7 +61,7 @@ public class TestManagedObject implements ManagedObject, ManagedObjectReference,
     return id;
   }
 
-  public Set<ObjectID> getObjectReferences() {
+  public synchronized Set<ObjectID> getObjectReferences() {
     return new HashSet<ObjectID>(references);
   }
 

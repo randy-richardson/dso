@@ -76,7 +76,6 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
       }
       if (!dirty && evaluateComplete(token)) {
         complete(token);
-        return;
       }
     } else {
       send(token);
@@ -92,7 +91,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
 
       t.cancel();
     }
-    completeTickerMap.get(token.getClass()).complete();
+    completeTickerMap.get(token.getClass()).complete(token);
 
   }
 
