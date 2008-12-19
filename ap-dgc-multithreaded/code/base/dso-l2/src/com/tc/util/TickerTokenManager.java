@@ -114,7 +114,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
 
     public void run() {
       T token = factory.createTriggerToken(manager.getId(), tickValue.increment());
-      System.out.println("Put into timer map: tickValue: " + token.getPrimaryTickValue() + " timer: " + timer);
+//      System.out.println("Put into timer map: tickValue: " + token.getPrimaryTickValue() + " timer: " + timer);
       timerMap.put(token.getClass(), timer);
       manager.send(token);
     }
