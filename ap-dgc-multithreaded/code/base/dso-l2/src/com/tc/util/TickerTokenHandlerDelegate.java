@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TickerTokenHandlerDelegate {
 
-  private AtomicBoolean dirty = new AtomicBoolean(false);
+  private AtomicBoolean dirty = new AtomicBoolean(true);
   
   public void makeDirty() {
     dirty.set(true);
