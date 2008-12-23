@@ -21,7 +21,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   private final Map<Class, TCTimer>                    timerMap          = Collections
                                                                              .synchronizedMap(new HashMap<Class, TCTimer>());
   protected final TickerTokenFactory<T, M>             factory;
-  private final Map<Class, TickerTokenHandler>         tallyTokenMap     = Collections
+  private final Map<Class, TickerTokenHandler>         tokenHandlerMap     = Collections
                                                                              .synchronizedMap(new HashMap<Class, TickerTokenHandler>());
   private final Map<Class, TickerTokenCompleteHandler> completeTickerMap = Collections
                                                                              .synchronizedMap(new HashMap<Class, TickerTokenCompleteHandler>());
@@ -42,11 +42,11 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   }
 
   public void addTickerTokenHandler(Class tokenClass, TickerTokenHandler handler) {
-    tallyTokenMap.put(tokenClass, handler);
+    tokenHandlerMap.put(tokenClass, handler);
   }
 
-  public void addTickerTokenCompleteHandler(Class tokenClass, TickerTokenCompleteHandler listener) {
-    completeTickerMap.put(tokenClass, listener);
+  public void addTickerTokenCompleteHandler(Class tokenClass, TickerTokenCompleteHandler handler) {
+    completeTickerMap.put(tokenClass, handler);
   }
 
   public void startTicker() {
@@ -56,7 +56,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   }
 
   public void send(T token) {
-    TickerTokenHandler handler = tallyTokenMap.get(token.getClass());
+    TickerTokenHandler handler = tokenHandlerMap.get(token.getClass());
     Assert.assertNotNull(handler);
     handler.processToken(token);
     M message = factory.createMessage(token);
