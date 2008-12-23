@@ -11,6 +11,7 @@ import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.core.api.Filter;
 import com.tc.objectserver.core.api.ManagedObject;
+import com.tc.objectserver.dgc.api.BasicGarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.l1.api.ClientStateManager;
@@ -23,24 +24,26 @@ import java.util.Set;
 
 public class FullGCHook extends AbstractGCHook {
 
-  private static final TCLogger       logger                = TCLogging.getLogger(FullGCHook.class);
+  private static final TCLogger logger                = TCLogging.getLogger(FullGCHook.class);
 
-  private static final long   THROTTLE_GC_MILLIS    = TCPropertiesImpl.getProperties()
-                                                        .getLong(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_THROTTLE_TIME);
+  private static final long     THROTTLE_GC_MILLIS    = TCPropertiesImpl
+                                                          .getProperties()
+                                                          .getLong(
+                                                                   TCPropertiesConsts.L2_OBJECTMANAGER_DGC_THROTTLE_TIME);
 
-  private static final long   REQUESTS_PER_THROTTLE = TCPropertiesImpl
-                                                        .getProperties()
-                                                        .getLong(
-                                                                 TCPropertiesConsts.L2_OBJECTMANAGER_DGC_REQUEST_PER_THROTTLE);
+  private static final long     REQUESTS_PER_THROTTLE = TCPropertiesImpl
+                                                          .getProperties()
+                                                          .getLong(
+                                                                   TCPropertiesConsts.L2_OBJECTMANAGER_DGC_REQUEST_PER_THROTTLE);
 
-  private static final Filter NULL_FILTER           = new Filter() {
-                                                      public boolean shouldVisit(ObjectID referencedObject) {
-                                                        return true;
-                                                      }
-                                                    };
+  private static final Filter   NULL_FILTER           = new Filter() {
+                                                        public boolean shouldVisit(ObjectID referencedObject) {
+                                                          return true;
+                                                        }
+                                                      };
 
-  public FullGCHook(GarbageCollector collector, ObjectManager objectManager, ClientStateManager stateManager) {
-    super(collector, objectManager, stateManager);
+  public FullGCHook(BasicGarbageCollector collector, ObjectManager objectManager, ClientStateManager stateManager) {
+    super((GarbageCollector) collector, objectManager, stateManager);
   }
 
   public String getDescription() {

@@ -25,7 +25,7 @@ import com.tc.objectserver.context.ManagedObjectFaultingContext;
 import com.tc.objectserver.context.ManagedObjectFlushingContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
-import com.tc.objectserver.dgc.api.GarbageCollector;
+import com.tc.objectserver.dgc.api.BasicGarbageCollector;
 import com.tc.objectserver.dgc.impl.GarbageCollectorThread;
 import com.tc.objectserver.dgc.impl.NullGarbageCollector;
 import com.tc.objectserver.l1.api.ClientStateManager;
@@ -86,7 +86,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private final Counter                               flushCount               = new Counter();
   private final PendingList                           pending                  = new PendingList();
 
-  private GarbageCollector                            collector                = new NullGarbageCollector();
+  private BasicGarbageCollector                       collector                = new NullGarbageCollector();
   private int                                         checkedOutCount          = 0;
 
   private volatile boolean                            inShutdown               = false;
@@ -691,6 +691,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     txnObjectMgr.recallAllCheckedoutObject();
     int count = 0;
     while (!collector.isPaused()) {
+      logger.warn("Still waiting for object to be checked back in. collector state is not paused. checkout count = "
+                  + checkedOutCount);
       if (count++ > 2) {
         logger.warn("Still waiting for object to be checked back in. collector state is not paused. checkout count = "
                     + checkedOutCount);
@@ -763,11 +765,11 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private void fireObjectCreated(ObjectID id) {
     collector.notifyObjectCreated(id);
   }
-  
+
   public ManagedObjectStore getObjectStore() {
     return objectStore;
   }
-  
+
   public ClientStateManager getClientStateManager() {
     return stateManager;
   }
@@ -786,11 +788,11 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     return this.persistenceTransactionProvider.newTransaction();
   }
 
-  public GarbageCollector getGarbageCollector() {
+  public BasicGarbageCollector getGarbageCollector() {
     return this.collector;
   }
 
-  public void setGarbageCollector(final GarbageCollector newCollector) {
+  public void setGarbageCollector(final BasicGarbageCollector newCollector) {
     syncAssertNotInShutdown();
     if (this.collector != null) {
       this.collector.stop();
@@ -800,7 +802,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     if ((!config.doGC() || config.gcThreadSleepTime() <= 0)
         && (!config.isYoungGenDGCEnabled() || config.getYoungGenDGCFrequencyInMillis() <= 0)) return;
 
-    StoppableThread st = new GarbageCollectorThread(this.gcThreadGroup, "DGC", newCollector, this, stateManager, this.config);
+    StoppableThread st = new GarbageCollectorThread(this.gcThreadGroup, "DGC", newCollector, this, stateManager,
+                                                    this.config);
     st.setDaemon(true);
     newCollector.setState(st);
   }

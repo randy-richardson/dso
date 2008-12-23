@@ -14,6 +14,7 @@ import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
+import com.tc.objectserver.dgc.api.BasicGarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.dgc.api.GarbageCollector;
@@ -40,13 +41,13 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
   protected Set                            roots               = new HashSet<ObjectID>();
   protected Map                            managed             = new LinkedHashMap<ObjectID, ManagedObjectReference>();
   protected Map                            swappedToDisk       = new HashMap<ObjectID, ManagedObjectReference>();
-  protected GarbageCollector               gcCollector;
+  protected BasicGarbageCollector          gcCollector;
   protected Set                            gced                = new HashSet<ObjectID>();
 
   protected Set                            lookedUp            = null;
   protected Set                            released            = null;
   protected PersistenceTransactionProvider transactionProvider = null;
-  
+
   public GCTestObjectManager(Set lookedUp, Set released, PersistenceTransactionProvider transactionProvider) {
     this.lookedUp = lookedUp;
     this.released = released;
@@ -100,10 +101,10 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
   }
 
   public GarbageCollector getGarbageCollector() {
-    return this.gcCollector;
+    return (GarbageCollector) this.gcCollector;
   }
 
-  public void setGarbageCollector(GarbageCollector gc) {
+  public void setGarbageCollector(BasicGarbageCollector gc) {
     this.gcCollector = gc;
   }
 
@@ -176,14 +177,11 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
 
   public void notifyGCComplete(GCResultContext resultContext) {
 
-    
     GarbageCollectionInfo gcInfo = resultContext.getGCInfo();
     GarbageCollectionInfoPublisher gcPublisher = resultContext.getGCPublisher();
-    
-     
+
     gcPublisher.fireGCDeleteEvent(gcInfo);
     long start = System.currentTimeMillis();
-   
 
     SortedSet<ObjectID> ids = resultContext.getGCedObjectIDs();
     for (Iterator i = ids.iterator(); i.hasNext();) {
@@ -194,14 +192,14 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
     int b4 = gced.size();
     gced.addAll(ids);
     Assert.assertEquals(b4 + ids.size(), gced.size());
-    
+
     long elapsed = System.currentTimeMillis() - start;
-    gcInfo.setDeleteStageTime(elapsed); 
+    gcInfo.setDeleteStageTime(elapsed);
     long endMillis = System.currentTimeMillis();
     gcInfo.setElapsedTime(endMillis - gcInfo.getStartTime());
 
     gcPublisher.fireGCCompletedEvent(gcInfo);
- 
+
   }
 
   public ObjectIDSet getObjectIDsInCache() {
@@ -231,7 +229,7 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
   }
 
   public ManagedObject getObjectFromCacheByIDOrNull(ObjectID id) {
-    if(managed.containsKey(id) ) {
+    if (managed.containsKey(id)) {
       return getObjectByIDOrNull(id);
     } else {
       return null;

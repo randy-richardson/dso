@@ -1201,7 +1201,7 @@ public class ObjectManagerTest extends BaseDSOTestCase {
 
     gc.allow_blockUntilReadyToGC_ToProceed();
 
-    objectManager.getGarbageCollector().doGC(new FullGCHook(objectManager.getGarbageCollector(),objectManager,clientStateManager));
+    ((GarbageCollector) objectManager.getGarbageCollector()).doGC(new FullGCHook(objectManager.getGarbageCollector(),objectManager,clientStateManager));
     assertTrue(gc.isCollected());
 
     gc.reset();
@@ -2294,7 +2294,7 @@ public class ObjectManagerTest extends BaseDSOTestCase {
   private class GCCaller implements Runnable {
 
     public void run() {
-      objectManager.getGarbageCollector().doGC(new FullGCHook(objectManager.getGarbageCollector(),objectManager,clientStateManager));
+      ((GarbageCollector) objectManager.getGarbageCollector()).doGC(new FullGCHook(objectManager.getGarbageCollector(),objectManager,clientStateManager));
     }
   }
 

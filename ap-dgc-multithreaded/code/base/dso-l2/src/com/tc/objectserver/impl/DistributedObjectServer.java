@@ -119,6 +119,7 @@ import com.tc.objectserver.core.api.DSOGlobalServerStatsImpl;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.core.impl.ServerConfigurationContextImpl;
 import com.tc.objectserver.core.impl.ServerManagementContext;
+import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.impl.GCComptrollerImpl;
 import com.tc.objectserver.dgc.impl.GCStatisticsAgentSubSystemEventListener;
 import com.tc.objectserver.dgc.impl.GCStatsEventPublisher;
@@ -637,7 +638,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     managedObjectChangeListenerProvider.setListener(objectManager);
 
     l2Management.findObjectManagementMonitorMBean().registerGCController(
-                                                                         new GCComptrollerImpl(objectManager
+                                                                         new GCComptrollerImpl((GarbageCollector) objectManager
                                                                              .getGarbageCollector(), objectManager, clientStateManager));
 
     TCProperties cacheManagerProperties = l2Properties.getPropertiesFor("cachemanager");
