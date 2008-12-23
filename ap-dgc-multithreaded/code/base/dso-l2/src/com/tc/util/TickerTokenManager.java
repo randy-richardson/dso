@@ -16,6 +16,7 @@ import java.util.TimerTask;
 
 public abstract class TickerTokenManager<T extends TickerToken, M extends TickerTokenMessage> {
 
+  private final static int                             CLEAN_TICKS       = 10;
   private final int                                    id;
   private final int                                    timerPeriod;
   private final Map<Class, TCTimer>                    timerMap          = Collections
@@ -26,7 +27,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   private final Map<Class, TickerTokenCompleteHandler> completeTickerMap = Collections
                                                                              .synchronizedMap(new HashMap<Class, TickerTokenCompleteHandler>());
   private final Counter                                tickValue         = new Counter();
-  private final Counter                                cleanCount        = new Counter(10);
+  private final Counter                                cleanCount        = new Counter(CLEAN_TICKS);
 
   public TickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory) {
     this.id = id;
@@ -96,6 +97,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
         t.cancel();
       }
       completeTickerMap.get(token.getClass()).complete(token);
+      cleanCount.reset(CLEAN_TICKS);
     }
   }
 
