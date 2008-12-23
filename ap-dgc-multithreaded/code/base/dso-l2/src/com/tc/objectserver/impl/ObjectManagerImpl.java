@@ -681,7 +681,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   private void checkAndNotifyGC() {
     if (checkedOutCount == 0) {
-      logger.info("Notifying GC : pending = " + pending.size() + " checkedOutCount = " + checkedOutCount);
+    //  logger.info("Notifying GC : pending = " + pending.size() + " checkedOutCount = " + checkedOutCount);
       collector.notifyReadyToGC();
     }
   }
