@@ -21,11 +21,12 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   private final Map<Class, TCTimer>                    timerMap          = Collections
                                                                              .synchronizedMap(new HashMap<Class, TCTimer>());
   protected final TickerTokenFactory<T, M>             factory;
-  private final Map<Class, TickerTokenHandler>         tokenHandlerMap     = Collections
+  private final Map<Class, TickerTokenHandler>         tokenHandlerMap   = Collections
                                                                              .synchronizedMap(new HashMap<Class, TickerTokenHandler>());
   private final Map<Class, TickerTokenCompleteHandler> completeTickerMap = Collections
                                                                              .synchronizedMap(new HashMap<Class, TickerTokenCompleteHandler>());
   private final Counter                                tickValue         = new Counter();
+  private final Counter                                cleanCount        = new Counter(10);
 
   public TickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory) {
     this.id = id;
@@ -68,14 +69,16 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   public void receive(T token) {
     int cid = token.getPrimaryID();
     if (cid == this.id) {
-      boolean dirty = false;
-      for (Iterator<Boolean> iter = token.getTokenStateMap().values().iterator(); iter.hasNext();) {
-        if (iter.next().booleanValue()) {
-          dirty = true;
+      synchronized (this) {
+        boolean dirty = false;
+        for (Iterator<Boolean> iter = token.getTokenStateMap().values().iterator(); iter.hasNext();) {
+          if (iter.next().booleanValue()) {
+            dirty = true;
+          }
         }
-      }
-      if (!dirty && evaluateComplete(token)) {
-        complete(token);
+        if (!dirty && evaluateComplete(token)) {
+          complete(token);
+        }
       }
     } else {
       send(token);
@@ -85,14 +88,15 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   public abstract boolean evaluateComplete(T token);
 
   private void complete(T token) {
-    TCTimer t = timerMap.remove(token.getClass());
-    System.out.println("id: " + id + " Timer value: " + t + " tickValue: " + token.getPrimaryTickValue());
-    if (t != null) {
+    if (cleanCount.decrement() <= 0) {
+      TCTimer t = timerMap.remove(token.getClass());
+      System.out.println("id: " + id + " Timer value: " + t + " tickValue: " + token.getPrimaryTickValue());
+      if (t != null) {
 
-      t.cancel();
+        t.cancel();
+      }
+      completeTickerMap.get(token.getClass()).complete(token);
     }
-    completeTickerMap.get(token.getClass()).complete(token);
-
   }
 
   private static class TickerTask<T extends TickerToken, M extends TickerTokenMessage> extends TimerTask {
@@ -114,7 +118,7 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
 
     public void run() {
       T token = factory.createTriggerToken(manager.getId(), tickValue.increment());
-//      System.out.println("Put into timer map: tickValue: " + token.getPrimaryTickValue() + " timer: " + timer);
+      // System.out.println("Put into timer map: tickValue: " + token.getPrimaryTickValue() + " timer: " + timer);
       timerMap.put(token.getClass(), timer);
       manager.send(token);
     }
