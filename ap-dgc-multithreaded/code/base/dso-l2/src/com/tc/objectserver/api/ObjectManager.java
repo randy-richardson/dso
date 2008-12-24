@@ -9,7 +9,7 @@ import com.tc.object.ObjectID;
 import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
-import com.tc.objectserver.dgc.api.BasicGarbageCollector;
+import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.util.ObjectIDSet;
 
@@ -88,9 +88,9 @@ public interface ObjectManager extends ManagedObjectProvider {
 
   public ObjectID lookupRootID(String name);
 
-  public BasicGarbageCollector getGarbageCollector();
+  public GarbageCollector getGarbageCollector();
 
-  public void setGarbageCollector(BasicGarbageCollector gc);
+  public void setGarbageCollector(GarbageCollector gc);
 
   /**
    * Called by GC thread (in object manager)

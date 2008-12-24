@@ -71,8 +71,8 @@ public class InMemoryManagedObjectStore implements ManagedObjectStore {
 
   public synchronized void removeAllObjectsByIDNow(PersistenceTransaction tx, SortedSet<ObjectID> objectIds) {
     assertNotInShutdown();
-    for (Iterator<ObjectID> i = objectIds.iterator(); i.hasNext();) {
-      removeObjectByID(tx, i.next());
+    for (Iterator i = objectIds.iterator(); i.hasNext();) {
+      removeObjectByID(tx, (ObjectID) i.next());
     }
   }
   

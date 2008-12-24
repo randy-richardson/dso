@@ -48,7 +48,6 @@ import com.tc.objectserver.context.RespondToObjectRequestContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.api.TestDNA;
 import com.tc.objectserver.core.api.TestDNACursor;
-import com.tc.objectserver.dgc.api.BasicGarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.impl.ObjectRequestManagerImpl.BatchAndSend;
 import com.tc.objectserver.impl.ObjectRequestManagerImpl.LookupContext;
@@ -1075,7 +1074,7 @@ public class ObjectRequestManagerTest extends TestCase {
       throw new NotImplementedException(TestObjectManager.class);
     }
 
-    public void setGarbageCollector(BasicGarbageCollector gc) {
+    public void setGarbageCollector(GarbageCollector gc) {
       throw new NotImplementedException(TestObjectManager.class);
     }
 

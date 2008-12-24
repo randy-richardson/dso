@@ -10,14 +10,13 @@ import com.tc.exception.ImplementMe;
 import com.tc.exception.TCRuntimeException;
 import com.tc.net.NodeID;
 import com.tc.object.ObjectID;
-import com.tc.objectserver.api.GCStatsEventListener;
 import com.tc.objectserver.api.ObjectManager;
+import com.tc.objectserver.api.GCStatsEventListener;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.impl.TestManagedObject;
-import com.tc.objectserver.dgc.api.BasicGarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
@@ -102,7 +101,7 @@ public class TestObjectManager implements ObjectManager {
     throw new ImplementMe();
   }
 
-  public void setGarbageCollector(BasicGarbageCollector gc) {
+  public void setGarbageCollector(GarbageCollector gc) {
     throw new ImplementMe();
   }
 

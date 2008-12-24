@@ -9,11 +9,12 @@ import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.l1.api.ClientStateManager;
 
 public abstract class AbstractGCHook implements GCHook {
-  protected final GarbageCollector collector;
-  protected final ObjectManager         objectManager;
-  protected final ClientStateManager    stateManager;
+  protected final GarbageCollector   collector;
+  protected final ObjectManager      objectManager;
+  protected final ClientStateManager stateManager;
 
-  protected AbstractGCHook(GarbageCollector collector, ObjectManager objectManager, ClientStateManager stateManager) {
+  protected AbstractGCHook(GarbageCollector collector, ObjectManager objectManager,
+                           ClientStateManager stateManager) {
     this.collector = collector;
     this.objectManager = objectManager;
     this.stateManager = stateManager;

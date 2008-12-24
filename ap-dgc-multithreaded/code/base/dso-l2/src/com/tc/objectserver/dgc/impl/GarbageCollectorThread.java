@@ -8,7 +8,6 @@ import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.objectserver.api.ObjectManager;
-import com.tc.objectserver.dgc.api.BasicGarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.impl.ObjectManagerConfig;
 import com.tc.objectserver.l1.api.ClientStateManager;
@@ -17,15 +16,15 @@ import com.tc.util.concurrent.StoppableThread;
 public class GarbageCollectorThread extends StoppableThread {
   private static final TCLogger    logger   = TCLogging.getLogger(GarbageCollectorThread.class);
 
-  private final BasicGarbageCollector   collector;
+  private final GarbageCollector   collector;
   private final ObjectManager      objectManager;
   private final ClientStateManager stateManager;
   private final Object             stopLock = new Object();
   private final long               fullGCSleepTime;
   private final long               youngGCSleepTime;
-  private final boolean            doFullGC;
+  private final boolean          doFullGC;
 
-  public GarbageCollectorThread(ThreadGroup group, String name, BasicGarbageCollector newCollector,
+  public GarbageCollectorThread(ThreadGroup group, String name, GarbageCollector newCollector,
                                 ObjectManager objectManager, ClientStateManager stateManager, ObjectManagerConfig config) {
     super(group, name);
     this.collector = newCollector;
@@ -94,7 +93,7 @@ public class GarbageCollectorThread extends StoppableThread {
         stopLock.wait(sleepTime);
       }
       if (isStopRequested()) { return; }
-      ((GarbageCollector) collector).doGC(new YoungGCHook((GarbageCollector) collector, objectManager, stateManager));
+      collector.doGC(new YoungGCHook(collector, objectManager, stateManager));
     } catch (InterruptedException ie) {
       throw new TCRuntimeException(ie);
     }
@@ -106,7 +105,7 @@ public class GarbageCollectorThread extends StoppableThread {
         stopLock.wait(sleepTime);
       }
       if (isStopRequested()) { return; }
-      ((GarbageCollector) collector).doGC(new FullGCHook(collector, objectManager, stateManager));
+      collector.doGC(new FullGCHook(collector, objectManager, stateManager));
     } catch (InterruptedException ie) {
       throw new TCRuntimeException(ie);
     }
