@@ -9,6 +9,8 @@ public class TickerTokenHandlerDelegate {
 
   private final AtomicBoolean dirty = new AtomicBoolean(true);
   
+  private final AtomicBoolean acceptTokenReader = new AtomicBoolean(false);
+  
   public void makeDirty() {
     dirty.set(true);
   }
@@ -17,4 +19,15 @@ public class TickerTokenHandlerDelegate {
     return dirty.getAndSet(false);
   }
 
+  public void acceptTokenReader() {
+    acceptTokenReader.set(true);
+  }
+  
+  public void unacceptTokenReader() {
+    acceptTokenReader.set(false);
+  }
+  
+  public boolean allowTokenReader() {
+    return acceptTokenReader.get();
+  }
 }
