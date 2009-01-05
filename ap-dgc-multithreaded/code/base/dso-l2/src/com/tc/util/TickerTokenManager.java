@@ -76,14 +76,14 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
       synchronized (this) {
         Collection<Boolean> dirtyFlags = token.getTokenStateMap().values();
         boolean dirty = false;
-        if (dirtyFlags.size() < tokenCount) {
+        if( dirtyFlags.size() < this.tokenCount ) {
           dirty = true;
         } else {
-          for (Iterator<Boolean> iter = dirtyFlags.iterator(); iter.hasNext();) {
-            if (iter.next().booleanValue()) {
-              dirty = true;
-            }
+        for (Iterator<Boolean> iter = dirtyFlags.iterator(); iter.hasNext();) {
+          if (iter.next().booleanValue()) {
+            dirty = true;
           }
+        }
         }
         if (!dirty && evaluateComplete(token)) {
           complete(token);
