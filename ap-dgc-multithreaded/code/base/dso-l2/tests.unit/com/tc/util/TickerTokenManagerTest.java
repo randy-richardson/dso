@@ -58,7 +58,7 @@ public class TickerTokenManagerTest extends TestCase {
 
     for (int i = 0; i < NUMBER_OF_HANDLERS; i++) {
       final Queue<TestTickerTokenMessage> mQueue = new LinkedBlockingQueue<TestTickerTokenMessage>();
-      final TestTickerTokenManager manager = new TestTickerTokenManager(i, 100, new TestTickerTokenFactory(), mQueue);
+      final TestTickerTokenManager manager = new TestTickerTokenManager(i, 100, new TestTickerTokenFactory(), mQueue, NUMBER_OF_HANDLERS);
       TickerTuple tickerTuple = new TickerTuple(mQueue, manager);
       tickerTuples.add(tickerTuple);
     }

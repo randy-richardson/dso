@@ -8,6 +8,7 @@ import com.tc.util.TCTimer;
 import com.tc.util.TCTimerImpl;
 import com.tc.util.msg.TickerTokenMessage;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,11 +29,13 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
                                                                              .synchronizedMap(new HashMap<Class, TickerTokenCompleteHandler>());
   private final Counter                                tickValue         = new Counter();
   private final Counter                                cleanCount        = new Counter(CLEAN_TICKS);
+  private final int                                    tokenCount;
 
-  public TickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory) {
+  public TickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory, int tokenCount) {
     this.id = id;
     this.factory = factory;
     this.timerPeriod = timerPeriod;
+    this.tokenCount = tokenCount;
   }
 
   public TickerTokenFactory getFactory() {
@@ -71,10 +74,15 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
     int cid = token.getPrimaryID();
     if (cid == this.id) {
       synchronized (this) {
+        Collection<Boolean> dirtyFlags = token.getTokenStateMap().values();
         boolean dirty = false;
-        for (Iterator<Boolean> iter = token.getTokenStateMap().values().iterator(); iter.hasNext();) {
-          if (iter.next().booleanValue()) {
-            dirty = true;
+        if (dirtyFlags.size() < tokenCount) {
+          dirty = true;
+        } else {
+          for (Iterator<Boolean> iter = dirtyFlags.iterator(); iter.hasNext();) {
+            if (iter.next().booleanValue()) {
+              dirty = true;
+            }
           }
         }
         if (!dirty && evaluateComplete(token)) {

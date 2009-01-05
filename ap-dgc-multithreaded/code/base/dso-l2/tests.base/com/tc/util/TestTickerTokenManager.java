@@ -9,8 +9,8 @@ public class TestTickerTokenManager extends TickerTokenManager<TestTickerToken, 
   
   private final Queue<TestTickerTokenMessage> mQueue;
   
-  public TestTickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory, Queue<TestTickerTokenMessage> mQueue) {
-    super(id, timerPeriod, factory);
+  public TestTickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory, Queue<TestTickerTokenMessage> mQueue, int tokenCount) {
+    super(id, timerPeriod, factory, tokenCount);
     this.mQueue = mQueue;
   }
 
