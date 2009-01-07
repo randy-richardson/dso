@@ -59,33 +59,33 @@ public class MarkAndSweepGCBenchMarkTest extends TestCase {
     TestManagedObject obj = getObjectByID(new ObjectID(11111123, 0));
     obj.addReferences(parent);
 
-    Set<ObjectID> children1 = createObjectIDSet(5500000, 6000000);
+    Set<ObjectID> children1 = createObjectIDSet(5000000, 6000000);
     createObjects(children1);
 
     obj = getObjectByID(new ObjectID(5, 0));
     obj.addReferences(children1);
 
-    Set<ObjectID> children2 = createObjectIDSet(8500000, 9000000);
+    Set<ObjectID> children2 = createObjectIDSet(8000000, 9000000);
     createObjects(children2);
 
     obj = getObjectByID(new ObjectID(4, 0));
     obj.addReferences(children2);
 
-    createObjects(createObjectIDSet(3500000, 4000000));
+    createObjects(createObjectIDSet(3000000, 4000000));
 
     objectManager.start();
 
-    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 3500001);
+    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 5000001);
     System.out.println("GC started");
     collector.start();
     collector.doGC(new FullGCHook(collector, objectManager, stateManager));
-    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 3000001);
+    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 4000001);
 
     obj = getObjectByID(new ObjectID(5, 0));
     obj.removeReferences(children1);
 
     collector.doGC(new FullGCHook(collector, objectManager, stateManager));
-    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 2500001);
+    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 3000001);
 
     obj = getObjectByID(new ObjectID(4, 0));
     obj.removeReferences(children2);
