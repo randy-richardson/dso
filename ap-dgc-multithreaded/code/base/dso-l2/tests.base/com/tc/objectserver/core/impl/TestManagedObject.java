@@ -17,9 +17,9 @@ import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.api.ManagedObjectState;
 import com.tc.objectserver.impl.ManagedObjectReference;
+import com.tc.objectserver.impl.ObjectManagerImpl;
 import com.tc.objectserver.managedobject.AbstractManagedObjectState;
 import com.tc.objectserver.managedobject.BackReferences;
-import com.tc.objectserver.managedobject.ManagedObjectChangeListener;
 import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.objectserver.managedobject.ManagedObjectTraverser;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
@@ -44,17 +44,6 @@ public class TestManagedObject implements ManagedObject, ManagedObjectReference,
   private final ArrayList<ObjectID>   references;
   public boolean                      isDirty;
   public boolean                      isNew;
-  private ManagedObjectChangeListener listener = new ManagedObjectChangeListener() {
-
-    public void changed(ObjectID changedObject, ObjectID oldReference, ObjectID newReference) {
-     //
-    }
-    
-  };
-  
-  public void setManagedObjectChangeListener(ManagedObjectChangeListener listener) {
-    this.listener = listener;
-  }
 
   public TestManagedObject(ObjectID id, ArrayList<ObjectID> references) {
     this.id = id;
@@ -112,7 +101,14 @@ public class TestManagedObject implements ManagedObject, ManagedObjectReference,
     for (Iterator<ObjectID> iter = ids.iterator(); iter.hasNext();) {
       ObjectID oid = iter.next();
       this.references.add(oid);
-      this.listener.changed(null, null, oid);
+    }
+  }
+  
+  public synchronized void addReferences(Set<ObjectID> ids, ObjectManagerImpl[] objectManagers ) {
+    for (Iterator<ObjectID> iter = ids.iterator(); iter.hasNext();) {
+      ObjectID oid = iter.next();
+      this.references.add(oid);
+      objectManagers[oid.getGroupID()].changed(null, null, oid);
     }
   }
 
