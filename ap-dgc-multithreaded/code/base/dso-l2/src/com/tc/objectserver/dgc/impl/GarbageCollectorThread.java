@@ -22,7 +22,7 @@ public class GarbageCollectorThread extends StoppableThread {
   private final Object             stopLock = new Object();
   private final long               fullGCSleepTime;
   private final long               youngGCSleepTime;
-  private final boolean          doFullGC;
+  private final boolean            doFullGC;
 
   public GarbageCollectorThread(ThreadGroup group, String name, GarbageCollector newCollector,
                                 ObjectManager objectManager, ClientStateManager stateManager, ObjectManagerConfig config) {

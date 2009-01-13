@@ -261,59 +261,60 @@ import javax.management.remote.JMXConnectorServer;
  * Startup and shutdown point. Builds and starts the server
  */
 public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
-  private ServerID                             thisServerNodeID         = ServerID.NULL_ID;
-  private final ConnectionPolicy               connectionPolicy;
+  private ServerID                               thisServerNodeID         = ServerID.NULL_ID;
+  private final ConnectionPolicy                 connectionPolicy;
 
-  private static final TCLogger                logger                   = CustomerLogging.getDSOGenericLogger();
-  private static final TCLogger                consoleLogger            = CustomerLogging.getConsoleLogger();
+  private static final TCLogger                  logger                   = CustomerLogging.getDSOGenericLogger();
+  private static final TCLogger                  consoleLogger            = CustomerLogging.getConsoleLogger();
 
-  private static final int                     MAX_DEFAULT_COMM_THREADS = 16;
+  private static final int                       MAX_DEFAULT_COMM_THREADS = 16;
 
-  private final L2TVSConfigurationSetupManager configSetupManager;
-  protected final HaConfig                     haConfig;
-  private final Sink                           httpSink;
-  private NetworkListener                      l1Listener;
-  private CommunicationsManager                communicationsManager;
-  private ServerConfigurationContext           context;
-  private ObjectManagerImpl                    objectManager;
-  private ObjectRequestManager                 objectRequestManager;
-  private TransactionalObjectManager           txnObjectManager;
-  private CounterManager                       sampledCounterManager;
-  private LockManagerImpl                      lockManager;
-  private ServerManagementContext              managementContext;
-  private StartupLock                          startupLock;
+  protected final L2TVSConfigurationSetupManager configSetupManager;
+  protected final HaConfig                       haConfig;
+  private final Sink                             httpSink;
+  protected NetworkListener                      l1Listener;
+  private CommunicationsManager                  communicationsManager;
+  private ServerConfigurationContext             context;
+  protected ObjectManagerImpl                    objectManager;
+  private ObjectRequestManager                   objectRequestManager;
+  private TransactionalObjectManager             txnObjectManager;
+  private CounterManager                         sampledCounterManager;
+  private LockManagerImpl                        lockManager;
+  private ServerManagementContext                managementContext;
+  private StartupLock                            startupLock;
 
-  private ClientStateManager                   clientStateManager;
+  protected ClientStateManager                   clientStateManager;
 
-  private ManagedObjectStore                   objectStore;
-  private Persistor                            persistor;
-  private ServerTransactionManagerImpl         transactionManager;
+  protected ManagedObjectStore                   objectStore;
+  private Persistor                              persistor;
+  private ServerTransactionManagerImpl           transactionManager;
 
-  private CacheManager                         cacheManager;
+  private CacheManager                           cacheManager;
 
-  private final TCServerInfoMBean              tcServerInfoMBean;
-  private final ObjectStatsRecorder            objectStatsRecorder;
-  private final L2State                        l2State;
-  private L2Management                         l2Management;
-  private L2Coordinator                        l2Coordinator;
+  private final TCServerInfoMBean                tcServerInfoMBean;
+  protected final ObjectStatsRecorder            objectStatsRecorder;
+  private final L2State                          l2State;
+  private L2Management                           l2Management;
+  private L2Coordinator                          l2Coordinator;
 
-  private TCProperties                         l2Properties;
+  private TCProperties                           l2Properties;
 
-  private ConnectionIDFactoryImpl              connectionIdFactory;
+  private ConnectionIDFactoryImpl                connectionIdFactory;
 
-  private LockStatisticsMonitorMBean           lockStatisticsMBean;
+  private LockStatisticsMonitorMBean             lockStatisticsMBean;
 
-  private StatisticsAgentSubSystemImpl         statisticsAgentSubSystem;
-  private StatisticsGatewayMBeanImpl           statisticsGateway;
+  private StatisticsAgentSubSystemImpl           statisticsAgentSubSystem;
+  private StatisticsGatewayMBeanImpl             statisticsGateway;
 
-  private final TCThreadGroup                  threadGroup;
+  protected final TCThreadGroup                  threadGroup;
 
-  private final SEDA                           seda;
+  protected final SEDA                           seda;
 
-  private ReconnectConfig                      l1ReconnectConfig;
+  private ReconnectConfig                        l1ReconnectConfig;
 
-  private GCStatsEventPublisher                gcStatsEventPublisher;
-  private GroupManager                         groupCommManager;
+  private GCStatsEventPublisher                  gcStatsEventPublisher;
+  private GroupManager                           groupCommManager;
+  protected Stage                                hydrateStage;
 
   // used by a test
   public DistributedObjectServer(L2TVSConfigurationSetupManager configSetupManager, TCThreadGroup threadGroup,
@@ -631,21 +632,18 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     ObjectManagerConfig objectManagerConfig = new ObjectManagerConfig(gcInterval * 1000, gcEnabled, verboseGC,
                                                                       persistent, enableYoungGenDGC,
                                                                       youngGenDGCFrequency);
-    objectManager = new ObjectManagerImpl(objectManagerConfig, threadGroup, clientStateManager, objectStore, swapCache,
-                                          persistenceTransactionProvider, faultManagedObjectStage.getSink(),
-                                          flushManagedObjectStage.getSink(), objectStatsRecorder);
-    objectManager.setStatsListener(objMgrStats);
-    MarkAndSweepGarbageCollector markAndSweepGarbageCollector = new MarkAndSweepGarbageCollector(objectManagerConfig);
+    objectManager = initObjectManager(swapCache, persistenceTransactionProvider, faultManagedObjectStage,
+                                      flushManagedObjectStage, objectManagerConfig);
 
-    markAndSweepGarbageCollector.addListener(new GCStatisticsAgentSubSystemEventListener(statisticsAgentSubSystem));
+    objectManager.setStatsListener(objMgrStats);
     gcStatsEventPublisher = new GCStatsEventPublisher();
-    markAndSweepGarbageCollector.addListener(gcStatsEventPublisher);
-    objectManager.setGarbageCollector(markAndSweepGarbageCollector);
+    initGarbageCollector();
     managedObjectChangeListenerProvider.setListener(objectManager);
 
     l2Management.findObjectManagementMonitorMBean().registerGCController(
                                                                          new GCComptrollerImpl(objectManager
-                                                                             .getGarbageCollector(), objectManager, clientStateManager));
+                                                                             .getGarbageCollector(), objectManager,
+                                                                                               clientStateManager));
 
     TCProperties cacheManagerProperties = l2Properties.getPropertiesFor("cachemanager");
     CacheConfig cacheConfig = new CacheConfigImpl(cacheManagerProperties);
@@ -796,8 +794,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
                                                     new TransactionAcknowledgementHandler(), 1, maxStageSize);
     Stage clientHandshake = stageManager.createStage(ServerConfigurationContext.CLIENT_HANDSHAKE_STAGE,
                                                      new ClientHandshakeHandler(), 1, maxStageSize);
-    Stage hydrateStage = stageManager.createStage(ServerConfigurationContext.HYDRATE_MESSAGE_SINK,
-                                                  new HydrateHandler(), 1, maxStageSize);
+    hydrateStage = stageManager.createStage(ServerConfigurationContext.HYDRATE_MESSAGE_SINK, new HydrateHandler(), 1,
+                                            maxStageSize);
     final Stage txnLwmStage = stageManager.createStage(ServerConfigurationContext.TRANSACTION_LOWWATERMARK_STAGE,
                                                        new TransactionLowWaterMarkHandler(gtxm), 1, maxStageSize);
 
@@ -937,6 +935,37 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       startActiveMode();
     }
     setLoggerOnExit();
+  }
+
+  protected ObjectManagerImpl initObjectManager(EvictionPolicy swapCache,
+                                                final PersistenceTransactionProvider persistenceTransactionProvider,
+                                                Stage faultManagedObjectStage, Stage flushManagedObjectStage,
+                                                ObjectManagerConfig objectManagerConfig) {
+    return new ObjectManagerImpl(objectManagerConfig, threadGroup, clientStateManager, objectStore, swapCache,
+                                 persistenceTransactionProvider, faultManagedObjectStage.getSink(),
+                                 flushManagedObjectStage.getSink(), objectStatsRecorder);
+  }
+
+  // Overridden by enterprise server
+  protected void initGarbageCollector() {
+    NewL2DSOConfig l2DSOConfig = configSetupManager.dsoL2Config();
+    long gcInterval = l2DSOConfig.garbageCollectionInterval().getInt();
+    boolean gcEnabled = l2DSOConfig.garbageCollectionEnabled().getBoolean();
+    boolean verboseGC = l2DSOConfig.garbageCollectionVerbose().getBoolean();
+    PersistenceMode persistenceMode = (PersistenceMode) l2DSOConfig.persistenceMode().getObject();
+    final boolean persistent = persistenceMode.equals(PersistenceMode.PERMANENT_STORE);
+    TCProperties objManagerProperties = l2Properties.getPropertiesFor("objectmanager");
+    TCProperties youngDGCProperties = objManagerProperties.getPropertiesFor("dgc").getPropertiesFor("young");
+    boolean enableYoungGenDGC = youngDGCProperties.getBoolean("enabled");
+    long youngGenDGCFrequency = youngDGCProperties.getLong("frequencyInMillis");
+
+    ObjectManagerConfig objectManagerConfig = new ObjectManagerConfig(gcInterval * 1000, gcEnabled, verboseGC,
+                                                                      persistent, enableYoungGenDGC,
+                                                                      youngGenDGCFrequency);
+    MarkAndSweepGarbageCollector markAndSweepGarbageCollector = new MarkAndSweepGarbageCollector(objectManagerConfig);
+    markAndSweepGarbageCollector.addListener(new GCStatisticsAgentSubSystemEventListener(statisticsAgentSubSystem));
+    markAndSweepGarbageCollector.addListener(gcStatsEventPublisher);
+    objectManager.setGarbageCollector(markAndSweepGarbageCollector);
   }
 
   // Overridden by enterprise server

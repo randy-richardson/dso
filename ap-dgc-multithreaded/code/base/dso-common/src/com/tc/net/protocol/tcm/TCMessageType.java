@@ -60,6 +60,8 @@ public final class TCMessageType {
   public static final int           TYPE_COMPLETED_TRANSACTION_LOWWATERMARK_MESSAGE = 45;
   public static final int           TYPE_GROUP_WRAPPER_MESSAGE                      = 46;
   public static final int           TYPE_GROUP_HANDSHAKE_MESSAGE                    = 47;
+  public static final int           TYPE_ACTIVE_ACTIVE_DGC_MESSAGE                  = 48;
+  public static final int           TYPE_ACTIVE_ACTIVE_TICKER_TOKEN_MESSAGE         = 49;
 
   public static final TCMessageType PING_MESSAGE                                    = new TCMessageType();
   public static final TCMessageType PONG_MESSAGE                                    = new TCMessageType();
@@ -94,6 +96,8 @@ public final class TCMessageType {
   public static final TCMessageType COMPLETED_TRANSACTION_LOWWATERMARK_MESSAGE      = new TCMessageType();
   public static final TCMessageType GROUP_WRAPPER_MESSAGE                           = new TCMessageType();
   public static final TCMessageType GROUP_HANDSHAKE_MESSAGE                         = new TCMessageType();
+  public static final TCMessageType ACTIVE_ACTIVE_DGC_MESSAGE                       = new TCMessageType();
+  public static final TCMessageType ACTIVE_ACTIVE_TICKER_TOKEN_MESSAGE              = new TCMessageType();
 
   public static TCMessageType getInstance(int i) {
     return (TCMessageType) typeMap.get(i);

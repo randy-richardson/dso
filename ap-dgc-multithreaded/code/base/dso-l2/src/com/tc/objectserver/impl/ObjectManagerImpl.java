@@ -86,7 +86,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private final Counter                               flushCount               = new Counter();
   private final PendingList                           pending                  = new PendingList();
 
-  private GarbageCollector                            collector                = new NullGarbageCollector();
+  protected GarbageCollector                          collector                = new NullGarbageCollector();
   private int                                         checkedOutCount          = 0;
 
   private volatile boolean                            inShutdown               = false;
@@ -681,7 +681,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   private void checkAndNotifyGC() {
     if (checkedOutCount == 0) {
-    //  logger.info("Notifying GC : pending = " + pending.size() + " checkedOutCount = " + checkedOutCount);
+      // logger.info("Notifying GC : pending = " + pending.size() + " checkedOutCount = " + checkedOutCount);
       collector.notifyReadyToGC();
     }
   }
@@ -763,11 +763,11 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private void fireObjectCreated(ObjectID id) {
     collector.notifyObjectCreated(id);
   }
-  
+
   public ManagedObjectStore getObjectStore() {
     return objectStore;
   }
-  
+
   public ClientStateManager getClientStateManager() {
     return stateManager;
   }
@@ -800,7 +800,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     if ((!config.doGC() || config.gcThreadSleepTime() <= 0)
         && (!config.isYoungGenDGCEnabled() || config.getYoungGenDGCFrequencyInMillis() <= 0)) return;
 
-    StoppableThread st = new GarbageCollectorThread(this.gcThreadGroup, "DGC", newCollector, this, stateManager, this.config);
+    StoppableThread st = new GarbageCollectorThread(this.gcThreadGroup, "DGC", newCollector, this, stateManager,
+                                                    this.config);
     st.setDaemon(true);
     newCollector.setState(st);
   }
