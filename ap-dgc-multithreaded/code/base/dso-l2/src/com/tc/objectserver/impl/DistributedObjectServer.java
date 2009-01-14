@@ -640,7 +640,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     objectManager.setStatsListener(objMgrStats);
     gcStatsEventPublisher = new GCStatsEventPublisher();
-    initGarbageCollector();
     managedObjectChangeListenerProvider.setListener(objectManager);
 
     l2Management.findObjectManagementMonitorMBean().registerGCController(
@@ -897,6 +896,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     boolean networkedHA = this.haConfig.isNetworkedActivePassive();
     groupCommManager = createGroupCommManager(networkedHA, configSetupManager, stageManager, thisServerNodeID);
+    initGarbageCollector();
     if (networkedHA) {
 
       logger.info("L2 Networked HA Enabled ");
