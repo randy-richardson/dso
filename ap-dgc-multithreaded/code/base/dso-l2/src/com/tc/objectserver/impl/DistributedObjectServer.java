@@ -896,7 +896,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     boolean networkedHA = this.haConfig.isNetworkedActivePassive();
     groupCommManager = createGroupCommManager(networkedHA, configSetupManager, stageManager, thisServerNodeID);
-    initGarbageCollector();
     if (networkedHA) {
 
       logger.info("L2 Networked HA Enabled ");
@@ -918,6 +917,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     toInit.add(this);
     stageManager.startAll(context, toInit);
 
+    //initialize the garbage collector
+    initGarbageCollector();
     // populate the statistics retrieval register
     populateStatisticsRetrievalRegistry(serverStats, seda.getStageManager(), mm, transactionManager,
                                         serverTransactionSequencerImpl);
