@@ -17,20 +17,11 @@ import com.tc.net.groups.SingleNodeGroupManager;
 
 public class L2HADisabledCooridinator implements L2Coordinator {
 
-  private final GroupManager                  groupManager;
-  private final StateManager                  stateMgr;
-  private final ReplicatedClusterStateManager clusterStateMgr  = new NonReplicatedClusterStateManager();
-  private final ReplicatedObjectManager       replicatedObjMgr = new NonReplicatedObjectManager();
-  private final ReplicatedTransactionManager  replicatedTxnMgr = new NonReplicatedTransactionManager();
-
-  public L2HADisabledCooridinator(GroupManager groupCommManager) {
-    this.groupManager = groupCommManager;
-    this.stateMgr = new DummyStateManager(this.groupManager.getLocalNodeID());
-  }
-
-  public L2HADisabledCooridinator() {
-    this(new SingleNodeGroupManager());
-  }
+  private GroupManager                  groupManager     = new SingleNodeGroupManager();
+  private ReplicatedClusterStateManager clusterStateMgr  = new NonReplicatedClusterStateManager();
+  private ReplicatedObjectManager       replicatedObjMgr = new NonReplicatedObjectManager();
+  private ReplicatedTransactionManager  replicatedTxnMgr = new NonReplicatedTransactionManager();
+  private StateManager                  stateMgr         = new DummyStateManager();
 
   public GroupManager getGroupManager() {
     return groupManager;
@@ -49,8 +40,7 @@ public class L2HADisabledCooridinator implements L2Coordinator {
   }
 
   public void start() {
-    // Give the state manager an opportunity to notify that we are active to interested parties.
-    stateMgr.startElection();
+    // NOP
   }
 
   public ReplicatedTransactionManager getReplicatedTransactionManager() {

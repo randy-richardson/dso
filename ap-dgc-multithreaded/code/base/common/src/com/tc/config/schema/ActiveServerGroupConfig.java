@@ -11,7 +11,7 @@ public interface ActiveServerGroupConfig extends NewConfig {
 
   NewHaConfig getHa();
 
-  int getGroupId();
+  int getId();
   
   String getGroupName();
 }

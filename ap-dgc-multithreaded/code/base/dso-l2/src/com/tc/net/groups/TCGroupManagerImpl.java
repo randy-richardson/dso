@@ -97,7 +97,6 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
                                                                                             .synchronizedSet(new HashSet<NodeID>());
   private final StageManager                                stageManager;
   private final boolean                                     isUseOOOLayer;
-  private final AtomicBoolean                               alreadyJoined                      = new AtomicBoolean(false);
 
   private CommunicationsManager                             communicationsManager;
   private NetworkListener                                   groupListener;
@@ -321,7 +320,6 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
   }
 
   public NodeID join(Node thisNode, Node[] allNodes) throws GroupException {
-    if (!alreadyJoined.compareAndSet(false, true)) { throw new GroupException("Already Joined"); }
 
     // discover must be started before listener thread to avoid missing nodeJoined group events.
     discover.setupNodes(thisNode, allNodes);

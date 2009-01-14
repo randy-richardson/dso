@@ -23,10 +23,8 @@ public class HaConfigImpl implements HaConfig {
   private final L2TVSConfigurationSetupManager configSetupManager;
   private final ServerGroup[]                  groups;
   private final Node[]                         thisGroupNodes;
-  private final Set                            allNodes;
+  private final Set                            allNodes = new HashSet();
   private final ServerGroup                    activeCoordinatorGroup;
-  private final Node                           thisNode;
-  private final ServerGroup                    thisGroup;
 
   public HaConfigImpl(L2TVSConfigurationSetupManager configSetupManager) {
     this.configSetupManager = configSetupManager;
@@ -40,17 +38,7 @@ public class HaConfigImpl implements HaConfig {
     activeCoordinatorGroup = coodinatorIndex != -1 ? groups[coodinatorIndex] : null;
 
     this.thisGroupNodes = makeThisGroupNodes();
-    this.allNodes = makeAllNodes();
-    this.thisNode = makeThisNode();
-    this.thisGroup = getThisGroupFrom(this.groups, this.configSetupManager.getActiveServerGroupForThisL2());
-  }
-
-  private ServerGroup getThisGroupFrom(ServerGroup[] sg, ActiveServerGroupConfig activeServerGroupForThisL2) {
-    for (int i = 0; i < sg.length; i++) {
-      if (sg[i].getGroupId() == activeServerGroupForThisL2.getGroupId()) { return sg[i]; }
-    }
-    throw new RuntimeException("Unable to find this group information for " + thisNode + " "
-                               + activeServerGroupForThisL2);
+    makeAllNodes();
   }
 
   public boolean isActiveActive() {
@@ -96,8 +84,7 @@ public class HaConfigImpl implements HaConfig {
     return this.thisGroupNodes;
   }
 
-  private Set makeAllNodes() {
-    Set allClusterNodes = new HashSet();
+  private void makeAllNodes() {
     ActiveServerGroupConfig[] asgcs = configSetupManager.activeServerGroupsConfig().getActiveServerGroupArray();
     for (int j = 0; j < asgcs.length; ++j) {
       ActiveServerGroupConfig asgc = asgcs[j];
@@ -106,13 +93,12 @@ public class HaConfigImpl implements HaConfig {
       for (int i = 0; i < l2Names.length; i++) {
         try {
           NewL2DSOConfig l2 = configSetupManager.dsoL2ConfigFor(l2Names[i]);
-          allClusterNodes.add(makeNode(l2));
+          allNodes.add(makeNode(l2));
         } catch (ConfigurationSetupException e) {
           throw new RuntimeException("Error getting l2 config for: " + l2Names[i], e);
         }
       }
     }
-    return allClusterNodes;
   }
 
   public Node[] getAllNodes() {
@@ -133,15 +119,7 @@ public class HaConfigImpl implements HaConfig {
                                            + "] was not added to any group!"); }
   }
 
-  public Node getThisNode() {
-    return thisNode;
-  }
-
-  public ServerGroup getThisGroup() {
-    return thisGroup;
-  }
-
-  private Node makeThisNode() {
+  public Node makeThisNode() {
     NewL2DSOConfig l2 = configSetupManager.dsoL2Config();
     return makeNode(l2);
   }

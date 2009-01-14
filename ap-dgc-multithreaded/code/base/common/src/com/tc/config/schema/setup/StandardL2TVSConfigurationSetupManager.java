@@ -122,11 +122,15 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     selectL2((Servers) serversBeanRepository().bean(), "the set of L2s known to us");
     validateRestrictions();
 
-    this.haConfig = getHaConfig();
-
     // do this after servers and groups have been processed
     validateGroups();
     validateDSOClusterPersistenceMode();
+
+    try {
+      this.haConfig = getHaConfig();
+    } catch (XmlException e) {
+      throw new ConfigurationSetupException(e);
+    }
   }
 
   public String getL2Identifier() {
@@ -147,8 +151,8 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
         if (groupArray[j].isMember(serverName)) {
           if (found) { throw new ConfigurationSetupException("Server{" + serverName
                                                              + "} is part of more than 1 active-server-group:  groups{"
-                                                             + gid + "," + groupArray[j].getGroupId() + "}"); }
-          gid = groupArray[j].getGroupId();
+                                                             + gid + "," + groupArray[j].getId() + "}"); }
+          gid = groupArray[j].getId();
           found = true;
         }
       }
@@ -175,7 +179,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   private ActiveServerGroupsConfig getActiveServerGroupsConfig() throws ConfigurationSetupException, XmlException {
 
     final ActiveServerGroups defaultActiveServerGroups = ActiveServerGroupsConfigObject
-        .getDefaultActiveServerGroups(defaultValueProvider, serversBeanRepository(), getCommomOrDefaultHa().getHa());
+        .getDefaultActiveServerGroups(defaultValueProvider, serversBeanRepository());
 
     ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), ActiveServerGroups.class,
                                                                  new ChildBeanFetcher() {
@@ -195,7 +199,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   // make sure there is at most one of these
-  private NewHaConfig getHaConfig() {
+  private NewHaConfig getHaConfig() throws XmlException {
     NewHaConfig newHaConfig = null;
     if (this.activeServerGroupsConfig.getActiveServerGroupCount() != 0) {
       ActiveServerGroupConfig groupConfig = getActiveServerGroupForThisL2();
@@ -203,6 +207,10 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
         newHaConfig = groupConfig.getHa();
       }
     }
+    if (newHaConfig == null) {
+      newHaConfig = getCommomOrDefaultHa();
+    }
+    Assert.assertNotNull(newHaConfig);
     return newHaConfig;
   }
 

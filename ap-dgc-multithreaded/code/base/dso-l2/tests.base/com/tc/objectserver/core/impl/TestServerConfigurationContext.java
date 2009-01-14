@@ -19,7 +19,6 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.lockmanager.api.LockManager;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
 import com.tc.objectserver.tx.ServerTransactionManager;
-import com.tc.objectserver.tx.TransactionBatchManager;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
 import com.tc.objectserver.tx.TransactionalObjectManager;
 
@@ -40,7 +39,6 @@ public class TestServerConfigurationContext implements ServerConfigurationContex
   public ChannelStats                 channelStats;
   public TransactionalObjectManager   txnObjectManager;
   public L2Coordinator                l2Coordinator;
-  public TransactionBatchManager      transactionBatchManager;
 
   public void addStage(String name, Stage stage) {
     stages.put(name, stage);
@@ -57,7 +55,7 @@ public class TestServerConfigurationContext implements ServerConfigurationContex
   public void setObjectRequestManager(ObjectRequestManager objectRequestManager) {
     this.objectRequestManager = objectRequestManager;
   }
-
+  
   public LockManager getLockManager() {
     return this.lockManager;
   }
@@ -104,10 +102,6 @@ public class TestServerConfigurationContext implements ServerConfigurationContex
 
   public L2Coordinator getL2Coordinator() {
     return l2Coordinator;
-  }
-
-  public TransactionBatchManager getTransactionBatchManager() {
-    return transactionBatchManager;
   }
 
 }

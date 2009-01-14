@@ -10,7 +10,6 @@ import com.tc.object.tx.TxnBatchID;
 import java.io.IOException;
 
 public interface TransactionBatchReader {
-  
   public ServerTransaction getNextTransaction() throws IOException;
 
   public TxnBatchID getBatchID();
@@ -18,7 +17,5 @@ public interface TransactionBatchReader {
   public int getNumTxns();
 
   public NodeID getNodeID();
-
-  public long[] getHighWatermark();
 
 }

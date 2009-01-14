@@ -40,10 +40,10 @@ public class TransactionBatchManagerImpl implements TransactionBatchManager, Pos
   private TransactionBatchReaderFactory batchReaderFactory;
   private TransactionFilter             filter;
 
-  public TransactionBatchManagerImpl(SequenceValidator sequenceValidator, MessageRecycler recycler, TransactionFilter txnFilter) {
+  public TransactionBatchManagerImpl(SequenceValidator sequenceValidator, MessageRecycler recycler) {
     this.sequenceValidator = sequenceValidator;
     this.messageRecycler = recycler;
-    this.filter = txnFilter;
+    this.filter = new PassThruFilter(this);
   }
   
   public void initializeContext(ConfigurationContext context) {
@@ -130,6 +130,20 @@ public class TransactionBatchManagerImpl implements TransactionBatchManager, Pos
 
   private void cleanUp(NodeID nodeID) {
     map.remove(nodeID);
+  }
+
+  public static class PassThruFilter implements TransactionFilter {
+
+    private final TransactionBatchManager transactionBatchManager;
+
+    public PassThruFilter(TransactionBatchManager transactionBatchManager) {
+      this.transactionBatchManager = transactionBatchManager;
+    }
+
+    public void addTransactionBatch(CommitTransactionMessageImpl ctm, TransactionBatchReader reader) {
+      transactionBatchManager.processTransactionBatch(ctm, reader);
+    }
+
   }
 
   public class BatchStats {

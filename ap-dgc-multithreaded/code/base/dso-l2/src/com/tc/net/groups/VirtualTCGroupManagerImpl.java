@@ -35,12 +35,12 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     groupManager.registerForGroupEvents(this);
   }
 
-  public NodeID getLocalNodeID() {
+  public NodeID getLocalNodeID() throws GroupException {
     return groupManager.getLocalNodeID();
   }
 
-  public NodeID join(Node thisNode, Node[] allNodes) {
-    // NOP here, the underlying groupManager should have already joined to the entire clustered.
+  public NodeID join(Node thisNode, Node[] allNodes) throws GroupException {
+    //NOP here, the underlying groupManager should have already joined to the entire clustered.
     return this.groupManager.getLocalNodeID();
   }
 
@@ -49,10 +49,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   }
 
   public void registerForMessages(Class msgClass, GroupMessageListener listener) {
-    GroupMessageListener prev = messageListeners.put(msgClass.getName(), listener);
-    if (prev != null) {
-      logger.warn("Previous listener removed : " + prev);
-    }
+    messageListeners.put(msgClass.getName(), listener);
     groupManager.registerForMessages(msgClass, this);
   }
 
@@ -98,12 +95,6 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     return groupManager.sendToAndWaitForResponse(nodeID, msg);
   }
 
-  /**
-   * FIXME:: Currently we simply pass the zapNode request process to the underlying group comm. This is ok as we have
-   * only one Virtual Group Comm in the system using the underlying group comm and also since Active Active Group Comm
-   * doesn't send zap requests as of now. But this might change in the future. Active-Active group comm can participate
-   * in deciding a winner in a split brain scenario. Then this has to change.
-   */
   public void setZapNodeRequestProcessor(ZapNodeRequestProcessor processor) {
     groupManager.setZapNodeRequestProcessor(processor);
   }

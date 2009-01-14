@@ -16,14 +16,12 @@ import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.StandardL2TVSConfigurationSetupManager;
 import com.terracottatech.config.ActiveServerGroup;
 import com.terracottatech.config.ActiveServerGroups;
-import com.terracottatech.config.Ha;
 
 public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implements ActiveServerGroupsConfig {
   private final ActiveServerGroupConfig[] groupConfigArray;
   private final int                       activeServerGroupCount;
 
-  public ActiveServerGroupsConfigObject(ConfigContext context, StandardL2TVSConfigurationSetupManager setupManager)
-      throws XmlException {
+  public ActiveServerGroupsConfigObject(ConfigContext context, StandardL2TVSConfigurationSetupManager setupManager) throws XmlException {
     super(context);
     context.ensureRepositoryProvides(ActiveServerGroups.class);
     final ActiveServerGroups groups = (ActiveServerGroups) context.bean();
@@ -70,12 +68,12 @@ public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implemen
   }
 
   public static ActiveServerGroups getDefaultActiveServerGroups(DefaultValueProvider defaultValueProvider,
-                                                                MutableBeanRepository serversBeanRepository, Ha commonHa)
-      throws ConfigurationSetupException {
+                                                                MutableBeanRepository serversBeanRepository)
+      throws ConfigurationSetupException, XmlException {
     ActiveServerGroups asgs = ActiveServerGroups.Factory.newInstance();
     ActiveServerGroup[] groupArray = new ActiveServerGroup[1];
     groupArray[0] = ActiveServerGroupConfigObject.getDefaultActiveServerGroup(defaultValueProvider,
-                                                                              serversBeanRepository, commonHa);
+                                                                              serversBeanRepository);
     asgs.setActiveServerGroupArray(groupArray);
     return asgs;
   }
