@@ -3,8 +3,6 @@
  */
 package com.tc.util.msg;
 
-import com.tc.io.TCByteBufferInput;
-import com.tc.io.TCByteBufferOutput;
 import com.tc.net.groups.AbstractGroupMessage;
 import com.tc.net.groups.MessageID;
 import com.tc.util.TickerToken;
@@ -31,14 +29,6 @@ public abstract class TickerTokenMessageImpl<T extends TickerToken>  extends Abs
 
   public void init(T aTickerToken) {
     this.tickerToken = aTickerToken;
-  }
-
-  protected void basicDeserializeFrom(TCByteBufferInput in) {
-    //
-  }
-
-  protected void basicSerializeTo(TCByteBufferOutput out) {
-    //
   }
 
 
