@@ -61,6 +61,7 @@ public class TCGroupMemberImpl implements TCGroupMember, ChannelEventListener {
     TCGroupMessageWrapper wrapper = (TCGroupMessageWrapper) channel.createMessage(TCMessageType.GROUP_WRAPPER_MESSAGE);
     wrapper.setGroupMessage(msg);
     wrapper.send();
+    System.out.println("sent message type: " + msg.getType());
   }
 
   public String toString() {
