@@ -53,7 +53,7 @@ public class TCGroupMessageWrapper extends DSOMessageBase {
         try {
           System.out.println("setting up message: ");
           this.message = (GroupMessage) Class.forName(in.readString()).newInstance();
-          System.out.println("message type: " + message.getType());
+          System.out.println("message type: " + message);
         } catch (InstantiationException e) {
           System.out.println("Exception here 1: " + e);
           throw new RuntimeException(e);
