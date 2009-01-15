@@ -21,6 +21,10 @@ public abstract class AbstractTickerToken implements TickerToken, TCSerializable
   protected int                   primaryID;
   protected int                   primaryTickValue;
   protected Map<Integer, Boolean> tokenStateMap = new HashMap<Integer, Boolean>();
+  
+  public AbstractTickerToken() {
+    //
+  }
 
   public AbstractTickerToken(int primaryID, int primaryTickValue) {
     this.primaryID = primaryID;
