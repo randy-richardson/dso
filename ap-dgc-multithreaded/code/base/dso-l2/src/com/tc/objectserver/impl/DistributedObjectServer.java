@@ -874,15 +874,18 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
       l2Coordinator = new L2HADisabledCooridinator(groupCommManager);
     }
 
+    // initialize the garbage collector
+    initGarbageCollector();
+
     initServerConfigurationContext(stageManager, channelManager, channelStats, transactionBatchManager, gtxm,
                                    clientHandshakeManager);
 
     toInit.add(this);
 
     stageManager.startAll(context, toInit);
-    // initialize the garbage collector
-    initGarbageCollector();
-
+   
+    startGarbageCollector();
+      
 
     // populate the statistics retrieval register
     populateStatisticsRetrievalRegistry(serverStats, seda.getStageManager(), mm, transactionManager,
@@ -908,6 +911,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
       startActiveMode();
     }
     setLoggerOnExit();
+  }
+
+  //overrided by enterprise.
+  protected void startGarbageCollector() {
+   //
   }
 
   protected void initServerConfigurationContext(StageManager stageManager, DSOChannelManager channelManager,
