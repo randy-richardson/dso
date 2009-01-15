@@ -20,6 +20,8 @@ import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManager;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
 import com.tc.objectserver.tx.TransactionalObjectManager;
+import com.tc.util.TickerTokenFactory;
+import com.tc.util.TickerTokenManager;
 
 /**
  * App specific configuration context
@@ -41,6 +43,8 @@ public class ServerConfigurationContextImpl extends ConfigurationContextImpl imp
   private final TransactionalObjectManager    txnObjectManager;
   private final L2Coordinator                 l2Coordinator;
   private final TransactionBatchManager       transactionBatchManager;
+  private final TickerTokenManager            tickerTokenManager;
+  private final TickerTokenFactory            tickerTokenFactory;
 
   public ServerConfigurationContextImpl(StageManager stageManager, ObjectManager objectManager,
                                         ObjectRequestManager objectRequestManager, ManagedObjectStore objectStore,
@@ -51,7 +55,8 @@ public class ServerConfigurationContextImpl extends ConfigurationContextImpl imp
                                         ServerClientHandshakeManager clientHandshakeManager, ChannelStats channelStats,
                                         L2Coordinator l2Coordinator,
                                         TransactionBatchReaderFactory transactionBatchReaderFactory,
-                                        TransactionBatchManager transactionBatchManager) {
+                                        TransactionBatchManager transactionBatchManager,
+                                        TickerTokenManager tickerTokenManager, TickerTokenFactory tickerTokenFactory) {
     super(stageManager);
     this.objectManager = objectManager;
     this.objectRequestManager = objectRequestManager;
@@ -66,6 +71,8 @@ public class ServerConfigurationContextImpl extends ConfigurationContextImpl imp
     this.l2Coordinator = l2Coordinator;
     this.transactionBatchReaderFactory = transactionBatchReaderFactory;
     this.transactionBatchManager = transactionBatchManager;
+    this.tickerTokenManager = tickerTokenManager;
+    this.tickerTokenFactory = tickerTokenFactory;
   }
 
   public L2Coordinator getL2Coordinator() {
@@ -118,5 +125,13 @@ public class ServerConfigurationContextImpl extends ConfigurationContextImpl imp
 
   public TransactionBatchManager getTransactionBatchManager() {
     return this.transactionBatchManager;
+  }
+
+  public TickerTokenFactory getTickerTokenFactory() {
+    return this.tickerTokenFactory;
+  }
+
+  public TickerTokenManager getTickerTokenManager() {
+    return this.tickerTokenManager;
   }
 }

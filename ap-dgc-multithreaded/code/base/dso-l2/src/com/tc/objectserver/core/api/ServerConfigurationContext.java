@@ -18,6 +18,8 @@ import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManager;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
 import com.tc.objectserver.tx.TransactionalObjectManager;
+import com.tc.util.TickerTokenFactory;
+import com.tc.util.TickerTokenManager;
 
 public interface ServerConfigurationContext extends ConfigurationContext {
 
@@ -68,12 +70,12 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public static final String OOO_NET_RECEIVE_STAGE                              = "ooo_net_receive_stage";
   public static final String L2_OOO_NET_SEND_STAGE                              = "l2_ooo_net_send_stage";
   public static final String L2_OOO_NET_RECEIVE_STAGE                           = "l2_ooo_net_receive_stage";
-
+  public static final String TICKER_TOKEN_STAGE                                 = "ticker_token_stage";
 
   public L2Coordinator getL2Coordinator();
 
   public ObjectManager getObjectManager();
-  
+
   public ObjectRequestManager getObjectRequestManager();
 
   public LockManager getLockManager();
@@ -95,5 +97,9 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public TransactionBatchReaderFactory getTransactionBatchReaderFactory();
 
   public TransactionBatchManager getTransactionBatchManager();
+
+  public TickerTokenFactory getTickerTokenFactory();
+
+  public TickerTokenManager getTickerTokenManager();
 
 }

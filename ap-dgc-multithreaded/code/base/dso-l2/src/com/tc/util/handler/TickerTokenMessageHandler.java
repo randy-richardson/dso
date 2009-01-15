@@ -4,7 +4,9 @@
 package com.tc.util.handler;
 
 import com.tc.async.api.AbstractEventHandler;
+import com.tc.async.api.ConfigurationContext;
 import com.tc.async.api.EventContext;
+import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.util.TickerTokenFactory;
 import com.tc.util.TickerTokenManager;
 import com.tc.util.TickerToken;
@@ -14,11 +16,7 @@ public class TickerTokenMessageHandler extends AbstractEventHandler {
 
   private TickerTokenManager tickerManager;
   private TickerTokenFactory tickerFactory;
-  
-  public TickerTokenMessageHandler(TickerTokenManager tickerManager, TickerTokenFactory tickerFactory) {
-    this.tickerManager = tickerManager;
-    this.tickerFactory = tickerFactory;
-  }
+ 
   
   TickerTokenFactory getFactory() {
     return tickerFactory;
@@ -34,6 +32,13 @@ public class TickerTokenMessageHandler extends AbstractEventHandler {
       new AssertionError("Invalid Mesage ing TickerTokenMessageHandler " + context.getClass());
     }
    
+  }
+  
+  public void initialize(ConfigurationContext context) {
+    super.initialize(context);
+    ServerConfigurationContext oscc = (ServerConfigurationContext) context;
+    this.tickerManager = oscc.getTickerTokenManager();
+    this.tickerFactory = oscc.getTickerTokenFactory();
   }
 
 }
