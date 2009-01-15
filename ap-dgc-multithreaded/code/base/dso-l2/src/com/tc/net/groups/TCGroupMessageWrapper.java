@@ -51,12 +51,17 @@ public class TCGroupMessageWrapper extends DSOMessageBase {
       case GROUP_MESSAGE_ID:
         TCByteBufferInputStream in = getInputStream();
         try {
+          System.out.println("setting up message: ");
           this.message = (GroupMessage) Class.forName(in.readString()).newInstance();
+          System.out.println("message type: " + message.getType());
         } catch (InstantiationException e) {
+          System.out.println("Exception here 1: " + e);
           throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
+          System.out.println("Exception here 2: " + e);
           throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
+          System.out.println("Exception here 3: " + e);
           throw new RuntimeException(e);
         }
         this.message.deserializeFrom(in);
