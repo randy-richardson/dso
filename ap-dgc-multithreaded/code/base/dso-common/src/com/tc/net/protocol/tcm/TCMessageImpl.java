@@ -146,7 +146,6 @@ public abstract class TCMessageImpl extends AbstractTCNetworkMessage implements 
     if (processed.attemptSet()) {
       try {
         final int count = bbis.readInt();
-        System.out.println("Count: " + count);
         if (count < 0) { throw new IOException("negative NV count: " + count); }
 
         for (int i = 0; i < count; i++) {

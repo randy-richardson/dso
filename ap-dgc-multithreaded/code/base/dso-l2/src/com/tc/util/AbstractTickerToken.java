@@ -72,7 +72,6 @@ public abstract class AbstractTickerToken implements TickerToken, TCSerializable
       oos.writeObject(obj);
       oos.close();
     } catch (IOException e) {
-      e.printStackTrace();
       throw new AssertionError(e);
     }
     byte[] objectArray = boas.toByteArray();
@@ -90,10 +89,8 @@ public abstract class AbstractTickerToken implements TickerToken, TCSerializable
       ObjectInputStream ois = new ObjectInputStream(bais);
       obj = ois.readObject();
     } catch (ClassNotFoundException e) {
-      e.printStackTrace();
       throw new AssertionError(e);
     } catch (IOException e) {
-      e.printStackTrace();
       throw new AssertionError(e);
     }
     return obj;

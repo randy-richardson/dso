@@ -12,7 +12,6 @@ import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ChannelEventType;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TCMessageType;
-import com.tc.util.Assert;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -59,11 +58,9 @@ public class TCGroupMemberImpl implements TCGroupMember, ChannelEventListener {
   }
 
   private void sendMessage(GroupMessage msg) {
-    Assert.assertNotNull(msg);
     TCGroupMessageWrapper wrapper = (TCGroupMessageWrapper) channel.createMessage(TCMessageType.GROUP_WRAPPER_MESSAGE);
     wrapper.setGroupMessage(msg);
     wrapper.send();
-    System.out.println("sent message type: " + msg.getType());
   }
 
   public String toString() {
