@@ -74,6 +74,9 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
     int cid = token.getPrimaryID();
     if (cid == this.id) {
       synchronized (this) {
+        TickerTokenHandler handler = tokenHandlerMap.get(token.getClass());
+        Assert.assertNotNull(handler);
+        handler.processToken(token);    
         Collection<Boolean> dirtyFlags = token.getTokenStateMap().values();
         boolean dirty = false;
         if( dirtyFlags.size() < this.tokenCount ) {
