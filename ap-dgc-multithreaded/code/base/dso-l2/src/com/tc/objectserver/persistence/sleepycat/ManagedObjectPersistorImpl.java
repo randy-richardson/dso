@@ -552,6 +552,9 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
 
   private void validateID(ObjectID id) {
     Assert.assertNotNull(id);
+    if(ObjectID.NULL_ID.equals(id)){
+      System.out.println("looking for: " + id);
+    }
     Assert.eval(!ObjectID.NULL_ID.equals(id));
   }
 
