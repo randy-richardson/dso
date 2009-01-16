@@ -61,9 +61,6 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   }
 
   public void send(T token) {
-    TickerTokenHandler handler = tokenHandlerMap.get(token.getClass());
-    Assert.assertNotNull(handler);
-    handler.processToken(token);
     M message = factory.createMessage(token);
     sendMessage(message);
   }
@@ -71,13 +68,14 @@ public abstract class TickerTokenManager<T extends TickerToken, M extends Ticker
   public abstract void sendMessage(M message);
 
   public void receive(T token) {
+    TickerTokenHandler handler = tokenHandlerMap.get(token.getClass());
+    Assert.assertNotNull(handler);
+    handler.processToken(token);    
+   
     int cid = token.getPrimaryID();
     if (cid == this.id) {
       synchronized (this) {
-        TickerTokenHandler handler = tokenHandlerMap.get(token.getClass());
-        Assert.assertNotNull(handler);
-        handler.processToken(token);    
-        Collection<Boolean> dirtyFlags = token.getTokenStateMap().values();
+       Collection<Boolean> dirtyFlags = token.getTokenStateMap().values();
         boolean dirty = false;
         if( dirtyFlags.size() < this.tokenCount ) {
           dirty = true;
