@@ -140,6 +140,10 @@ public class GarbageCollectionInfo implements Cloneable {
   public long getActualGarbageCount() {
     return this.actualGarbageCount;
   }
+  
+  public void setActualGarbageCount(long actualGarbageCount) {
+    this.actualGarbageCount = actualGarbageCount;
+  }
 
   public void setDeleted(ObjectIDSet deleted) {
     this.toDelete = deleted;
