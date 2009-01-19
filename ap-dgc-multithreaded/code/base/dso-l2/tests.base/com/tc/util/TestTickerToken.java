@@ -4,10 +4,20 @@
  */
 package com.tc.util;
 
-public class TestTickerToken extends AbstractTickerToken implements TickerToken {
+public class TestTickerToken extends TickerTokenImpl implements TickerToken {
 
-  public TestTickerToken(int primaryID, int primaryTickValue) {
-    super(primaryID, primaryTickValue);
+  public TestTickerToken(int primaryID, int primaryTickValue, int tokenCount) {
+    super(primaryID, primaryTickValue, tokenCount);
+  }
+
+  @Override
+  public void collectToken(int id, CollectContext context) {
+   //
+  }
+
+  @Override
+  public boolean evaluateComplete() {
+   return true;
   }
 
 }

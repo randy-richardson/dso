@@ -3,20 +3,20 @@
  */
 package com.tc.util;
 
-public class TestTickerTokenFactory implements TickerTokenFactory<TestTickerToken, TestTickerTokenMessage> {
+import com.tc.util.msg.TickerTokenMessage;
 
-  public TestTickerTokenMessage createMessage(TestTickerToken token) {
-    TestTickerTokenMessage message = new TestTickerTokenMessage();
-    message.init(token);
+public class TestTickerTokenFactory implements TickerTokenFactory {
+
+  public TickerTokenMessage createMessage(TickerToken token) {
+    TestTickerTokenMessage message = new TestTickerTokenMessage(token);
     return message;
   }
 
-  public TestTickerToken createToken(TestTickerTokenMessage message) {
+  public TickerToken createToken(TickerTokenMessage message) {
     return message.getTickerToken();
   }
 
-  public TestTickerToken createTriggerToken(int id, int tickValue) {
-    return new TestTickerToken(id, tickValue);
+  public TickerToken createTriggerToken(int id, int tickValue, int tokenCount) {
+    return new TestTickerToken(id, tickValue, tokenCount);
   }
-
 }

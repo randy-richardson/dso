@@ -13,27 +13,21 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.HashMap;
-import java.util.Map;
 
-public abstract class AbstractTickerToken implements TickerToken, TCSerializable {
+public abstract class TickerTokenImpl implements TickerToken, TCSerializable {
 
   protected int                   primaryID;
   protected int                   primaryTickValue;
-  protected Map<Integer, Boolean> tokenStateMap = new HashMap<Integer, Boolean>();
-  
-  public AbstractTickerToken() {
+  protected int                   tokenCount;
+ 
+  public TickerTokenImpl() {
     //
   }
 
-  public AbstractTickerToken(int primaryID, int primaryTickValue) {
+  public TickerTokenImpl(int primaryID, int primaryTickValue, int tokenCount) {
     this.primaryID = primaryID;
     this.primaryTickValue = primaryTickValue;
-  }
-
-  public AbstractTickerToken(int primaryID, int primaryTickValue, Map<Integer, Boolean> tokenStateMap) {
-    this(primaryID, primaryTickValue);
-    this.tokenStateMap = tokenStateMap;
+    this.tokenCount = tokenCount;
   }
 
   public int getPrimaryID() {
@@ -44,13 +38,9 @@ public abstract class AbstractTickerToken implements TickerToken, TCSerializable
     return primaryTickValue;
   }
 
-  public void collectToken(int aId, boolean dirtyState) {
-    tokenStateMap.put(aId, dirtyState);
-  }
+  public abstract void collectToken(int aId, CollectContext context);
 
-  public Map<Integer, Boolean> getTokenStateMap() {
-    return tokenStateMap;
-  }
+  public abstract boolean evaluateComplete();
 
   public Object deserializeFrom(TCByteBufferInput serialInput) {
     try {
@@ -59,16 +49,14 @@ public abstract class AbstractTickerToken implements TickerToken, TCSerializable
     } catch (IOException e) {
       throw new AssertionError(e);
     }
-    tokenStateMap = (HashMap<Integer, Boolean>)deserializeObject(serialInput);
     return this;
   }
 
   public void serializeTo(TCByteBufferOutput serialOutput) {
     serialOutput.writeInt(primaryID);
     serialOutput.writeInt(primaryTickValue);
-    serializeObject(serialOutput, tokenStateMap);
   }
-  
+
   protected void serializeObject(TCByteBufferOutput serialOutput, Object obj) {
     ByteArrayOutputStream boas = new ByteArrayOutputStream();
     try {

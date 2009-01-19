@@ -3,8 +3,8 @@
  */
 package com.tc.util;
 
-public interface TickerTokenHandler<T extends TickerToken> {
+public interface TickerTokenHandler {
    
-  public T processToken( T token );
+  public TickerToken processToken( TickerToken token );
   
 }

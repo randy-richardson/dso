@@ -4,20 +4,23 @@
  */
 package com.tc.util;
 
-import java.util.Map;
+import com.tc.io.TCSerializable;
+
 
 /**
  * this interface is to collect all tokens and update these content.
  */
-public interface TickerToken {
+public interface TickerToken extends TCSerializable {
+  
+  public static final String DIRTY_STATE = "dirty_state";
 
   public int getPrimaryID();
   
   public int getPrimaryTickValue();
 
-  public void collectToken(int aId, boolean dirtyState);
+  public void collectToken(int aId, CollectContext context);
   
-  public Map<Integer, Boolean> getTokenStateMap();
+  public boolean evaluateComplete();
 
  
 }

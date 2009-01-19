@@ -3,24 +3,22 @@
  */
 package com.tc.util;
 
+import com.tc.util.msg.TickerTokenMessage;
+
 import java.util.Queue;
 
-public class TestTickerTokenManager extends TickerTokenManager<TestTickerToken, TestTickerTokenMessage> {
+public class TestTickerTokenManager extends TickerTokenManager {
   
-  private final Queue<TestTickerTokenMessage> mQueue;
+  private final Queue<TickerTokenMessage> mQueue;
   
-  public TestTickerTokenManager(int id, int timerPeriod, TickerTokenFactory factory, Queue<TestTickerTokenMessage> mQueue, int tokenCount) {
-    super(id, timerPeriod, factory, tokenCount);
+  public TestTickerTokenManager(int id, int timerPeriod, Queue<TickerTokenMessage> mQueue, int tokenCount) {
+    super(id, timerPeriod, tokenCount);
     this.mQueue = mQueue;
   }
 
+ 
   @Override
-  public boolean evaluateComplete(TestTickerToken token) {
-     return true;
-  }
-
-  @Override
-  public void sendMessage(TestTickerTokenMessage message) {
+  public void sendMessage(TickerTokenMessage message) {
     mQueue.add(message);
   }
   

@@ -5,12 +5,34 @@
 package com.tc.util.msg;
 
 import com.tc.async.api.EventContext;
+import com.tc.net.groups.AbstractGroupMessage;
+import com.tc.net.groups.MessageID;
 import com.tc.util.TickerToken;
+import com.tc.util.TickerTokenImpl;
 
-public interface TickerTokenMessage<T extends TickerToken> extends EventContext {
-  
-  public void init(T tickerToken);
-  
-  public T getTickerToken();
+
+public abstract class TickerTokenMessage extends AbstractGroupMessage implements EventContext {
+
+  protected TickerToken tickerToken;
+
+  public TickerTokenMessage() {
+    super(-1);
+  }
+
+  public TickerTokenMessage(int type) {
+    super(type);
+  }
+
+  public TickerTokenMessage(int type, MessageID requestID) {
+    super(type, requestID);
+  }
+
+  public TickerToken getTickerToken() {
+    return this.tickerToken;
+  }
+
+  public void init(TickerTokenImpl aTickerToken) {
+    this.tickerToken = aTickerToken;
+  }
 
 }

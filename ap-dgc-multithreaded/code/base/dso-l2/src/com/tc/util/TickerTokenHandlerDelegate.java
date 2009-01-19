@@ -6,7 +6,10 @@ package com.tc.util;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TickerTokenHandlerDelegate {
-
+  
+  private CollectContext collectContext = new CollectContext();
+  
+  
   private final AtomicBoolean dirty = new AtomicBoolean(true);
   
   public void makeDirty() {
@@ -19,5 +22,11 @@ public class TickerTokenHandlerDelegate {
   
   public void clean() {
     dirty.set(false);
+  }
+  
+  public CollectContext getCollectContext() {
+    collectContext.collect(TickerToken.DIRTY_STATE, dirty.get());
+    return collectContext;
+    
   }
 }

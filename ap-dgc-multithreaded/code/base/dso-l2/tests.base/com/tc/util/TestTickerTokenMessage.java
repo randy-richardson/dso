@@ -4,18 +4,26 @@
  */
 package com.tc.util;
 
+import com.tc.io.TCByteBufferInput;
+import com.tc.io.TCByteBufferOutput;
 import com.tc.util.msg.TickerTokenMessage;
 
-public class TestTickerTokenMessage implements TickerTokenMessage<TestTickerToken> {
 
-  private TestTickerToken tickerToken;
+public class TestTickerTokenMessage extends TickerTokenMessage {
 
-  public TestTickerToken getTickerToken() {
-    return this.tickerToken;
+  public TestTickerTokenMessage(TickerToken tickerToken) {
+    this.tickerToken = tickerToken;
+  }
+//
+
+  @Override
+  protected void basicDeserializeFrom(TCByteBufferInput in) {
+   //
+    
   }
 
-  public void init(TestTickerToken token) {
-    this.tickerToken = token;
+  @Override
+  protected void basicSerializeTo(TCByteBufferOutput out) {
+    //
   }
-
 }
