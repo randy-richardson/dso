@@ -124,6 +124,7 @@ import com.tc.objectserver.core.api.DSOGlobalServerStatsImpl;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.core.impl.ServerConfigurationContextImpl;
 import com.tc.objectserver.core.impl.ServerManagementContext;
+import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.impl.GCComptrollerImpl;
 import com.tc.objectserver.dgc.impl.GCStatisticsAgentSubSystemEventListener;
 import com.tc.objectserver.dgc.impl.GCStatsEventPublisher;
@@ -309,7 +310,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
   private LockStatisticsMonitorMBean             lockStatisticsMBean;
 
-  private StatisticsAgentSubSystemImpl           statisticsAgentSubSystem;
+  protected StatisticsAgentSubSystemImpl         statisticsAgentSubSystem;
   private StatisticsGatewayMBeanImpl             statisticsGateway;
 
   protected final TCThreadGroup                  threadGroup;
@@ -318,7 +319,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
   private ReconnectConfig                        l1ReconnectConfig;
 
-  private GCStatsEventPublisher                  gcStatsEventPublisher;
+  protected GCStatsEventPublisher                gcStatsEventPublisher;
   private GroupManager                           groupCommManager;
   protected Stage                                hydrateStage;
   protected Stage                                tickerTokenStage;
@@ -828,7 +829,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
         .createStage(ServerConfigurationContext.CLIENT_LOCK_STATISTICS_RESPOND_STAGE,
                      new ClientLockStatisticsHandler(lockStatsManager), 1, 1);
 
-  
     initAdditionalStages(stageManager, maxStageSize);
     initClassMappings();
     initRouteMessages(processTx, rootRequest, requestLock, objectRequestStage, oidRequest, transactionAck,
@@ -883,9 +883,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     toInit.add(this);
 
     stageManager.startAll(context, toInit);
-   
+
     startGarbageCollector();
-      
+
+    // add the listeners for GC events
+    addGCListeners();
 
     // populate the statistics retrieval register
     populateStatisticsRetrievalRegistry(serverStats, seda.getStageManager(), mm, transactionManager,
@@ -913,9 +915,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     setLoggerOnExit();
   }
 
-  //overrided by enterprise.
+  // overrided by enterprise.
   protected void startGarbageCollector() {
-   //
+    //
   }
 
   protected void initServerConfigurationContext(StageManager stageManager, DSOChannelManager channelManager,
@@ -1016,9 +1018,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
                                                                       persistent, enableYoungGenDGC,
                                                                       youngGenDGCFrequency);
     MarkAndSweepGarbageCollector markAndSweepGarbageCollector = new MarkAndSweepGarbageCollector(objectManagerConfig);
+    objectManager.setGarbageCollector(markAndSweepGarbageCollector);
+  }
+
+  // overridden by enterprise server
+  protected void addGCListeners() {
+    GarbageCollector markAndSweepGarbageCollector = objectManager.getGarbageCollector();
     markAndSweepGarbageCollector.addListener(new GCStatisticsAgentSubSystemEventListener(statisticsAgentSubSystem));
     markAndSweepGarbageCollector.addListener(gcStatsEventPublisher);
-    objectManager.setGarbageCollector(markAndSweepGarbageCollector);
   }
 
   // Overridden by enterprise server
