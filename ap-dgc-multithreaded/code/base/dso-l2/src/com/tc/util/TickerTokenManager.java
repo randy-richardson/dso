@@ -106,9 +106,7 @@ public abstract class TickerTokenManager {
   private void complete(TickerToken token) {
     if (cleanCount.decrement() <= 0) {
       TCTimer t = timerMap.remove(token.getClass());
-      System.out.println("id: " + id + " Timer value: " + t + " tickValue: " + token.getPrimaryTickValue());
       if (t != null) {
-
         t.cancel();
       }
       getTickerTokenCompleteHandler(token.getClass()).complete();
