@@ -11,9 +11,7 @@ import com.tc.io.TCSerializable;
  * this interface is to collect all tokens and update these content.
  */
 public interface TickerToken extends TCSerializable {
-  
-  public static final String DIRTY_STATE = "dirty_state";
-
+ 
   public int getPrimaryID();
   
   public int getPrimaryTickValue();
