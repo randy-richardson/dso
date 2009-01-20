@@ -4,7 +4,15 @@
 package com.tc.util;
 
 public interface TickerTokenHandler {
-   
+  
+  public static final TickerTokenHandler NULL_TICKER_TOKEN_HANDLER = new TickerTokenHandler() {
+
+    public TickerToken processToken(TickerToken token) {
+      return token;
+    }
+    
+  };
+  
   public TickerToken processToken( TickerToken token );
   
 }
