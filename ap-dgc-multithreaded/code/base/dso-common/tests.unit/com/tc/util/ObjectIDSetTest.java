@@ -9,6 +9,7 @@ import com.tc.io.TCByteBufferOutputStream;
 import com.tc.object.ObjectID;
 import com.tc.test.TCTestCase;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -446,5 +447,34 @@ public class ObjectIDSetTest extends TCTestCase {
     assertEquals(nextExpectedElement, ((ObjectID) i.next()).toLong());
     visitedElements += iterateElements(i);
     assertEquals(visitedElements, totalElements - 1);
+  }
+  
+  public void testSerializeDeserialize(){
+    TCByteBufferOutputStream out = new TCByteBufferOutputStream();
+    ObjectIDSet oidSet1 = new ObjectIDSet();
+    ObjectIDSet oidSet2 = new ObjectIDSet();
+    
+    for(int i = 0; i < 100000; i++){
+      oidSet1.add(new ObjectID(i));
+      oidSet2.add(new ObjectID(10000 - i));
+    }
+    
+    oidSet1.serializeTo(out);
+    oidSet2.serializeTo(out);
+
+    TCByteBufferInputStream in = new TCByteBufferInputStream(out.toArray());
+    ObjectIDSet oids1 = new ObjectIDSet();
+    ObjectIDSet oids2 = new ObjectIDSet();
+    
+    try {
+      oids1.deserializeFrom(in);
+      oids2.deserializeFrom(in);
+    } catch (IOException e) {
+      throw new AssertionError(e);
+    }
+    
+    Assert.eval(oids1.containsAll(oidSet1));
+    Assert.eval(oids2.containsAll(oidSet2));
+    
   }
 }
