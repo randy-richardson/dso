@@ -17,16 +17,6 @@ public class TickerTokenMessageHandler extends AbstractEventHandler {
   private TickerTokenManager tickerManager;
   private TickerTokenFactory tickerFactory;
  
-  public TickerTokenMessageHandler(){
-    //
-  }
-  
-  //used in test
-  public TickerTokenMessageHandler(TickerTokenManager tickerTokenManager, TickerTokenFactory tickerTokenFactory){
-    this.tickerManager = tickerTokenManager;
-    this.tickerFactory = tickerTokenFactory;
-  }
-  
   TickerTokenFactory getFactory() {
     return tickerFactory;
   }
