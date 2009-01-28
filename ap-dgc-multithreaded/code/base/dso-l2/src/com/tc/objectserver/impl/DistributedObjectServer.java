@@ -237,10 +237,7 @@ import com.tc.util.ProductInfo;
 import com.tc.util.SequenceValidator;
 import com.tc.util.StartupLock;
 import com.tc.util.TCTimeoutException;
-import com.tc.util.TickerTokenFactory;
-import com.tc.util.TickerTokenManager;
 import com.tc.util.UUID;
-import com.tc.util.handler.TickerTokenMessageHandler;
 import com.tc.util.io.TCFileUtils;
 import com.tc.util.runtime.LockInfoByThreadID;
 import com.tc.util.runtime.NullThreadIDMapImpl;
@@ -325,9 +322,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   protected GCStatsEventPublisher                gcStatsEventPublisher;
   private GroupManager                           groupCommManager;
   protected Stage                                hydrateStage;
-  protected Stage                                tickerTokenStage;
-  protected TickerTokenManager                   tickerTokenManager;
-  protected TickerTokenFactory                   tickerTokenFactory;
 
   // used by a test
   public DistributedObjectServer(L2TVSConfigurationSetupManager configSetupManager, TCThreadGroup threadGroup,
@@ -396,13 +390,13 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     // verify user input host name, DEV-2293
     String host = l2DSOConfig.host().getString();
-    if(NetworkInterface.getByInetAddress(InetAddress.getByName(host)) == null) {
+    if (NetworkInterface.getByInetAddress(InetAddress.getByName(host)) == null) {
       String msg = "Unable to find local network interface for " + host;
       consoleLogger.error(msg);
       logger.error(msg, new TCRuntimeException(msg));
       System.exit(-1);
     }
-    
+
     String bindAddress = l2DSOConfig.bind().getString();
     if (bindAddress == null) {
       // workaround for CDV-584
@@ -844,7 +838,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
         .createStage(ServerConfigurationContext.CLIENT_LOCK_STATISTICS_RESPOND_STAGE,
                      new ClientLockStatisticsHandler(lockStatsManager), 1, 1);
 
-    initAdditionalStages(stageManager, maxStageSize);
     initClassMappings();
     initRouteMessages(processTx, rootRequest, requestLock, objectRequestStage, oidRequest, transactionAck,
                       clientHandshake, txnLwmStage, jmxEventsStage, jmxRemoteTunnelStage,
@@ -890,7 +883,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     }
 
     // initialize the garbage collector
-    initGarbageCollector();
+    initGarbageCollector(stageManager, maxStageSize);
 
     initServerConfigurationContext(stageManager, channelManager, channelStats, transactionBatchManager, gtxm,
                                    clientHandshakeManager);
@@ -944,7 +937,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
                                                  lockManager, channelManager, clientStateManager, transactionManager,
                                                  txnObjectManager, clientHandshakeManager, channelStats, l2Coordinator,
                                                  new CommitTransactionMessageToTransactionBatchReader(gtxm),
-                                                 transactionBatchManager, tickerTokenManager, tickerTokenFactory);
+                                                 transactionBatchManager);
   }
 
   protected void initRouteMessages(Stage processTx, Stage rootRequest, Stage requestLock, Stage objectRequestStage,
@@ -1001,12 +994,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
                                CompletedTransactionLowWaterMarkMessage.class);
   }
 
-  // overrided by enterprise
-  protected void initAdditionalStages(StageManager stageManager, int maxStageSize) {
-    tickerTokenStage = stageManager.createStage(ServerConfigurationContext.TICKER_TOKEN_STAGE,
-                                                new TickerTokenMessageHandler(), 1, maxStageSize);
-  }
-
   protected ObjectManagerImpl initObjectManager(EvictionPolicy swapCache,
                                                 final PersistenceTransactionProvider persistenceTransactionProvider,
                                                 Stage faultManagedObjectStage, Stage flushManagedObjectStage,
@@ -1017,7 +1004,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   }
 
   // Overridden by enterprise server
-  protected void initGarbageCollector() {
+  protected void initGarbageCollector(StageManager stageManager, int maxStageSize) {
     NewL2DSOConfig l2DSOConfig = configSetupManager.dsoL2Config();
     long gcInterval = l2DSOConfig.garbageCollectionInterval().getInt();
     boolean gcEnabled = l2DSOConfig.garbageCollectionEnabled().getBoolean();

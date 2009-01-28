@@ -18,8 +18,6 @@ import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManager;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
 import com.tc.objectserver.tx.TransactionalObjectManager;
-import com.tc.util.TickerTokenFactory;
-import com.tc.util.TickerTokenManager;
 
 public interface ServerConfigurationContext extends ConfigurationContext {
 
@@ -97,9 +95,5 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public TransactionBatchReaderFactory getTransactionBatchReaderFactory();
 
   public TransactionBatchManager getTransactionBatchManager();
-
-  public TickerTokenFactory getTickerTokenFactory();
-
-  public TickerTokenManager getTickerTokenManager();
 
 }
