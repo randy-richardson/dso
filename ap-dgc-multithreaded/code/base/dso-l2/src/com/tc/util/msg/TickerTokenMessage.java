@@ -8,7 +8,6 @@ import com.tc.async.api.EventContext;
 import com.tc.net.groups.AbstractGroupMessage;
 import com.tc.net.groups.MessageID;
 import com.tc.util.TickerToken;
-import com.tc.util.TickerTokenImpl;
 
 
 public abstract class TickerTokenMessage extends AbstractGroupMessage implements EventContext {
@@ -30,9 +29,4 @@ public abstract class TickerTokenMessage extends AbstractGroupMessage implements
   public TickerToken getTickerToken() {
     return this.tickerToken;
   }
-
-  public void init(TickerTokenImpl aTickerToken) {
-    this.tickerToken = aTickerToken;
-  }
-
 }

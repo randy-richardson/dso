@@ -14,12 +14,10 @@ public class TestTickerTokenMessage extends TickerTokenMessage {
   public TestTickerTokenMessage(TickerToken tickerToken) {
     this.tickerToken = tickerToken;
   }
-//
 
   @Override
   protected void basicDeserializeFrom(TCByteBufferInput in) {
    //
-    
   }
 
   @Override

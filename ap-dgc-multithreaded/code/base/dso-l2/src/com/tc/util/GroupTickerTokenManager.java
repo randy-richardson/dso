@@ -14,7 +14,7 @@ import com.tc.util.msg.TickerTokenMessage;
 
 public class GroupTickerTokenManager extends TickerTokenManager {
 
-  private GroupManager          groupManager;
+  private final GroupManager          groupManager;
   private final OrderedGroupIDs orderedGroupIDs;
 
   public GroupTickerTokenManager(GroupID id, int timerPeriod,
