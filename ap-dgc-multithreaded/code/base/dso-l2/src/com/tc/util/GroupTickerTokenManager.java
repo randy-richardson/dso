@@ -18,14 +18,11 @@ public class GroupTickerTokenManager extends TickerTokenManager {
   private final OrderedGroupIDs orderedGroupIDs;
 
   public GroupTickerTokenManager(GroupID id, int timerPeriod,
-                                 OrderedGroupIDs orderedGroupIDs) {
+                                 OrderedGroupIDs orderedGroupIDs, GroupManager activeServerGroupManager) {
     super(id.toInt(), timerPeriod, orderedGroupIDs.length());
     this.orderedGroupIDs = orderedGroupIDs;
+    this.groupManager = activeServerGroupManager;
     Assert.assertTrue(orderedGroupIDs.length() > 0);
-  }
-
-  public void setGroupManager(GroupManager groupManager) {
-    this.groupManager = groupManager;
   }
 
   @Override
