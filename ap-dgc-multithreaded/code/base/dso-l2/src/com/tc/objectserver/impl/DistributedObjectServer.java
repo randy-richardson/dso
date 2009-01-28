@@ -892,7 +892,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     stageManager.startAll(context, toInit);
 
-    startGarbageCollector();
+    startGarbageCollector(stageManager);
 
     // add the listeners for GC events
     addGCListeners();
@@ -924,7 +924,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   }
 
   // overrided by enterprise.
-  protected void startGarbageCollector() {
+  protected void startGarbageCollector(StageManager stageManager) {
     //
   }
 
