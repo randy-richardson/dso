@@ -882,6 +882,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
       l2Coordinator = new L2HADisabledCooridinator(groupCommManager);
     }
 
+    // initialize the server context 
+    initializeServerGroupManagers();
     // initialize the garbage collector
     initGarbageCollector(stageManager, maxStageSize);
 
@@ -921,6 +923,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
       startActiveMode();
     }
     setLoggerOnExit();
+  }
+
+  // overrided by enterprise.
+  protected void initializeServerGroupManagers() {
+    //
   }
 
   // overrided by enterprise.
