@@ -14,7 +14,7 @@ import java.util.List;
 
 public class GarbageCollectionInfoPublisherImpl implements GarbageCollectionInfoPublisher {
 
-  public List garbageCollectionEventListeners = new CopyOnWriteArrayList();
+  private final List garbageCollectionEventListeners = new CopyOnWriteArrayList();
 
   public void addListener(GarbageCollectorEventListener listener) {
     garbageCollectionEventListeners.add(listener);
