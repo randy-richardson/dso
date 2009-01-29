@@ -53,6 +53,15 @@ public class GCLogger {
     if (verboseGC()) logGC("DGC: deleting garbage: " + toDelete.size() + " objects");
   }
 
+  public void log_sweepStart(int iteration, int gcedOidsSize) {
+    if (verboseGC()) logGC("DGC: Delete Start : GCResult [ " + iteration + ", " + gcedOidsSize + " ] ");
+  }
+
+  public void log_GCSweepCompleted(int iteration, int gcedOidsSize, int removed, long elapsed) {
+    if (verboseGC()) logGC("DGC: Delete Complete :  GCResult [ " + iteration + ", " + gcedOidsSize + " ] Removed "
+                           + removed + " objects in " + elapsed + " ms.");
+  }
+
   public void log_notifyGCComplete() {
     if (verboseGC()) logGC("DGC: notifying gc complete...");
   }

@@ -46,6 +46,16 @@ public class GCLoggerEventPublisher extends GarbageCollectorEventListenerAdapter
   public void garbageCollectorMarkComplete(GarbageCollectionInfo info) {
     gcLogger.log_sweep(info.getDeleted());
     gcLogger.log_notifyGCComplete();
+  }  
+
+  @Override
+  public void garbageCollectorCompleted(GarbageCollectionInfo info) {
+   gcLogger.log_GCSweepCompleted(info.getIteration(), info.getDeleted().size(), info.getDeleted().size(), info.getDeleteStageTime());
+  }
+
+  @Override
+  public void garbageCollectorDelete(GarbageCollectionInfo info) {
+    gcLogger.log_sweepStart(info.getIteration(), info.getDeleted().size());
   }
 
   public void garbageCollectorCycleCompleted(GarbageCollectionInfo info) {

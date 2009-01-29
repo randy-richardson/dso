@@ -15,7 +15,7 @@ import java.util.TimerTask;
 
 public abstract class TickerTokenManager {
 
-  private final static int                     CLEAN_TICKS        = 10;
+  private final static int                     CLEAN_TICKS        = 3;
   private final int                            id;
   private final int                            timerPeriod;
   private final Map<Class, TCTimer>            timerMap           = Collections
@@ -137,6 +137,7 @@ public abstract class TickerTokenManager {
       TickerToken token = factory.createTriggerToken(manager.getId(), tickValue.increment(), tokenCount);
       timerMap.put(token.getClass(), timer);
       manager.send(token);
+
     }
 
   }

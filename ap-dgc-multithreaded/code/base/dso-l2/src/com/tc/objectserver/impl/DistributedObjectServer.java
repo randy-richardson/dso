@@ -322,7 +322,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   protected GCStatsEventPublisher                gcStatsEventPublisher;
   private GroupManager                           groupCommManager;
   protected Stage                                hydrateStage;
-
+ 
   // used by a test
   public DistributedObjectServer(L2TVSConfigurationSetupManager configSetupManager, TCThreadGroup threadGroup,
                                  ConnectionPolicy connectionPolicy, TCServerInfoMBean tcServerInfoMBean,
@@ -390,13 +390,13 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     // verify user input host name, DEV-2293
     String host = l2DSOConfig.host().getString();
-    if (NetworkInterface.getByInetAddress(InetAddress.getByName(host)) == null) {
+    if(NetworkInterface.getByInetAddress(InetAddress.getByName(host)) == null) {
       String msg = "Unable to find local network interface for " + host;
       consoleLogger.error(msg);
       logger.error(msg, new TCRuntimeException(msg));
       System.exit(-1);
     }
-
+    
     String bindAddress = l2DSOConfig.bind().getString();
     if (bindAddress == null) {
       // workaround for CDV-584
@@ -838,6 +838,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
         .createStage(ServerConfigurationContext.CLIENT_LOCK_STATISTICS_RESPOND_STAGE,
                      new ClientLockStatisticsHandler(lockStatsManager), 1, 1);
 
+    initAdditionalStages(stageManager, maxStageSize);
     initClassMappings();
     initRouteMessages(processTx, rootRequest, requestLock, objectRequestStage, oidRequest, transactionAck,
                       clientHandshake, txnLwmStage, jmxEventsStage, jmxRemoteTunnelStage,
@@ -882,10 +883,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
       l2Coordinator = new L2HADisabledCooridinator(groupCommManager);
     }
 
-    // initialize the server context 
-    initializeServerGroupManagers();
     // initialize the garbage collector
-    initGarbageCollector(stageManager, maxStageSize);
+    initGarbageCollector();
 
     initServerConfigurationContext(stageManager, channelManager, channelStats, transactionBatchManager, gtxm,
                                    clientHandshakeManager);
@@ -894,7 +893,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     stageManager.startAll(context, toInit);
 
-    startGarbageCollector(stageManager);
+    startGarbageCollector();
 
     // add the listeners for GC events
     addGCListeners();
@@ -926,12 +925,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   }
 
   // overrided by enterprise.
-  protected void initializeServerGroupManagers() {
-    //
-  }
-
-  // overrided by enterprise.
-  protected void startGarbageCollector(StageManager stageManager) {
+  protected void startGarbageCollector() {
     //
   }
 
@@ -1001,6 +995,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
                                CompletedTransactionLowWaterMarkMessage.class);
   }
 
+  // overrided by enterprise
+  protected void initAdditionalStages(StageManager stageManager, int maxStageSize) {
+    //
+  }
+
   protected ObjectManagerImpl initObjectManager(EvictionPolicy swapCache,
                                                 final PersistenceTransactionProvider persistenceTransactionProvider,
                                                 Stage faultManagedObjectStage, Stage flushManagedObjectStage,
@@ -1011,7 +1010,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   }
 
   // Overridden by enterprise server
-  protected void initGarbageCollector(StageManager stageManager, int maxStageSize) {
+  protected void initGarbageCollector() {
     NewL2DSOConfig l2DSOConfig = configSetupManager.dsoL2Config();
     long gcInterval = l2DSOConfig.garbageCollectionInterval().getInt();
     boolean gcEnabled = l2DSOConfig.garbageCollectionEnabled().getBoolean();
