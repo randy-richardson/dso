@@ -16,7 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GCStatsEventPublisher extends GarbageCollectorEventListenerAdapter {
 
-  private List             gcStatsEventListeners = new CopyOnWriteArrayList();
+  private final List       gcStatsEventListeners = new CopyOnWriteArrayList();
 
   private final LossyStack gcHistory             = new LossyStack(1500);
 
@@ -31,18 +31,21 @@ public class GCStatsEventPublisher extends GarbageCollectorEventListenerAdapter 
   public GCStats getLastGarbageCollectorStats() {
     return (GCStats) gcHistory.peek();
   }
-  
+
+  @Override
   public void garbageCollectorStart(GarbageCollectionInfo info) {
     GCStatsImpl gcStats = getGCStats(info);
     fireGCStatsEvent(gcStats);
   }
 
+  @Override
   public void garbageCollectorMark(GarbageCollectionInfo info) {
     GCStatsImpl gcStats = getGCStats(info);
     gcStats.setMarkState();
     fireGCStatsEvent(gcStats);
   }
 
+  @Override
   public void garbageCollectorPausing(GarbageCollectionInfo info) {
     GCStatsImpl gcStats = getGCStats(info);
     gcStats.setPauseState();
@@ -50,22 +53,31 @@ public class GCStatsEventPublisher extends GarbageCollectorEventListenerAdapter 
 
   }
 
+  @Override
   public void garbageCollectorMarkComplete(GarbageCollectionInfo info) {
     GCStatsImpl gcStats = getGCStats(info);
     gcStats.setMarkCompleteState();
     fireGCStatsEvent(gcStats);
   }
 
+  @Override
   public void garbageCollectorDelete(GarbageCollectionInfo info) {
     GCStatsImpl gcStats = getGCStats(info);
     gcStats.setDeleteState();
     fireGCStatsEvent(gcStats);
   }
 
+  @Override
   public void garbageCollectorCompleted(GarbageCollectionInfo info) {
     GCStatsImpl gcStats = getGCStats(info);
     gcStats.setCompleteState();
     push(gcStats);
+    fireGCStatsEvent(gcStats);
+  }
+
+  public void garbageCollectorCanceled(GarbageCollectionInfo info) {
+    GCStatsImpl gcStats = getGCStats(info);
+    gcStats.setCancledState();
     fireGCStatsEvent(gcStats);
   }
 

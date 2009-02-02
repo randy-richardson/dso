@@ -87,4 +87,8 @@ public class GCLogger {
   private void logGC(Object o) {
     logger.info(o);
   }
+
+  public void log_GCCanceled(GarbageCollectionInfo gcInfo) {
+    logGC("DGC: CANCELED, ITERATION: " + gcInfo.getIteration());
+  }
 }

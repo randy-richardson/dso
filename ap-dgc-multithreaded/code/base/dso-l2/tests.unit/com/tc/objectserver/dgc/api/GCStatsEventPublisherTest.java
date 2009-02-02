@@ -38,6 +38,7 @@ public class GCStatsEventPublisherTest extends TestCase {
   /*
    * @see TestCase#setUp()
    */
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     this.lookedUp = new HashSet<ObjectID>();
@@ -81,7 +82,7 @@ public class GCStatsEventPublisherTest extends TestCase {
     TestGarbageCollectionInfoCallsListener listener = new TestGarbageCollectionInfoCallsListener();
     collector.addListener(listener);
     collector.start();
-    collector.doGC(new FullGCHook(collector, objectManager,new TestClientStateManager()));
+    collector.doGC(new FullGCHook(collector, objectManager, new TestClientStateManager()));
     collector.stop();
     assertEquals(1, listener.startList.size());
     assertEquals(1, listener.markList.size());
@@ -102,7 +103,7 @@ public class GCStatsEventPublisherTest extends TestCase {
     TestGarbageCollectionInfoCallsListener listener = new TestGarbageCollectionInfoCallsListener();
     collector.addListener(listener);
     collector.start();
-    collector.doGC(new FullGCHook(collector, objectManager,new TestClientStateManager()));
+    collector.doGC(new FullGCHook(collector, objectManager, new TestClientStateManager()));
     collector.stop();
     assertEquals(1, listener.startList.size());
     assertEquals(1, listener.markList.size());
@@ -234,6 +235,10 @@ public class GCStatsEventPublisherTest extends TestCase {
 
     public void garbageCollectorCompleted(GarbageCollectionInfo info) {
       completedList.add(info);
+    }
+
+    public void garbageCollectorCanceled(GarbageCollectionInfo info) {
+      //
     }
 
   }

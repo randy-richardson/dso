@@ -4,8 +4,6 @@
  */
 package com.tc.util;
 
-import com.tc.util.TCTimer;
-import com.tc.util.TCTimerImpl;
 import com.tc.util.msg.TickerTokenMessage;
 
 import java.util.Collections;
@@ -30,6 +28,8 @@ public abstract class TickerTokenManager {
   private final Counter                        tickValue          = new Counter();
   private final Counter                        cleanCount         = new Counter(CLEAN_TICKS);
   private final int                            tokenCount;
+  private TCTimer                              timer;
+  private boolean                              isTickerStarted    = false;
 
   public TickerTokenManager(int id, int timerPeriod, int tokenCount) {
     this.id = id;
@@ -50,13 +50,22 @@ public abstract class TickerTokenManager {
   }
 
   public CompleteHandler startTicker(Class tickerTokenType) {
-    TCTimer timer = new TCTimerImpl(tickerTokenType.getName() + " Ticker Timer", false);
+    isTickerStarted = true;
+    timer = new TCTimerImpl(tickerTokenType.getName() + " Ticker Timer", false);
     TickerTask task = new TickerTask(this.tickValue, this.tokenCount, this, getTickerTokenFactory(tickerTokenType),
                                      timerMap, timer);
     timer.schedule(task, timerPeriod, timerPeriod);
     CompleteHandler handler = new CompleteHandler();
     completeHandlerMap.put(tickerTokenType, handler);
     return handler;
+  }
+
+  public void cancelTicker(Class tickerTokenType) {
+    if (isTickerStarted) {
+      timer.cancel();
+      getTickerTokenCompleteHandler(tickerTokenType).complete();
+    }
+    isTickerStarted = false;
   }
 
   public void send(TickerToken token) {
@@ -133,6 +142,7 @@ public abstract class TickerTokenManager {
       this.timerMap = timerMap;
     }
 
+    @Override
     public void run() {
       TickerToken token = factory.createTriggerToken(manager.getId(), tickValue.increment(), tokenCount);
       timerMap.put(token.getClass(), timer);

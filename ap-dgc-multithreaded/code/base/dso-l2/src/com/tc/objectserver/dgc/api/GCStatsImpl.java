@@ -20,6 +20,7 @@ public class GCStatsImpl implements GCStats, Serializable {
   private static final State            GC_MARK_COMPLETE      = new State("MARK_COMPLETE");
   private static final State            GC_DELETE             = new State("DELETE");
   private static final State            GC_COMPLETE           = new State("COMPLETE");
+  private static final State            GC_CANCELED           = new State("CANCELED");
 
   private static final long             NOT_INITIALIZED       = -1L;
   private static final String           YOUNG_GENERATION      = "Young";
@@ -64,6 +65,10 @@ public class GCStatsImpl implements GCStats, Serializable {
 
   public synchronized void setDeleteState() {
     this.state = GC_DELETE;
+  }
+
+  public void setCancledState() {
+    this.state = GC_CANCELED;
   }
 
   public synchronized long getStartTime() {
@@ -146,6 +151,7 @@ public class GCStatsImpl implements GCStats, Serializable {
     }
   }
 
+  @Override
   public String toString() {
     return "GCStats[ iteration: " + getIteration() + "; type: " + getType() + "; status: " + getStatus()
            + " ] : startTime = " + formatAsDate(this.startTime) + "; elapsedTime = " + formatTime(this.elapsedTime)

@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.objectserver.dgc.impl;
 
@@ -94,6 +95,13 @@ public class GarbageCollectionInfoPublisherImpl implements GarbageCollectionInfo
     for (Iterator iter = garbageCollectionEventListeners.iterator(); iter.hasNext();) {
       GarbageCollectorEventListener listener = (GarbageCollectorEventListener) iter.next();
       listener.garbageCollectorCompleted(info);
+    }
+  }
+
+  public void fireGCCanceledEvent(GarbageCollectionInfo info) {
+    for (Iterator iter = garbageCollectionEventListeners.iterator(); iter.hasNext();) {
+      GarbageCollectorEventListener listener = (GarbageCollectorEventListener) iter.next();
+      listener.garbageCollectorCanceled(info);
     }
   }
 }
