@@ -23,8 +23,6 @@ import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManager;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
 import com.tc.objectserver.tx.TransactionalObjectManager;
-import com.tc.util.TickerTokenFactory;
-import com.tc.util.TickerTokenManager;
 
 import java.util.HashMap;
 import java.util.Map;
