@@ -887,7 +887,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     }
 
     // initialize the garbage collector
-    initGarbageCollector();
+    initGarbageCollector(stageManager);
 
     initServerConfigurationContext(stageManager, channelManager, channelStats, transactionBatchManager, gtxm,
                                    clientHandshakeManager);
@@ -896,7 +896,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     stageManager.startAll(context, toInit);
 
-    startGarbageCollector();
+    startGarbageCollector(stageManager);
 
     // add the listeners for GC events
     addGCListeners();
@@ -928,7 +928,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   }
 
   // overrided by enterprise.
-  protected void startGarbageCollector() {
+  protected void startGarbageCollector(StageManager stageManager) {
     //
   }
 
@@ -1013,7 +1013,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   }
 
   // Overridden by enterprise server
-  protected void initGarbageCollector() {
+  protected void initGarbageCollector(StageManager stageManager) {
     NewL2DSOConfig l2DSOConfig = configSetupManager.dsoL2Config();
     long gcInterval = l2DSOConfig.garbageCollectionInterval().getInt();
     boolean gcEnabled = l2DSOConfig.garbageCollectionEnabled().getBoolean();

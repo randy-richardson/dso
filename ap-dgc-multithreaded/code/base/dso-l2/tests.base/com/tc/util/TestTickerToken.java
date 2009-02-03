@@ -6,8 +6,8 @@ package com.tc.util;
 
 public class TestTickerToken extends TickerTokenImpl implements TickerToken {
 
-  public TestTickerToken(int primaryID, int primaryTickValue, int tokenCount) {
-    super(primaryID, primaryTickValue, tokenCount);
+  public TestTickerToken(int primaryID, int startTick, int totalTickers) {
+    super(primaryID, startTick, totalTickers);
   }
 
   @Override

@@ -15,7 +15,6 @@ public class TickerTokenTest extends TestCase {
     int tickValue = 0;
     TestTickerToken token = new TestTickerToken(primaryId, tickValue, 1);
     assertEquals(primaryId, token.getPrimaryID());
-    assertEquals(tickValue, token.getPrimaryTickValue());
     
 //    assertEquals(0, token.getTokenStateMap().size());
 //    
@@ -38,7 +37,7 @@ public class TickerTokenTest extends TestCase {
     
     TickerToken triggerToken = factory.createTriggerToken(0, 1, 1);
     assertEquals(0, triggerToken.getPrimaryID());
-    assertEquals(1, triggerToken.getPrimaryTickValue());
+    assertEquals(1, triggerToken.getStartTick());
     
   //  assertEquals(0, triggerToken.getTokenStateMap().size());
     
@@ -47,12 +46,12 @@ public class TickerTokenTest extends TestCase {
     TickerToken messageToken = message.getTickerToken();
     
     assertEquals(0, messageToken.getPrimaryID());
-    assertEquals(1, messageToken.getPrimaryTickValue());
+    assertEquals(1, messageToken.getStartTick());
     
     TickerToken triggerToken2 = factory.createTriggerToken(1, 2, 1);
     
     assertEquals(1, triggerToken2.getPrimaryID());
-    assertEquals(2, triggerToken2.getPrimaryTickValue());
+    assertEquals(2, triggerToken2.getStartTick());
    
    // assertEquals(0, triggerToken2.getTokenStateMap().size());
     

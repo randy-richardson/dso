@@ -14,7 +14,9 @@ public interface TickerToken extends TCSerializable {
  
   public int getPrimaryID();
   
-  public int getPrimaryTickValue();
+  public int getStartTick(); 
+  
+  public int getTotalTickers();
 
   public void collectToken(int aId, CollectContext context);
   

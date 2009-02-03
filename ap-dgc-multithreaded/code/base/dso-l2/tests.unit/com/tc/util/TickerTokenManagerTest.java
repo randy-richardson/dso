@@ -21,7 +21,8 @@ public class TickerTokenManagerTest extends TestCase {
     List<TickerTuple> tuples = createTickerTuples();
 
     TestTickerTokenManager tickerTokenManager = tuples.get(0).getTickerTokenManager();
-    tickerTokenManager.startTicker(TestTickerToken.class);
+    TickerTokenHandleImpl handle = new TickerTokenHandleImpl();
+    tickerTokenManager.startTicker(TestTickerToken.class, handle);
   }
 
  

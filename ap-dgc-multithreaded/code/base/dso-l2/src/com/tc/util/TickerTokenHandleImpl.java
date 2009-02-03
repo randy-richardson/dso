@@ -4,10 +4,11 @@
  */
 package com.tc.util;
 
-public class CompleteHandler {
+public class TickerTokenHandleImpl implements TickerTokenHandle {
 
-  boolean       complete = false;
-  public Object lock     = new Object();
+  boolean                complete = false;
+  private Object         lock     = new Object();
+  private TickerTokenKey key;
 
   public void waitTillComplete() {
     if (!complete) {
@@ -27,6 +28,18 @@ public class CompleteHandler {
     synchronized (lock) {
       lock.notifyAll();
     }
+  }
+
+  public void cancel() {
+    complete();
+  }
+
+  public TickerTokenKey getKey() {
+    return key;
+  }
+
+  public void setKey(TickerTokenKey key) {
+    this.key = key;
   }
 
 }

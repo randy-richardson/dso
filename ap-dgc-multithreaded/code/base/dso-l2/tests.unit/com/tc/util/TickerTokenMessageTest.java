@@ -25,7 +25,7 @@ public class TickerTokenMessageTest extends TestCase {
     TickerToken token2 = message.getTickerToken();
     
     assertEquals(1, token2.getPrimaryID());
-    assertEquals(3, token2.getPrimaryTickValue());
+    assertEquals(3, token2.getStartTick());
     
   }
 

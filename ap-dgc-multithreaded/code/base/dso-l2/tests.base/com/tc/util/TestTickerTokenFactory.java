@@ -16,7 +16,7 @@ public class TestTickerTokenFactory implements TickerTokenFactory {
     return message.getTickerToken();
   }
 
-  public TickerToken createTriggerToken(int id, int tickValue, int tokenCount) {
-    return new TestTickerToken(id, tickValue, tokenCount);
+  public TickerToken createTriggerToken(int id, int startTick, int tickerCount) {
+    return new TestTickerToken(id, startTick, tickerCount);
   }
 }

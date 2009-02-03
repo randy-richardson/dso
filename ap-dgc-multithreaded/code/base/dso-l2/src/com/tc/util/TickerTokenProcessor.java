@@ -3,9 +3,9 @@
  */
 package com.tc.util;
 
-public interface TickerTokenHandler {
+public interface TickerTokenProcessor {
   
-  public static final TickerTokenHandler NULL_TICKER_TOKEN_HANDLER = new TickerTokenHandler() {
+  public static final TickerTokenProcessor NULL_TICKER_TOKEN_PROCESSOR = new TickerTokenProcessor() {
 
     public TickerToken processToken(TickerToken token) {
       return token;

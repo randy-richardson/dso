@@ -17,25 +17,29 @@ import java.io.ObjectOutputStream;
 public abstract class TickerTokenImpl implements TickerToken, TCSerializable {
 
   protected int                   primaryID;
-  protected int                   primaryTickValue;
-  protected int                   tokenCount;
+  protected int                   startTick;
+  protected int                   totalTickers;
  
   public TickerTokenImpl() {
     //
   }
 
-  public TickerTokenImpl(int primaryID, int primaryTickValue, int tokenCount) {
+  public TickerTokenImpl(int primaryID, int startTick, int totalTickers) {
     this.primaryID = primaryID;
-    this.primaryTickValue = primaryTickValue;
-    this.tokenCount = tokenCount;
+    this.startTick = startTick;
+    this.totalTickers = totalTickers;
+  }
+
+  public int getStartTick() {
+    return startTick;
   }
 
   public int getPrimaryID() {
     return primaryID;
   }
 
-  public int getPrimaryTickValue() {
-    return primaryTickValue;
+  public int getTotalTickers() {
+    return totalTickers;
   }
 
   public abstract void collectToken(int aId, CollectContext context);
@@ -45,7 +49,8 @@ public abstract class TickerTokenImpl implements TickerToken, TCSerializable {
   public Object deserializeFrom(TCByteBufferInput serialInput) {
     try {
       primaryID = serialInput.readInt();
-      primaryTickValue = serialInput.readInt();
+      startTick = serialInput.readInt();
+      totalTickers = serialInput.readInt();
     } catch (IOException e) {
       throw new AssertionError(e);
     }
@@ -54,7 +59,8 @@ public abstract class TickerTokenImpl implements TickerToken, TCSerializable {
 
   public void serializeTo(TCByteBufferOutput serialOutput) {
     serialOutput.writeInt(primaryID);
-    serialOutput.writeInt(primaryTickValue);
+    serialOutput.writeInt(startTick);
+    serialOutput.writeInt(totalTickers);
   }
 
   protected void serializeObject(TCByteBufferOutput serialOutput, Object obj) {
