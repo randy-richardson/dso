@@ -96,11 +96,9 @@ bundled_components:
         - deploy
         - deploy-api
         - dso-common
-        - dso-common-jdk15
         - dso-common-jdk16
         - dso-l1
         - dso-l1-api
-        - dso-l1-jdk15
         - dso-l2
         - dso-l2-common
         - dso-spring:
@@ -140,7 +138,7 @@ packaging:
       assert: '@build_environment.os_type !~ /^\s*windows\s*$/i'
   - zip:
       assert: '!@build_environment.has_installanywhere && (@build_environment.os_type =~ /^\s*windows\s*$/i)'
-#  - izpack
+  - izpack
   - installanywhere:
       assert: '@build_environment.has_installanywhere && (@build_environment.os_type =~ /^\s*windows\s*$/i)'
 postscripts:
