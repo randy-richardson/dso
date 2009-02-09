@@ -65,7 +65,7 @@ public abstract class TickerTokenManager {
     TCTimer timer = null;
 
     TickerTokenKey key = handle.getKey();
-    if (key == null) {
+    if (key != null) {
       if ((timer = timerMap.remove(key)) != null) {
         timer.cancel();
         tokenHandleMap.remove(key).complete();
