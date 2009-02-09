@@ -12,9 +12,9 @@ public class GarbageCollectionInfo implements Cloneable {
 
   protected static final long NOT_INITIALIZED       = -1L;
 
-  private int                 iteration;
+  private final int           iteration;
 
-  private boolean             fullGC;
+  private final boolean       fullGC;
 
   private long                startTime             = NOT_INITIALIZED;
 
@@ -140,7 +140,7 @@ public class GarbageCollectionInfo implements Cloneable {
   public long getActualGarbageCount() {
     return this.actualGarbageCount;
   }
-  
+
   public void setActualGarbageCount(long actualGarbageCount) {
     this.actualGarbageCount = actualGarbageCount;
   }
@@ -170,6 +170,7 @@ public class GarbageCollectionInfo implements Cloneable {
     this.stats = aGCStats;
   }
 
+  @Override
   public String toString() {
     return "GarbageCollectionInfo [ Iteration = " + iteration + " ] = " + " type  = "
            + (fullGC ? " full, " : " young, ") + " startTime = " + startTime + " begin object count = "
@@ -184,7 +185,7 @@ public class GarbageCollectionInfo implements Cloneable {
   public Object clone() {
     GarbageCollectionInfo gcInfo = new GarbageCollectionInfo(this.iteration, this.fullGC);
     gcInfo.setBeginObjectCount(getBeginObjectCount());
-    gcInfo.setCandidateGarbageCount((int)getCandidateGarbageCount());
+    gcInfo.setCandidateGarbageCount((int) getCandidateGarbageCount());
     gcInfo.setDeleted(getDeleted());
     gcInfo.setDeleteStageTime(getDeleteStageTime());
     gcInfo.setElapsedTime(getElapsedTime());
@@ -197,7 +198,5 @@ public class GarbageCollectionInfo implements Cloneable {
     gcInfo.setTotalMarkCycleTime(getTotalMarkCycleTime());
     return gcInfo;
   }
-  
-  
-  
+
 }
