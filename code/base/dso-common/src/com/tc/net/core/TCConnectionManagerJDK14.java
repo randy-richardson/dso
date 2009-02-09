@@ -214,15 +214,11 @@ public class TCConnectionManagerJDK14 implements TCConnectionManager {
 
   class ConnectionEvents implements TCConnectionEventListener {
     public final void connectEvent(TCConnectionEvent event) {
-      if (logger.isDebugEnabled()) {
-        logger.debug("connect event: " + event.toString());
-      }
+      logger.info("CONNECT event: " + event.toString());
     }
 
     public final void closeEvent(TCConnectionEvent event) {
-      if (logger.isDebugEnabled()) {
-        logger.debug("close event: " + event.toString());
-      }
+      logger.info("CLOSE event: " + event.toString());
     }
 
     public final void errorEvent(TCConnectionErrorEvent event) {
