@@ -1,5 +1,5 @@
 
-2.7.2 Release
+Terracotta 2.7.2
 
 
 Documentation: http://www.terracotta.org/web/display/orgsite/Documentation
@@ -7,7 +7,24 @@ Forums:        http://forums.terracotta.org/forums/forums/list.page
 Mailing Lists: http://lists.terracotta.org
 Support:       http://www.terracotta.org/confluence/display/orgsite/Support
 
--patch1: 404 redirect fix; https://jira.terracotta.org/jira/browse/CDV-940; workaround for Sun bug 6645197; additional logging for connection events.
-
 Copyright (c) 2008, Terracotta, Inc.
 http://www.terracotta.org
+
+
+=============
+PATCH HISTORY
+
+-------------
+Patch Level 1
+
+- https://jira.terracotta.org/jira/browse/CDV-940
+- Fix for tryLock on greedy lock never recalls when the lock was last held on another node
+
+- https://jira.terracotta.org/jira/browse/DEV-2367
+- Fix for Response Already Committed error, related to http://jira.terracotta.org/jira/browse/CDV-794
+
+- https://jira.terracotta.org/jira/browse/DEV-2344
+- Additional logging around connection events
+
+- https://jira.terracotta.org/jira/browse/DEV-2337
+- Fix for Sun Bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6645197 
