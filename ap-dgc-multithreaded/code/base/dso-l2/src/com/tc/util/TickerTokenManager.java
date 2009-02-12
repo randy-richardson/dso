@@ -13,7 +13,6 @@ import java.util.TimerTask;
 
 public abstract class TickerTokenManager {
 
-  private final static int                             CLEAN_TICKS       = 3;
   private final int                                    id;
   private final int                                    timerPeriod;
 
@@ -28,7 +27,6 @@ public abstract class TickerTokenManager {
 
   private final int                                    totalTickers;
   private final Counter                                tickerCounter     = new Counter();
-  private final Counter                                cleanCount        = new Counter(CLEAN_TICKS);
 
   public TickerTokenManager(int id, int totalTickers, int timerPeriod) {
     this.id = id;
@@ -68,9 +66,10 @@ public abstract class TickerTokenManager {
     if (key != null) {
       if ((timer = timerMap.remove(key)) != null) {
         timer.cancel();
-        tokenHandleMap.remove(key).complete();
+        tokenHandleMap.remove(key);
       }
     }
+    handle.complete();
   }
 
   public void send(TickerToken token) {
@@ -125,14 +124,11 @@ public abstract class TickerTokenManager {
   }
 
   private void complete(TickerToken token) {
-    if (cleanCount.decrement() <= 0) {
-      TCTimer t = removeTimer(token);
-      if (t != null) {
-        t.cancel();
-      }
-      removeCompleteHandler(token).complete();
-      cleanCount.reset(CLEAN_TICKS);
+    TCTimer t = removeTimer(token);
+    if (t != null) {
+      t.cancel();
     }
+    removeCompleteHandler(token).complete();
   }
 
   private static class TickerTask extends TimerTask {
