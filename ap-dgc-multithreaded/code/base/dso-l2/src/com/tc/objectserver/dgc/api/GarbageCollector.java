@@ -9,12 +9,21 @@ import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.dgc.impl.GCHook;
 import com.tc.objectserver.dgc.impl.YoungGenChangeCollector;
 import com.tc.text.PrettyPrintable;
+import com.tc.util.State;
 import com.tc.util.concurrent.StoppableThread;
 
 import java.util.Collection;
 import java.util.Set;
 
 public interface GarbageCollector extends PrettyPrintable {
+  
+  public static final State GC_DISABLED     = new State("GC_DISABLED");
+  public static final State GC_RUNNING      = new State("GC_RUNNING");
+  public static final State GC_SLEEP        = new State("GC_SLEEP");
+  public static final State GC_PAUSING      = new State("GC_PAUSING");
+  public static final State GC_PAUSED       = new State("GC_PAUSED");
+  public static final State GC_DELETE       = new State("GC_DELETE");
+
 
   public boolean requestGCStart();
 

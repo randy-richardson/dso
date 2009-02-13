@@ -4,8 +4,6 @@
  */
 package com.tc.objectserver.core.impl;
 
-import com.tc.lang.TCThreadGroup;
-import com.tc.lang.ThrowableHandler;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.object.cache.NullCache;
@@ -35,22 +33,21 @@ public class MarkAndSweepGCBenchMarkTest extends TestCase {
   private ObjectManagerImpl            objectManager;
   private ClientStateManager           stateManager;
 
+  @Override
   protected void setUp() {
     this.collector = new MarkAndSweepGarbageCollector(new ObjectManagerConfig(300000, true, true, true, true, 60000));
     this.stateManager = new ClientStateManagerImpl(TCLogging.getLogger(ClientStateManager.class));
-    this.objectManager = new ObjectManagerImpl(new TestObjectManagerConfig(0, false),
-                                               new TCThreadGroup(new ThrowableHandler(TCLogging
-                                                   .getLogger(ObjectManagerImpl.class))), stateManager,
+    this.objectManager = new ObjectManagerImpl(new TestObjectManagerConfig(0, false), this.stateManager,
                                                new InMemoryManagedObjectStore(new HashMap()), new NullCache(),
                                                new TestPersistenceTransactionProvider(), new TestSink(),
                                                new TestSink(), new ObjectStatsRecorder());
-    
-    this.objectManager.setGarbageCollector(collector);
+
+    this.objectManager.setGarbageCollector(this.collector);
   }
 
   public void testGC() {
     ObjectID root1 = new ObjectID(11111123, 0);
-    objectManager.createRoot("root1", root1);
+    this.objectManager.createRoot("root1", root1);
     createObjects(createObjectIDSet(11111123, 11111124));
 
     Set<ObjectID> parent = createObjectIDSet(0, 2000000);
@@ -73,31 +70,31 @@ public class MarkAndSweepGCBenchMarkTest extends TestCase {
 
     createObjects(createObjectIDSet(3000000, 4000000));
 
-    objectManager.start();
+    this.objectManager.start();
 
-    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 5000001);
+    Assert.assertEquals(this.objectManager.getAllObjectIDs().size(), 5000001);
     System.out.println("GC started");
-    collector.start();
-    collector.doGC(new FullGCHook(collector, objectManager, stateManager));
-    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 4000001);
+    this.collector.start();
+    this.collector.doGC(new FullGCHook(this.collector, this.objectManager, this.stateManager));
+    Assert.assertEquals(this.objectManager.getAllObjectIDs().size(), 4000001);
 
     obj = getObjectByID(new ObjectID(5, 0));
     obj.removeReferences(children1);
 
-    collector.doGC(new FullGCHook(collector, objectManager, stateManager));
-    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 3000001);
+    this.collector.doGC(new FullGCHook(this.collector, this.objectManager, this.stateManager));
+    Assert.assertEquals(this.objectManager.getAllObjectIDs().size(), 3000001);
 
     obj = getObjectByID(new ObjectID(4, 0));
     obj.removeReferences(children2);
 
-    collector.doGC(new FullGCHook(collector, objectManager, stateManager));
-    Assert.assertEquals(objectManager.getAllObjectIDs().size(), 2000001);
+    this.collector.doGC(new FullGCHook(this.collector, this.objectManager, this.stateManager));
+    Assert.assertEquals(this.objectManager.getAllObjectIDs().size(), 2000001);
   }
 
   private TestManagedObject getObjectByID(ObjectID id) {
-    ManagedObject obj = objectManager.getObjectByIDOrNull(id);
+    ManagedObject obj = this.objectManager.getObjectByIDOrNull(id);
     if (obj != null) {
-      objectManager.releaseReadOnly(obj);
+      this.objectManager.releaseReadOnly(obj);
       return (TestManagedObject) obj;
     }
     throw new AssertionError(id + " could not be found");
@@ -111,8 +108,8 @@ public class MarkAndSweepGCBenchMarkTest extends TestCase {
     for (Iterator<ObjectID> iter = ids.iterator(); iter.hasNext();) {
       ObjectID id = iter.next();
       TestManagedObject mo = new TestManagedObject(id, new ArrayList<ObjectID>(children));
-      objectManager.createObject(mo);
-      objectManager.getObjectStore().addNewObject(mo);
+      this.objectManager.createObject(mo);
+      this.objectManager.getObjectStore().addNewObject(mo);
     }
   }
 
@@ -139,12 +136,12 @@ public class MarkAndSweepGCBenchMarkTest extends TestCase {
 
     @Override
     public long gcThreadSleepTime() {
-      return myGCThreadSleepTime;
+      return this.myGCThreadSleepTime;
     }
 
     @Override
     public boolean paranoid() {
-      return paranoid;
+      return this.paranoid;
     }
   }
 }
