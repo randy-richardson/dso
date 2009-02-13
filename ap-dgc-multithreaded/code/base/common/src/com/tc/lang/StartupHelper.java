@@ -32,11 +32,11 @@ public class StartupHelper {
     Thread currentThread = Thread.currentThread();
     ThreadGroup origThreadGroup = currentThread.getThreadGroup();
 
-    setThreadGroup(currentThread, targetThreadGroup);
+    setThreadGroup(currentThread, this.targetThreadGroup);
 
     Throwable actionError = null;
     try {
-      action.execute();
+      this.action.execute();
     } catch (Throwable t) {
       actionError = t;
     } finally {
@@ -44,7 +44,7 @@ public class StartupHelper {
     }
 
     if (actionError != null) {
-      targetThreadGroup.uncaughtException(currentThread, actionError);
+      this.targetThreadGroup.uncaughtException(currentThread, actionError);
     }
   }
 

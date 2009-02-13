@@ -162,6 +162,7 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.l1.impl.ClientStateManagerImpl;
 import com.tc.objectserver.l1.impl.TransactionAcknowledgeAction;
 import com.tc.objectserver.l1.impl.TransactionAcknowledgeActionImpl;
+import com.tc.objectserver.lockmanager.api.LockManager;
 import com.tc.objectserver.lockmanager.api.LockManagerMBean;
 import com.tc.objectserver.lockmanager.impl.LockManagerImpl;
 import com.tc.objectserver.managedobject.ManagedObjectChangeListenerProviderImpl;
@@ -281,31 +282,31 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
   protected final L2TVSConfigurationSetupManager configSetupManager;
   protected final HaConfig                       haConfig;
-  private final Sink                             httpSink;
   protected NetworkListener                      l1Listener;
+  protected GCStatsEventPublisher                gcStatsEventPublisher;
+
+  private final Sink                             httpSink;
   private CommunicationsManager                  communicationsManager;
-  protected ServerConfigurationContext           context;
-  protected ObjectManagerImpl                    objectManager;
-  protected ObjectRequestManager                 objectRequestManager;
-  protected TransactionalObjectManager           txnObjectManager;
-  protected CounterManager                       sampledCounterManager;
-  protected LockManagerImpl                      lockManager;
+  private ServerConfigurationContext             context;
+  private ObjectManagerImpl                      objectManager;
+  private ObjectRequestManager                   objectRequestManager;
+  private TransactionalObjectManager             txnObjectManager;
+  private CounterManager                         sampledCounterManager;
+  private LockManagerImpl                        lockManager;
   private ServerManagementContext                managementContext;
   private StartupLock                            startupLock;
-
-  protected ClientStateManager                   clientStateManager;
-
-  protected ManagedObjectStore                   objectStore;
+  private ClientStateManager                     clientStateManager;
+  private ManagedObjectStore                     objectStore;
   private Persistor                              persistor;
-  protected ServerTransactionManagerImpl         transactionManager;
+  private ServerTransactionManagerImpl           transactionManager;
 
   private CacheManager                           cacheManager;
 
   private final TCServerInfoMBean                tcServerInfoMBean;
-  protected final ObjectStatsRecorder            objectStatsRecorder;
+  private final ObjectStatsRecorder              objectStatsRecorder;
   private final L2State                          l2State;
   private L2Management                           l2Management;
-  protected L2Coordinator                        l2Coordinator;
+  private L2Coordinator                          l2Coordinator;
 
   private TCProperties                           l2Properties;
 
@@ -313,18 +314,16 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
   private LockStatisticsMonitorMBean             lockStatisticsMBean;
 
-  protected StatisticsAgentSubSystemImpl         statisticsAgentSubSystem;
+  private StatisticsAgentSubSystemImpl           statisticsAgentSubSystem;
   private StatisticsGatewayMBeanImpl             statisticsGateway;
 
-  protected final TCThreadGroup                  threadGroup;
-
-  protected final SEDA                           seda;
+  private final TCThreadGroup                    threadGroup;
+  private final SEDA                             seda;
 
   private ReconnectConfig                        l1ReconnectConfig;
 
-  protected GCStatsEventPublisher                gcStatsEventPublisher;
   private GroupManager                           groupCommManager;
-  protected Stage                                hydrateStage;
+  private Stage                                  hydrateStage;
 
   // used by a test
   public DistributedObjectServer(L2TVSConfigurationSetupManager configSetupManager, TCThreadGroup threadGroup,
@@ -902,8 +901,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     initGarbageCollector(objectManagerConfig, this.threadGroup, this.objectManager, this.clientStateManager,
                          stageManager, maxStageSize);
 
-    initServerConfigurationContext(stageManager, channelManager, channelStats, transactionBatchManager, gtxm,
-                                   clientHandshakeManager);
+    this.context = createServerConfigurationContext(stageManager, this.objectManager, this.objectRequestManager,
+                                                    this.objectStore, this.lockManager, channelManager,
+                                                    this.clientStateManager, this.transactionManager,
+                                                    this.txnObjectManager, channelStats, this.l2Coordinator,
+                                                    transactionBatchManager, gtxm, clientHandshakeManager);
 
     toInit.add(this);
 
@@ -936,18 +938,26 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     setLoggerOnExit();
   }
 
-  protected void initServerConfigurationContext(StageManager stageManager, DSOChannelManager channelManager,
-                                                ChannelStatsImpl channelStats,
-                                                TransactionBatchManagerImpl transactionBatchManager,
-                                                ServerGlobalTransactionManager gtxm,
-                                                ServerClientHandshakeManager clientHandshakeManager) {
-    this.context = new ServerConfigurationContextImpl(stageManager, this.objectManager, this.objectRequestManager,
-                                                      this.objectStore, this.lockManager, channelManager,
-                                                      this.clientStateManager, this.transactionManager,
-                                                      this.txnObjectManager, clientHandshakeManager, channelStats,
-                                                      this.l2Coordinator,
-                                                      new CommitTransactionMessageToTransactionBatchReader(),
-                                                      transactionBatchManager, gtxm);
+  protected ServerConfigurationContext createServerConfigurationContext(
+                                                                        StageManager stageManager,
+                                                                        ObjectManager objMgr,
+                                                                        ObjectRequestManager objRequestMgr,
+                                                                        ManagedObjectStore objStore,
+                                                                        LockManager lockMgr,
+                                                                        DSOChannelManager channelManager,
+                                                                        ClientStateManager clientStateMgr,
+                                                                        ServerTransactionManager txnMgr,
+                                                                        TransactionalObjectManager txnObjectMgr,
+                                                                        ChannelStatsImpl channelStats,
+                                                                        L2Coordinator l2HACoordinator,
+                                                                        TransactionBatchManagerImpl transactionBatchManager,
+                                                                        ServerGlobalTransactionManager gtxm,
+                                                                        ServerClientHandshakeManager clientHandshakeManager) {
+    return new ServerConfigurationContextImpl(stageManager, objMgr, objRequestMgr, objStore, lockMgr, channelManager,
+                                              clientStateMgr, txnMgr, txnObjectMgr, clientHandshakeManager,
+                                              channelStats, l2HACoordinator,
+                                              new CommitTransactionMessageToTransactionBatchReader(),
+                                              transactionBatchManager, gtxm);
   }
 
   protected void initRouteMessages(Stage processTx, Stage rootRequest, Stage requestLock, Stage objectRequestStage,
@@ -1309,6 +1319,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
   public ServerConfigurationContext getContext() {
     return this.context;
+  }
+
+  public ObjectManager getObjectManager() {
+    return this.objectManager;
+  }
+
+  public ClientStateManager getClientStateManager() {
+    return this.clientStateManager;
   }
 
   public ServerManagementContext getManagementContext() {

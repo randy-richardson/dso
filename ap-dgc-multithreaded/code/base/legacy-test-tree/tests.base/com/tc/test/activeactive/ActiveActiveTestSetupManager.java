@@ -12,27 +12,31 @@ import java.util.List;
 
 public class ActiveActiveTestSetupManager extends MultipleServersTestSetupManager {
 
-  private List activeServerGroups = new ArrayList();
+  private final List activeServerGroups = new ArrayList();
 
   public void addActiveServerGroup(int membersCount, String local_activePassiveMode, int local_electionTime) {
     this.activeServerGroups.add(new Group(membersCount, local_activePassiveMode, local_electionTime));
   }
 
+  @Override
   public int getActiveServerGroupCount() {
     checkServerCount();
     return this.activeServerGroups.size();
   }
 
+  @Override
   public int getGroupMemberCount(int groupIndex) {
     checkServerCount();
     return ((Group) this.activeServerGroups.get(groupIndex)).getMemberCount();
   }
 
+  @Override
   public int getGroupElectionTime(int groupIndex) {
     checkServerCount();
     return ((Group) this.activeServerGroups.get(groupIndex)).getElectionTime();
   }
 
+  @Override
   public String getGroupServerShareDataMode(int groupIndex) {
     checkServerCount();
     return ((Group) this.activeServerGroups.get(groupIndex)).getMode();
@@ -55,6 +59,7 @@ public class ActiveActiveTestSetupManager extends MultipleServersTestSetupManage
                                                                         + serverCount + "]."); }
   }
 
+  @Override
   public void setServerCrashMode(String mode) {
     this.crashMode = new ActiveActiveCrashMode(mode);
   }
@@ -66,8 +71,8 @@ public class ActiveActiveTestSetupManager extends MultipleServersTestSetupManage
 
     public Group(int memberCount, String persistenceMode, int electionTime) {
       this.memberCount = memberCount;
-      groupPersistenceMode = persistenceMode;
-      groupElectionTime = electionTime;
+      this.groupPersistenceMode = persistenceMode;
+      this.groupElectionTime = electionTime;
     }
 
     public int getMemberCount() {
