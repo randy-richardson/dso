@@ -32,6 +32,11 @@ public class TickerTokenKey {
   }
 
   @Override
+  public int hashCode() {
+    return classType.hashCode();
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof TickerTokenKey) {
       TickerTokenKey key = (TickerTokenKey) obj;
