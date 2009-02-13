@@ -16,14 +16,13 @@ import java.util.Collection;
 import java.util.Set;
 
 public interface GarbageCollector extends PrettyPrintable {
-  
-  public static final State GC_DISABLED     = new State("GC_DISABLED");
-  public static final State GC_RUNNING      = new State("GC_RUNNING");
-  public static final State GC_SLEEP        = new State("GC_SLEEP");
-  public static final State GC_PAUSING      = new State("GC_PAUSING");
-  public static final State GC_PAUSED       = new State("GC_PAUSED");
-  public static final State GC_DELETE       = new State("GC_DELETE");
 
+  public static final State GC_DISABLED = new State("GC_DISABLED");
+  public static final State GC_RUNNING  = new State("GC_RUNNING");
+  public static final State GC_SLEEP    = new State("GC_SLEEP");
+  public static final State GC_PAUSING  = new State("GC_PAUSING");
+  public static final State GC_PAUSED   = new State("GC_PAUSED");
+  public static final State GC_DELETE   = new State("GC_DELETE");
 
   public boolean requestGCStart();
 
@@ -58,6 +57,9 @@ public interface GarbageCollector extends PrettyPrintable {
 
   public void addNewReferencesTo(Set rescueIds);
 
+  /**
+   * This method is called when the server transitions from PASSIVE to ACTIVE
+   */
   public void start();
 
   public void stop();
@@ -65,15 +67,15 @@ public interface GarbageCollector extends PrettyPrintable {
   public boolean isStarted();
 
   public void setState(StoppableThread st);
-  
+
   public void addListener(GarbageCollectorEventListener listener);
-  
+
   public void startMonitoringReferenceChanges();
-  
+
   public void stopMonitoringReferenceChanges();
-  
+
   public YoungGenChangeCollector getYoungGenChangeCollector();
-  
+
   public boolean deleteGarbage(GCResultContext resultContext);
 
   /**
@@ -95,6 +97,5 @@ public interface GarbageCollector extends PrettyPrintable {
    * interested in doing YoungGen collection could ignore this call.
    */
   public void notifyObjectsEvicted(Collection evicted);
-
 
 }

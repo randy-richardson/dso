@@ -127,7 +127,6 @@ import com.tc.objectserver.core.api.DSOGlobalServerStatsImpl;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.core.impl.ServerConfigurationContextImpl;
 import com.tc.objectserver.core.impl.ServerManagementContext;
-import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.impl.GCComptrollerImpl;
 import com.tc.objectserver.dgc.impl.GCStatisticsAgentSubSystemEventListener;
 import com.tc.objectserver.dgc.impl.GCStatsEventPublisher;
@@ -910,9 +909,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
 
     stageManager.startAll(this.context, toInit);
 
-    // add the listeners for GC events
-    addGCListeners();
-
     // populate the statistics retrieval register
     populateStatisticsRetrievalRegistry(serverStats, this.seda.getStageManager(), mm, this.transactionManager,
                                         serverTransactionSequencerImpl);
@@ -1019,6 +1015,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
                                       StageManager stageManager, int maxStageSize) {
     MarkAndSweepGarbageCollector markAndSweepGarbageCollector = new MarkAndSweepGarbageCollector(objectManagerConfig);
     objectMgr.setGarbageCollector(markAndSweepGarbageCollector);
+    markAndSweepGarbageCollector
+        .addListener(new GCStatisticsAgentSubSystemEventListener(getStatisticsAgentSubSystem()));
+    markAndSweepGarbageCollector.addListener(getGcStatsEventPublisher());
 
     if (objectManagerConfig.startGCThread()) {
       StoppableThread st = new GarbageCollectorThread(tg, "DGC", markAndSweepGarbageCollector, objectMgr, stateManager,
@@ -1027,14 +1026,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
       markAndSweepGarbageCollector.setState(st);
     }
 
-  }
-
-  // overridden by enterprise server
-  protected void addGCListeners() {
-    GarbageCollector markAndSweepGarbageCollector = this.objectManager.getGarbageCollector();
-    markAndSweepGarbageCollector
-        .addListener(new GCStatisticsAgentSubSystemEventListener(this.statisticsAgentSubSystem));
-    markAndSweepGarbageCollector.addListener(this.gcStatsEventPublisher);
   }
 
   // Overridden by enterprise server
