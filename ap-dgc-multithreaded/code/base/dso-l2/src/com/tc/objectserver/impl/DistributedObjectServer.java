@@ -898,7 +898,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
     }
 
     // initialize the garbage collector
-    initGarbageCollector(objectManagerConfig, this.threadGroup, this.objectManager, this.clientStateManager,
+    initGarbageCollector(toInit, objectManagerConfig, this.threadGroup, this.objectManager, this.clientStateManager,
                          stageManager, maxStageSize);
 
     this.context = createServerConfigurationContext(stageManager, this.objectManager, this.objectRequestManager,
@@ -1020,7 +1020,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, P
   }
 
   // Overridden by enterprise server
-  protected void initGarbageCollector(ObjectManagerConfig objectManagerConfig, TCThreadGroup tg,
+  protected void initGarbageCollector(List<PostInit> toInit, ObjectManagerConfig objectManagerConfig, TCThreadGroup tg,
                                       ObjectManager objectMgr, ClientStateManager stateManager,
                                       StageManager stageManager, int maxStageSize) {
     MarkAndSweepGarbageCollector markAndSweepGarbageCollector = new MarkAndSweepGarbageCollector(objectManagerConfig);
