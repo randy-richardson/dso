@@ -1,5 +1,4 @@
-
-Nightly Build from Trunk
+3.0.1-patch1
 
 
 Documentation: http://www.terracotta.org/web/display/docs/Home
@@ -7,6 +6,10 @@ Forums:        http://forums.terracotta.org/forums/forums/list.page
 Mailing Lists: http://lists.terracotta.org
 Support:       http://www.terracotta.org/web/display/enterprise/Support
 
-
+================================
+PATCH HISTORY
+Patch Level 1
+- https://jira.terracotta.org/jira/browse/CDV-1302
+- l1.socket.connect.timeout property not being honored. If default (10 seconds) is changed the new setting is not honoured. Patch 1 fixes this issue.
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
