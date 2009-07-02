@@ -1,5 +1,4 @@
-
-2.7 Release
+2.7.3-patch-1
 
 
 Documentation: http://www.terracotta.org/web/display/orgsite/Documentation
@@ -9,5 +8,18 @@ Support:       http://www.terracotta.org/confluence/display/orgsite/Support
 
 
 
+================================
+PATCH HISTORY
+Patch Level 1
+- http://jira.terracotta.org/jira/browse/DEV-1956
+- When client disconnect detected - 
+-- Open an new client channel
+
+- Logging for connection level events such as DEV-1956
+
+- Socket send and receive buffer fix
+
+
+====================================
 Copyright (c) 2008, Terracotta, Inc.
 http://www.terracotta.org
