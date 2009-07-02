@@ -1,4 +1,4 @@
-3.0.1-patch1
+3.0.1-ee-patch-2
 
 
 Documentation: http://www.terracotta.org/web/display/docs/Home
@@ -10,6 +10,12 @@ Support:       http://www.terracotta.org/web/display/enterprise/Support
 PATCH HISTORY
 Patch Level 1
 - https://jira.terracotta.org/jira/browse/CDV-1302
-- l1.socket.connect.timeout property not being honored. If default (10 seconds) is changed the new setting is not honoured. Patch 1 fixes this issue.
+- l1.socket.connect.timeout property not being honored. If default (10 seconds) is changed the new setting is not honoured
+
+Patch Level 2
+- http://jira.terracotta.org/jira/browse/DEV-2983
+- Primary L2 in mirror-group1 zaps secondary and both L2s in the second Mirror group die as well during network failover testing
+
+==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
