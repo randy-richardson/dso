@@ -25,7 +25,7 @@ import java.util.Set;
 
 /**
  * JDK 1.4 implementation of TCConnectionManager interface
- *
+ * 
  * @author teck
  */
 public class TCConnectionManagerJDK14 implements TCConnectionManager {
@@ -62,8 +62,7 @@ public class TCConnectionManagerJDK14 implements TCConnectionManager {
     ServerSocketChannel ssc = ServerSocketChannel.open();
     ssc.configureBlocking(false);
     ServerSocket serverSocket = ssc.socket();
-    serverSocket.setReuseAddress(reuseAddr);
-    serverSocket.setReceiveBufferSize(64 * 1024);
+    this.socketParams.applyServerSocketParams(serverSocket, reuseAddr);
 
     try {
       serverSocket.bind(new InetSocketAddress(addr.getAddress(), addr.getPort()), backlog);
@@ -214,15 +213,11 @@ public class TCConnectionManagerJDK14 implements TCConnectionManager {
 
   class ConnectionEvents implements TCConnectionEventListener {
     public final void connectEvent(TCConnectionEvent event) {
-      if (logger.isDebugEnabled()) {
-        logger.debug("connect event: " + event.toString());
-      }
+      logger.info("cn CONNECT event: " + event.toString());
     }
 
     public final void closeEvent(TCConnectionEvent event) {
-      if (logger.isDebugEnabled()) {
-        logger.debug("close event: " + event.toString());
-      }
+      logger.info("cn CLOSE event: " + event.toString());
     }
 
     public final void errorEvent(TCConnectionErrorEvent event) {

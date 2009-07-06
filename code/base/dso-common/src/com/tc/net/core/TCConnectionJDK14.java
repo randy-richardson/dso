@@ -126,6 +126,7 @@ final class TCConnectionJDK14 implements TCConnection, TCJDK14ChannelReader, TCJ
     InetSocketAddress inetAddr = new InetSocketAddress(addr.getAddress(), addr.getPort());
     for (int i = 1; i <= 3; i++) {
       try {
+        logger.info("cn CONNECTING to " + addr + "; Connection: " + this.toString());
         newSocket = createChannel();
         newSocket.configureBlocking(true);
         newSocket.socket().connect(inetAddr, timeout);
@@ -164,6 +165,7 @@ final class TCConnectionJDK14 implements TCConnection, TCJDK14ChannelReader, TCJ
   }
 
   private boolean asynchConnectImpl(TCSocketAddress address) throws IOException {
+    logger.info("cn asyncCONNECTING to " + address + "; Connection: " + this.toString());
     SocketChannel newSocket = createChannel();
     newSocket.configureBlocking(false);
 

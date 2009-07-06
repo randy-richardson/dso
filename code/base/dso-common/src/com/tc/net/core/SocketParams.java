@@ -9,6 +9,7 @@ import com.tc.logging.TCLogging;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
 
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 
@@ -32,24 +33,27 @@ class SocketParams {
   SocketParams() {
     TCProperties props = TCPropertiesImpl.getProperties().getPropertiesFor(PREFIX);
 
-    this.recvBuffer = props.getInt(RECV_BUFFER);
-    this.sendBuffer = props.getInt(SEND_BUFFER);
+    this.recvBuffer = props.getInt(RECV_BUFFER, -1);
+    this.sendBuffer = props.getInt(SEND_BUFFER, -1);
     this.keepAlive = props.getBoolean(KEEP_ALIVE);
     this.tcpNoDelay = props.getBoolean(TCP_NO_DELAY);
-
   }
 
   void applySocketParams(Socket s) {
-    try {
-      s.setSendBufferSize(sendBuffer);
-    } catch (SocketException e) {
-      logger.error("error setting sendBuffer to " + sendBuffer, e);
+    if (sendBuffer > 0) {
+      try {
+        s.setSendBufferSize(sendBuffer);
+      } catch (SocketException e) {
+        logger.error("error setting sendBuffer to " + sendBuffer, e);
+      }
     }
 
-    try {
-      s.setReceiveBufferSize(recvBuffer);
-    } catch (SocketException e) {
-      logger.error("error setting recvBuffer to " + recvBuffer, e);
+    if (recvBuffer > 0) {
+      try {
+        s.setReceiveBufferSize(recvBuffer);
+      } catch (SocketException e) {
+        logger.error("error setting recvBuffer to " + recvBuffer, e);
+      }
     }
 
     try {
@@ -62,6 +66,23 @@ class SocketParams {
       s.setKeepAlive(keepAlive);
     } catch (SocketException e) {
       logger.error("error setting KeepAlive to " + keepAlive, e);
+    }
+  }
+
+  void applyServerSocketParams(ServerSocket s, boolean reuseAddress) {
+
+    try {
+      s.setReuseAddress(reuseAddress);
+    } catch (SocketException e) {
+      logger.error("error setting recvBuffer to " + recvBuffer, e);
+    }
+
+    if (recvBuffer > 0) {
+      try {
+        s.setReceiveBufferSize(recvBuffer);
+      } catch (SocketException e) {
+        logger.error("error setting recvBuffer to " + recvBuffer, e);
+      }
     }
   }
 
