@@ -4,6 +4,7 @@
  */
 package com.tc.net.protocol.transport;
 
+import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
 import EDU.oswego.cs.dl.util.concurrent.SynchronizedLong;
 
 import com.tc.logging.TCLogger;
@@ -16,6 +17,10 @@ import com.tc.net.core.event.TCConnectionEvent;
 import com.tc.net.core.event.TCConnectionEventListener;
 import com.tc.net.protocol.NullProtocolAdaptor;
 import com.tc.util.State;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * A HealthChecker Context takes care of sending and receiving probe signals, book-keeping, sending additional probes
@@ -55,6 +60,12 @@ class ConnectionHealthCheckerContextImpl implements ConnectionHealthCheckerConte
   // stats
   private final SynchronizedLong                 pingProbeSentCount         = new SynchronizedLong(0);
 
+  // 2.7.3 dev patch for PG
+  private final SynchronizedBoolean              probeReplyMissed           = new SynchronizedBoolean(false);
+  final SynchronizedLong                         disruptStartTime           = new SynchronizedLong(System
+                                                                                .currentTimeMillis());
+  private final SimpleDateFormat                 sdf                        = new SimpleDateFormat("HH:mm:ss,SSS");
+
   public ConnectionHealthCheckerContextImpl(MessageTransportBase mtb, HealthCheckerConfig config,
                                             TCConnectionManager connMgr) {
     currentState = START;
@@ -75,6 +86,19 @@ class ConnectionHealthCheckerContextImpl implements ConnectionHealthCheckerConte
       logger.debug("Context state change for " + remoteNodeDesc + " : " + currentState.toString() + " ===> "
                    + newState.toString());
     }
+
+    try {
+      if ((newState == ALIVE) && (this.probeReplyMissed.get() == true) && (currentState != SOCKET_CONNECT)) {
+        this.probeReplyMissed.set(false);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        logger.warn("DISRUPT recovery took "
+                    + sdf.format(new Date(System.currentTimeMillis() - this.disruptStartTime.get())) + " for "
+                    + this.remoteNodeDesc);
+      }
+    } catch (Exception e) {
+      //
+    }
+
     currentState = newState;
   }
 
@@ -84,6 +108,18 @@ class ConnectionHealthCheckerContextImpl implements ConnectionHealthCheckerConte
                                                                   + " for " + this.probeReplyNotRecievedCount
                                                                   + " times (max allowed:"
                                                                   + this.maxProbeCountWithoutReply + ").");
+    }
+
+    try {
+      if (this.probeReplyNotRecievedCount.get() == 1) {
+        if (!this.probeReplyMissed.get()) {
+          this.probeReplyMissed.set(true);
+          this.disruptStartTime.set(System.currentTimeMillis());
+          logger.warn("DISRUPT detected for " + this.remoteNodeDesc);
+        }
+      }
+    } catch (Exception e) {
+      //
     }
 
     return ((this.probeReplyNotRecievedCount.get() < this.maxProbeCountWithoutReply));

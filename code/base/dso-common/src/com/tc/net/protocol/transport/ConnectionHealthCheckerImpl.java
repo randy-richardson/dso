@@ -14,7 +14,10 @@ import com.tc.util.Assert;
 import com.tc.util.concurrent.SetOnceFlag;
 import com.tc.util.concurrent.ThreadUtil;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
+import java.util.TimeZone;
 
 /**
  * The Engine which does the peer health checking work. Based on the config passed, it probes the peer once in specified
@@ -108,14 +111,17 @@ public class ConnectionHealthCheckerImpl implements ConnectionHealthChecker {
   }
 
   static class HealthCheckerMonitorThreadEngine implements Runnable {
-    private final ConcurrentHashMap   connectionMap = new ConcurrentHashMap();
+    private final ConcurrentHashMap   connectionMap   = new ConcurrentHashMap();
     private final long                pingIdleTime;
     private final long                pingInterval;
     private final int                 pingProbes;
-    private final SetOnceFlag         stop          = new SetOnceFlag();
+    private final SetOnceFlag         stop            = new SetOnceFlag();
     private final HealthCheckerConfig config;
     private final TCLogger            logger;
     private final TCConnectionManager connectionManager;
+
+    // PG 2.7.3 patch
+    private final ConcurrentHashMap   disconnectedMap = new ConcurrentHashMap();
 
     public HealthCheckerMonitorThreadEngine(HealthCheckerConfig healthCheckerConfig,
                                             TCConnectionManager connectionManager, TCLogger logger) {
@@ -141,6 +147,21 @@ public class ConnectionHealthCheckerImpl implements ConnectionHealthChecker {
       MessageTransportBase mtb = (MessageTransportBase) transport;
       mtb.setHealthCheckerContext(getHealthCheckerContext(mtb, config, connectionManager));
       connectionMap.put(transport.getConnectionId(), transport);
+
+      try {
+        Long disruptStartTime = (Long) disconnectedMap.get(mtb);
+        if (disruptStartTime != null) {
+          SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS");
+          sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+          this.logger.info("DISRUPT full recovery took "
+                           + sdf.format(new Date(System.currentTimeMillis() - disruptStartTime.longValue())) + " for "
+                           + mtb.getRemoteAddress().getCanonicalStringForm());
+          disconnectedMap.remove(mtb);
+        }
+      } catch (Exception e) {
+        // 
+      }
+
     }
 
     public boolean removeConnection(MessageTransport transport) {
@@ -182,8 +203,16 @@ public class ConnectionHealthCheckerImpl implements ConnectionHealthChecker {
 
             if (!connContext.probeIfAlive()) {
               // Connection is dead. Disconnect the transport.
-              logger.error("Declared connection dead " + mtb.getConnectionId() + " idle time "
-                           + mtb.getConnection().getIdleReceiveTime() + "ms");
+               try {
+                 logger.error("Declared connection dead " + mtb.getConnectionId() + " idle time "
+                              + mtb.getConnection().getIdleReceiveTime() + "ms");
+                 disconnectedMap
+                     .put(mtb,
+                          new Long(((ConnectionHealthCheckerContextImpl) mtb.getHealthCheckerContext()).disruptStartTime
+                              .get()));
+               } catch (Exception e) {
+                 //
+               }
               mtb.disconnect();
               connectionIterator.remove();
             }
