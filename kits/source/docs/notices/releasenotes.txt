@@ -19,6 +19,13 @@ Patch Level 1
 
 - Socket send and receive buffer fix
 
+Patch Level 2
+-- HC disrupt loggings                                                     
+-- Whenever Ping reply doesn't arrive from the peer node on time, "DISRUPT detected for ..." is logged    
+-- When the peer node resumes seding ping reply, "DISRUPT recovery took xx:xx:xx,xxx for …" 
+-- When the node disconnects and joins back, "DISRUPT full recovery took xx:xx:xx,xxx for ..." 
+
+
 
 ====================================
 Copyright (c) 2008, Terracotta, Inc.
