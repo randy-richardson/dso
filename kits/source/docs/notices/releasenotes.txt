@@ -1,4 +1,4 @@
-3.0.1-ee-patch-2
+3.0.1-ee-patch-3
 
 
 Documentation: http://www.terracotta.org/web/display/docs/Home
@@ -9,13 +9,34 @@ Support:       http://www.terracotta.org/web/display/enterprise/Support
 ================================
 PATCH HISTORY
 Patch Level 1
-- https://jira.terracotta.org/jira/browse/CDV-1302
+- CDV-1302
 - l1.socket.connect.timeout property not being honored. If default (10 seconds) is changed the new setting is not honoured
 
 Patch Level 2
-- http://jira.terracotta.org/jira/browse/DEV-2983
+- DEV-2983
 - Primary L2 in mirror-group1 zaps secondary and both L2s in the second Mirror group die as well during network failover testing
 
+Patch Level 3
+- DEV-3273
+- Cancelled DGC cycle needs not send messages
+
+- DEV-3252
+- Wrong handshake message causes server to exit.
+
+- DEV-3228
+- Server doesn't remove rejected client's state from DB
+
+- DEV-3211
+- Reduce numerous AA_DGC logging when nodes disconnect in the middle of a DGC.
+
+- DEV-3209
+- When only few of the nodes in the cluster detect a network disconnect to an active server, DGC goes to a weird state and no more DGC happening in the system
+
+- DEV-3207
+- Pre-DGC and pre-rescue sizes are reported wrongly in AA-DGC
+
+- DEV-3204
+- DGC canceled with 4 stripes - Group Manager complaining about non-existent serverID mapping
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
