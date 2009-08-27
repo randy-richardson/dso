@@ -5,7 +5,9 @@
 #
 # Example:
 # level: 1
-level: dev
+
+# as of August 27, 2009, patch level is 3
+level: 3
 
 # List of files to include in the patch tar.  File paths listed here are
 # relative to the kit root directory.  Use the YAML syntax for lists:

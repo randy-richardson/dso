@@ -10,6 +10,7 @@ Support:       http://www.terracotta.org/confluence/display/orgsite/Support
 
 ================================
 PATCH HISTORY
+
 Patch Level 1
 - http://jira.terracotta.org/jira/browse/DEV-1956
 - When client disconnect detected - 
@@ -25,8 +26,10 @@ Patch Level 2
 -- When the peer node resumes seding ping reply, "DISRUPT recovery took xx:xx:xx,xxx for …" 
 -- When the node disconnects and joins back, "DISRUPT full recovery took xx:xx:xx,xxx for ..." 
 
+Patch Level 3
+ DEV-3218 - Fix for incorrect number of clients viewed in Admin Console 
 
 
 ====================================
-Copyright (c) 2008, Terracotta, Inc.
+Copyright (c) Terracotta, Inc.
 http://www.terracotta.org
