@@ -37,6 +37,15 @@ Patch Level 3
 
 - DEV-3204
 - DGC canceled with 4 stripes - Group Manager complaining about non-existent serverID mapping
+
+- DEV-3164
+- Fix bug in reading states in ticker token
+
+- DEV-2455
+- Optimize ticker token  to reduce number of tokens sent
+
+- DEV-3298
+- Fix sending objectID to multiple servers
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
