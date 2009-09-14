@@ -291,7 +291,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   private final Sink                             httpSink;
   protected final HaConfig                       haConfig;
 
-  private static final int                       MAX_DEFAULT_COMM_THREADS = 16;
   private static final TCLogger                  logger                   = CustomerLogging.getDSOGenericLogger();
   private static final TCLogger                  consoleLogger            = CustomerLogging.getConsoleLogger();
 
