@@ -1,4 +1,4 @@
-3.0.1-ee-patch-3
+3.0.1-ee-patch-4
 
 
 Documentation: http://www.terracotta.org/web/display/docs/Home
@@ -46,6 +46,15 @@ Patch Level 3
 
 - DEV-3298
 - Fix sending objectID to multiple servers
+
+Patch Level 4
+MNK-1317: fix for tests EnterpriseDGCTest, ServerGarbageCollectorManagerTest
+DEV-3323: group-comm multiple thread
+DEV-3317: temporary license problem for reconecting clients when server didn't receive disconnect events
+DEV-3299: DGC Optimization: Do not fault in objects with no references like byte arrays, hibernate element state objects etc. during DGC.
+DEV-3352: added property to enable/disabled dgc faulting optimization
+DEV-3328: Restrict the number of threads created by JMX and also log JMX connect and disconnect.
+
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
