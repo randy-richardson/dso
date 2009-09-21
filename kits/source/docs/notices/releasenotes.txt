@@ -53,7 +53,8 @@ DEV-3323: group-comm multiple thread
 DEV-3317: temporary license problem for reconecting clients when server didn't receive disconnect events
 DEV-3299: DGC Optimization: Do not fault in objects with no references like byte arrays, hibernate element state objects etc. during DGC.
 DEV-3352: added property to enable/disabled dgc faulting optimization
-DEV-3328: Restrict the number of threads created by JMX and also log JMX connect and disconnect.
+DEV-3228: Server doesn't remove rejected client's state from DB
+
 
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
