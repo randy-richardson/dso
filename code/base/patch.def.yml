@@ -8,8 +8,8 @@
 
 #patch-3: built on 8/31/09
 #patch-4: built on 9/17/09
-
-level: 4
+#patch-5: built on 9/23/09
+level: 5
 
 
 # List of files to include in the patch tar.  File paths listed here are
@@ -20,3 +20,4 @@ level: 4
 #- lib/tc.jar
 files: 
  - lib/tc.jar
+   lib/je-3.3.87.jar
