@@ -55,6 +55,8 @@ DEV-3299: DGC Optimization: Do not fault in objects with no references like byte
 DEV-3352: added property to enable/disabled dgc faulting optimization
 DEV-3228: Server doesn't remove rejected client's state from DB
 
+Patch Level 5
+DEV-3381: Cleaner thread not working correctly
 
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
