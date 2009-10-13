@@ -1,4 +1,4 @@
-3.0.1-ee-patch-4
+3.0.1-ee-patch-6
 
 
 Documentation: http://www.terracotta.org/web/display/docs/Home
@@ -57,6 +57,11 @@ DEV-3228: Server doesn't remove rejected client's state from DB
 
 Patch Level 5
 DEV-3381: Cleaner thread not working correctly
+
+Patch Level 6
+DEV-3348: OOO Receive stage dead lock
+DEV-3425: Network cable pull test with patch5 failing - L2s failover fine but L1s get hung waiting for locks at 0 TPS and do not recover.
+- workaround to set the l2.l1reconnect.sendqueue.cap = 0 property as default in the L1
 
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
