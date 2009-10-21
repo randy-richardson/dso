@@ -63,6 +63,9 @@ DEV-3348: OOO Receive stage dead lock
 DEV-3425: Network cable pull test with patch5 failing - L2s failover fine but L1s get hung waiting for locks at 0 TPS and do not recover.
 - workaround to set the l2.l1reconnect.sendqueue.cap = 0 property as default in the L1
 
+Patch Level 7
+DEV-3444: SIGSTOP/SIGCONT on the Active L2 with a 2 minute or more interval between the signals - causes the wrong L2 to get zapped and causes cluster outage
+
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
