@@ -1,4 +1,4 @@
-3.0.1-ee-patch-6
+3.0.1-ee-patch-7
 
 
 Documentation: http://www.terracotta.org/web/display/docs/Home
