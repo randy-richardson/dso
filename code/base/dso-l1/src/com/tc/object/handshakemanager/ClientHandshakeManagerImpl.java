@@ -23,6 +23,7 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.State;
 import com.tc.util.Util;
+import com.tc.util.concurrent.ThreadUtil;
 import com.tcclient.cluster.DsoClusterInternal;
 
 import java.util.Collection;
@@ -112,16 +113,20 @@ public class ClientHandshakeManagerImpl implements ClientHandshakeManager, Chann
       this.logger.info("Disconnected: Ignoring disconnect event from  RemoteNode : " + remoteNode
                        + " as the current state is " + currentState + ". Disconnect count: " + getDisconnectedCount());
       changeToPaused(remoteNode);
+      // Hack to produce DEV-3471
+      ThreadUtil.reallySleep(3000);
       this.sessionManager.newSession(remoteNode);
-      this.logger.info("ClientHandshakeManager moves to " + this.sessionManager);
+      this.logger.info("ClientHandshakeManager moves to " + this.sessionManager.getSessionID(remoteNode));
     } else {
       this.logger.info("Disconnected: Pausing from " + currentState + " RemoteNode : " + remoteNode
                        + ". Disconnect count: " + getDisconnectedCount());
       changeToPaused(remoteNode);
       pauseCallbacks(remoteNode, getDisconnectedCount());
+      // Hack to produce DEV-3471
+      ThreadUtil.reallySleep(3000);
       // all the activities paused then can switch to new session
       sessionManager.newSession(remoteNode);
-      logger.info("ClientHandshakeManager moves to " + sessionManager);
+      logger.info("ClientHandshakeManager moves to " + sessionManager.getSessionID(remoteNode));
 
       // only send the operations disabled event when this was the first group to disconnect
       if (isOnlyOneGroupDisconnected()) {
