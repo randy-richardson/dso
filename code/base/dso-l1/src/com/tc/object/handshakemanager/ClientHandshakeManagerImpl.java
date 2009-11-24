@@ -113,8 +113,6 @@ public class ClientHandshakeManagerImpl implements ClientHandshakeManager, Chann
       this.logger.info("Disconnected: Ignoring disconnect event from  RemoteNode : " + remoteNode
                        + " as the current state is " + currentState + ". Disconnect count: " + getDisconnectedCount());
       changeToPaused(remoteNode);
-      // Hack to produce DEV-3471
-      ThreadUtil.reallySleep(3000);
       this.sessionManager.newSession(remoteNode);
       this.logger.info("ClientHandshakeManager moves to " + this.sessionManager.getSessionID(remoteNode));
     } else {
@@ -122,8 +120,6 @@ public class ClientHandshakeManagerImpl implements ClientHandshakeManager, Chann
                        + ". Disconnect count: " + getDisconnectedCount());
       changeToPaused(remoteNode);
       pauseCallbacks(remoteNode, getDisconnectedCount());
-      // Hack to produce DEV-3471
-      ThreadUtil.reallySleep(3000);
       // all the activities paused then can switch to new session
       sessionManager.newSession(remoteNode);
       logger.info("ClientHandshakeManager moves to " + sessionManager.getSessionID(remoteNode));
