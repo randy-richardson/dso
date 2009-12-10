@@ -862,7 +862,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
   }
 
-  private void makeUnBlocked(final ObjectID id) {
+  private synchronized void makeUnBlocked(final ObjectID id) {
     this.pending.makeUnBlocked(id);
   }
 
@@ -1132,6 +1132,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   }
 
   private static class PendingList {
+    private final Object         lock         = new Object();
+
     List<Pending>                pending      = new ArrayList<Pending>();
     Map<ObjectID, List<Pending>> blocked      = new ConcurrentHashMap<ObjectID, List<Pending>>();
     AtomicInteger                blockedCount = new AtomicInteger(0);
@@ -1153,7 +1155,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     public void makeUnBlocked(final ObjectID id) {
       List<Pending> blockedRequests = this.blocked.remove(id);
       if (blockedRequests != null) {
-        synchronized (this.pending) {
+        synchronized (this.lock) {
           this.pending.addAll(blockedRequests);
         }
         this.blockedCount.addAndGet(-blockedRequests.size());
@@ -1162,7 +1164,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
     public List<Pending> getAndResetPendingRequests() {
       List<Pending> rv;
-      synchronized (this.pending) {
+      synchronized (this.lock) {
         rv = this.pending;
         this.pending = new ArrayList<Pending>();
       }
@@ -1170,13 +1172,13 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
 
     public void addPending(final Pending pd) {
-      synchronized (this.pending) {
+      synchronized (this.lock) {
         this.pending.add(pd);
       }
     }
 
     public int size() {
-      synchronized (this.pending) {
+      synchronized (this.lock) {
         return this.pending.size();
       }
     }
