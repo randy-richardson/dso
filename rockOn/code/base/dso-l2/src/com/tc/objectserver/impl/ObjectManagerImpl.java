@@ -60,6 +60,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages access to all the Managed objects in the system.
@@ -93,7 +95,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private final PendingList                           pending               = new PendingList();
 
   private GarbageCollector                            collector             = new NullGarbageCollector();
-  private int                                         checkedOutCount       = 0;
+  private AtomicInteger                               checkedOutCount       = new AtomicInteger(0);
 
   private volatile boolean                            inShutdown            = false;
 
@@ -121,7 +123,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     this.objectStore = objectStore;
     this.evictionPolicy = cache;
     this.persistenceTransactionProvider = persistenceTransactionProvider;
-    this.references = new HashMap<ObjectID, ManagedObjectReference>(10000);
+    this.references = new ConcurrentHashMap<ObjectID, ManagedObjectReference>(10000);
     this.objectStatsRecorder = objectStatsRecorder;
     this.noReferencesIDStore = new NoReferencesIDStoreImpl();
   }
@@ -256,13 +258,13 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     if (reference.isReferenced()) { throw new AssertionError("Attempt to mark an already referenced object: "
                                                              + reference); }
     reference.markReference();
-    this.checkedOutCount++;
+    this.checkedOutCount.incrementAndGet();
   }
 
   private void unmarkReferenced(final ManagedObjectReference reference) {
     if (!reference.isReferenced()) { throw new AssertionError("Attempt to unmark an unreferenced object: " + reference); }
     reference.unmarkReference();
-    this.checkedOutCount--;
+    this.checkedOutCount.decrementAndGet();
   }
 
   /**
@@ -343,7 +345,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       this.noReferencesIDStore.addToNoReferences(mo);
     }
     makeUnBlocked(oid);
-    postRelease();
+    postRelease(true);
   }
 
   public synchronized void preFetchObjectsAndCreate(final Set<ObjectID> oids, final Set<ObjectID> newOids) {
@@ -422,7 +424,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   private void evicted(final Collection managedObjects) {
     synchronized (this) {
-      this.checkedOutCount -= managedObjects.size();
+      this.checkedOutCount.addAndGet(-managedObjects.size());
       for (Iterator i = managedObjects.iterator(); i.hasNext();) {
         ManagedObject mo = (ManagedObject) i.next();
         ObjectID oid = mo.getID();
@@ -440,7 +442,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
           }
         }
       }
-      postRelease();
+      postRelease(true);
     }
 
   }
@@ -530,7 +532,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
                                                                                                       + object); }
     synchronized (this) {
       basicReleaseReadOnly(object);
-      postRelease();
+      postRelease(true);
     }
   }
 
@@ -540,12 +542,12 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
     synchronized (this) {
       basicRelease(object);
-      postRelease();
+      postRelease(true);
     }
 
   }
 
-  public synchronized void releaseAllReadOnly(final Collection<ManagedObject> objects) {
+  public void releaseAllReadOnly(final Collection<ManagedObject> objects) {
     for (final ManagedObject mo : objects) {
       if (this.config.paranoid() && !mo.isNew() && mo.isDirty()) {
         // It is possible to release new just created objects before it has a chance to get applied because of a recall
@@ -555,7 +557,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       }
       basicReleaseReadOnly(mo);
     }
-    postRelease();
+    postRelease(false);
   }
 
   /**
@@ -577,7 +579,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       for (final ManagedObject managedObject : managedObjects) {
         basicRelease(managedObject);
       }
-      postRelease();
+      postRelease(true);
     }
   }
 
@@ -606,7 +608,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   }
 
   public synchronized int getCheckedOutCount() {
-    return this.checkedOutCount;
+    return this.checkedOutCount.intValue();
   }
 
   public Set getRootIDs() {
@@ -667,13 +669,15 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
   }
 
-  private void postRelease() {
+  private void postRelease(final boolean notify) {
     if (this.collector.isPausingOrPaused()) {
       checkAndNotifyGC();
     } else if (this.pending.size() > 0) {
       processPendingLookups();
     }
-    notifyAll();
+    if (notify) {
+      notifyAll();
+    }
   }
 
   private void basicRelease(final ManagedObject object) {
@@ -716,7 +720,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   }
 
   private void checkAndNotifyGC() {
-    if (this.checkedOutCount == 0) {
+    if (this.checkedOutCount.intValue() == 0) {
       // logger.info("Notifying DGC : pending = " + pending.size() + " checkedOutCount = " + checkedOutCount);
       this.collector.notifyReadyToGC();
     }
@@ -1129,8 +1133,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   private static class PendingList {
     List<Pending>                pending      = new ArrayList<Pending>();
-    Map<ObjectID, List<Pending>> blocked      = new HashMap<ObjectID, List<Pending>>();
-    int                          blockedCount = 0;
+    Map<ObjectID, List<Pending>> blocked      = new ConcurrentHashMap<ObjectID, List<Pending>>();
+    AtomicInteger                blockedCount = new AtomicInteger(0);
 
     public void makeBlocked(final ObjectID blockedOid, final Pending pd) {
       List<Pending> blockedRequests = this.blocked.get(blockedOid);
@@ -1139,7 +1143,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
         this.blocked.put(blockedOid, blockedRequests);
       }
       blockedRequests.add(pd);
-      this.blockedCount++;
+      this.blockedCount.incrementAndGet();
     }
 
     public boolean isBlocked(final ObjectID id) {
@@ -1149,23 +1153,32 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     public void makeUnBlocked(final ObjectID id) {
       List<Pending> blockedRequests = this.blocked.remove(id);
       if (blockedRequests != null) {
-        this.pending.addAll(blockedRequests);
-        this.blockedCount -= blockedRequests.size();
+        synchronized (this.pending) {
+          this.pending.addAll(blockedRequests);
+        }
+        this.blockedCount.addAndGet(-blockedRequests.size());
       }
     }
 
     public List<Pending> getAndResetPendingRequests() {
-      List<Pending> rv = this.pending;
-      this.pending = new ArrayList<Pending>();
+      List<Pending> rv;
+      synchronized (this.pending) {
+        rv = this.pending;
+        this.pending = new ArrayList<Pending>();
+      }
       return rv;
     }
 
     public void addPending(final Pending pd) {
-      this.pending.add(pd);
+      synchronized (this.pending) {
+        this.pending.add(pd);
+      }
     }
 
     public int size() {
-      return this.pending.size();
+      synchronized (this.pending) {
+        return this.pending.size();
+      }
     }
 
     @Override
