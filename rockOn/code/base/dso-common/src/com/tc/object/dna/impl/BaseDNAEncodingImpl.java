@@ -492,9 +492,7 @@ public abstract class BaseDNAEncodingImpl implements DNAEncoding {
   private void encodeByteArray(byte[] value, TCDataOutput output, int length) {
     output.writeByte(TYPE_ID_BYTE);
 
-    for (int i = 0; i < length; i++) {
-      output.write(value[i]);
-    }
+    output.write(value, 0, length);
   }
 
   private void encodeObjectArray(Object[] value, TCDataOutput output, int length) {
