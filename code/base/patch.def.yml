@@ -11,7 +11,8 @@
 #patch-5: built on 9/23/09
 #patch-6: built on 10/12/09
 #patch-7: built on 10/21/09
-level: 7
+#patch-8: built on 12/23/09
+level: 8
 
 
 # List of files to include in the patch tar.  File paths listed here are
