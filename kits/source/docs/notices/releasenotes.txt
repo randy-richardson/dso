@@ -67,6 +67,8 @@ Patch Level 7
 
 Patch Level 8
 - DEV-3471: Fix for JMX monitoring reporting incorrect number of clients after failover
+- DEV-3608 : fix for active connections. alternate fix for DEV-3444
+
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
