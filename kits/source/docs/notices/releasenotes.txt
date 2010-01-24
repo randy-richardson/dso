@@ -1,6 +1,6 @@
-3.0.1-ee-patch-8
+3.0.1-ee-patch-9
 
-Documentation: http://www.terracotta.org/web/display/docs/Home
+Documentation: http://www.terracotta.org/confluence/display/docs30/Home
 Forums:        http://forums.terracotta.org/forums/forums/list.page
 Mailing Lists: http://lists.terracotta.org
 Support:       http://www.terracotta.org/web/display/enterprise/Support
@@ -68,6 +68,10 @@ Patch Level 7
 Patch Level 8
 - DEV-3471: Fix for JMX monitoring reporting incorrect number of clients after failover
 - DEV-3608 : fix for active connections. alternate fix for DEV-3444
+
+Patch Level 9
+- DEV-3698: Fix for  Client doesn't switchover to next available server on Handshake Timeouts (during fresh start)
+
 
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
