@@ -71,7 +71,7 @@ Patch Level 8
 
 Patch Level 9
 - DEV-3698: Fix for  Client doesn't switchover to next available server on Handshake Timeouts (during fresh start)
-
+- DEV-3699: add tc.properties for Transport Handshake Timeout and Confg File get Timeout numbers 
 
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
