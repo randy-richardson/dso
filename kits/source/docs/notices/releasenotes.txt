@@ -1,12 +1,16 @@
-Terracotta 3.2 - Simple Scale for Enterprise Java
-===================================================
+3.2.0-ee-patch-1
 
-Release Notes: http://www.terracotta.org/web/display/docs/Release+Notes
-Documentation: http://www.terracotta.org/web/display/docs/Home
+Documentation: http://www.terracotta.org/kit/reflector?kitID=3.2&pageID=Documentation
 Forums:        http://forums.terracotta.org/forums/forums/list.page
 Mailing Lists: http://lists.terracotta.org
 Support:       http://www.terracotta.org/web/display/enterprise/Support
 
-----
-All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
+================================
+PATCH HISTORY
+Patch Level 1
+- DEV-3688
+- Terracotta Reference Already Present Failure during failover
+
+==============================================
+Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
