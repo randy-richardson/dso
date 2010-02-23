@@ -4,7 +4,6 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.tc.async.impl.MockSink;
 import com.tc.logging.TCLogger;
@@ -67,14 +66,13 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     env = newDBEnvironment(paranoid);
     env.open();
     persistenceTransactionProvider = new SleepycatPersistenceTransactionProvider(env.getEnvironment());
-    CursorConfig rootDBCursorConfig = new CursorConfig();
     SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
     testSleepycatCollectionsPersistor = new TestSleepycatCollectionsPersistor(logger, env.getMapsDatabase(),
                                                                               sleepycatCollectionFactory);
     managedObjectPersistor = new ManagedObjectPersistorImpl(logger, env.getClassCatalogWrapper().getClassCatalog(),
                                                             new SleepycatSerializationAdapterFactory(), env,
                                                             new TestMutableSequence(), env.getRootDatabase(),
-                                                            rootDBCursorConfig, persistenceTransactionProvider,
+                                                            persistenceTransactionProvider,
                                                             testSleepycatCollectionsPersistor, env.isParanoidMode(),
                                                             new ObjectStatsRecorder());
     objectStore = new PersistentManagedObjectStore(managedObjectPersistor, new MockSink());
@@ -122,7 +120,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     logger.info("Test with " + objects.size() + " objects");
     return (objects);
   }
-  
+
   private SyncObjectIdSet getAllObjectIDs() {
     SyncObjectIdSet rv = new SyncObjectIdSetImpl();
     rv.startPopulating();
@@ -136,7 +134,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     }
     return rv;
   }
-  
+
   private SyncObjectIdSet getAllMapsObjectIDs() {
     SyncObjectIdSet rv = new SyncObjectIdSetImpl();
     rv.startPopulating();
@@ -158,7 +156,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
       ManagedObject mo = (ManagedObject) i.next();
       originalIds.add(mo.getID());
     }
-    
+
     Collection inMemoryIds = getAllObjectIDs();
     assertTrue("Wrong bits in memory were set", originalIds.containsAll(inMemoryIds));
 
@@ -234,7 +232,6 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
 
     runCheckpointToCompressedStorage();
 
-
     getAllObjectIDs();
     verify(objects);
   }
@@ -268,7 +265,6 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
 
     runCheckpointToCompressedStorage();
 
-
     objects.clear();
     verify(objects);
   }
@@ -287,7 +283,6 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     }
 
     runCheckpointToCompressedStorage();
-
 
     Collection oidSet = getAllObjectIDs();
     // verify object IDs is in memory
@@ -375,7 +370,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
 
     objects.clear();
     verify(objects);
-    
+
     Collection oidSet = getAllMapsObjectIDs();
     verifyState(oidSet, objects);
   }

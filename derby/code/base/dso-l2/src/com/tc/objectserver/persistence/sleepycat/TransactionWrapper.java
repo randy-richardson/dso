@@ -10,7 +10,7 @@ import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import java.util.HashMap;
 import java.util.Map;
 
-class TransactionWrapper implements PersistenceTransaction {
+public class TransactionWrapper implements PersistenceTransaction {
   private final Transaction tx;
   private final Map         properties = new HashMap(1);
 

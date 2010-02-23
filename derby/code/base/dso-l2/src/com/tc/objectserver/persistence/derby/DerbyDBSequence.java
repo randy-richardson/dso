@@ -7,7 +7,6 @@ import com.tc.util.UUID;
 import com.tc.util.sequence.MutableSequence;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -136,7 +135,7 @@ public class DerbyDBSequence implements MutableSequence {
    * This method should be called atleast once so that the sequence table exists before creating 1 sequence.
    */
   public static void createSequenceTable(Connection connection) throws SQLException {
-    if (tableExists(connection)) { return; }
+    if (DerbyDBEnvironment.tableExists(connection, SEQUENCE_TABLE)) { return; }
 
     Statement statement = connection.createStatement();
     String query = "CREATE TABLE " + SEQUENCE_TABLE + "(" + SEUQENCE_NAME + " CHAR (50), " + SEQUENCE_VALUE
@@ -144,21 +143,5 @@ public class DerbyDBSequence implements MutableSequence {
     statement.execute(query);
     statement.close();
     connection.commit();
-  }
-
-  private static boolean tableExists(Connection connection) throws SQLException {
-    DatabaseMetaData dbmd = connection.getMetaData();
-
-    String[] types = { "TABLE" };
-    ResultSet resultSet = dbmd.getTables(null, null, "%", types);
-    while (resultSet.next()) {
-      String tableName = resultSet.getString(3);
-      if (tableName.equalsIgnoreCase(SEQUENCE_TABLE)) {
-        resultSet.close();
-        connection.commit();
-        return true;
-      }
-    }
-    return false;
   }
 }

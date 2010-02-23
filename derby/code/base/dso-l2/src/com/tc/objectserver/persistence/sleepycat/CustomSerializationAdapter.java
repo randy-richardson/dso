@@ -3,7 +3,6 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.DatabaseEntry;
 import com.tc.io.serializer.TCObjectInputStream;
 import com.tc.io.serializer.TCObjectOutputStream;
 import com.tc.io.serializer.api.Serializer;
@@ -29,31 +28,32 @@ public class CustomSerializationAdapter implements SerializationAdapter {
     out = new TCObjectOutputStream(baout);
   }
 
-  public void serializeManagedObject(DatabaseEntry entry, ManagedObject managedObject) throws IOException {
-      serialize(entry, managedObject, moSerializer);
+  public byte[] serializeManagedObject(ManagedObject managedObject) throws IOException {
+      return serialize(managedObject, moSerializer);
   }
 
-  public void serializeString(DatabaseEntry entry, String string) throws IOException {
-      serialize(entry, string, stringSerializer);
+  public byte[] serializeString(String string) throws IOException {
+      return serialize(string, stringSerializer);
   }
 
-  private void serialize(DatabaseEntry entry, Object o, Serializer serializer) throws IOException {
+  private byte[] serialize(Object o, Serializer serializer) throws IOException {
     serializer.serializeTo(o, out);
     out.flush();
-    entry.setData(baout.toByteArray());
+    byte[] temp = baout.toByteArray();
     baout.reset();
+    return temp;
   }
 
-  public ManagedObject deserializeManagedObject(DatabaseEntry data) throws IOException, ClassNotFoundException {
+  public ManagedObject deserializeManagedObject(byte[] data) throws IOException, ClassNotFoundException {
     return (ManagedObject) deserialize(data, moSerializer);
   }
 
-  public String deserializeString(DatabaseEntry data) throws IOException, ClassNotFoundException {
+  public String deserializeString(byte[] data) throws IOException, ClassNotFoundException {
     return (String) deserialize(data, stringSerializer);
   }
 
-  private Object deserialize(DatabaseEntry entry, Serializer serializer) throws IOException, ClassNotFoundException {
-    ByteArrayInputStream bain = new ByteArrayInputStream(entry.getData());
+  private Object deserialize(byte[] entry, Serializer serializer) throws IOException, ClassNotFoundException {
+    ByteArrayInputStream bain = new ByteArrayInputStream(entry);
     TCObjectInputStream in = new TCObjectInputStream(bain);
     return serializer.deserializeFrom(in);
   }

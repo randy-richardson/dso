@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.objectserver.persistence.sleepycat;
 
@@ -12,6 +13,7 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.sleepycat.DBEnvironment.ClassCatalogWrapper;
 import com.tc.test.TCTestCase;
 
@@ -26,11 +28,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * IMPORTANT: Sleepycat uses a static cache. If you open an environment, but
- * don't close it, even if you delete the data files underneath it, when you
- * create another instance of the environment on the same directory, the data
- * may still be there in cache. This makes it difficult to test in a JUnit
- * scenario.
+ * IMPORTANT: Sleepycat uses a static cache. If you open an environment, but don't close it, even if you delete the data
+ * files underneath it, when you create another instance of the environment on the same directory, the data may still be
+ * there in cache. This makes it difficult to test in a JUnit scenario.
  */
 public class DBEnvironmentTest extends TCTestCase {
   private File              envHome;
@@ -188,7 +188,7 @@ public class DBEnvironmentTest extends TCTestCase {
     result = env.open();
     assertTrue(result.isClean());
 
-    Database db = env.getObjectDatabase();
+    Database db = ((BerkeleyTCObjectDatabase) env.getObjectDatabase()).getDatabase();
 
     DatabaseEntry key = new DatabaseEntry(new byte[] { 1 });
     DatabaseEntry one = new DatabaseEntry(new byte[] { 1 });
@@ -219,7 +219,7 @@ public class DBEnvironmentTest extends TCTestCase {
     databasesByName.clear();
     env = newEnv(databasesByName, databases, paranoid);
     env.open();
-    db = env.getObjectDatabase();
+    db = ((BerkeleyTCObjectDatabase) env.getObjectDatabase()).getDatabase();
     status = db.get(null, key, value, LockMode.DEFAULT);
     assertTrue(ArrayUtils.isEquals(two.getData(), value.getData()));
 
@@ -230,7 +230,7 @@ public class DBEnvironmentTest extends TCTestCase {
     databasesByName.clear();
     env = newEnv(databasesByName, databases, paranoid);
     env.open();
-    db = env.getObjectDatabase();
+    db = ((BerkeleyTCObjectDatabase) env.getObjectDatabase()).getDatabase();
 
     status = db.get(null, key, value, LockMode.DEFAULT);
     assertEquals(OperationStatus.SUCCESS, status);

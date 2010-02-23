@@ -4,7 +4,6 @@
  */
 package com.tc.objectserver.managedobject;
 
-import com.sleepycat.je.CursorConfig;
 import com.tc.exception.ImplementMe;
 import com.tc.io.TCByteBufferOutput;
 import com.tc.logging.TCLogger;
@@ -58,16 +57,15 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
     SleepycatPersistor persistor = new SleepycatPersistor(logger, env, sleepycatSerializationAdapterFactory);
 
     ptp = new TestPersistenceTransactionProvider();
-    CursorConfig rootDBCursorConfig = new CursorConfig();
     SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
     SleepycatCollectionsPersistor sleepycatCollectionsPersistor = new SleepycatCollectionsPersistor(logger, env
         .getMapsDatabase(), sleepycatCollectionFactory);
 
     managedObjectPersistor = new ManagedObjectPersistorImpl(logger, env.getClassCatalogWrapper().getClassCatalog(),
                                                             sleepycatSerializationAdapterFactory, env,
-                                                            new TestMutableSequence(), env.getRootDatabase(),
-                                                            rootDBCursorConfig, ptp, sleepycatCollectionsPersistor, env
-                                                                .isParanoidMode(), new ObjectStatsRecorder());
+                                                            new TestMutableSequence(), env.getRootDatabase(), ptp,
+                                                            sleepycatCollectionsPersistor, env.isParanoidMode(),
+                                                            new ObjectStatsRecorder());
 
     NullManagedObjectChangeListenerProvider listenerProvider = new NullManagedObjectChangeListenerProvider();
     ManagedObjectStateFactory.disableSingleton(true);

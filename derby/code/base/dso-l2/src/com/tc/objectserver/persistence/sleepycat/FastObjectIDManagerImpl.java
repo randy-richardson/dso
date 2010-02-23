@@ -160,9 +160,9 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     return (rtn);
   }
 
-  private OperationStatus logAddObjectID(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException {
+  private boolean logAddObjectID(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException {
     OperationStatus status = logObjectID(tx, makeLogValue(mo), true);
-    return (status);
+    return status.equals(OperationStatus.SUCCESS);
   }
 
   /*
@@ -401,7 +401,7 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     }
   }
 
-  public OperationStatus put(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException {
+  public boolean put(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException {
     return (logAddObjectID(tx, mo));
   }
 
@@ -431,12 +431,12 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     return (status);
   }
 
-  public OperationStatus putAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
-    return (doAll(tx, oidSet, true));
+  public boolean putAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
+    return doAll(tx, oidSet, true).equals(OperationStatus.SUCCESS);
   }
 
-  public OperationStatus deleteAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
-    return (doAll(tx, oidSet, false));
+  public boolean deleteAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
+    return (doAll(tx, oidSet, false)).equals(OperationStatus.SUCCESS);
   }
 
 }

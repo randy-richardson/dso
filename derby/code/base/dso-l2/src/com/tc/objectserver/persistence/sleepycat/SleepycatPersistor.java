@@ -88,7 +88,7 @@ public class SleepycatPersistor implements Persistor {
                                                                                        SleepycatSequenceKeys.OBJECTID_SEQUENCE_NAME,
                                                                                        1000, env
                                                                                            .getGlobalSequenceDatabase()),
-                                                                 env.getRootDatabase(), rootDBCursorConfig,
+                                                                 env.getRootDatabase(),
                                                                  this.persistenceTransactionProvider,
                                                                  this.sleepycatCollectionsPersistor, env
                                                                      .isParanoidMode(), objectStatsRecorder);

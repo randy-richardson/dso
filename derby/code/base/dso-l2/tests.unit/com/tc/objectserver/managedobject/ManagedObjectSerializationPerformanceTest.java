@@ -200,7 +200,8 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
     SerializationAdapter serializer = customSerializerPersistor.getSerializationAdapter();
     DatabaseEntry entry = new DatabaseEntry();
     for (int i = 0; i < iterations; i++) {
-      serializer.serializeManagedObject(entry, mo);
+      byte[] data = serializer.serializeManagedObject(mo);
+      entry.setData(data);
     }
     serializeStats.time += System.currentTimeMillis() - now;
     serializeStats.size += entry.getData().length;
@@ -208,7 +209,7 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
     ManagedObject test = null;
     now = System.currentTimeMillis();
     for (int i = 0; i < iterations; i++) {
-      test = serializer.deserializeManagedObject(entry);
+      test = serializer.deserializeManagedObject(entry.getData());
     }
     deserializeStats.time += System.currentTimeMillis() - now;
     assertTrue(mo.isEqual(test));

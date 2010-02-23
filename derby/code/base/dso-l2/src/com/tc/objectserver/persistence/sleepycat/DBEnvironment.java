@@ -22,6 +22,11 @@ import com.sleepycat.je.Transaction;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.objectserver.persistence.AbstractDBEnvironment;
+import com.tc.objectserver.persistence.TCObjectDatabase;
+import com.tc.objectserver.persistence.TCRootDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.io.File;
@@ -34,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class DBEnvironment {
+public class DBEnvironment extends AbstractDBEnvironment {
 
   private static final TCLogger            clogger                     = CustomerLogging.getDSOGenericLogger();
   private static final TCLogger            logger                      = TCLogging.getLogger(DBEnvironment.class);
@@ -152,11 +157,11 @@ public class DBEnvironment {
       if (!this.paranoid) setDirty();
       this.catalog = new ClassCatalogWrapper(env, dbcfg);
       newDatabase(env, GLOBAL_SEQUENCE_DATABASE);
-      newDatabase(env, OBJECT_DB_NAME);
+      newObjectDB(env, OBJECT_DB_NAME);
       newDatabase(env, OBJECT_OID_STORE_DB_NAME);
       newDatabase(env, MAPS_OID_STORE_DB_NAME);
       newDatabase(env, OID_STORE_LOG_DB_NAME);
-      newDatabase(env, ROOT_DB_NAME);
+      newRootDB(env, ROOT_DB_NAME);
 
       newDatabase(env, CLIENT_STATE_DB_NAME);
       newDatabase(env, TRANSACTION_DB_NAME);
@@ -193,7 +198,16 @@ public class DBEnvironment {
 
     try {
       for (Iterator i = createdDatabases.iterator(); i.hasNext();) {
-        Database db = (Database) i.next();
+        Object o = i.next();
+        Database db = null;
+        if (o instanceof BerkeleyTCObjectDatabase) {
+          db = ((BerkeleyTCObjectDatabase) o).getDatabase();
+        } else if (o instanceof BerkeleyTCRootDatabase) {
+          db = ((BerkeleyTCRootDatabase) o).getDatabase();
+        } else {
+          db = (Database) o;
+        }
+
         cinfo("Closing database: " + db.getDatabaseName() + "...");
         db.close();
       }
@@ -228,7 +242,15 @@ public class DBEnvironment {
     toClose.add(controlDB);
     for (Iterator i = toClose.iterator(); i.hasNext();) {
       try {
-        Database db = (Database) i.next();
+        Object o = i.next();
+        Database db = null;
+        if (o instanceof BerkeleyTCObjectDatabase) {
+          db = ((BerkeleyTCObjectDatabase) o).getDatabase();
+        } else if (o instanceof BerkeleyTCRootDatabase) {
+          db = ((BerkeleyTCRootDatabase) o).getDatabase();
+        } else {
+          db = (Database) o;
+        }
         if (db != null) db.close();
       } catch (Exception e) {
         e.printStackTrace();
@@ -265,9 +287,9 @@ public class DBEnvironment {
     }
   }
 
-  public synchronized Database getObjectDatabase() throws TCDatabaseException {
+  public synchronized TCObjectDatabase getObjectDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(OBJECT_DB_NAME);
+    return (BerkeleyTCObjectDatabase) databasesByName.get(OBJECT_DB_NAME);
   }
 
   public synchronized Database getObjectOidStoreDatabase() throws TCDatabaseException {
@@ -290,9 +312,9 @@ public class DBEnvironment {
     return catalog;
   }
 
-  public synchronized Database getRootDatabase() throws TCDatabaseException {
+  public synchronized TCRootDatabase getRootDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(ROOT_DB_NAME);
+    return (BerkeleyTCRootDatabase) databasesByName.get(ROOT_DB_NAME);
   }
 
   public Database getClientStateDatabase() throws TCDatabaseException {
@@ -406,6 +428,28 @@ public class DBEnvironment {
       tx.commitSync();
     } catch (Exception e) {
       throw new TCDatabaseException(e.getMessage());
+    }
+  }
+
+  private void newObjectDB(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCObjectDatabase bdb = new BerkeleyTCObjectDatabase(db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
+    }
+  }
+
+  private void newRootDB(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCRootDatabase bdb = new BerkeleyTCRootDatabase(db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
     }
   }
 
