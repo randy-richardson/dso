@@ -48,7 +48,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
   private PersistentManagedObjectStore      objectStore;
   private PersistenceTransactionProvider    persistenceTransactionProvider;
   private TestSleepycatCollectionsPersistor testSleepycatCollectionsPersistor;
-  private DBEnvironment                     env;
+  private BerkeleyDBEnvironment                     env;
   private FastObjectIDManagerImpl           oidManager;
 
   public ManagedObjectPersistorImplTest() {
@@ -91,7 +91,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     return false;
   }
 
-  private DBEnvironment newDBEnvironment(boolean paranoid) throws Exception {
+  private BerkeleyDBEnvironment newDBEnvironment(boolean paranoid) throws Exception {
     File dbHome;
     int count = 0;
     do {
@@ -101,7 +101,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     assertTrue(dbHome.exists());
     assertTrue(dbHome.isDirectory());
     System.out.println("DB Home: " + dbHome);
-    return new DBEnvironment(paranoid, dbHome);
+    return new BerkeleyDBEnvironment(paranoid, dbHome);
   }
 
   private Collection createRandomObjects(int num, boolean withPersistentCollectionState) {

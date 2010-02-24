@@ -182,10 +182,10 @@ public abstract class AbstractDBUtilsTestBase extends TCTestCase {
   }
 
   protected SleepycatPersistor getSleepycatPersistor(File dir) {
-    DBEnvironment env;
+    BerkeleyDBEnvironment env;
     SleepycatPersistor persistor = null;
     try {
-      env = new DBEnvironment(true, dir);
+      env = new BerkeleyDBEnvironment(true, dir);
       SerializationAdapterFactory serializationAdapterFactory = new CustomSerializationAdapterFactory();
       final TestManagedObjectChangeListenerProvider managedObjectChangeListenerProvider = new TestManagedObjectChangeListenerProvider();
       persistor = new SleepycatPersistor(logger, env, serializationAdapterFactory);

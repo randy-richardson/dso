@@ -24,7 +24,7 @@ import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.impl.TestMutableSequence;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransactionProvider;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.ManagedObjectPersistorImpl;
 import com.tc.objectserver.persistence.sleepycat.SleepycatCollectionFactory;
 import com.tc.objectserver.persistence.sleepycat.SleepycatCollectionsPersistor;
@@ -43,7 +43,7 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
   private final TCLogger                     logger   = TCLogging.getTestingLogger(getClass());
   private ObjectID                           objectID = new ObjectID(2000);
 
-  private DBEnvironment                      env;
+  private BerkeleyDBEnvironment                      env;
   private ManagedObjectPersistorImpl         managedObjectPersistor;
   private TestPersistenceTransactionProvider ptp;
 
@@ -75,10 +75,10 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
     managedObjectPersistor.containsMapType(new ObjectID(1000));
   }
 
-  private DBEnvironment newDBEnvironment() throws Exception {
+  private BerkeleyDBEnvironment newDBEnvironment() throws Exception {
     File dbHome = new File(this.getTempDirectory(), getClass().getName() + "db");
     dbHome.mkdirs();
-    return new DBEnvironment(true, dbHome);
+    return new BerkeleyDBEnvironment(true, dbHome);
   }
 
   @Override

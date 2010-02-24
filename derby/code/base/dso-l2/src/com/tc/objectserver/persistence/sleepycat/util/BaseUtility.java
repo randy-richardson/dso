@@ -11,7 +11,7 @@ import com.tc.objectserver.managedobject.ManagedObjectChangeListenerProvider;
 import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.objectserver.managedobject.NullManagedObjectChangeListener;
 import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
 import java.io.File;
@@ -41,7 +41,7 @@ public abstract class BaseUtility {
   }
 
   private SleepycatPersistor createPersistor(int id) throws Exception {
-    DBEnvironment env = new DBEnvironment(true, databaseDirs[id -1]);
+    BerkeleyDBEnvironment env = new BerkeleyDBEnvironment(true, databaseDirs[id -1]);
     SerializationAdapterFactory serializationAdapterFactory = new CustomSerializationAdapterFactory();
     final TestManagedObjectChangeListenerProvider managedObjectChangeListenerProvider = new TestManagedObjectChangeListenerProvider();
     SleepycatPersistor persistor = new SleepycatPersistor(logger, env, serializationAdapterFactory);

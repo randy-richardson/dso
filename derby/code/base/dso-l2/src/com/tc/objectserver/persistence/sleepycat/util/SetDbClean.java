@@ -14,7 +14,7 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.tc.l2.ha.ClusterState;
 import com.tc.l2.state.StateManager;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.util.Conversion;
 import com.tc.util.State;
 
@@ -46,7 +46,7 @@ public class SetDbClean extends BaseUtility {
   public void setDbClean() throws DatabaseException {
     Database db = null;
     try {
-      db = env.openDatabase(null, DBEnvironment.getClusterStateStoreName(), dbc);
+      db = env.openDatabase(null, BerkeleyDBEnvironment.getClusterStateStoreName(), dbc);
     } catch (DatabaseException e) {
       log("Probably not running in persistent mode!");
       env.close();

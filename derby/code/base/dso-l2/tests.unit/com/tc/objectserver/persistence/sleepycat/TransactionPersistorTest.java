@@ -51,12 +51,12 @@ public class TransactionPersistorTest extends TCTestCase {
     System.out.println("DB home: " + envHome);
   }
 
-  private DBEnvironment newEnv(boolean paranoid) throws IOException {
+  private BerkeleyDBEnvironment newEnv(boolean paranoid) throws IOException {
     return newEnv(new HashMap(), new ArrayList(), paranoid);
   }
 
-  private DBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
-    return new DBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
+  private BerkeleyDBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
+    return new BerkeleyDBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
   }
 
   /**
@@ -65,7 +65,7 @@ public class TransactionPersistorTest extends TCTestCase {
    * If commit doesnt happen with the default(500ms) time sleepcat throws a deadlock exception.
    */
   public void testSimultaneousSaveAndDeletes() throws Exception {
-    DBEnvironment env = newEnv(true);
+    BerkeleyDBEnvironment env = newEnv(true);
     assertTrue(env.open().isClean());
     final SleepycatPersistenceTransactionProvider persistenceTransactionProvider = new SleepycatPersistenceTransactionProvider(
                                                                                                                                env

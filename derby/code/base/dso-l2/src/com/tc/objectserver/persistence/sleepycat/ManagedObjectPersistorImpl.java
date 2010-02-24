@@ -94,7 +94,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
   private final ThreadLocal<SerializationAdapter> threadlocalAdapter;
 
   public ManagedObjectPersistorImpl(TCLogger logger, ClassCatalog classCatalog,
-                                    SerializationAdapterFactory serializationAdapterFactory, DBEnvironment env,
+                                    SerializationAdapterFactory serializationAdapterFactory, BerkeleyDBEnvironment env,
                                     MutableSequence objectIDSequence, TCRootDatabase rootDB,
                                     PersistenceTransactionProvider ptp,
                                     SleepycatCollectionsPersistor collectionsPersistor, boolean paranoid,

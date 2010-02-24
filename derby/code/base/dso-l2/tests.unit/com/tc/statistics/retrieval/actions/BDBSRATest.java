@@ -7,7 +7,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
@@ -25,7 +25,7 @@ public class BDBSRATest extends TCTestCase {
   public void test() throws IOException, TCDatabaseException {
     SerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
     File dbHome = newDBHome();
-    DBEnvironment env = new DBEnvironment(true, dbHome);
+    BerkeleyDBEnvironment env = new BerkeleyDBEnvironment(true, dbHome);
     TCLogger logger = TCLogging.getLogger(getClass());
     SRABerkeleyDB sras = new SRABerkeleyDB(new SleepycatPersistor(logger, env, saf, null, new ObjectStatsRecorder()));
     sras.retrieveStatisticData();

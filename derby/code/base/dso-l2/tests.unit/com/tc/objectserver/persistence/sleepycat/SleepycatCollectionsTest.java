@@ -30,7 +30,7 @@ public class SleepycatCollectionsTest extends TCTestCase {
 
   private SleepycatPersistor             persistor;
   private PersistenceTransactionProvider ptp;
-  private DBEnvironment                  env;
+  private BerkeleyDBEnvironment                  env;
   private PersistentCollectionFactory    collectionsFactory;
   private SleepycatCollectionsPersistor  collectionsPersistor;
   private static int                     dbHomeCounter = 0;
@@ -43,7 +43,7 @@ public class SleepycatCollectionsTest extends TCTestCase {
     File dbHome = newDBHome();
     TCLogger logger = TCLogging.getLogger(getClass());
     CustomSerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
-    env = new DBEnvironment(true, dbHome);
+    env = new BerkeleyDBEnvironment(true, dbHome);
     persistor = new SleepycatPersistor(logger, env, saf);
     ptp = persistor.getPersistenceTransactionProvider();
     collectionsFactory = persistor.getPersistentCollectionFactory();

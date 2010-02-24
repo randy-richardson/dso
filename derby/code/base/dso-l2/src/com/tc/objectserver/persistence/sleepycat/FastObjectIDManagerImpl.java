@@ -4,16 +4,13 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObject;
+import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCDatabaseCursor;
+import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
@@ -47,9 +44,9 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   private final Object                         checkpointLock      = new Object();
   private final Object                         objectIDUpdateLock  = new Object();
 
-  private final Database                       objectOidStoreDB;
-  private final Database                       mapsOidStoreDB;
-  private final Database                       oidStoreLogDB;
+  private final TCBytesBytesDatabase           objectOidStoreDB;
+  private final TCBytesBytesDatabase           mapsOidStoreDB;
+  private final TCBytesBytesDatabase           oidStoreLogDB;
   private final PersistenceTransactionProvider ptp;
   private final CheckpointRunner               checkpointThread;
   private final MutableSequence                sequence;
@@ -57,7 +54,7 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   private long                                 endSequence;
   private final ManagedObjectPersistor         managedObjectPersistor;
 
-  public FastObjectIDManagerImpl(DBEnvironment env, PersistenceTransactionProvider ptp, MutableSequence sequence,
+  public FastObjectIDManagerImpl(BerkeleyDBEnvironment env, PersistenceTransactionProvider ptp, MutableSequence sequence,
                                  ManagedObjectPersistor managedObjectPersistor) throws TCDatabaseException {
     this.managedObjectPersistor = managedObjectPersistor;
     this.objectOidStoreDB = env.getObjectOidStoreDatabase();
@@ -146,23 +143,18 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   /*
    * Log the change of an ObjectID, added or deleted. Later, flush to BitsArray OidDB by checkpoint thread.
    */
-  private OperationStatus logObjectID(PersistenceTransaction tx, byte[] oids, boolean isAdd) throws TCDatabaseException {
-    DatabaseEntry key = new DatabaseEntry();
-    key.setData(makeLogKey(isAdd));
-    DatabaseEntry value = new DatabaseEntry();
-    value.setData(oids);
-    OperationStatus rtn;
+  private boolean logObjectID(PersistenceTransaction tx, byte[] oids, boolean isAdd) throws TCDatabaseException {
+    boolean rtn;
     try {
-      rtn = this.oidStoreLogDB.putNoOverwrite(pt2nt(tx), key, value);
+      rtn = this.oidStoreLogDB.putNoOverwrite(tx, makeLogKey(isAdd), oids);
     } catch (Exception t) {
       throw new TCDatabaseException(t.getMessage());
     }
-    return (rtn);
+    return rtn;
   }
 
   private boolean logAddObjectID(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException {
-    OperationStatus status = logObjectID(tx, makeLogValue(mo), true);
-    return status.equals(OperationStatus.SUCCESS);
+    return logObjectID(tx, makeLogValue(mo), true);
   }
 
   /*
@@ -179,12 +171,11 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
       PersistenceTransaction tx = null;
       try {
         tx = ptp.newTransaction();
-        Cursor cursor = oidStoreLogDB.openCursor(pt2nt(tx), CursorConfig.READ_COMMITTED);
-        DatabaseEntry key = new DatabaseEntry();
-        DatabaseEntry value = new DatabaseEntry();
+        TCDatabaseCursor<byte[], byte[]> cursor = oidStoreLogDB.openCursor(tx);
+        TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
         int changes = 0;
         try {
-          while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
+          while (cursor.getNext(entry)) {
 
             if (stoppedFlag.isStopped()) {
               cursor.close();
@@ -193,8 +184,8 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
               return isAllFlushed;
             }
 
-            boolean isAddOper = isAddOper(key.getData());
-            byte[] oids = value.getData();
+            boolean isAddOper = isAddOper(entry.getKey());
+            byte[] oids = entry.getValue();
             int offset = 0;
             while (offset < oids.length) {
               ObjectID objectID = new ObjectID(Conversion.bytes2Long(oids, offset));
@@ -228,8 +219,8 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
           if (cursor != null) cursor.close();
           cursor = null;
         }
-        oidStoreMap.flushToDisk(pt2nt(tx));
-        mapOidStoreMap.flushToDisk(pt2nt(tx));
+        oidStoreMap.flushToDisk(tx);
+        mapOidStoreMap.flushToDisk(tx);
 
         tx.commit();
         logger.debug("Checkpoint updated " + changes + " objectIDs");
@@ -318,12 +309,12 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
    * fast way to load object-Ids at server restart by reading them from bits array
    */
   private class OidObjectIdReader implements Runnable {
-    private long                  startTime;
-    private int                   counter = 0;
-    private final Database        oidDB;
-    private final SyncObjectIdSet syncObjectIDSet;
+    private long                       startTime;
+    private int                        counter = 0;
+    private final TCBytesBytesDatabase oidDB;
+    private final SyncObjectIdSet      syncObjectIDSet;
 
-    public OidObjectIdReader(Database oidDB, SyncObjectIdSet syncObjectIDSet) {
+    public OidObjectIdReader(TCBytesBytesDatabase oidDB, SyncObjectIdSet syncObjectIDSet) {
       this.oidDB = oidDB;
       this.syncObjectIDSet = syncObjectIDSet;
     }
@@ -333,15 +324,12 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
 
       ObjectIDSet tmp = new ObjectIDSet();
       PersistenceTransaction tx = ptp.newTransaction();
-      Cursor cursor = null;
+      TCDatabaseCursor<byte[], byte[]> cursor = null;
       try {
-        CursorConfig oidDBCursorConfig = new CursorConfig();
-        oidDBCursorConfig.setReadCommitted(true);
-        cursor = oidDB.openCursor(pt2nt(tx), oidDBCursorConfig);
-        DatabaseEntry key = new DatabaseEntry();
-        DatabaseEntry value = new DatabaseEntry();
-        while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-          OidLongArray bitsArray = new OidLongArray(key.getData(), value.getData());
+        cursor = oidDB.openCursor(tx);
+        TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
+        while (cursor.getNext(entry)) {
+          OidLongArray bitsArray = new OidLongArray(entry.getKey(), entry.getValue());
           makeObjectIDFromBitsArray(bitsArray, tmp);
         }
         cursor.close();
@@ -390,7 +378,7 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
       }
     }
 
-    protected void safeClose(Cursor c) {
+    protected void safeClose(TCDatabaseCursor c) {
       if (c == null) return;
 
       try {
@@ -409,11 +397,10 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     oidSet.add(mo.getID());
   }
 
-  private OperationStatus doAll(PersistenceTransaction tx, Set<ObjectID> oidSet, boolean isAdd)
-      throws TCDatabaseException {
-    OperationStatus status = OperationStatus.SUCCESS;
+  private boolean doAll(PersistenceTransaction tx, Set<ObjectID> oidSet, boolean isAdd) throws TCDatabaseException {
+    boolean status = true;
     int size = oidSet.size();
-    if (size == 0) return (status);
+    if (size == 0) return status;
 
     byte[] oids = new byte[size * (OidLongArray.BYTES_PER_LONG + 1)];
     int offset = 0;
@@ -428,15 +415,15 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     } catch (Exception de) {
       throw new TCDatabaseException(de.getMessage());
     }
-    return (status);
+    return status;
   }
 
   public boolean putAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
-    return doAll(tx, oidSet, true).equals(OperationStatus.SUCCESS);
+    return doAll(tx, oidSet, true);
   }
 
   public boolean deleteAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
-    return (doAll(tx, oidSet, false)).equals(OperationStatus.SUCCESS);
+    return doAll(tx, oidSet, false);
   }
 
 }

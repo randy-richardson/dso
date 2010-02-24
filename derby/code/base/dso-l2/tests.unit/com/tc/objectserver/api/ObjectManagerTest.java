@@ -73,7 +73,7 @@ import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransaction;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
 import com.tc.objectserver.persistence.sleepycat.SleepycatSerializationAdapterFactory;
@@ -768,7 +768,7 @@ public class ObjectManagerTest extends TCTestCase {
     assertTrue(value instanceof Date);
   }
 
-  private DBEnvironment newDBEnvironment(boolean paranoid) throws Exception {
+  private BerkeleyDBEnvironment newDBEnvironment(boolean paranoid) throws Exception {
     File dbHome;
     int count = 0;
     do {
@@ -778,15 +778,15 @@ public class ObjectManagerTest extends TCTestCase {
     assertTrue(dbHome.exists());
     assertTrue(dbHome.isDirectory());
     System.out.println("DB Home: " + dbHome);
-    return new DBEnvironment(paranoid, dbHome);
+    return new BerkeleyDBEnvironment(paranoid, dbHome);
   }
 
-  private Persistor newPersistor(DBEnvironment dbEnv, SerializationAdapterFactory serializationAdapterFactory)
+  private Persistor newPersistor(BerkeleyDBEnvironment dbEnv, SerializationAdapterFactory serializationAdapterFactory)
       throws Exception {
     return new SleepycatPersistor(this.logger, dbEnv, serializationAdapterFactory);
   }
 
-  private SerializationAdapterFactory newSleepycatSerializationAdapterFactory(DBEnvironment dbEnv) {
+  private SerializationAdapterFactory newSleepycatSerializationAdapterFactory(BerkeleyDBEnvironment dbEnv) {
     return new SleepycatSerializationAdapterFactory();
   }
 
@@ -797,7 +797,7 @@ public class ObjectManagerTest extends TCTestCase {
   public void testLookupInPersistentContext() throws Exception {
     boolean paranoid = false;
     // sleepycat serializer, not paranoid
-    DBEnvironment dbEnv = newDBEnvironment(paranoid);
+    BerkeleyDBEnvironment dbEnv = newDBEnvironment(paranoid);
     SerializationAdapterFactory saf = newSleepycatSerializationAdapterFactory(dbEnv);
     Persistor persistor = newPersistor(dbEnv, saf);
 
@@ -990,7 +990,7 @@ public class ObjectManagerTest extends TCTestCase {
   }
 
   private void testPhysicalObjectFacade(boolean paranoid) throws Exception {
-    DBEnvironment dbEnv = newDBEnvironment(paranoid);
+    BerkeleyDBEnvironment dbEnv = newDBEnvironment(paranoid);
     SerializationAdapterFactory saf = newCustomSerializationAdapterFactory();
     Persistor persistor = newPersistor(dbEnv, saf);
     PersistenceTransactionProvider ptp = persistor.getPersistenceTransactionProvider();
@@ -1307,7 +1307,7 @@ public class ObjectManagerTest extends TCTestCase {
    * recall in TransactionalObjectManager in persistence mode
    */
   public void testRecallNewObjects() throws Exception {
-    DBEnvironment dbEnv = newDBEnvironment(true);
+    BerkeleyDBEnvironment dbEnv = newDBEnvironment(true);
     SerializationAdapterFactory saf = newCustomSerializationAdapterFactory();
     Persistor persistor = newPersistor(dbEnv, saf);
     PersistenceTransactionProvider ptp = persistor.getPersistenceTransactionProvider();

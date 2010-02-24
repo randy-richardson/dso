@@ -14,7 +14,7 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment.ClassCatalogWrapper;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment.ClassCatalogWrapper;
 import com.tc.test.TCTestCase;
 
 import java.io.File;
@@ -56,16 +56,16 @@ public class DBEnvironmentTest extends TCTestCase {
 
   }
 
-  private DBEnvironment newEnv(boolean paranoid) throws IOException {
+  private BerkeleyDBEnvironment newEnv(boolean paranoid) throws IOException {
     return newEnv(new HashMap(), new ArrayList(), paranoid);
   }
 
-  private DBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
-    return new DBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
+  private BerkeleyDBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
+    return new BerkeleyDBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
   }
 
   public void testCrashParanoidReopenParanoid() throws Exception {
-    DBEnvironment env = newEnv(true);
+    BerkeleyDBEnvironment env = newEnv(true);
     assertTrue(env.open().isClean());
     env.forceClose();
     env = newEnv(true);
@@ -75,7 +75,7 @@ public class DBEnvironmentTest extends TCTestCase {
   }
 
   public void testCrashNotParanoidReopenNotParanoid() throws Exception {
-    DBEnvironment env = newEnv(false);
+    BerkeleyDBEnvironment env = newEnv(false);
     assertCleanDir();
     assertTrue(env.open().isClean());
     env.forceClose();
@@ -87,7 +87,7 @@ public class DBEnvironmentTest extends TCTestCase {
   }
 
   public void testCrashParanoidReopenNotParanoid() throws Exception {
-    DBEnvironment env = newEnv(true);
+    BerkeleyDBEnvironment env = newEnv(true);
     assertTrue(env.open().isClean());
     env.forceClose();
     env = newEnv(false);
@@ -101,7 +101,7 @@ public class DBEnvironmentTest extends TCTestCase {
   }
 
   public void testCrashNotParanoidReopenParanoid() throws Exception {
-    DBEnvironment env = newEnv(false);
+    BerkeleyDBEnvironment env = newEnv(false);
     assertTrue(env.open().isClean());
     env.forceClose();
     env = newEnv(true);
@@ -123,7 +123,7 @@ public class DBEnvironmentTest extends TCTestCase {
     List databases = new LinkedList();
     Map databasesByName = new HashMap();
     assertFalse(this.envHome.exists());
-    DBEnvironment env = newEnv(databasesByName, databases, paranoid);
+    BerkeleyDBEnvironment env = newEnv(databasesByName, databases, paranoid);
 
     try {
       env.getEnvironment();

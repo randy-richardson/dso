@@ -10,7 +10,7 @@ import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 import java.io.File;
 
 // This should be the class which should be used by Derby Db environment and Berkeley db env
-public abstract class AbstractDBEnvironment {
+public interface DBEnvironment {
   public abstract DatabaseOpenResult open() throws TCDatabaseException;
 
   public abstract void close() throws TCDatabaseException;
@@ -25,11 +25,11 @@ public abstract class AbstractDBEnvironment {
 
   public abstract TCObjectDatabase getObjectDatabase() throws TCDatabaseException;
 
-  public abstract Database getObjectOidStoreDatabase() throws TCDatabaseException;
+  public abstract TCBytesBytesDatabase getObjectOidStoreDatabase() throws TCDatabaseException;
 
-  public abstract Database getMapsOidStoreDatabase() throws TCDatabaseException;
+  public abstract TCBytesBytesDatabase getMapsOidStoreDatabase() throws TCDatabaseException;
 
-  public abstract Database getOidStoreLogDatabase() throws TCDatabaseException;
+  public abstract TCBytesBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException;
 
   public abstract TCRootDatabase getRootDatabase() throws TCDatabaseException;
 

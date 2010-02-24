@@ -26,7 +26,7 @@ public class SleepycatSequenceTest extends TCTestCase {
   private File              envHome;
   private EnvironmentConfig ecfg;
   private DatabaseConfig    dbcfg;
-  private DBEnvironment     env;
+  private BerkeleyDBEnvironment     env;
   private static int        count = 0;
 
   protected void setUp() throws Exception {
@@ -55,12 +55,12 @@ public class SleepycatSequenceTest extends TCTestCase {
     FileUtils.cleanDirectory(envHome);
   }
 
-  private DBEnvironment newEnv(boolean paranoid) throws IOException {
+  private BerkeleyDBEnvironment newEnv(boolean paranoid) throws IOException {
     return newEnv(new HashMap(), new ArrayList(), paranoid);
   }
 
-  private DBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
-    return new DBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
+  private BerkeleyDBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
+    return new BerkeleyDBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
   }
 
   public void testUID() throws Exception {

@@ -42,16 +42,16 @@ public class SleepycatMapStoreTest extends TCTestCase {
 
   }
 
-  private DBEnvironment newEnv(boolean paranoid) throws IOException {
+  private BerkeleyDBEnvironment newEnv(boolean paranoid) throws IOException {
     return newEnv(new HashMap(), new ArrayList(), paranoid);
   }
 
-  private DBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
-    return new DBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
+  private BerkeleyDBEnvironment newEnv(Map map, List list, boolean paranoid) throws IOException {
+    return new BerkeleyDBEnvironment(map, list, paranoid, envHome, ecfg, dbcfg);
   }
 
   public void testBasic() throws Exception {
-    DBEnvironment env = newEnv(true);
+    BerkeleyDBEnvironment env = newEnv(true);
     assertTrue(env.open().isClean());
     SleepycatPersistenceTransactionProvider persistenceTransactionProvider = new SleepycatPersistenceTransactionProvider(
                                                                                                                          env

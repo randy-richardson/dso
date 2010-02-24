@@ -45,19 +45,19 @@ public class SleepycatPersistor implements Persistor {
   private final MutableSequence                globalTransactionIDSequence;
   private final ClassPersistor                 classPersistor;
   private final PersistenceTransactionProvider persistenceTransactionProvider;
-  private final DBEnvironment                  env;
+  private final BerkeleyDBEnvironment                  env;
   private final SleepycatCollectionFactory     sleepycatCollectionFactory;
   private final PersistentMapStore             persistentStateStore;
 
   private SleepycatCollectionsPersistor        sleepycatCollectionsPersistor;
 
   // only for tests
-  public SleepycatPersistor(TCLogger logger, DBEnvironment env, SerializationAdapterFactory serializationAdapterFactory)
+  public SleepycatPersistor(TCLogger logger, BerkeleyDBEnvironment env, SerializationAdapterFactory serializationAdapterFactory)
       throws TCDatabaseException {
     this(logger, env, serializationAdapterFactory, null, new ObjectStatsRecorder());
   }
 
-  public SleepycatPersistor(TCLogger logger, DBEnvironment env,
+  public SleepycatPersistor(TCLogger logger, BerkeleyDBEnvironment env,
                             SerializationAdapterFactory serializationAdapterFactory, File l2DataPath,
                             ObjectStatsRecorder objectStatsRecorder) throws TCDatabaseException {
 
@@ -122,7 +122,7 @@ public class SleepycatPersistor implements Persistor {
     return null;
   }
 
-  private void open(DBEnvironment dbenv, TCLogger logger) throws TCDatabaseException {
+  private void open(BerkeleyDBEnvironment dbenv, TCLogger logger) throws TCDatabaseException {
     Assert.eval(!dbenv.isOpen());
     DatabaseOpenResult result = dbenv.open();
     if (!result.isClean()) { throw new DatabaseDirtyException(
@@ -134,7 +134,7 @@ public class SleepycatPersistor implements Persistor {
                                                                   + "the server: " + dbenv.getEnvironmentHome()); }
   }
 
-  private void sanityCheckAndClean(DBEnvironment dbenv, File l2DataPath, TCLogger logger) throws TCDatabaseException {
+  private void sanityCheckAndClean(BerkeleyDBEnvironment dbenv, File l2DataPath, TCLogger logger) throws TCDatabaseException {
     PersistenceTransactionProvider persistentTxProvider = new SleepycatPersistenceTransactionProvider(dbenv
         .getEnvironment());
     PersistentMapStore persistentMapStore = new SleepycatMapStore(persistentTxProvider, logger, dbenv

@@ -22,9 +22,12 @@ import com.sleepycat.je.Transaction;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.objectserver.persistence.AbstractDBEnvironment;
+import com.tc.objectserver.persistence.DBEnvironment;
+import com.tc.objectserver.persistence.TCBytesBytesDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
+import com.tc.objectserver.persistence.berkeleydb.AbstractBerkeleyDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
 import com.tc.util.concurrent.ThreadUtil;
@@ -39,10 +42,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class DBEnvironment extends AbstractDBEnvironment {
+public class BerkeleyDBEnvironment implements DBEnvironment {
 
   private static final TCLogger            clogger                     = CustomerLogging.getDSOGenericLogger();
-  private static final TCLogger            logger                      = TCLogging.getLogger(DBEnvironment.class);
+  private static final TCLogger            logger                      = TCLogging.getLogger(BerkeleyDBEnvironment.class);
 
   private static final String              GLOBAL_SEQUENCE_DATABASE    = "global_sequence_db";
   private static final String              ROOT_DB_NAME                = "roots";
@@ -87,11 +90,11 @@ public class DBEnvironment extends AbstractDBEnvironment {
 
   private final boolean                    paranoid;
 
-  public DBEnvironment(boolean paranoid, File envHome) throws IOException {
+  public BerkeleyDBEnvironment(boolean paranoid, File envHome) throws IOException {
     this(paranoid, envHome, new Properties());
   }
 
-  public DBEnvironment(boolean paranoid, File envHome, Properties jeProperties) throws IOException {
+  public BerkeleyDBEnvironment(boolean paranoid, File envHome, Properties jeProperties) throws IOException {
     this(new HashMap(), new LinkedList(), paranoid, envHome);
     this.ecfg = new EnvironmentConfig(jeProperties);
     this.ecfg.setTransactional(true);
@@ -107,12 +110,12 @@ public class DBEnvironment extends AbstractDBEnvironment {
   }
 
   // For tests
-  DBEnvironment(boolean paranoid, File envHome, EnvironmentConfig ecfg, DatabaseConfig dbcfg) throws IOException {
+  BerkeleyDBEnvironment(boolean paranoid, File envHome, EnvironmentConfig ecfg, DatabaseConfig dbcfg) throws IOException {
     this(new HashMap(), new LinkedList(), paranoid, envHome, ecfg, dbcfg);
   }
 
   // For tests
-  DBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome, EnvironmentConfig ecfg,
+  BerkeleyDBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome, EnvironmentConfig ecfg,
                 DatabaseConfig dbcfg) throws IOException {
     this(databasesByName, createdDatabases, paranoid, envHome);
     this.ecfg = ecfg;
@@ -124,7 +127,7 @@ public class DBEnvironment extends AbstractDBEnvironment {
    * supposed to keep more than one process from opening a writable handle to the same database, but it allows you to
    * create more than one writable handle within the same process. So, don't do that.
    */
-  private DBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome) throws IOException {
+  private BerkeleyDBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome) throws IOException {
     this.databasesByName = databasesByName;
     this.createdDatabases = createdDatabases;
     this.paranoid = paranoid;
@@ -158,9 +161,9 @@ public class DBEnvironment extends AbstractDBEnvironment {
       this.catalog = new ClassCatalogWrapper(env, dbcfg);
       newDatabase(env, GLOBAL_SEQUENCE_DATABASE);
       newObjectDB(env, OBJECT_DB_NAME);
-      newDatabase(env, OBJECT_OID_STORE_DB_NAME);
-      newDatabase(env, MAPS_OID_STORE_DB_NAME);
-      newDatabase(env, OID_STORE_LOG_DB_NAME);
+      newBytesBytesDB(env, OBJECT_OID_STORE_DB_NAME);
+      newBytesBytesDB(env, MAPS_OID_STORE_DB_NAME);
+      newBytesBytesDB(env, OID_STORE_LOG_DB_NAME);
       newRootDB(env, ROOT_DB_NAME);
 
       newDatabase(env, CLIENT_STATE_DB_NAME);
@@ -200,10 +203,8 @@ public class DBEnvironment extends AbstractDBEnvironment {
       for (Iterator i = createdDatabases.iterator(); i.hasNext();) {
         Object o = i.next();
         Database db = null;
-        if (o instanceof BerkeleyTCObjectDatabase) {
-          db = ((BerkeleyTCObjectDatabase) o).getDatabase();
-        } else if (o instanceof BerkeleyTCRootDatabase) {
-          db = ((BerkeleyTCRootDatabase) o).getDatabase();
+        if (o instanceof AbstractBerkeleyDatabase) {
+          db = ((AbstractBerkeleyDatabase) o).getDatabase();
         } else {
           db = (Database) o;
         }
@@ -244,10 +245,8 @@ public class DBEnvironment extends AbstractDBEnvironment {
       try {
         Object o = i.next();
         Database db = null;
-        if (o instanceof BerkeleyTCObjectDatabase) {
-          db = ((BerkeleyTCObjectDatabase) o).getDatabase();
-        } else if (o instanceof BerkeleyTCRootDatabase) {
-          db = ((BerkeleyTCRootDatabase) o).getDatabase();
+        if (o instanceof AbstractBerkeleyDatabase) {
+          db = ((AbstractBerkeleyDatabase) o).getDatabase();
         } else {
           db = (Database) o;
         }
@@ -292,19 +291,19 @@ public class DBEnvironment extends AbstractDBEnvironment {
     return (BerkeleyTCObjectDatabase) databasesByName.get(OBJECT_DB_NAME);
   }
 
-  public synchronized Database getObjectOidStoreDatabase() throws TCDatabaseException {
+  public synchronized TCBytesBytesDatabase getObjectOidStoreDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(OBJECT_OID_STORE_DB_NAME);
+    return (BerkeleyTCBytesBytesDatabase) databasesByName.get(OBJECT_OID_STORE_DB_NAME);
   }
 
-  public synchronized Database getMapsOidStoreDatabase() throws TCDatabaseException {
+  public synchronized TCBytesBytesDatabase getMapsOidStoreDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(MAPS_OID_STORE_DB_NAME);
+    return (BerkeleyTCBytesBytesDatabase) databasesByName.get(MAPS_OID_STORE_DB_NAME);
   }
 
-  public synchronized Database getOidStoreLogDatabase() throws TCDatabaseException {
+  public synchronized TCBytesBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(OID_STORE_LOG_DB_NAME);
+    return (BerkeleyTCBytesBytesDatabase) databasesByName.get(OID_STORE_LOG_DB_NAME);
   }
 
   public synchronized ClassCatalogWrapper getClassCatalogWrapper() throws TCDatabaseException {
@@ -446,6 +445,17 @@ public class DBEnvironment extends AbstractDBEnvironment {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
       BerkeleyTCRootDatabase bdb = new BerkeleyTCRootDatabase(db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
+    }
+  }
+  
+  private void newBytesBytesDB(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCBytesBytesDatabase bdb = new BerkeleyTCBytesBytesDatabase(db);
       createdDatabases.add(bdb);
       databasesByName.put(name, bdb);
     } catch (Exception de) {

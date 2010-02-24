@@ -18,7 +18,7 @@ import com.tc.objectserver.impl.ObjectInstanceMonitorImpl;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapter;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
@@ -42,8 +42,8 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
   private SleepycatPersistor    customSerializerPersistor;
 
   private boolean               paranoid;
-  private DBEnvironment         sleepycatSerializerEnvironment;
-  private DBEnvironment         customSerializerEnvironment;
+  private BerkeleyDBEnvironment         sleepycatSerializerEnvironment;
+  private BerkeleyDBEnvironment         customSerializerEnvironment;
   private Set                   environments  = new HashSet();
   private ObjectInstanceMonitor imo;
 
@@ -73,7 +73,7 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
 
   public void tearDown() throws Exception {
     for (Iterator i = environments.iterator(); i.hasNext();) {
-      ((DBEnvironment) i.next()).close();
+      ((BerkeleyDBEnvironment) i.next()).close();
     }
   }
 
@@ -233,7 +233,7 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
     return dna;
   }
 
-  private DBEnvironment newEnvironment() throws Exception {
+  private BerkeleyDBEnvironment newEnvironment() throws Exception {
     File envHome;
     int counter = 0;
     do {
@@ -242,7 +242,7 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
     envHome.mkdir();
     assertTrue(envHome.exists());
     assertTrue(envHome.isDirectory());
-    DBEnvironment rv = new DBEnvironment(paranoid, envHome);
+    BerkeleyDBEnvironment rv = new BerkeleyDBEnvironment(paranoid, envHome);
     environments.add(rv);
     return rv;
   }

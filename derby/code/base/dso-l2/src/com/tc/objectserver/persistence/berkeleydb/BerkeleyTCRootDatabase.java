@@ -23,11 +23,10 @@ import java.util.Map;
 import java.util.Set;
 
 public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements TCRootDatabase {
-  private final Database     rootDB;
   private final CursorConfig rootDBCursorConfig = new CursorConfig();
 
-  public BerkeleyTCRootDatabase(Database rootDB) {
-    this.rootDB = rootDB;
+  public BerkeleyTCRootDatabase(Database db) {
+    super(db);
     this.rootDBCursorConfig.setReadCommitted(true);
   }
 
@@ -38,7 +37,7 @@ public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements 
       DatabaseEntry value = new DatabaseEntry();
       key.setData(rootName);
 
-      status = this.rootDB.get(pt2nt(tx), key, value, LockMode.DEFAULT);
+      status = this.db.get(pt2nt(tx), key, value, LockMode.DEFAULT);
       if (OperationStatus.SUCCESS.equals(status)) { return Conversion.bytes2Long(value.getData()); }
       if (OperationStatus.NOTFOUND.equals(status)) { return ObjectID.NULL_ID.toLong(); }
       throw new DBException("Could not retrieve root");
@@ -53,7 +52,7 @@ public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements 
     try {
       DatabaseEntry key = new DatabaseEntry();
       DatabaseEntry value = new DatabaseEntry();
-      cursor = this.rootDB.openCursor(pt2nt(tx), this.rootDBCursorConfig);
+      cursor = this.db.openCursor(pt2nt(tx), this.rootDBCursorConfig);
       while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
         rv.add(key.getData());
       }
@@ -71,7 +70,7 @@ public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements 
     try {
       DatabaseEntry key = new DatabaseEntry();
       DatabaseEntry value = new DatabaseEntry();
-      cursor = this.rootDB.openCursor(pt2nt(tx), this.rootDBCursorConfig);
+      cursor = this.db.openCursor(pt2nt(tx), this.rootDBCursorConfig);
       while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
         rv.add(new ObjectID(Conversion.bytes2Long(value.getData())));
       }
@@ -89,7 +88,7 @@ public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements 
     try {
       DatabaseEntry key = new DatabaseEntry();
       DatabaseEntry value = new DatabaseEntry();
-      cursor = this.rootDB.openCursor(pt2nt(tx), this.rootDBCursorConfig);
+      cursor = this.db.openCursor(pt2nt(tx), this.rootDBCursorConfig);
       while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
         rv.put(key.getData(), Conversion.bytes2Long(value.getData()));
       }
@@ -107,12 +106,8 @@ public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements 
     key.setData(rootName);
     value.setData(Conversion.long2Bytes(id));
 
-    OperationStatus status = this.rootDB.put(pt2nt(tx), key, value);
+    OperationStatus status = this.db.put(pt2nt(tx), key, value);
     if (!status.equals(OperationStatus.SUCCESS)) return false;
     return true;
-  }
-
-  public Database getDatabase() {
-    return rootDB;
   }
 }

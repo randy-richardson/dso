@@ -4,13 +4,10 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.util.Conversion;
 import com.tc.util.OidBitsArrayMap;
 import com.tc.util.OidBitsArrayMapImpl;
@@ -22,22 +19,22 @@ import java.util.TreeMap;
 
 public class OidBitsArrayMapDiskStoreImpl extends OidBitsArrayMapImpl implements OidBitsArrayMap {
 
-  private static final TCLogger logger = TCLogging.getTestingLogger(FastObjectIDManagerImpl.class);
+  private static final TCLogger      logger = TCLogging.getTestingLogger(FastObjectIDManagerImpl.class);
 
-  private final Database        oidDB;
-  private final int             auxKey;
+  private final TCBytesBytesDatabase oidDB;
+  private final int                  auxKey;
 
   /*
    * Compressed bits array for ObjectIDs, backed up by a database. If null database, then only in-memory representation.
    */
-  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, Database oidDB) {
+  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, TCBytesBytesDatabase oidDB) {
     this(longsPerDiskUnit, oidDB, 0);
   }
 
   /*
    * auxKey: (main key + auxKey) to store different data entry to same db.
    */
-  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, Database oidDB, int auxKey) {
+  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, TCBytesBytesDatabase oidDB, int auxKey) {
     super(longsPerDiskUnit);
     this.oidDB = oidDB;
     this.auxKey = auxKey;
@@ -57,36 +54,29 @@ public class OidBitsArrayMapDiskStoreImpl extends OidBitsArrayMapImpl implements
     return longAry;
   }
 
-  OidLongArray readDiskEntry(Transaction txn, long oid) throws TCDatabaseException {
+  OidLongArray readDiskEntry(PersistenceTransaction txn, long oid) throws TCDatabaseException {
     try {
-      DatabaseEntry key = new DatabaseEntry();
-      DatabaseEntry value = new DatabaseEntry();
       long aryIndex = oidIndex(oid);
-      key.setData(Conversion.long2Bytes(aryIndex + auxKey));
-      OperationStatus status = oidDB.get(txn, key, value, LockMode.DEFAULT);
-      if (OperationStatus.SUCCESS.equals(status)) { return new OidLongArray(aryIndex, value.getData()); }
+      byte[] val = oidDB.get(Conversion.long2Bytes(aryIndex + auxKey), txn);
+      if (val != null) { return new OidLongArray(aryIndex, val); }
       return null;
     } catch (Exception e) {
       throw new TCDatabaseException(e.getMessage());
     }
   }
 
-  void writeDiskEntry(Transaction txn, OidLongArray bits) throws TCDatabaseException {
-    DatabaseEntry key = new DatabaseEntry();
-    DatabaseEntry value = new DatabaseEntry();
-    key.setData(bits.keyToBytes(auxKey));
+  void writeDiskEntry(PersistenceTransaction txn, OidLongArray bits) throws TCDatabaseException {
+    byte[] key = bits.keyToBytes(auxKey);
 
     try {
       if (!bits.isZero()) {
-        value.setData(bits.arrayToBytes());
-        if (!OperationStatus.SUCCESS.equals(this.oidDB.put(txn, key, value))) {
+        if (!this.oidDB.put(key, bits.arrayToBytes(), txn)) {
           //
           throw new TCDatabaseException("Failed to update oidDB at " + bits.getKey());
         }
       } else {
-        OperationStatus status = this.oidDB.delete(txn, key);
         // OperationStatus.NOTFOUND happened if added and then deleted in the same batch
-        if (!OperationStatus.SUCCESS.equals(status) && !OperationStatus.NOTFOUND.equals(status)) {
+        if (!this.oidDB.delete(key, txn)) {
           //
           throw new TCDatabaseException("Failed to delete oidDB at " + bits.getKey());
         }
@@ -99,7 +89,7 @@ public class OidBitsArrayMapDiskStoreImpl extends OidBitsArrayMapImpl implements
   /*
    * flush in-memory entry to disk
    */
-  public void flushToDisk(Transaction tx) throws TCDatabaseException {
+  public void flushToDisk(PersistenceTransaction tx) throws TCDatabaseException {
     Iterator<Map.Entry<Long, OidLongArray>> i = map.entrySet().iterator();
     while (i.hasNext()) {
       Map.Entry<Long, OidLongArray> entry = i.next();

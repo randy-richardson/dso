@@ -196,7 +196,7 @@ import com.tc.objectserver.persistence.impl.NullTransactionPersistor;
 import com.tc.objectserver.persistence.impl.TransactionStoreImpl;
 import com.tc.objectserver.persistence.sleepycat.ConnectionIDFactoryImpl;
 import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.objectserver.persistence.sleepycat.DatabaseDirtyException;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
@@ -528,7 +528,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       CallbackOnExitHandler dirtydbHandler = new CallbackDatabaseDirtyAlertAdapter(logger, consoleLogger);
       this.threadGroup.addCallbackOnExitExceptionHandler(DatabaseDirtyException.class, dirtydbHandler);
 
-      DBEnvironment dbenv = new DBEnvironment(persistent, dbhome, this.l2Properties.getPropertiesFor("berkeleydb")
+      BerkeleyDBEnvironment dbenv = new BerkeleyDBEnvironment(persistent, dbhome, this.l2Properties.getPropertiesFor("berkeleydb")
           .addAllPropertiesTo(new Properties()));
       SerializationAdapterFactory serializationAdapterFactory = new CustomSerializationAdapterFactory();
 

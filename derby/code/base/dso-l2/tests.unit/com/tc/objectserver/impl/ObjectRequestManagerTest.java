@@ -61,7 +61,7 @@ import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.Assert;
@@ -93,7 +93,7 @@ public class ObjectRequestManagerTest extends TestCase {
 
     ManagedObjectStateFactory.disableSingleton(true);
     SleepycatPersistor persistor = new SleepycatPersistor(TCLogging.getLogger(ObjectRequestManagerTest.class),
-                                                          new DBEnvironment(true, new File(".")),
+                                                          new BerkeleyDBEnvironment(true, new File(".")),
                                                           new CustomSerializationAdapterFactory());
 
     ManagedObjectChangeListenerProviderImpl moclp = new ManagedObjectChangeListenerProviderImpl();
