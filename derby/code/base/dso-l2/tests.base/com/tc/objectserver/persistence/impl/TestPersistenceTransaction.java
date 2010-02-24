@@ -31,4 +31,8 @@ public final class TestPersistenceTransaction implements PersistenceTransaction 
   public Object setProperty(Object key, Object value) {
     return null;
   }
+
+  public void abort() {
+    throw new UnsupportedOperationException();
+  }
 }

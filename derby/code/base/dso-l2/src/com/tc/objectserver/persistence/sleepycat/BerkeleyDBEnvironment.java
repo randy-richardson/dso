@@ -24,10 +24,12 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.berkeleydb.AbstractBerkeleyDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
 import com.tc.util.concurrent.ThreadUtil;
@@ -166,8 +168,8 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       newBytesBytesDB(env, OID_STORE_LOG_DB_NAME);
       newRootDB(env, ROOT_DB_NAME);
 
-      newDatabase(env, CLIENT_STATE_DB_NAME);
-      newDatabase(env, TRANSACTION_DB_NAME);
+      newLongDB(env, CLIENT_STATE_DB_NAME);
+      newBytesBytesDB(env, TRANSACTION_DB_NAME);
       newDatabase(env, STRING_INDEX_DB_NAME);
       newDatabase(env, CLASS_DB_NAME);
       newDatabase(env, MAP_DB_NAME);
@@ -316,14 +318,14 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return (BerkeleyTCRootDatabase) databasesByName.get(ROOT_DB_NAME);
   }
 
-  public Database getClientStateDatabase() throws TCDatabaseException {
+  public TCLongDatabase getClientStateDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(CLIENT_STATE_DB_NAME);
+    return (BerkeleyTCLongDatabase) databasesByName.get(CLIENT_STATE_DB_NAME);
   }
 
-  public Database getTransactionDatabase() throws TCDatabaseException {
+  public TCBytesBytesDatabase getTransactionDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(TRANSACTION_DB_NAME);
+    return (BerkeleyTCBytesBytesDatabase) databasesByName.get(TRANSACTION_DB_NAME);
   }
 
   public Database getGlobalSequenceDatabase() throws TCDatabaseException {
@@ -456,6 +458,17 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
       BerkeleyTCBytesBytesDatabase bdb = new BerkeleyTCBytesBytesDatabase(db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
+    }
+  }
+  
+  private void newLongDB(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCLongDatabase bdb = new BerkeleyTCLongDatabase(db);
       createdDatabases.add(bdb);
       databasesByName.put(name, bdb);
     } catch (Exception de) {

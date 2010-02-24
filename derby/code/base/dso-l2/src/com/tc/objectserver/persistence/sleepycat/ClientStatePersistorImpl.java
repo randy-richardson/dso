@@ -4,21 +4,15 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 import com.tc.logging.TCLogger;
 import com.tc.net.protocol.tcm.ChannelID;
+import com.tc.objectserver.persistence.TCLongDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.ClientStatePersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.ClientNotFoundException;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor.SleepycatPersistorBase;
-import com.tc.util.Conversion;
 import com.tc.util.sequence.MutableSequence;
 
 import java.util.HashSet;
@@ -26,23 +20,16 @@ import java.util.Set;
 
 class ClientStatePersistorImpl extends SleepycatPersistorBase implements ClientStatePersistor {
 
-  private final Database                       db;
-  private final CursorConfig                   cursorConfig;
-  private final DatabaseEntry                  key;
-  private final DatabaseEntry                  value;
+  private final TCLongDatabase                 db;
   private final PersistenceTransactionProvider ptp;
   private final TCLogger                       logger;
   private final MutableSequence                connectionIDSequence;
 
   ClientStatePersistorImpl(final TCLogger logger, final PersistenceTransactionProvider ptp,
-                           final MutableSequence connectionIDSequence, final Database db) {
+                           final MutableSequence connectionIDSequence, final TCLongDatabase db) {
     this.logger = logger;
     this.ptp = ptp;
-    this.cursorConfig = new CursorConfig();
-    this.cursorConfig.setReadCommitted(true);
     this.db = db;
-    this.key = new DatabaseEntry();
-    this.value = new DatabaseEntry();
     this.connectionIDSequence = connectionIDSequence;
   }
 
@@ -51,12 +38,11 @@ class ClientStatePersistorImpl extends SleepycatPersistorBase implements ClientS
   }
 
   public synchronized boolean containsClient(ChannelID id) {
-    setKey(id);
     try {
       PersistenceTransaction tx = ptp.newTransaction();
-      OperationStatus status = db.get(pt2nt(tx), key, value, LockMode.DEFAULT);
+      boolean status = db.contains(id.toLong(), tx);
       tx.commit();
-      return OperationStatus.SUCCESS.equals(status);
+      return status;
     } catch (Exception e) {
       throw new DBException(e);
     }
@@ -64,15 +50,12 @@ class ClientStatePersistorImpl extends SleepycatPersistorBase implements ClientS
 
   public synchronized Set loadClientIDs() {
     Set set = new HashSet();
-    Cursor cursor;
     try {
       PersistenceTransaction tx = ptp.newTransaction();
-      cursor = db.openCursor(pt2nt(tx), cursorConfig);
-      while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-        set.add(new ChannelID(Conversion.bytes2Long(key.getData())));
+      Set<Long> tempSet = db.getAllKeys(tx);
+      for (Long l : tempSet) {
+        set.add(new ChannelID(l));
       }
-      cursor.close();
-      tx.commit();
     } catch (Exception e) {
       e.printStackTrace();
       throw new DBException(e);
@@ -89,15 +72,11 @@ class ClientStatePersistorImpl extends SleepycatPersistorBase implements ClientS
   }
 
   private void basicSave(long clientID) {
-
-    setKey(clientID);
-    value.setData(Conversion.long2Bytes(0));
     try {
       PersistenceTransaction tx = ptp.newTransaction();
-      Transaction realTx = pt2nt(tx);
-      OperationStatus status = db.put(realTx, key, value);
-      if (!OperationStatus.SUCCESS.equals(status)) {
-        realTx.abort();
+      boolean status = db.put(clientID, tx);
+      if (!status) {
+        tx.abort();
         throw new DBException("Unable to save client state: ChannelID " + clientID + "; status: " + status);
       }
       tx.commit();
@@ -107,18 +86,16 @@ class ClientStatePersistorImpl extends SleepycatPersistorBase implements ClientS
   }
 
   public synchronized void deleteClientState(ChannelID id) {
-    setKey(id);
     try {
       PersistenceTransaction tx = ptp.newTransaction();
-      Transaction realTx = pt2nt(tx);
 
-      OperationStatus status = db.delete(realTx, key);
-      if (OperationStatus.NOTFOUND.equals(status)) {
-        realTx.abort();
+      Status status = db.delete(id.toLong(), tx);
+      if (Status.NOT_FOUND.equals(status)) {
+        tx.abort();
         throw new ClientNotFoundException("Client not found: " + id);
       }
-      if (!OperationStatus.SUCCESS.equals(status)) {
-        realTx.abort();
+      if (!Status.SUCCESS.equals(status)) {
+        tx.abort();
         throw new DBException("Unable to delete client state: " + id + "; status: " + status);
       }
 
@@ -128,17 +105,4 @@ class ClientStatePersistorImpl extends SleepycatPersistorBase implements ClientS
       throw new DBException(e);
     }
   }
-
-  private void setKey(ChannelID id) {
-    setKey(id.toLong());
-  }
-
-  private void setKey(long id) {
-    setData(id, key);
-  }
-
-  private void setData(long id, DatabaseEntry entry) {
-    entry.setData(Conversion.long2Bytes(id));
-  }
-
 }

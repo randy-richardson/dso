@@ -15,6 +15,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.persistence.api.PersistentMapStore;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
+import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.api.ClassPersistor;
 import com.tc.objectserver.persistence.api.ClientStatePersistor;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
@@ -45,15 +46,15 @@ public class SleepycatPersistor implements Persistor {
   private final MutableSequence                globalTransactionIDSequence;
   private final ClassPersistor                 classPersistor;
   private final PersistenceTransactionProvider persistenceTransactionProvider;
-  private final BerkeleyDBEnvironment                  env;
+  private final BerkeleyDBEnvironment          env;
   private final SleepycatCollectionFactory     sleepycatCollectionFactory;
   private final PersistentMapStore             persistentStateStore;
 
   private SleepycatCollectionsPersistor        sleepycatCollectionsPersistor;
 
   // only for tests
-  public SleepycatPersistor(TCLogger logger, BerkeleyDBEnvironment env, SerializationAdapterFactory serializationAdapterFactory)
-      throws TCDatabaseException {
+  public SleepycatPersistor(TCLogger logger, BerkeleyDBEnvironment env,
+                            SerializationAdapterFactory serializationAdapterFactory) throws TCDatabaseException {
     this(logger, env, serializationAdapterFactory, null, new ObjectStatsRecorder());
   }
 
@@ -134,7 +135,8 @@ public class SleepycatPersistor implements Persistor {
                                                                   + "the server: " + dbenv.getEnvironmentHome()); }
   }
 
-  private void sanityCheckAndClean(BerkeleyDBEnvironment dbenv, File l2DataPath, TCLogger logger) throws TCDatabaseException {
+  private void sanityCheckAndClean(BerkeleyDBEnvironment dbenv, File l2DataPath, TCLogger logger)
+      throws TCDatabaseException {
     PersistenceTransactionProvider persistentTxProvider = new SleepycatPersistenceTransactionProvider(dbenv
         .getEnvironment());
     PersistentMapStore persistentMapStore = new SleepycatMapStore(persistentTxProvider, logger, dbenv
@@ -239,12 +241,28 @@ public class SleepycatPersistor implements Persistor {
       }
 
     }
-
+    
     protected void abortOnError(Cursor cursor, PersistenceTransaction ptx) {
       abortOnError(cursor, pt2nt(ptx));
     }
 
     protected void abortOnError(Cursor cursor, Transaction tx) {
+      if (cursor != null) {
+        try {
+          cursor.close();
+        } catch (Exception e) {
+          // This doesn't throw an exception as we don't want to create a Red herring.
+          logger.error("Error on abortOnError", e);
+        }
+      }
+      abortOnError(tx);
+    }
+
+    protected void abortOnError(TCDatabaseCursor cursor, PersistenceTransaction ptx) {
+      abortOnError(cursor, pt2nt(ptx));
+    }
+
+    protected void abortOnError(TCDatabaseCursor cursor, Transaction tx) {
       if (cursor != null) {
         try {
           cursor.close();

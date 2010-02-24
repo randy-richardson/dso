@@ -37,4 +37,8 @@ public class TransactionWrapper implements PersistenceTransaction {
   public Object setProperty(Object key, Object value) {
     return properties.put(key, value);
   }
+
+  public void abort() {
+    tx.abort();
+  }
 }

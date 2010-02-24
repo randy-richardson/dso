@@ -33,9 +33,9 @@ public interface DBEnvironment {
 
   public abstract TCRootDatabase getRootDatabase() throws TCDatabaseException;
 
-  public abstract Database getClientStateDatabase() throws TCDatabaseException;
+  public abstract TCLongDatabase getClientStateDatabase() throws TCDatabaseException;
 
-  public abstract Database getTransactionDatabase() throws TCDatabaseException;
+  public abstract TCBytesBytesDatabase getTransactionDatabase() throws TCDatabaseException;
 
   public abstract Database getGlobalSequenceDatabase() throws TCDatabaseException;
 

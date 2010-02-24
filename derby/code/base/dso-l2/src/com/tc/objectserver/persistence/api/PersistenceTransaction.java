@@ -11,4 +11,6 @@ public interface PersistenceTransaction {
   public Object setProperty(Object key, Object value);
 
   public void commit();
+  
+  public void abort();
 }

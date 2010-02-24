@@ -4,16 +4,12 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.objectserver.gtx.GlobalTransactionDescriptor;
+import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCDatabaseCursor;
+import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.api.TransactionPersistor;
@@ -27,28 +23,24 @@ import java.util.SortedSet;
 
 class TransactionPersistorImpl extends SleepycatPersistorBase implements TransactionPersistor {
 
-  private final Database                       db;
-  private final CursorConfig                   cursorConfig;
+  private final TCBytesBytesDatabase           db;
   private final PersistenceTransactionProvider ptp;
 
-  public TransactionPersistorImpl(Database db, PersistenceTransactionProvider ptp) {
+  public TransactionPersistorImpl(TCBytesBytesDatabase db, PersistenceTransactionProvider ptp) {
     this.db = db;
     this.ptp = ptp;
-    this.cursorConfig = new CursorConfig();
-    this.cursorConfig.setReadCommitted(true);
   }
 
   public Collection loadAllGlobalTransactionDescriptors() {
-    Cursor cursor = null;
+    TCDatabaseCursor<byte[], byte[]> cursor = null;
     PersistenceTransaction tx = null;
     try {
       Collection rv = new HashSet();
       tx = ptp.newTransaction();
-      cursor = this.db.openCursor(pt2nt(tx), cursorConfig);
-      DatabaseEntry key = new DatabaseEntry();
-      DatabaseEntry value = new DatabaseEntry();
-      while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-        rv.add(new GlobalTransactionDescriptor(bytes2ServerTxnID(key.getData()), bytes2GlobalTxnID(value.getData())));
+      cursor = this.db.openCursor(tx);
+      TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
+      while (cursor.getNext(entry)) {
+        rv.add(new GlobalTransactionDescriptor(bytes2ServerTxnID(entry.getKey()), bytes2GlobalTxnID(entry.getValue())));
       }
       cursor.close();
       tx.commit();
@@ -60,12 +52,10 @@ class TransactionPersistorImpl extends SleepycatPersistorBase implements Transac
   }
 
   public void saveGlobalTransactionDescriptor(PersistenceTransaction tx, GlobalTransactionDescriptor gtx) {
-    DatabaseEntry key = new DatabaseEntry();
-    DatabaseEntry value = new DatabaseEntry();
-    key.setData(serverTxnID2Bytes(gtx.getServerTransactionID()));
-    value.setData(globalTxnID2Bytes(gtx.getGlobalTransactionID()));
+    byte[] key = serverTxnID2Bytes(gtx.getServerTransactionID());
+    byte[] value = globalTxnID2Bytes(gtx.getGlobalTransactionID());
     try {
-      this.db.put(pt2nt(tx), key, value);
+      this.db.put(key, value, tx);
     } catch (Exception e) {
       throw new DBException(e);
     }
@@ -87,14 +77,12 @@ class TransactionPersistorImpl extends SleepycatPersistorBase implements Transac
     return ServerTransactionID.createFrom(data);
   }
 
-  public void deleteAllGlobalTransactionDescriptors(PersistenceTransaction tx, SortedSet<ServerTransactionID> serverTxnIDs) {
-    DatabaseEntry key = new DatabaseEntry();
-    Transaction txn = pt2nt(tx);
+  public void deleteAllGlobalTransactionDescriptors(PersistenceTransaction tx,
+                                                    SortedSet<ServerTransactionID> serverTxnIDs) {
     for (Iterator i = serverTxnIDs.iterator(); i.hasNext();) {
       ServerTransactionID stxID = (ServerTransactionID) i.next();
-      key.setData(serverTxnID2Bytes(stxID));
       try {
-        db.delete(txn, key);
+        db.delete(serverTxnID2Bytes(stxID), tx);
       } catch (Exception e) {
         throw new DBException(e);
       }

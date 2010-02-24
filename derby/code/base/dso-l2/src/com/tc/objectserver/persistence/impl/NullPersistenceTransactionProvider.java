@@ -30,6 +30,10 @@ public class NullPersistenceTransactionProvider implements PersistenceTransactio
     public Object setProperty(Object key, Object value) {
       return null;
     }
+
+    public void abort() {
+      //
+    }
   }
 
 }
