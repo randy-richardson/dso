@@ -6,6 +6,7 @@ package com.tc.objectserver.persistence.derby;
 import com.sleepycat.je.Database;
 import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
@@ -107,7 +108,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return null;
   }
 
-  public Database getClassDatabase() throws TCDatabaseException {
+  public TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException {
     // TODO
     return null;
   }

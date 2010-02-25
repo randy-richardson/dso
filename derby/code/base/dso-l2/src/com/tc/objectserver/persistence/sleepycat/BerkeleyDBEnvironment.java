@@ -24,11 +24,13 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.berkeleydb.AbstractBerkeleyDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCIntToBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
@@ -171,7 +173,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       newLongDB(env, CLIENT_STATE_DB_NAME);
       newBytesBytesDB(env, TRANSACTION_DB_NAME);
       newDatabase(env, STRING_INDEX_DB_NAME);
-      newDatabase(env, CLASS_DB_NAME);
+      newIntToBytesDatabase(env, CLASS_DB_NAME);
       newDatabase(env, MAP_DB_NAME);
       newDatabase(env, CLUSTER_STATE_STORE);
     } catch (DatabaseException e) {
@@ -333,9 +335,9 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return (Database) databasesByName.get(GLOBAL_SEQUENCE_DATABASE);
   }
 
-  public Database getClassDatabase() throws TCDatabaseException {
+  public TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(CLASS_DB_NAME);
+    return (BerkeleyTCIntToBytesDatabase) databasesByName.get(CLASS_DB_NAME);
   }
 
   public Database getMapsDatabase() throws TCDatabaseException {
@@ -475,7 +477,18 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       throw new TCDatabaseException(de.getMessage());
     }
   }
-
+  
+  private void newIntToBytesDatabase(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCIntToBytesDatabase bdb = new BerkeleyTCIntToBytesDatabase(db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
+    }
+  }
+  
   private void newDatabase(Environment e, String name) throws TCDatabaseException {
     try {
       Database db = e.openDatabase(null, name, dbcfg);

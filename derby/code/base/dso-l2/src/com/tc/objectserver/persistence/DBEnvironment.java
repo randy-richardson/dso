@@ -39,7 +39,7 @@ public interface DBEnvironment {
 
   public abstract Database getGlobalSequenceDatabase() throws TCDatabaseException;
 
-  public abstract Database getClassDatabase() throws TCDatabaseException;
+  public abstract TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException;
 
   public abstract Database getMapsDatabase() throws TCDatabaseException;
 

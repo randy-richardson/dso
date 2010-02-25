@@ -4,46 +4,32 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 import com.tc.logging.TCLogger;
+import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.api.ClassPersistor;
+import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor.SleepycatPersistorBase;
-import com.tc.util.Conversion;
 
-import java.util.HashMap;
 import java.util.Map;
 
 class ClassPersistorImpl extends SleepycatPersistorBase implements ClassPersistor {
-  private final Database                       classDB;
+  private final TCIntToBytesDatabase           classDB;
   private final PersistenceTransactionProvider ptxp;
-  private final CursorConfig                   cursorConfig;
 
-  ClassPersistorImpl(PersistenceTransactionProvider ptxp, TCLogger logger, Database classDB) {
+  ClassPersistorImpl(PersistenceTransactionProvider ptxp, TCLogger logger, TCIntToBytesDatabase classDB) {
     this.ptxp = ptxp;
     this.classDB = classDB;
-    this.cursorConfig = new CursorConfig();
-    this.cursorConfig.setReadCommitted(true);
   }
 
   public void storeClass(int clazzId, byte[] clazzBytes) {
-    Transaction tx = null;
+    PersistenceTransaction tx = null;
     try {
-      tx = pt2nt(ptxp.newTransaction());
-      DatabaseEntry key = new DatabaseEntry();
-      key.setData(Conversion.int2Bytes(clazzId));
-      DatabaseEntry value = new DatabaseEntry();
-      value.setData(clazzBytes);
-      OperationStatus status = this.classDB.put(tx, key, value);
+      tx = ptxp.newTransaction();
+      boolean status = this.classDB.put(clazzId, clazzBytes, tx);
       tx.commit();
 
-      if (!OperationStatus.SUCCESS.equals(status)) {
+      if (!status) {
         // Formatting
         throw new DBException("Unable to store class Bytes: " + clazzId);
       }
@@ -55,45 +41,25 @@ class ClassPersistorImpl extends SleepycatPersistorBase implements ClassPersisto
   }
 
   public byte[] retrieveClass(int clazzId) {
-    Transaction tx = null;
+    PersistenceTransaction tx = null;
     try {
-      tx = pt2nt(ptxp.newTransaction());
-      DatabaseEntry key = new DatabaseEntry();
-      key.setData(Conversion.int2Bytes(clazzId));
-      DatabaseEntry value = new DatabaseEntry();
-      OperationStatus status = this.classDB.get(tx, key, value, LockMode.DEFAULT);
+      tx = ptxp.newTransaction();
+      byte[] val = this.classDB.get(clazzId, tx);
       tx.commit();
-      if (!OperationStatus.SUCCESS.equals(status)) {
+      if (val == null) {
         // Formatting
         throw new DBException("Unable to retrieve class Bytes: " + clazzId);
       }
-      return value.getData();
+      return val;
     } catch (Exception t) {
       abortOnError(tx);
       t.printStackTrace();
       throw new DBException(t);
-    } 
+    }
   }
 
   public Map retrieveAllClasses() {
-    Map allClazzBytes = new HashMap();
-    Cursor cursor = null;
-    Transaction tx = null;
-    try {
-      tx = pt2nt(ptxp.newTransaction());
-      cursor = classDB.openCursor(tx, cursorConfig);
-      DatabaseEntry key = new DatabaseEntry();
-      DatabaseEntry value = new DatabaseEntry();
-      while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-        allClazzBytes.put(new Integer(Conversion.bytes2Int(key.getData())), value.getData());
-      }
-      cursor.close();
-      tx.commit();
-    } catch (Exception e) {
-      abortOnError(cursor, tx);
-      e.printStackTrace();
-      throw new DBException(e);
-    }
-    return allClazzBytes;
+    PersistenceTransaction tx = ptxp.newTransaction();
+    return this.classDB.getAll(tx);
   }
 }

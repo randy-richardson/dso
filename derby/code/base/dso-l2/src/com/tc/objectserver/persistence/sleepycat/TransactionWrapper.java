@@ -39,6 +39,8 @@ public class TransactionWrapper implements PersistenceTransaction {
   }
 
   public void abort() {
-    tx.abort();
+    if (tx != null) {
+      tx.abort();
+    }
   }
 }
