@@ -73,23 +73,16 @@ public class SleepycatPersistor implements Persistor {
     stringIndexCursorConfig.setReadCommitted(true);
     this.persistenceTransactionProvider = new SleepycatPersistenceTransactionProvider(env.getEnvironment());
     this.stringIndexPersistor = new SleepycatStringIndexPersistor(persistenceTransactionProvider, env
-        .getStringIndexDatabase(), stringIndexCursorConfig, env.getClassCatalogWrapper().getClassCatalog());
+        .getStringIndexDatabase());
     this.stringIndex = new StringIndexImpl(this.stringIndexPersistor, DEFAULT_CAPACITY);
     this.sleepycatCollectionFactory = new SleepycatCollectionFactory();
     this.sleepycatCollectionsPersistor = new SleepycatCollectionsPersistor(logger, env.getMapsDatabase(),
                                                                            sleepycatCollectionFactory);
-    this.managedObjectPersistor = new ManagedObjectPersistorImpl(
-                                                                 logger,
-                                                                 env.getClassCatalogWrapper().getClassCatalog(),
-                                                                 serializationAdapterFactory,
-                                                                 env,
-                                                                 new SleepycatSequence(
-                                                                                       this.persistenceTransactionProvider,
-                                                                                       logger,
-                                                                                       SleepycatSequenceKeys.OBJECTID_SEQUENCE_NAME,
-                                                                                       1000, env
-                                                                                           .getGlobalSequenceDatabase()),
-                                                                 env.getRootDatabase(),
+    this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger,
+
+    serializationAdapterFactory, env, new SleepycatSequence(this.persistenceTransactionProvider, logger,
+                                                            SleepycatSequenceKeys.OBJECTID_SEQUENCE_NAME, 1000, env
+                                                                .getGlobalSequenceDatabase()), env.getRootDatabase(),
                                                                  this.persistenceTransactionProvider,
                                                                  this.sleepycatCollectionsPersistor, env
                                                                      .isParanoidMode(), objectStatsRecorder);
@@ -241,7 +234,7 @@ public class SleepycatPersistor implements Persistor {
       }
 
     }
-    
+
     protected void abortOnError(Cursor cursor, PersistenceTransaction ptx) {
       abortOnError(cursor, pt2nt(ptx));
     }

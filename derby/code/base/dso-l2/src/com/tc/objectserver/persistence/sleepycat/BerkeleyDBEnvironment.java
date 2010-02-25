@@ -26,12 +26,14 @@ import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesBytesDatabase;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCLongDatabase;
+import com.tc.objectserver.persistence.TCLongToStringDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.berkeleydb.AbstractBerkeleyDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCIntToBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongToStringDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
 import com.tc.util.concurrent.ThreadUtil;
@@ -49,7 +51,8 @@ import java.util.Properties;
 public class BerkeleyDBEnvironment implements DBEnvironment {
 
   private static final TCLogger            clogger                     = CustomerLogging.getDSOGenericLogger();
-  private static final TCLogger            logger                      = TCLogging.getLogger(BerkeleyDBEnvironment.class);
+  private static final TCLogger            logger                      = TCLogging
+                                                                           .getLogger(BerkeleyDBEnvironment.class);
 
   private static final String              GLOBAL_SEQUENCE_DATABASE    = "global_sequence_db";
   private static final String              ROOT_DB_NAME                = "roots";
@@ -114,13 +117,14 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
   }
 
   // For tests
-  BerkeleyDBEnvironment(boolean paranoid, File envHome, EnvironmentConfig ecfg, DatabaseConfig dbcfg) throws IOException {
+  BerkeleyDBEnvironment(boolean paranoid, File envHome, EnvironmentConfig ecfg, DatabaseConfig dbcfg)
+      throws IOException {
     this(new HashMap(), new LinkedList(), paranoid, envHome, ecfg, dbcfg);
   }
 
   // For tests
-  BerkeleyDBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome, EnvironmentConfig ecfg,
-                DatabaseConfig dbcfg) throws IOException {
+  BerkeleyDBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome,
+                        EnvironmentConfig ecfg, DatabaseConfig dbcfg) throws IOException {
     this(databasesByName, createdDatabases, paranoid, envHome);
     this.ecfg = ecfg;
     this.dbcfg = dbcfg;
@@ -131,7 +135,8 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
    * supposed to keep more than one process from opening a writable handle to the same database, but it allows you to
    * create more than one writable handle within the same process. So, don't do that.
    */
-  private BerkeleyDBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome) throws IOException {
+  private BerkeleyDBEnvironment(Map databasesByName, List createdDatabases, boolean paranoid, File envHome)
+      throws IOException {
     this.databasesByName = databasesByName;
     this.createdDatabases = createdDatabases;
     this.paranoid = paranoid;
@@ -172,7 +177,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
 
       newLongDB(env, CLIENT_STATE_DB_NAME);
       newBytesBytesDB(env, TRANSACTION_DB_NAME);
-      newDatabase(env, STRING_INDEX_DB_NAME);
+      newLongToStringDatabase(env, STRING_INDEX_DB_NAME);
       newIntToBytesDatabase(env, CLASS_DB_NAME);
       newDatabase(env, MAP_DB_NAME);
       newDatabase(env, CLUSTER_STATE_STORE);
@@ -345,9 +350,9 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return (Database) databasesByName.get(MAP_DB_NAME);
   }
 
-  public Database getStringIndexDatabase() throws TCDatabaseException {
+  public TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(STRING_INDEX_DB_NAME);
+    return (BerkeleyTCLongToStringDatabase) databasesByName.get(STRING_INDEX_DB_NAME);
   }
 
   public Database getClusterStateStoreDatabase() throws TCDatabaseException {
@@ -455,7 +460,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       throw new TCDatabaseException(de.getMessage());
     }
   }
-  
+
   private void newBytesBytesDB(Environment e, String name) throws TCDatabaseException {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
@@ -466,7 +471,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       throw new TCDatabaseException(de.getMessage());
     }
   }
-  
+
   private void newLongDB(Environment e, String name) throws TCDatabaseException {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
@@ -477,7 +482,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       throw new TCDatabaseException(de.getMessage());
     }
   }
-  
+
   private void newIntToBytesDatabase(Environment e, String name) throws TCDatabaseException {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
@@ -488,7 +493,18 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       throw new TCDatabaseException(de.getMessage());
     }
   }
-  
+
+  private void newLongToStringDatabase(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCLongToStringDatabase bdb = new BerkeleyTCLongToStringDatabase(catalog.getClassCatalog(), db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
+    }
+  }
+
   private void newDatabase(Environment e, String name) throws TCDatabaseException {
     try {
       Database db = e.openDatabase(null, name, dbcfg);

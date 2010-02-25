@@ -56,7 +56,7 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
 
     // set up sleepycat serializer persistor
     sleepycatSerializerEnvironment = newEnvironment();
-    SerializationAdapterFactory saf = new SleepycatSerializationAdapterFactory();
+    SerializationAdapterFactory saf = new SleepycatSerializationAdapterFactory(sleepycatSerializerEnvironment);
     sleepycatSerializerPersistor = new SleepycatPersistor(new NullTCLogger(), sleepycatSerializerEnvironment, saf);
     classCatalog = (StoredClassCatalog) sleepycatSerializerEnvironment.getClassCatalogWrapper().getClassCatalog();
 

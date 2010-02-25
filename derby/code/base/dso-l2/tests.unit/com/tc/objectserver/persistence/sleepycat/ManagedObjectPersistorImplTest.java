@@ -48,7 +48,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
   private PersistentManagedObjectStore      objectStore;
   private PersistenceTransactionProvider    persistenceTransactionProvider;
   private TestSleepycatCollectionsPersistor testSleepycatCollectionsPersistor;
-  private BerkeleyDBEnvironment                     env;
+  private BerkeleyDBEnvironment             env;
   private FastObjectIDManagerImpl           oidManager;
 
   public ManagedObjectPersistorImplTest() {
@@ -69,8 +69,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
     testSleepycatCollectionsPersistor = new TestSleepycatCollectionsPersistor(logger, env.getMapsDatabase(),
                                                                               sleepycatCollectionFactory);
-    managedObjectPersistor = new ManagedObjectPersistorImpl(logger, env.getClassCatalogWrapper().getClassCatalog(),
-                                                            new SleepycatSerializationAdapterFactory(), env,
+    managedObjectPersistor = new ManagedObjectPersistorImpl(logger, new SleepycatSerializationAdapterFactory(env), env,
                                                             new TestMutableSequence(), env.getRootDatabase(),
                                                             persistenceTransactionProvider,
                                                             testSleepycatCollectionsPersistor, env.isParanoidMode(),

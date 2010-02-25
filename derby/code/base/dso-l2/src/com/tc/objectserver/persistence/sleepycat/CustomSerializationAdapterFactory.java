@@ -3,14 +3,13 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.bind.serial.ClassCatalog;
 import com.tc.io.serializer.impl.StringUTFSerializer;
 import com.tc.objectserver.managedobject.ManagedObjectSerializer;
 import com.tc.objectserver.managedobject.ManagedObjectStateSerializer;
 
 public class CustomSerializationAdapterFactory implements SerializationAdapterFactory {
 
-  public SerializationAdapter newAdapter(ClassCatalog classCatalog) {
+  public SerializationAdapter newAdapter() {
     ManagedObjectStateSerializer stateSerializer = new ManagedObjectStateSerializer();
     ManagedObjectSerializer moSerializer = new ManagedObjectSerializer(stateSerializer);
     StringUTFSerializer stringSerializer = new StringUTFSerializer();

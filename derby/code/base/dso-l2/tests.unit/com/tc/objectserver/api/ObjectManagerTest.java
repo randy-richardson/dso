@@ -787,7 +787,7 @@ public class ObjectManagerTest extends TCTestCase {
   }
 
   private SerializationAdapterFactory newSleepycatSerializationAdapterFactory(BerkeleyDBEnvironment dbEnv) {
-    return new SleepycatSerializationAdapterFactory();
+    return new SleepycatSerializationAdapterFactory(dbEnv);
   }
 
   private SerializationAdapterFactory newCustomSerializationAdapterFactory() {

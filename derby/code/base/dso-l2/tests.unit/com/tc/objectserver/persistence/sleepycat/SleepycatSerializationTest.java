@@ -42,9 +42,13 @@ import java.util.TreeSet;
  * XXX: This test needs to test more of the persistor interface.
  */
 public class SleepycatSerializationTest extends TCTestCase {
+  private static enum SERIALIZATION_TYPE {
+    CUSTOM, SLEEPCAT
+  }
+
   private SleepycatPersistor             persistor;
   private PersistenceTransactionProvider ptp;
-  private BerkeleyDBEnvironment                  env;
+  private BerkeleyDBEnvironment          env;
   private ManagedObjectPersistor         mop;
   private TCLogger                       logger;
   private StringIndex                    stringIndex;
@@ -88,18 +92,16 @@ public class SleepycatSerializationTest extends TCTestCase {
   }
 
   public void testSleepycatSerializer() throws Exception {
-    SerializationAdapterFactory saf = new SleepycatSerializationAdapterFactory();
-    doTest(saf);
+    doTest(SERIALIZATION_TYPE.SLEEPCAT);
   }
 
   public void testCustomSerializer() throws Exception {
-    SerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
-    doTest(saf);
+    doTest(SERIALIZATION_TYPE.CUSTOM);
   }
 
-  public void doTest(SerializationAdapterFactory saf) throws Exception {
+  public void doTest(SERIALIZATION_TYPE serializationType) throws Exception {
     File dbHome = newDBHome();
-    initDB(dbHome, saf);
+    initDB(dbHome, serializationType);
 
     PersistenceTransaction ptx = ptp.newTransaction();
 
@@ -129,7 +131,7 @@ public class SleepycatSerializationTest extends TCTestCase {
     ptx.commit();
 
     System.err.println("String index before: " + stringIndex);
-    initDB(dbHome, saf);
+    initDB(dbHome, serializationType);
 
     System.err.println("String index after: " + stringIndex);
 
@@ -411,9 +413,18 @@ public class SleepycatSerializationTest extends TCTestCase {
     return file;
   }
 
-  private void initDB(File dbHome, SerializationAdapterFactory saf) throws IOException, TCDatabaseException {
+  private void initDB(File dbHome, SERIALIZATION_TYPE type) throws IOException, TCDatabaseException {
     if (env != null) env.close();
     env = new BerkeleyDBEnvironment(true, dbHome);
+    SerializationAdapterFactory saf = null;
+    switch (type) {
+      case CUSTOM:
+        saf = new CustomSerializationAdapterFactory();
+        break;
+      case SLEEPCAT:
+        saf = new SleepycatSerializationAdapterFactory(env);
+        break;
+    }
     persistor = new SleepycatPersistor(logger, env, saf);
     ptp = persistor.getPersistenceTransactionProvider();
     mop = persistor.getManagedObjectPersistor();
@@ -421,6 +432,5 @@ public class SleepycatSerializationTest extends TCTestCase {
 
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(new NullManagedObjectChangeListenerProvider(), persistor);
-
   }
 }

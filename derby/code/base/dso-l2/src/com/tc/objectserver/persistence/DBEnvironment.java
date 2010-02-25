@@ -43,7 +43,7 @@ public interface DBEnvironment {
 
   public abstract Database getMapsDatabase() throws TCDatabaseException;
 
-  public abstract Database getStringIndexDatabase() throws TCDatabaseException;
+  public abstract TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException;
 
   public abstract Database getClusterStateStoreDatabase() throws TCDatabaseException;
 }

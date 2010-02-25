@@ -43,7 +43,7 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
   private final TCLogger                     logger   = TCLogging.getTestingLogger(getClass());
   private ObjectID                           objectID = new ObjectID(2000);
 
-  private BerkeleyDBEnvironment                      env;
+  private BerkeleyDBEnvironment              env;
   private ManagedObjectPersistorImpl         managedObjectPersistor;
   private TestPersistenceTransactionProvider ptp;
 
@@ -52,7 +52,8 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
     super.setUp();
 
     env = newDBEnvironment();
-    SleepycatSerializationAdapterFactory sleepycatSerializationAdapterFactory = new SleepycatSerializationAdapterFactory();
+    SleepycatSerializationAdapterFactory sleepycatSerializationAdapterFactory = new SleepycatSerializationAdapterFactory(
+                                                                                                                         env);
 
     SleepycatPersistor persistor = new SleepycatPersistor(logger, env, sleepycatSerializationAdapterFactory);
 
@@ -61,8 +62,7 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
     SleepycatCollectionsPersistor sleepycatCollectionsPersistor = new SleepycatCollectionsPersistor(logger, env
         .getMapsDatabase(), sleepycatCollectionFactory);
 
-    managedObjectPersistor = new ManagedObjectPersistorImpl(logger, env.getClassCatalogWrapper().getClassCatalog(),
-                                                            sleepycatSerializationAdapterFactory, env,
+    managedObjectPersistor = new ManagedObjectPersistorImpl(logger, sleepycatSerializationAdapterFactory, env,
                                                             new TestMutableSequence(), env.getRootDatabase(), ptp,
                                                             sleepycatCollectionsPersistor, env.isParanoidMode(),
                                                             new ObjectStatsRecorder());

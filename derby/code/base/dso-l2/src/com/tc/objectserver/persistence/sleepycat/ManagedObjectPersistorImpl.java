@@ -4,7 +4,6 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.bind.serial.ClassCatalog;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogger;
 import com.tc.object.ObjectID;
@@ -83,7 +82,6 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
   private long                                    saveCount;
   private final TCLogger                          logger;
   private final PersistenceTransactionProvider    ptp;
-  private final ClassCatalog                      classCatalog;
   private final SleepycatCollectionsPersistor     collectionsPersistor;
   private final ObjectIDManager                   objectIDManager;
   private final SyncObjectIdSet                   extantObjectIDs;
@@ -93,14 +91,12 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
 
   private final ThreadLocal<SerializationAdapter> threadlocalAdapter;
 
-  public ManagedObjectPersistorImpl(TCLogger logger, ClassCatalog classCatalog,
-                                    SerializationAdapterFactory serializationAdapterFactory, BerkeleyDBEnvironment env,
-                                    MutableSequence objectIDSequence, TCRootDatabase rootDB,
+  public ManagedObjectPersistorImpl(TCLogger logger, SerializationAdapterFactory serializationAdapterFactory,
+                                    BerkeleyDBEnvironment env, MutableSequence objectIDSequence, TCRootDatabase rootDB,
                                     PersistenceTransactionProvider ptp,
                                     SleepycatCollectionsPersistor collectionsPersistor, boolean paranoid,
                                     ObjectStatsRecorder objectStatsRecorder) throws TCDatabaseException {
     this.logger = logger;
-    this.classCatalog = classCatalog;
     this.saf = serializationAdapterFactory;
     this.objectDB = env.getObjectDatabase();
     this.objectIDSequence = objectIDSequence;
@@ -503,7 +499,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
       @Override
       protected SerializationAdapter initialValue() {
         try {
-          return ManagedObjectPersistorImpl.this.saf.newAdapter(ManagedObjectPersistorImpl.this.classCatalog);
+          return ManagedObjectPersistorImpl.this.saf.newAdapter();
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
