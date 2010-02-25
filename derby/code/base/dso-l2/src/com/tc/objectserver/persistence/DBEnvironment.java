@@ -41,7 +41,7 @@ public interface DBEnvironment {
 
   public abstract TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException;
 
-  public abstract Database getMapsDatabase() throws TCDatabaseException;
+  public abstract TCMapsDatabase getMapsDatabase() throws TCDatabaseException;
 
   public abstract TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException;
 

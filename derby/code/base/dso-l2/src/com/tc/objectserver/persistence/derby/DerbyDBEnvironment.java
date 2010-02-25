@@ -9,6 +9,7 @@ import com.tc.objectserver.persistence.TCBytesBytesDatabase;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCLongToStringDatabase;
+import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.TCStringToStringDatabase;
@@ -115,7 +116,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return null;
   }
 
-  public Database getMapsDatabase() throws TCDatabaseException {
+  public TCMapsDatabase getMapsDatabase() throws TCDatabaseException {
     // TODO
     return null;
   }

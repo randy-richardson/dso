@@ -27,6 +27,7 @@ import com.tc.objectserver.persistence.TCBytesBytesDatabase;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCLongToStringDatabase;
+import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.TCStringToStringDatabase;
@@ -35,6 +36,7 @@ import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCIntToBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongToStringDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCMapsDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCStringtoStringDatabase;
@@ -181,7 +183,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       newBytesBytesDB(env, TRANSACTION_DB_NAME);
       newLongToStringDatabase(env, STRING_INDEX_DB_NAME);
       newIntToBytesDatabase(env, CLASS_DB_NAME);
-      newDatabase(env, MAP_DB_NAME);
+      newMapsDatabase(env, MAP_DB_NAME);
       newStringToStringDatabase(env, CLUSTER_STATE_STORE);
     } catch (DatabaseException e) {
       this.status = STATUS_ERROR;
@@ -347,9 +349,9 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return (BerkeleyTCIntToBytesDatabase) databasesByName.get(CLASS_DB_NAME);
   }
 
-  public Database getMapsDatabase() throws TCDatabaseException {
+  public TCMapsDatabase getMapsDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(MAP_DB_NAME);
+    return (BerkeleyTCMapsDatabase) databasesByName.get(MAP_DB_NAME);
   }
 
   public TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException {
@@ -511,6 +513,17 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
       BerkeleyTCStringtoStringDatabase bdb = new BerkeleyTCStringtoStringDatabase(db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
+    }
+  }
+  
+  private void newMapsDatabase(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCMapsDatabase bdb = new BerkeleyTCMapsDatabase(db);
       createdDatabases.add(bdb);
       databasesByName.put(name, bdb);
     } catch (Exception de) {

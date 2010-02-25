@@ -4,8 +4,8 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Database;
 import com.tc.object.ObjectID;
+import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 
 import java.io.IOException;
@@ -89,12 +89,12 @@ public class SleepycatPersistableSet extends AbstractSet implements PersistableC
     return map.keySet().toArray(objArr);
   }
 
-  public int commit(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, Database db)
+  public int commit(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, TCMapsDatabase db)
       throws IOException, TCDatabaseException {
     return map.commit(persistor, tx, db);
   }
 
-  public void load(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, Database db)
+  public void load(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, TCMapsDatabase db)
       throws TCDatabaseException {
     map.load(persistor, tx, db);
   }

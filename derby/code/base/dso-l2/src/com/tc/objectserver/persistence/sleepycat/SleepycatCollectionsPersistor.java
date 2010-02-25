@@ -4,12 +4,6 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
 import com.tc.io.serializer.DSOSerializerPolicy;
 import com.tc.io.serializer.TCObjectInputStream;
 import com.tc.io.serializer.TCObjectOutputStream;
@@ -18,11 +12,11 @@ import com.tc.logging.TCLogger;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObjectState;
 import com.tc.objectserver.managedobject.PersistableObjectState;
+import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistentCollectionsUtil;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor.SleepycatPersistorBase;
 import com.tc.util.Assert;
-import com.tc.util.Conversion;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,13 +25,13 @@ import java.io.ObjectInput;
 
 public class SleepycatCollectionsPersistor extends SleepycatPersistorBase {
 
-  private final Database                   database;
+  private final TCMapsDatabase             database;
   private final BasicSerializer            serializer;
   private final ByteArrayOutputStream      bao;
   private final SleepycatCollectionFactory collectionFactory;
   private final TCObjectOutputStream       oo;
 
-  public SleepycatCollectionsPersistor(TCLogger logger, Database mapsDatabase,
+  public SleepycatCollectionsPersistor(TCLogger logger, TCMapsDatabase mapsDatabase,
                                        SleepycatCollectionFactory sleepycatCollectionFactory) {
     this.database = mapsDatabase;
     this.collectionFactory = sleepycatCollectionFactory;
@@ -103,40 +97,8 @@ public class SleepycatCollectionsPersistor extends SleepycatPersistorBase {
   public boolean deleteCollection(PersistenceTransaction tx, ObjectID id) throws TCDatabaseException {
     // XXX:: Since we read in one direction and since we have to read the first record of the next map to break out, we
     // need this to avoid deadlocks between commit thread and DGC thread. Hence READ_COMMITTED
-    Cursor c = database.openCursor(pt2nt(tx), CursorConfig.READ_COMMITTED);
-    try {
-      boolean found = false;
-      byte idb[] = Conversion.long2Bytes(id.toLong());
-      DatabaseEntry key = new DatabaseEntry();
-      key.setData(idb);
-      DatabaseEntry value = new DatabaseEntry();
-      value.setPartial(0, 0, true);
-      try {
-        if (c.getSearchKeyRange(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-          do {
-            if (partialMatch(idb, key.getData())) {
-              found = true;
-              c.delete();
-            } else {
-              break;
-            }
-          } while (c.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS);
-        }
-      } catch (Exception t) {
-        throw new TCDatabaseException(t.getMessage());
-      }
-      return found;
-    } finally {
-      c.close();
-    }
+    int written = database.deleteCollection(id.toLong(), tx);
+    if (written > 0) { return true; }
+    return false;
   }
-
-  private boolean partialMatch(byte[] idbytes, byte[] key) {
-    if (key.length < idbytes.length) return false;
-    for (int i = 0; i < idbytes.length; i++) {
-      if (idbytes[i] != key[i]) return false;
-    }
-    return true;
-  }
-
 }

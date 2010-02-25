@@ -4,13 +4,10 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
 import com.tc.object.ObjectID;
+import com.tc.objectserver.persistence.TCDatabaseCursor;
+import com.tc.objectserver.persistence.TCDatabaseEntry;
+import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.util.Conversion;
 
@@ -120,7 +117,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
     return new EntryView();
   }
 
-  public int commit(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, Database db)
+  public int commit(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, TCMapsDatabase db)
       throws IOException, TCDatabaseException {
     // long t1 = System.currentTimeMillis();
     // StringBuffer sb = new StringBuffer("Time to commit : ");
@@ -155,7 +152,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
     return written;
   }
 
-  private int basicRemove(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, Database db)
+  private int basicRemove(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, TCMapsDatabase db)
       throws IOException, TCDatabaseException {
     int written = 0;
     for (Iterator i = map.entrySet().iterator(); i.hasNext();) {
@@ -163,15 +160,14 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
       Object k = e.getKey();
       Object v = e.getValue();
       if (v == REMOVED) {
-        DatabaseEntry key = new DatabaseEntry();
-        key.setData(persistor.serialize(id, k));
-        written += key.getSize();
+        byte[] key = persistor.serialize(id, k);
+        written += key.length;
         try {
-          OperationStatus status = db.delete(persistor.pt2nt(tx), key);
-          if (!(OperationStatus.NOTFOUND.equals(status) || OperationStatus.SUCCESS.equals(status))) {
+          boolean status = db.delete(key, tx);
+          if (!status) {
             // make the formatter happy
             throw new DBException("Unable to remove Map Entry for object id: " + id + ", status: " + status + ", key: "
-                                  + key);
+                                  + k);
           }
         } catch (Exception t) {
           throw new TCDatabaseException(t.getMessage());
@@ -183,23 +179,20 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
 
   }
 
-  private int basicPut(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, Database db)
+  private int basicPut(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, TCMapsDatabase db)
       throws IOException, TCDatabaseException {
     int written = 0;
     for (Iterator i = delta.entrySet().iterator(); i.hasNext();) {
       Map.Entry e = (Entry) i.next();
       Object k = e.getKey();
       Object v = e.getValue();
-      DatabaseEntry key = new DatabaseEntry();
-      key.setData(persistor.serialize(id, k));
-      DatabaseEntry value = new DatabaseEntry();
-      value.setData(persistor.serialize(v));
-      written += value.getSize();
-      written += key.getSize();
+      byte[] key = persistor.serialize(id, k);
+      byte[] value = persistor.serialize(v);
+      written += value.length;
+      written += key.length;
       try {
-        OperationStatus status = db.put(persistor.pt2nt(tx), key, value);
-        if (!OperationStatus.SUCCESS.equals(status)) { throw new DBException("Unable to update Map table : " + id
-                                                                             + " status : " + status); }
+        boolean status = db.put(value, key, tx);
+        if (!status) { throw new DBException("Unable to update Map table : " + id + " status : " + status); }
       } catch (Exception t) {
         throw new TCDatabaseException(t.getMessage());
       }
@@ -208,35 +201,13 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
     return written;
   }
 
-  private int basicClear(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, Database db)
+  private int basicClear(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, TCMapsDatabase db)
       throws TCDatabaseException {
     // XXX::Sleepycat has the most inefficent way to delete objects. Another way would be to delete all records
     // explicitly.
     // XXX:: Since we read in one direction and since we have to read the first record of the next map to break out, we
     // need READ_COMMITTED to avoid deadlocks between commit thread and DGC thread.
-    int written = 0;
-    Cursor c = db.openCursor(persistor.pt2nt(tx), CursorConfig.READ_COMMITTED);
-    byte idb[] = Conversion.long2Bytes(id);
-    DatabaseEntry key = new DatabaseEntry();
-    key.setData(idb);
-    DatabaseEntry value = new DatabaseEntry();
-    value.setPartial(0, 0, true);
-    try {
-      if (c.getSearchKeyRange(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-        do {
-          if (partialMatch(idb, key.getData())) {
-            written += key.getSize();
-            c.delete();
-          } else {
-            break;
-          }
-        } while (c.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS);
-      }
-      c.close();
-    } catch (Exception t) {
-      throw new TCDatabaseException(t.getMessage());
-    }
-    return written;
+    return db.deleteCollection(id, tx);
   }
 
   // long lastlog;
@@ -284,50 +255,31 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
            + ", removeCount = " + removeCount + " }";
   }
 
-  public void load(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, Database db)
+  public void load(SleepycatCollectionsPersistor persistor, PersistenceTransaction tx, TCMapsDatabase db)
       throws TCDatabaseException {
     // XXX:: Since we read in one direction and since we have to read the first record of the next map to break out, we
     // need READ_COMMITTED to avoid deadlocks between commit thread and DGC thread.
-    Cursor c = db.openCursor(persistor.pt2nt(tx), CursorConfig.READ_COMMITTED);
+    TCDatabaseCursor<byte[], byte[]> c = db.openCursor(tx);
     byte idb[] = Conversion.long2Bytes(id);
-    DatabaseEntry key = new DatabaseEntry();
-    key.setData(idb);
-    DatabaseEntry value = new DatabaseEntry();
+    TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
+    entry.setKey(idb);
     try {
-      if (c.getSearchKeyRange(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+      if (c.getSearchKeyRange(entry)) {
         do {
-          if (false) System.err.println("MapDB " + toString(key) + " , " + toString(value));
-          if (partialMatch(idb, key.getData())) {
-            Object mkey = persistor.deserialize(idb.length, key.getData());
-            Object mvalue = persistor.deserialize(value.getData());
+          if (partialMatch(idb, entry.getKey())) {
+            Object mkey = persistor.deserialize(idb.length, entry.getKey());
+            Object mvalue = persistor.deserialize(entry.getValue());
             map.put(mkey, mvalue);
             // System.err.println("map.put() = " + mkey + " , " + mvalue);
           } else {
             break;
           }
-        } while (c.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+        } while (c.getNext(entry));
       }
       c.close();
     } catch (Exception t) {
       throw new TCDatabaseException(t.getMessage());
     }
-  }
-
-  private String toString(DatabaseEntry entry) {
-    StringBuffer sb = new StringBuffer();
-    sb.append("<DatabaseEntry ");
-    byte b[] = entry.getData();
-    if (b == null) {
-      sb.append(" NULL Data>");
-    } else if (b.length == 0) {
-      sb.append(" ZERO bytes>");
-    } else {
-      for (int i = 0; i < b.length; i++) {
-        sb.append(b[i]).append(' ');
-      }
-      sb.append(">");
-    }
-    return sb.toString();
   }
 
   private abstract class BaseView implements Set {

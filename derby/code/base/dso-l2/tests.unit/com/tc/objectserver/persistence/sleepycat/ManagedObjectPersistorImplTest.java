@@ -4,7 +4,6 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Database;
 import com.tc.async.impl.MockSink;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -20,6 +19,7 @@ import com.tc.objectserver.managedobject.BackReferences;
 import com.tc.objectserver.managedobject.ManagedObjectTraverser;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
+import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.TestMutableSequence;
@@ -381,7 +381,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
   private class TestSleepycatCollectionsPersistor extends SleepycatCollectionsPersistor {
     private int counter;
 
-    public TestSleepycatCollectionsPersistor(TCLogger logger, Database mapsDatabase,
+    public TestSleepycatCollectionsPersistor(TCLogger logger, TCMapsDatabase mapsDatabase,
                                              SleepycatCollectionFactory sleepycatCollectionFactory) {
       super(logger, mapsDatabase, sleepycatCollectionFactory);
     }
