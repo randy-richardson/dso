@@ -11,6 +11,7 @@ import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCLongToStringDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
+import com.tc.objectserver.persistence.TCStringToStringDatabase;
 import com.tc.objectserver.persistence.sleepycat.DatabaseOpenResult;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 
@@ -124,7 +125,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return null;
   }
 
-  public Database getClusterStateStoreDatabase() throws TCDatabaseException {
+  public TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException {
     // TODO
     return null;
   }

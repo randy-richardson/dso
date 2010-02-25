@@ -4,44 +4,41 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
 import com.tc.logging.TCLogger;
 import com.tc.object.persistence.api.PersistentMapStore;
+import com.tc.objectserver.persistence.TCDatabaseEntry;
+import com.tc.objectserver.persistence.TCStringToStringDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor.SleepycatPersistorBase;
-import com.tc.util.Conversion;
 
 public class SleepycatMapStore extends SleepycatPersistorBase implements PersistentMapStore {
 
   private final PersistenceTransactionProvider persistenceTransactionProvider;
   private final TCLogger                       logger;
-  private final Database                       database;
+  private final TCStringToStringDatabase       database;
 
   public SleepycatMapStore(PersistenceTransactionProvider persistenceTransactionProvider, TCLogger logger,
-                           Database clusterStateStoreDatabase) {
+                           TCStringToStringDatabase clusterStateStoreDatabase) {
     this.persistenceTransactionProvider = persistenceTransactionProvider;
     this.logger = logger;
     this.database = clusterStateStoreDatabase;
   }
 
   public String get(String key) {
-    if(key == null) { throw new NullPointerException(); }
-    
+    if (key == null) { throw new NullPointerException(); }
+
     PersistenceTransaction tx = persistenceTransactionProvider.newTransaction();
     try {
-      DatabaseEntry dkey = new DatabaseEntry();
-      dkey.setData(Conversion.string2Bytes(key));
-      DatabaseEntry dvalue = new DatabaseEntry();
-      OperationStatus status = this.database.get(pt2nt(tx), dkey, dvalue, LockMode.DEFAULT);
+      TCDatabaseEntry<String, String> entry = new TCDatabaseEntry<String, String>();
+      entry.setKey(key);
+      Status status = this.database.get(entry, tx);
       tx.commit();
 
-      if (OperationStatus.SUCCESS.equals(status)) {
-        return Conversion.bytes2String(dvalue.getData());
-      } else if (OperationStatus.NOTFOUND.equals(status)) {
+      if (Status.SUCCESS.equals(status)) {
+        return entry.getValue();
+      } else if (Status.NOT_FOUND.equals(status)) {
         return null;
       } else {
         throw new DBException("Unable to retrieve value for key " + key + " in SleepycatMapStore : " + status);
@@ -54,18 +51,13 @@ public class SleepycatMapStore extends SleepycatPersistorBase implements Persist
   }
 
   public void put(String key, String value) {
-    if(key == null || value == null) { throw new NullPointerException(); }
-    
+    if (key == null || value == null) { throw new NullPointerException(); }
+
     PersistenceTransaction tx = persistenceTransactionProvider.newTransaction();
     try {
-      DatabaseEntry dkey = new DatabaseEntry();
-      dkey.setData(Conversion.string2Bytes(key));
-      DatabaseEntry dvalue = new DatabaseEntry();
-      dvalue.setData(Conversion.string2Bytes(value));
-      OperationStatus status = this.database.put(pt2nt(tx), dkey, dvalue);
+      boolean status = this.database.put(key, value, tx);
 
-      if (!OperationStatus.SUCCESS.equals(status)) { throw new DBException("Unable to store value: " + value
-                                                                           + " for key: " + key + "): " + status); }
+      if (!status) { throw new DBException("Unable to store value: " + value + " for key: " + key + "): " + status); }
       tx.commit();
     } catch (Exception t) {
       abortOnError(tx);
@@ -75,20 +67,17 @@ public class SleepycatMapStore extends SleepycatPersistorBase implements Persist
   }
 
   public boolean remove(String key) {
-    if(key == null) { throw new NullPointerException(); }
-    
+    if (key == null) { throw new NullPointerException(); }
+
     PersistenceTransaction tx = persistenceTransactionProvider.newTransaction();
     try {
-      DatabaseEntry dkey = new DatabaseEntry();
-      dkey.setData(Conversion.string2Bytes(key));
-      OperationStatus status = this.database.delete(pt2nt(tx), dkey);
+      Status status = this.database.delete(key, tx);
       tx.commit();
 
-      if (OperationStatus.NOTFOUND.equals(status)) {
+      if (Status.NOT_FOUND.equals(status)) {
         return false;
-      } else if (!OperationStatus.SUCCESS.equals(status)) { throw new DBException("Unable to remove value for key "
-                                                                                  + key + " in SleepycatMapStore : "
-                                                                                  + status); }
+      } else if (!Status.SUCCESS.equals(status)) { throw new DBException("Unable to remove value for key " + key
+                                                                         + " in SleepycatMapStore : " + status); }
       return true;
     } catch (Exception t) {
       abortOnError(tx);

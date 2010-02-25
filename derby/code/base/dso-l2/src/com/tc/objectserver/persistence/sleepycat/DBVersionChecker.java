@@ -66,8 +66,9 @@ public class DBVersionChecker {
                                                                                                            + dbVersion); }
       }
     } catch (DBException e) {
+      e.printStackTrace();
       // the key was not found
-      throw new AssertionError("Unable to get the value of the version from the DB");
+      throw new AssertionError("Unable to get the value of the version from the DB" + e);
     }
   }
 }

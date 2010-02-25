@@ -45,5 +45,5 @@ public interface DBEnvironment {
 
   public abstract TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException;
 
-  public abstract Database getClusterStateStoreDatabase() throws TCDatabaseException;
+  public abstract TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException;
 }

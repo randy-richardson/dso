@@ -29,6 +29,7 @@ import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCLongToStringDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
+import com.tc.objectserver.persistence.TCStringToStringDatabase;
 import com.tc.objectserver.persistence.berkeleydb.AbstractBerkeleyDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCIntToBytesDatabase;
@@ -36,6 +37,7 @@ import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCLongToStringDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCStringtoStringDatabase;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.io.File;
@@ -180,7 +182,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       newLongToStringDatabase(env, STRING_INDEX_DB_NAME);
       newIntToBytesDatabase(env, CLASS_DB_NAME);
       newDatabase(env, MAP_DB_NAME);
-      newDatabase(env, CLUSTER_STATE_STORE);
+      newStringToStringDatabase(env, CLUSTER_STATE_STORE);
     } catch (DatabaseException e) {
       this.status = STATUS_ERROR;
       forceClose();
@@ -355,9 +357,9 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return (BerkeleyTCLongToStringDatabase) databasesByName.get(STRING_INDEX_DB_NAME);
   }
 
-  public Database getClusterStateStoreDatabase() throws TCDatabaseException {
+  public TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException {
     assertOpen();
-    return (Database) databasesByName.get(CLUSTER_STATE_STORE);
+    return (BerkeleyTCStringtoStringDatabase) databasesByName.get(CLUSTER_STATE_STORE);
   }
 
   private void assertNotError() throws TCDatabaseException {
@@ -498,6 +500,17 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
       BerkeleyTCLongToStringDatabase bdb = new BerkeleyTCLongToStringDatabase(catalog.getClassCatalog(), db);
+      createdDatabases.add(bdb);
+      databasesByName.put(name, bdb);
+    } catch (Exception de) {
+      throw new TCDatabaseException(de.getMessage());
+    }
+  }
+
+  private void newStringToStringDatabase(Environment e, String name) throws TCDatabaseException {
+    try {
+      Database db = e.openDatabase(null, name, dbcfg);
+      BerkeleyTCStringtoStringDatabase bdb = new BerkeleyTCStringtoStringDatabase(db);
       createdDatabases.add(bdb);
       databasesByName.put(name, bdb);
     } catch (Exception de) {
