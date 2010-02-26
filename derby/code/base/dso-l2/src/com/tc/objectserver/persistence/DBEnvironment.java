@@ -3,9 +3,11 @@
  */
 package com.tc.objectserver.persistence;
 
-import com.sleepycat.je.Database;
+import com.tc.logging.TCLogger;
+import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.sleepycat.DatabaseOpenResult;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
+import com.tc.util.sequence.MutableSequence;
 
 import java.io.File;
 
@@ -18,6 +20,10 @@ public interface DBEnvironment {
   public abstract boolean isOpen();
 
   public abstract File getEnvironmentHome();
+  
+  public abstract boolean isParanoidMode();
+  
+  public abstract PersistenceTransactionProvider getPersistenceTransactionProvider();
 
   // TODO: See what has to be done for getStats and getEnvironment
 
@@ -37,8 +43,6 @@ public interface DBEnvironment {
 
   public abstract TCBytesBytesDatabase getTransactionDatabase() throws TCDatabaseException;
 
-  public abstract Database getGlobalSequenceDatabase() throws TCDatabaseException;
-
   public abstract TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException;
 
   public abstract TCMapsDatabase getMapsDatabase() throws TCDatabaseException;
@@ -46,4 +50,7 @@ public interface DBEnvironment {
   public abstract TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException;
 
   public abstract TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException;
+
+  public abstract MutableSequence getSequence(PersistenceTransactionProvider ptxp, TCLogger logger, String sequenceID,
+                                              int startValue);
 }

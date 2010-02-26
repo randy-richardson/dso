@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 
 public class SleepycatSequenceTest extends TCTestCase {
-  private File              envHome;
-  private EnvironmentConfig ecfg;
-  private DatabaseConfig    dbcfg;
-  private BerkeleyDBEnvironment     env;
-  private static int        count = 0;
+  private File                  envHome;
+  private EnvironmentConfig     ecfg;
+  private DatabaseConfig        dbcfg;
+  private BerkeleyDBEnvironment env;
+  private static int            count = 0;
 
   protected void setUp() throws Exception {
     super.setUp();
@@ -69,20 +69,18 @@ public class SleepycatSequenceTest extends TCTestCase {
                                                                                                                          env
                                                                                                                              .getEnvironment());
     TCLogger logger = TCLogging.getLogger(SleepycatSequenceTest.class);
-    SleepycatSequence sequence = new SleepycatSequence(persistenceTransactionProvider, logger,
-                                                       SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1, env
-                                                           .getGlobalSequenceDatabase());
+    SleepycatSequence sequence = (SleepycatSequence) env.getSequence(persistenceTransactionProvider, logger,
+                                                                     SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
     String uid1 = sequence.getUID();
     assertNotNull(uid1);
     System.err.println("UID is " + uid1);
-    sequence = new SleepycatSequence(persistenceTransactionProvider, logger,
-                                     SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1, env.getGlobalSequenceDatabase());
+    sequence = (SleepycatSequence) env.getSequence(persistenceTransactionProvider, logger,
+                                                   SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
     String uid2 = sequence.getUID();
     System.err.println("UID is " + uid2);
     assertEquals(uid1, uid2);
-    sequence = new SleepycatSequence(persistenceTransactionProvider, logger,
-                                     SleepycatSequenceKeys.TRANSACTION_SEQUENCE_DB_NAME, 1, env
-                                         .getGlobalSequenceDatabase());
+    sequence = (SleepycatSequence) env.getSequence(persistenceTransactionProvider, logger,
+                                                   SleepycatSequenceKeys.TRANSACTION_SEQUENCE_DB_NAME, 1);
     String uid3 = sequence.getUID();
     System.err.println("UID is " + uid3);
     assertNotEquals(uid1, uid3);
@@ -94,9 +92,8 @@ public class SleepycatSequenceTest extends TCTestCase {
                                                                                                                          env
                                                                                                                              .getEnvironment());
     TCLogger logger = TCLogging.getLogger(SleepycatSequenceTest.class);
-    SleepycatSequence sequence = new SleepycatSequence(persistenceTransactionProvider, logger,
-                                                       SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1, env
-                                                           .getGlobalSequenceDatabase());
+    SleepycatSequence sequence = (SleepycatSequence) env.getSequence(persistenceTransactionProvider, logger,
+                                                                     SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
     long id = sequence.next();
     assertEquals(1, id);
     id = sequence.nextBatch(100);
@@ -155,16 +152,15 @@ public class SleepycatSequenceTest extends TCTestCase {
     db.close();
     environment.close();
   }
-  
+
   public void testLongBatchSize() throws Exception {
     assertTrue(env.open().isClean());
     SleepycatPersistenceTransactionProvider persistenceTransactionProvider = new SleepycatPersistenceTransactionProvider(
                                                                                                                          env
                                                                                                                              .getEnvironment());
     TCLogger logger = TCLogging.getLogger(SleepycatSequenceTest.class);
-    SleepycatSequence sequence = new SleepycatSequence(persistenceTransactionProvider, logger,
-                                                       SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1, env
-                                                           .getGlobalSequenceDatabase());
+    SleepycatSequence sequence = (SleepycatSequence) env.getSequence(persistenceTransactionProvider, logger,
+                                                                     SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
     long id = sequence.next();
     assertEquals(1, id);
     long batchSize = Integer.MAX_VALUE * 2L;

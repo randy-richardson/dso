@@ -4,32 +4,38 @@
 package com.tc.statistics.retrieval.actions;
 
 import com.sleepycat.je.EnvironmentStats;
-import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.StatisticRetrievalAction;
 import com.tc.statistics.StatisticType;
 
 public class SRABerkeleyDB implements StatisticRetrievalAction {
-  public final static String  ACTION_NAME = "berkeley db stats";
+  public final static String          ACTION_NAME = "berkeley db stats";
 
-  private final SRABDBLogging sraLogging;
-  private final SRABDBCache   sraCache;
-  private final SRABDBCleaner sraCleaner;
-  private final SRABDBIO      sraIo;
+  private final SRABDBLogging         sraLogging;
+  private final SRABDBCache           sraCache;
+  private final SRABDBCleaner         sraCleaner;
+  private final SRABDBIO              sraIo;
 
-  private final SleepycatPersistor  persistor;
+  private final BerkeleyDBEnvironment dbEnv;
 
-  public SRABerkeleyDB(SleepycatPersistor persistor) {
+  public SRABerkeleyDB(BerkeleyDBEnvironment env) {
     sraLogging = new SRABDBLogging();
     sraCache = new SRABDBCache();
     sraCleaner = new SRABDBCleaner();
     sraIo = new SRABDBIO();
 
-    this.persistor = persistor;
+    this.dbEnv = env;
   }
 
   private void forceUpdate() {
-    EnvironmentStats stats = persistor.getEnvironmentStats();
+    EnvironmentStats stats;
+    try {
+      stats = dbEnv.getStats();
+    } catch (TCDatabaseException e) {
+      return;
+    }
     if (stats == null) return;
     updateValues(stats);
   }

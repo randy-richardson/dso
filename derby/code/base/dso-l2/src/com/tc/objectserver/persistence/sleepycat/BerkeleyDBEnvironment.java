@@ -31,6 +31,7 @@ import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.TCStringToStringDatabase;
+import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.berkeleydb.AbstractBerkeleyDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCIntToBytesDatabase;
@@ -41,6 +42,7 @@ import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCRootDatabase;
 import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCStringtoStringDatabase;
 import com.tc.util.concurrent.ThreadUtil;
+import com.tc.util.sequence.MutableSequence;
 
 import java.io.File;
 import java.io.IOException;
@@ -291,9 +293,11 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return env;
   }
 
-  public EnvironmentStats getStats(StatsConfig config) throws TCDatabaseException {
+  public EnvironmentStats getStats() throws TCDatabaseException {
+    final StatsConfig sc = new StatsConfig();
+    sc.setClear(true);
     try {
-      return env.getStats(config);
+      return env.getStats(sc);
     } catch (Exception e) {
       throw new TCDatabaseException(e.getMessage());
     }
@@ -337,11 +341,6 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
   public TCBytesBytesDatabase getTransactionDatabase() throws TCDatabaseException {
     assertOpen();
     return (BerkeleyTCBytesBytesDatabase) databasesByName.get(TRANSACTION_DB_NAME);
-  }
-
-  public Database getGlobalSequenceDatabase() throws TCDatabaseException {
-    assertOpen();
-    return (Database) databasesByName.get(GLOBAL_SEQUENCE_DATABASE);
   }
 
   public TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException {
@@ -519,7 +518,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       throw new TCDatabaseException(de.getMessage());
     }
   }
-  
+
   private void newMapsDatabase(Environment e, String name) throws TCDatabaseException {
     try {
       Database db = e.openDatabase(null, name, dbcfg);
@@ -594,4 +593,17 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     }
   }
 
+  public MutableSequence getSequence(PersistenceTransactionProvider ptxp, TCLogger log, String sequenceID,
+                                     int startValue) {
+    return new SleepycatSequence(ptxp, log, sequenceID, startValue, (Database) databasesByName
+        .get(GLOBAL_SEQUENCE_DATABASE));
+  }
+
+  public PersistenceTransactionProvider getPersistenceTransactionProvider() {
+    try {
+      return new SleepycatPersistenceTransactionProvider(getEnvironment());
+    } catch (TCDatabaseException e) {
+      throw new DBException(e);
+    }
+  }
 }

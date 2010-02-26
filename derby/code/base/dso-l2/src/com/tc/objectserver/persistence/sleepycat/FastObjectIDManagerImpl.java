@@ -8,6 +8,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObject;
+import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
@@ -54,7 +55,7 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   private long                                 endSequence;
   private final ManagedObjectPersistor         managedObjectPersistor;
 
-  public FastObjectIDManagerImpl(BerkeleyDBEnvironment env, PersistenceTransactionProvider ptp, MutableSequence sequence,
+  public FastObjectIDManagerImpl(DBEnvironment env, PersistenceTransactionProvider ptp, MutableSequence sequence,
                                  ManagedObjectPersistor managedObjectPersistor) throws TCDatabaseException {
     this.managedObjectPersistor = managedObjectPersistor;
     this.objectOidStoreDB = env.getObjectOidStoreDatabase();

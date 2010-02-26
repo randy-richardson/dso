@@ -535,7 +535,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       this.persistor = new SleepycatPersistor(TCLogging.getLogger(SleepycatPersistor.class), dbenv,
                                               serializationAdapterFactory, this.configSetupManager.commonl2Config()
                                                   .dataPath().getFile(), this.objectStatsRecorder);
-      sraBdb = new SRABerkeleyDB((SleepycatPersistor) this.persistor);
+      sraBdb = new SRABerkeleyDB(dbenv);
       // Setting the DB environment for the bean which takes backup of the active server
       if (persistent) {
         ServerDBBackup mbean = this.l2Management.findServerDbBackupMBean();

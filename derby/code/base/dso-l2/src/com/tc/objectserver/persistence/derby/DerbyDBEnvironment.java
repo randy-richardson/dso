@@ -4,6 +4,7 @@
 package com.tc.objectserver.persistence.derby;
 
 import com.sleepycat.je.Database;
+import com.tc.logging.TCLogger;
 import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesBytesDatabase;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
@@ -13,8 +14,10 @@ import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.TCStringToStringDatabase;
+import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.sleepycat.DatabaseOpenResult;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
+import com.tc.util.sequence.MutableSequence;
 
 import java.io.File;
 import java.sql.Connection;
@@ -129,5 +132,21 @@ public class DerbyDBEnvironment implements DBEnvironment {
   public TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException {
     // TODO
     return null;
+  }
+
+  public MutableSequence getSequence(PersistenceTransactionProvider ptxp, TCLogger logger, String sequenceID,
+                                     int startValue) {
+    // TODO
+    return null;
+  }
+
+  public PersistenceTransactionProvider getPersistenceTransactionProvider() {
+    // TODO
+    return null;
+  }
+
+  public boolean isParanoidMode() {
+    // TODO
+    return false;
   }
 }

@@ -10,6 +10,7 @@ import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.api.ManagedObjectState;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
+import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
@@ -92,7 +93,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
   private final ThreadLocal<SerializationAdapter> threadlocalAdapter;
 
   public ManagedObjectPersistorImpl(TCLogger logger, SerializationAdapterFactory serializationAdapterFactory,
-                                    BerkeleyDBEnvironment env, MutableSequence objectIDSequence, TCRootDatabase rootDB,
+                                    DBEnvironment env, MutableSequence objectIDSequence, TCRootDatabase rootDB,
                                     PersistenceTransactionProvider ptp,
                                     SleepycatCollectionsPersistor collectionsPersistor, boolean paranoid,
                                     ObjectStatsRecorder objectStatsRecorder) throws TCDatabaseException {
@@ -112,9 +113,8 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
       this.objectIDManager = new NullObjectIDManager();
     } else if (oidFastLoad) {
       // read objectIDs from compressed DB
-      MutableSequence sequence = new SleepycatSequence(this.ptp, logger,
-                                                       SleepycatSequenceKeys.OID_STORE_LOG_SEQUENCE_DB_NAME, 1000, env
-                                                           .getGlobalSequenceDatabase());
+      MutableSequence sequence = env.getSequence(this.ptp, logger,
+                                                 SleepycatSequenceKeys.OID_STORE_LOG_SEQUENCE_DB_NAME, 1000);
       this.objectIDManager = new FastObjectIDManagerImpl(env, ptp, sequence, this);
     } else {
       // read objectIDs from object DB

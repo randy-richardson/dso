@@ -4,17 +4,13 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.EnvironmentStats;
-import com.sleepycat.je.StatsConfig;
-import com.sleepycat.je.Transaction;
 import com.tc.io.serializer.api.StringIndex;
 import com.tc.l2.state.StateManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.persistence.api.PersistentMapStore;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
+import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.api.ClassPersistor;
 import com.tc.objectserver.persistence.api.ClientStatePersistor;
@@ -36,7 +32,6 @@ import java.io.File;
 
 public class SleepycatPersistor implements Persistor {
   private static final int                     DEFAULT_CAPACITY = 50000;
-  private static final TCLogger                statsLogger      = TCLogging.getLogger(SleepycatPersistor.class);
 
   private final StringIndexPersistor           stringIndexPersistor;
   private final StringIndex                    stringIndex;
@@ -46,19 +41,19 @@ public class SleepycatPersistor implements Persistor {
   private final MutableSequence                globalTransactionIDSequence;
   private final ClassPersistor                 classPersistor;
   private final PersistenceTransactionProvider persistenceTransactionProvider;
-  private final BerkeleyDBEnvironment          env;
+  private final DBEnvironment                  env;
   private final SleepycatCollectionFactory     sleepycatCollectionFactory;
   private final PersistentMapStore             persistentStateStore;
 
   private SleepycatCollectionsPersistor        sleepycatCollectionsPersistor;
 
   // only for tests
-  public SleepycatPersistor(TCLogger logger, BerkeleyDBEnvironment env,
-                            SerializationAdapterFactory serializationAdapterFactory) throws TCDatabaseException {
+  public SleepycatPersistor(TCLogger logger, DBEnvironment env, SerializationAdapterFactory serializationAdapterFactory)
+      throws TCDatabaseException {
     this(logger, env, serializationAdapterFactory, null, new ObjectStatsRecorder());
   }
 
-  public SleepycatPersistor(TCLogger logger, BerkeleyDBEnvironment env,
+  public SleepycatPersistor(TCLogger logger, DBEnvironment env,
                             SerializationAdapterFactory serializationAdapterFactory, File l2DataPath,
                             ObjectStatsRecorder objectStatsRecorder) throws TCDatabaseException {
 
@@ -67,11 +62,7 @@ public class SleepycatPersistor implements Persistor {
 
     sanityCheckAndClean(env, l2DataPath, logger);
 
-    CursorConfig rootDBCursorConfig = new CursorConfig();
-    rootDBCursorConfig.setReadCommitted(true);
-    CursorConfig stringIndexCursorConfig = new CursorConfig();
-    stringIndexCursorConfig.setReadCommitted(true);
-    this.persistenceTransactionProvider = new SleepycatPersistenceTransactionProvider(env.getEnvironment());
+    this.persistenceTransactionProvider = env.getPersistenceTransactionProvider();
     this.stringIndexPersistor = new SleepycatStringIndexPersistor(persistenceTransactionProvider, env
         .getStringIndexDatabase());
     this.stringIndex = new StringIndexImpl(this.stringIndexPersistor, DEFAULT_CAPACITY);
@@ -80,43 +71,23 @@ public class SleepycatPersistor implements Persistor {
                                                                            sleepycatCollectionFactory);
     this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger,
 
-    serializationAdapterFactory, env, new SleepycatSequence(this.persistenceTransactionProvider, logger,
-                                                            SleepycatSequenceKeys.OBJECTID_SEQUENCE_NAME, 1000, env
-                                                                .getGlobalSequenceDatabase()), env.getRootDatabase(),
-                                                                 this.persistenceTransactionProvider,
-                                                                 this.sleepycatCollectionsPersistor, env
-                                                                     .isParanoidMode(), objectStatsRecorder);
-    this.clientStatePersistor = new ClientStatePersistorImpl(
-                                                             logger,
-                                                             this.persistenceTransactionProvider,
-                                                             new SleepycatSequence(
-                                                                                   this.persistenceTransactionProvider,
-                                                                                   logger,
-                                                                                   SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME,
-                                                                                   0, env.getGlobalSequenceDatabase()),
-                                                             env.getClientStateDatabase());
+    serializationAdapterFactory, env, env.getSequence(this.persistenceTransactionProvider, logger,
+                                                      SleepycatSequenceKeys.OBJECTID_SEQUENCE_NAME, 1000), env
+        .getRootDatabase(), this.persistenceTransactionProvider, this.sleepycatCollectionsPersistor, env
+        .isParanoidMode(), objectStatsRecorder);
+    this.clientStatePersistor = new ClientStatePersistorImpl(logger, this.persistenceTransactionProvider, env
+        .getSequence(this.persistenceTransactionProvider, logger, SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 0), env
+        .getClientStateDatabase());
     this.transactionPerisistor = new TransactionPersistorImpl(env.getTransactionDatabase(),
                                                               this.persistenceTransactionProvider);
-    this.globalTransactionIDSequence = new SleepycatSequence(this.persistenceTransactionProvider, logger,
-                                                             SleepycatSequenceKeys.TRANSACTION_SEQUENCE_DB_NAME, 1, env
-                                                                 .getGlobalSequenceDatabase());
+    this.globalTransactionIDSequence = env.getSequence(this.persistenceTransactionProvider, logger,
+                                                       SleepycatSequenceKeys.TRANSACTION_SEQUENCE_DB_NAME, 1);
     this.classPersistor = new ClassPersistorImpl(this.persistenceTransactionProvider, logger, env.getClassDatabase());
     this.persistentStateStore = new SleepycatMapStore(this.persistenceTransactionProvider, logger, env
         .getClusterStateStoreDatabase());
   }
 
-  public EnvironmentStats getEnvironmentStats() {
-    final StatsConfig sc = new StatsConfig();
-    sc.setClear(true);
-    try {
-      return env.getStats(sc);
-    } catch (TCDatabaseException e) {
-      statsLogger.error("Error trying to get stats : " + e);
-    }
-    return null;
-  }
-
-  private void open(BerkeleyDBEnvironment dbenv, TCLogger logger) throws TCDatabaseException {
+  private void open(DBEnvironment dbenv, TCLogger logger) throws TCDatabaseException {
     Assert.eval(!dbenv.isOpen());
     DatabaseOpenResult result = dbenv.open();
     if (!result.isClean()) { throw new DatabaseDirtyException(
@@ -128,10 +99,8 @@ public class SleepycatPersistor implements Persistor {
                                                                   + "the server: " + dbenv.getEnvironmentHome()); }
   }
 
-  private void sanityCheckAndClean(BerkeleyDBEnvironment dbenv, File l2DataPath, TCLogger logger)
-      throws TCDatabaseException {
-    PersistenceTransactionProvider persistentTxProvider = new SleepycatPersistenceTransactionProvider(dbenv
-        .getEnvironment());
+  private void sanityCheckAndClean(DBEnvironment dbenv, File l2DataPath, TCLogger logger) throws TCDatabaseException {
+    PersistenceTransactionProvider persistentTxProvider = dbenv.getPersistenceTransactionProvider();
     PersistentMapStore persistentMapStore = new SleepycatMapStore(persistentTxProvider, logger, dbenv
         .getClusterStateStoreDatabase());
 
@@ -216,16 +185,7 @@ public class SleepycatPersistor implements Persistor {
 
     private static final TCLogger logger = TCLogging.getLogger(SleepycatPersistorBase.class);
 
-    protected Transaction pt2nt(PersistenceTransaction tx) {
-      // XXX: Yuck.
-      return (tx instanceof TransactionWrapper) ? ((TransactionWrapper) tx).getTransaction() : null;
-    }
-
-    protected void abortOnError(PersistenceTransaction ptx) {
-      abortOnError(pt2nt(ptx));
-    }
-
-    protected void abortOnError(Transaction tx) {
+    protected void abortOnError(PersistenceTransaction tx) {
       try {
         if (tx != null) tx.abort();
       } catch (Exception e) {
@@ -235,27 +195,7 @@ public class SleepycatPersistor implements Persistor {
 
     }
 
-    protected void abortOnError(Cursor cursor, PersistenceTransaction ptx) {
-      abortOnError(cursor, pt2nt(ptx));
-    }
-
-    protected void abortOnError(Cursor cursor, Transaction tx) {
-      if (cursor != null) {
-        try {
-          cursor.close();
-        } catch (Exception e) {
-          // This doesn't throw an exception as we don't want to create a Red herring.
-          logger.error("Error on abortOnError", e);
-        }
-      }
-      abortOnError(tx);
-    }
-
-    protected void abortOnError(TCDatabaseCursor cursor, PersistenceTransaction ptx) {
-      abortOnError(cursor, pt2nt(ptx));
-    }
-
-    protected void abortOnError(TCDatabaseCursor cursor, Transaction tx) {
+    protected void abortOnError(TCDatabaseCursor cursor, PersistenceTransaction tx) {
       if (cursor != null) {
         try {
           cursor.close();

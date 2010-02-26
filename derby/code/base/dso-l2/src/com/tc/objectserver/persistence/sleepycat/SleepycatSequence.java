@@ -15,22 +15,21 @@ import com.sleepycat.je.StatsConfig;
 import com.tc.logging.TCLogger;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
-import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor.SleepycatPersistorBase;
+import com.tc.objectserver.persistence.berkeleydb.AbstractBerkeleyDatabase;
 import com.tc.util.Conversion;
 import com.tc.util.UUID;
 import com.tc.util.sequence.MutableSequence;
 
-class SleepycatSequence extends SleepycatPersistorBase implements MutableSequence {
+class SleepycatSequence extends AbstractBerkeleyDatabase implements MutableSequence {
   private static final String UID_KEY = "UIDKEY-3475674589230";
   private final String        uid;
-  private final Database      sequenceDB;
   private final Sequence      sequence;
 
   SleepycatSequence(PersistenceTransactionProvider ptxp, TCLogger logger, String sequenceID, int startValue,
                     Database sequenceDB) {
+    super(sequenceDB);
     DatabaseEntry key = new DatabaseEntry();
     key.setData(Conversion.string2Bytes(sequenceID));
-    this.sequenceDB = sequenceDB;
     this.uid = getOrCreateUID(sequenceID, ptxp);
 
     if (startValue < 0) throw new IllegalArgumentException("start value cannot be < 0");
@@ -43,7 +42,7 @@ class SleepycatSequence extends SleepycatPersistorBase implements MutableSequenc
     config.setAllowCreate(true);
     config.setCacheSize(0);
     try {
-      seq = sequenceDB.openSequence(null, key, config);
+      seq = db.openSequence(null, key, config);
       long currentVal = currentValueOfSequence(seq);
       if (currentVal < startVal) {
         setNextForSequnce(startVal, seq);
@@ -64,14 +63,14 @@ class SleepycatSequence extends SleepycatPersistorBase implements MutableSequenc
       String temp = UID_KEY + sequenceID;
       ukey.setData(Conversion.string2Bytes(temp));
       DatabaseEntry value = new DatabaseEntry();
-      OperationStatus status = this.sequenceDB.get(null, ukey, value, LockMode.DEFAULT);
+      OperationStatus status = this.db.get(null, ukey, value, LockMode.DEFAULT);
 
       if (OperationStatus.SUCCESS.equals(status)) {
         newuid = Conversion.bytes2String(value.getData());
       } else if (OperationStatus.NOTFOUND.equals(status)) {
         newuid = createUID();
         value.setData(Conversion.string2Bytes(newuid));
-        status = this.sequenceDB.put(pt2nt(tx), ukey, value);
+        status = this.db.put(pt2nt(tx), ukey, value);
         if (!OperationStatus.SUCCESS.equals(status)) { throw new DBException(
                                                                              "Unable to store UID for SleepycatSequence: "
                                                                                  + newuid + "): " + status); }
@@ -81,7 +80,7 @@ class SleepycatSequence extends SleepycatPersistorBase implements MutableSequenc
       tx.commit();
       return newuid;
     } catch (Exception t) {
-      abortOnError(tx);
+      tx.abort();
       t.printStackTrace();
       throw (t instanceof DBException ? (DBException) t : new DBException(t));
     }
