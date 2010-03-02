@@ -183,6 +183,7 @@ import com.tc.objectserver.locks.LockManagerMBean;
 import com.tc.objectserver.managedobject.ManagedObjectChangeListenerProviderImpl;
 import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
+import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.api.ClientStatePersistor;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
@@ -194,9 +195,9 @@ import com.tc.objectserver.persistence.impl.InMemorySequenceProvider;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.NullTransactionPersistor;
 import com.tc.objectserver.persistence.impl.TransactionStoreImpl;
+import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.ConnectionIDFactoryImpl;
 import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.objectserver.persistence.sleepycat.DatabaseDirtyException;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
@@ -528,18 +529,18 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       CallbackOnExitHandler dirtydbHandler = new CallbackDatabaseDirtyAlertAdapter(logger, consoleLogger);
       this.threadGroup.addCallbackOnExitExceptionHandler(DatabaseDirtyException.class, dirtydbHandler);
 
-      BerkeleyDBEnvironment dbenv = new BerkeleyDBEnvironment(persistent, dbhome, this.l2Properties.getPropertiesFor("berkeleydb")
-          .addAllPropertiesTo(new Properties()));
+      DBEnvironment dbenv = new BerkeleyDBEnvironment(persistent, dbhome, this.l2Properties
+          .getPropertiesFor("berkeleydb").addAllPropertiesTo(new Properties()));
       SerializationAdapterFactory serializationAdapterFactory = new CustomSerializationAdapterFactory();
 
       this.persistor = new SleepycatPersistor(TCLogging.getLogger(SleepycatPersistor.class), dbenv,
                                               serializationAdapterFactory, this.configSetupManager.commonl2Config()
                                                   .dataPath().getFile(), this.objectStatsRecorder);
-      sraBdb = new SRABerkeleyDB(dbenv);
+      sraBdb = new SRABerkeleyDB((BerkeleyDBEnvironment) dbenv);
       // Setting the DB environment for the bean which takes backup of the active server
       if (persistent) {
         ServerDBBackup mbean = this.l2Management.findServerDbBackupMBean();
-        mbean.setDbEnvironment(dbenv.getEnvironment(), dbenv.getEnvironmentHome());
+        mbean.setDbEnvironment(((BerkeleyDBEnvironment) dbenv).getEnvironment(), dbenv.getEnvironmentHome());
       }
       // DONT DELETE ::This commented code is for replacing SleepyCat with MemoryDataStore as an in-memory DB for
       // testing purpose. You need to include MemoryDataStore in tc.jar and enable with tc.properties

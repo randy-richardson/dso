@@ -7,8 +7,14 @@ package com.tc.objectserver.persistence.sleepycat;
 import com.sleepycat.je.DatabaseException;
 import com.tc.exception.TCException;
 
+import java.sql.SQLException;
+
 public class TCDatabaseException extends TCException {
   public TCDatabaseException(DatabaseException cause) {
+    super(cause);
+  }
+  
+  public TCDatabaseException(SQLException cause) {
     super(cause);
   }
 

@@ -60,20 +60,6 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
   private static final TCLogger            logger                      = TCLogging
                                                                            .getLogger(BerkeleyDBEnvironment.class);
 
-  private static final String              GLOBAL_SEQUENCE_DATABASE    = "global_sequence_db";
-  private static final String              ROOT_DB_NAME                = "roots";
-  private static final String              OBJECT_DB_NAME              = "objects";
-  private static final String              OBJECT_OID_STORE_DB_NAME    = "objects_oid_store";
-  private static final String              MAPS_OID_STORE_DB_NAME      = "mapsdatabase_oid_store";
-  private static final String              OID_STORE_LOG_DB_NAME       = "oid_store_log";
-
-  private static final String              CLIENT_STATE_DB_NAME        = "clientstates";
-  private static final String              TRANSACTION_DB_NAME         = "transactions";
-  private static final String              STRING_INDEX_DB_NAME        = "stringindex";
-  private static final String              CLASS_DB_NAME               = "classdefinitions";
-  private static final String              MAP_DB_NAME                 = "mapsdatabase";
-  private static final String              CLUSTER_STATE_STORE         = "clusterstatestore";
-
   private static final Object              CONTROL_LOCK                = new Object();
 
   private static final DBEnvironmentStatus STATUS_INIT                 = new DBEnvironmentStatus("INIT");

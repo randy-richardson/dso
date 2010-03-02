@@ -13,6 +13,20 @@ import java.io.File;
 
 // This should be the class which should be used by Derby Db environment and Berkeley db env
 public interface DBEnvironment {
+  static final String GLOBAL_SEQUENCE_DATABASE = "global_sequence_db";
+  static final String ROOT_DB_NAME             = "roots";
+  static final String OBJECT_DB_NAME           = "objects";
+  static final String OBJECT_OID_STORE_DB_NAME = "objects_oid_store";
+  static final String MAPS_OID_STORE_DB_NAME   = "mapsdatabase_oid_store";
+  static final String OID_STORE_LOG_DB_NAME    = "oid_store_log";
+
+  static final String CLIENT_STATE_DB_NAME     = "clientstates";
+  static final String TRANSACTION_DB_NAME      = "transactions";
+  static final String STRING_INDEX_DB_NAME     = "stringindex";
+  static final String CLASS_DB_NAME            = "classdefinitions";
+  static final String MAP_DB_NAME              = "mapsdatabase";
+  static final String CLUSTER_STATE_STORE      = "clusterstatestore";
+
   public abstract DatabaseOpenResult open() throws TCDatabaseException;
 
   public abstract void close() throws TCDatabaseException;
@@ -20,14 +34,10 @@ public interface DBEnvironment {
   public abstract boolean isOpen();
 
   public abstract File getEnvironmentHome();
-  
+
   public abstract boolean isParanoidMode();
-  
+
   public abstract PersistenceTransactionProvider getPersistenceTransactionProvider();
-
-  // TODO: See what has to be done for getStats and getEnvironment
-
-  // TODO: See also getClassCatalogWrapper
 
   public abstract TCObjectDatabase getObjectDatabase() throws TCDatabaseException;
 
