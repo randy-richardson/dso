@@ -3,6 +3,8 @@
  */
 package com.tc.objectserver.persistence.derby;
 
+import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,23 +14,16 @@ import java.sql.Statement;
 /**
  * This class is for control db
  */
-public class DerbyControlDB {
-  private final static String KEY        = "key";
-  private final static String VALUE      = "value";
+public class DerbyControlDB extends AbstractDerbyTCDatabase {
+  private final static short CLEAN_FLAG = 1;
+  private final static short DIRTY_FLAG = 2;
+  private final static short NULL_FLAG  = -1;
 
-  private final static short  CLEAN_FLAG = 1;
-  private final static short  DIRTY_FLAG = 1;
-
-  private final String        tableName;
-  private final Connection    connection;
-
-  public DerbyControlDB(String tableName, Connection connection) throws SQLException {
-    this.tableName = tableName;
-    this.connection = connection;
-    createTableIfNotExists();
+  public DerbyControlDB(String tableName, Connection connection) throws TCDatabaseException {
+    super(tableName, connection);
   }
 
-  private void createTableIfNotExists() throws SQLException {
+  protected void createTableIfNotExists() throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
@@ -38,30 +33,44 @@ public class DerbyControlDB {
     connection.commit();
   }
 
-  public boolean isClean() throws SQLException {
-    int flag = getFlag();
-    return flag == CLEAN_FLAG || flag == -1;
+  public boolean isClean() throws TCDatabaseException {
+    int flag;
+    try {
+      flag = getFlag();
+    } catch (SQLException e) {
+      throw new TCDatabaseException(e);
+    }
+    return flag == CLEAN_FLAG || flag == NULL_FLAG;
   }
 
-  public void setClean() throws SQLException {
-    short flag = getFlag();
-    if (flag == CLEAN_FLAG) {
-      return;
-    } else if (flag == -1) {
-      insert(CLEAN_FLAG);
-    } else {
-      update(CLEAN_FLAG);
+  public void setClean() throws TCDatabaseException {
+    short flag;
+    try {
+      flag = getFlag();
+      if (flag == CLEAN_FLAG) {
+        return;
+      } else if (flag == NULL_FLAG) {
+        insert(CLEAN_FLAG);
+      } else {
+        update(CLEAN_FLAG);
+      }
+    } catch (SQLException e) {
+      throw new TCDatabaseException(e);
     }
   }
 
-  public void setDirty() throws SQLException {
-    short flag = getFlag();
-    if (flag == DIRTY_FLAG) {
-      return;
-    } else if (flag == -1) {
-      insert(DIRTY_FLAG);
-    } else {
-      update(DIRTY_FLAG);
+  public void setDirty() throws TCDatabaseException {
+    try {
+      short flag = getFlag();
+      if (flag == DIRTY_FLAG) {
+        return;
+      } else if (flag == NULL_FLAG) {
+        insert(DIRTY_FLAG);
+      } else {
+        update(DIRTY_FLAG);
+      }
+    } catch (SQLException e) {
+      throw new TCDatabaseException(e);
     }
   }
 
@@ -92,7 +101,7 @@ public class DerbyControlDB {
       psSelect.setString(1, KEY);
       rs = psSelect.executeQuery();
 
-      if (!rs.next()) { return -1; }
+      if (!rs.next()) { return NULL_FLAG; }
       short shortVal = rs.getShort(1);
       return shortVal;
     } finally {

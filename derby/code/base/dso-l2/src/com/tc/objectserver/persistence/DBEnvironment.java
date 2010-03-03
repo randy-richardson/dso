@@ -26,6 +26,11 @@ public interface DBEnvironment {
   static final String CLASS_DB_NAME            = "classdefinitions";
   static final String MAP_DB_NAME              = "mapsdatabase";
   static final String CLUSTER_STATE_STORE      = "clusterstatestore";
+  static final String CONTROL_DB               = "controldb";
+
+  enum DBEnvironmentStatus {
+    STATUS_INIT, STATUS_ERROR, STATUS_OPENING, STATUS_OPEN, STATUS_CLOSING, STATUS_CLOSED
+  }
 
   public abstract DatabaseOpenResult open() throws TCDatabaseException;
 

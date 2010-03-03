@@ -56,38 +56,30 @@ import java.util.Properties;
 
 public class BerkeleyDBEnvironment implements DBEnvironment {
 
-  private static final TCLogger            clogger                     = CustomerLogging.getDSOGenericLogger();
-  private static final TCLogger            logger                      = TCLogging
-                                                                           .getLogger(BerkeleyDBEnvironment.class);
+  private static final TCLogger      clogger                     = CustomerLogging.getDSOGenericLogger();
+  private static final TCLogger      logger                      = TCLogging.getLogger(BerkeleyDBEnvironment.class);
 
-  private static final Object              CONTROL_LOCK                = new Object();
+  private static final Object        CONTROL_LOCK                = new Object();
 
-  private static final DBEnvironmentStatus STATUS_INIT                 = new DBEnvironmentStatus("INIT");
-  private static final DBEnvironmentStatus STATUS_ERROR                = new DBEnvironmentStatus("ERROR");
-  private static final DBEnvironmentStatus STATUS_OPENING              = new DBEnvironmentStatus("OPENING");
-  private static final DBEnvironmentStatus STATUS_OPEN                 = new DBEnvironmentStatus("OPEN");
-  private static final DBEnvironmentStatus STATUS_CLOSING              = new DBEnvironmentStatus("CLOSING");
-  private static final DBEnvironmentStatus STATUS_CLOSED               = new DBEnvironmentStatus("CLOSED");
+  private static final DatabaseEntry CLEAN_FLAG_KEY              = new DatabaseEntry(new byte[] { 1 });
+  private static final byte          IS_CLEAN                    = 1;
+  private static final byte          IS_DIRTY                    = 2;
+  private static final long          SLEEP_TIME_ON_STARTUP_ERROR = 500;
+  private static final int           STARTUP_RETRY_COUNT         = 5;
 
-  private static final DatabaseEntry       CLEAN_FLAG_KEY              = new DatabaseEntry(new byte[] { 1 });
-  private static final byte                IS_CLEAN                    = 1;
-  private static final byte                IS_DIRTY                    = 2;
-  private static final long                SLEEP_TIME_ON_STARTUP_ERROR = 500;
-  private static final int                 STARTUP_RETRY_COUNT         = 5;
+  private final List                 createdDatabases;
+  private final Map                  databasesByName;
+  private final File                 envHome;
+  private EnvironmentConfig          ecfg;
+  private DatabaseConfig             dbcfg;
+  private ClassCatalogWrapper        catalog;
 
-  private final List                       createdDatabases;
-  private final Map                        databasesByName;
-  private final File                       envHome;
-  private EnvironmentConfig                ecfg;
-  private DatabaseConfig                   dbcfg;
-  private ClassCatalogWrapper              catalog;
+  private Environment                env;
+  private Database                   controlDB;
+  private DBEnvironmentStatus        status                      = DBEnvironmentStatus.STATUS_INIT;
+  private DatabaseOpenResult         openResult                  = null;
 
-  private Environment                      env;
-  private Database                         controlDB;
-  private DBEnvironmentStatus              status                      = STATUS_INIT;
-  private DatabaseOpenResult               openResult                  = null;
-
-  private final boolean                    paranoid;
+  private final boolean              paranoid;
 
   public BerkeleyDBEnvironment(boolean paranoid, File envHome) throws IOException {
     this(paranoid, envHome, new Properties());
@@ -141,10 +133,10 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
   }
 
   public synchronized DatabaseOpenResult open() throws TCDatabaseException {
-    if ((status != STATUS_INIT) && (status != STATUS_CLOSED)) { throw new DatabaseOpenException(
-                                                                                                "Database environment isn't in INIT/CLOSED state."); }
+    if ((status != DBEnvironmentStatus.STATUS_INIT) && (status != DBEnvironmentStatus.STATUS_CLOSED)) { throw new DatabaseOpenException(
+                                                                                                                                        "Database environment isn't in INIT/CLOSED state."); }
 
-    status = STATUS_OPENING;
+    status = DBEnvironmentStatus.STATUS_OPENING;
     try {
       env = openEnvironment();
       synchronized (CONTROL_LOCK) {
@@ -153,7 +145,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
         controlDB = env.openDatabase(null, "control", this.dbcfg);
         openResult = new DatabaseOpenResult(isClean());
         if (!openResult.isClean()) {
-          this.status = STATUS_INIT;
+          this.status = DBEnvironmentStatus.STATUS_INIT;
           forceClose();
           return openResult;
         }
@@ -174,20 +166,20 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       newMapsDatabase(env, MAP_DB_NAME);
       newStringToStringDatabase(env, CLUSTER_STATE_STORE);
     } catch (DatabaseException e) {
-      this.status = STATUS_ERROR;
+      this.status = DBEnvironmentStatus.STATUS_ERROR;
       forceClose();
       throw new TCDatabaseException(e);
     } catch (Error e) {
-      this.status = STATUS_ERROR;
+      this.status = DBEnvironmentStatus.STATUS_ERROR;
       forceClose();
       throw e;
     } catch (RuntimeException e) {
-      this.status = STATUS_ERROR;
+      this.status = DBEnvironmentStatus.STATUS_ERROR;
       forceClose();
       throw e;
     }
 
-    this.status = STATUS_OPEN;
+    this.status = DBEnvironmentStatus.STATUS_OPEN;
     return openResult;
   }
 
@@ -197,7 +189,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
 
   public synchronized void close() throws TCDatabaseException {
     assertOpen();
-    status = STATUS_CLOSING;
+    status = DBEnvironmentStatus.STATUS_CLOSING;
     cinfo("Closing...");
 
     try {
@@ -230,12 +222,12 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     this.controlDB = null;
     this.env = null;
 
-    status = STATUS_CLOSED;
+    status = DBEnvironmentStatus.STATUS_CLOSED;
     cinfo("Closed.");
   }
 
   public synchronized boolean isOpen() {
-    return STATUS_OPEN.equals(status);
+    return DBEnvironmentStatus.STATUS_OPEN.equals(status);
   }
 
   // This is for testing and cleanup on error.
@@ -350,20 +342,24 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
   }
 
   private void assertNotError() throws TCDatabaseException {
-    if (STATUS_ERROR == status) throw new TCDatabaseException("Attempt to operate on an environment in an error state.");
+    if (DBEnvironmentStatus.STATUS_ERROR == status) throw new TCDatabaseException(
+                                                                                  "Attempt to operate on an environment in an error state.");
   }
 
   private void assertOpening() {
-    if (STATUS_OPENING != status) throw new AssertionError("Database environment should be opening but isn't");
+    if (DBEnvironmentStatus.STATUS_OPENING != status) throw new AssertionError(
+                                                                               "Database environment should be opening but isn't");
   }
 
   private void assertOpen() throws TCDatabaseException {
     assertNotError();
-    if (STATUS_OPEN != status) throw new DatabaseNotOpenException("Database environment should be open but isn't.");
+    if (DBEnvironmentStatus.STATUS_OPEN != status) throw new DatabaseNotOpenException(
+                                                                                      "Database environment should be open but isn't.");
   }
 
   private void assertClosing() {
-    if (STATUS_CLOSING != status) throw new AssertionError("Database environment should be closing but isn't");
+    if (DBEnvironmentStatus.STATUS_CLOSING != status) throw new AssertionError(
+                                                                               "Database environment should be closing but isn't");
   }
 
   private boolean isClean() throws TCDatabaseException {
@@ -545,18 +541,6 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
 
   public static final String getClusterStateStoreName() {
     return CLUSTER_STATE_STORE;
-  }
-
-  private static final class DBEnvironmentStatus {
-    private final String description;
-
-    DBEnvironmentStatus(String desc) {
-      this.description = desc;
-    }
-
-    public String toString() {
-      return this.description;
-    }
   }
 
   public static final class ClassCatalogWrapper {
