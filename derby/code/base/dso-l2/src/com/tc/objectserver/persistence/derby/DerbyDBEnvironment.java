@@ -62,6 +62,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     newIntToBytesDB(CLASS_DB_NAME);
     newLongToStringDB(STRING_INDEX_DB_NAME);
     newStringToStringDB(CLUSTER_STATE_STORE);
+    newMapsDatabase();
   }
 
   private void newObjectDB() throws TCDatabaseException {
@@ -97,6 +98,11 @@ public class DerbyDBEnvironment implements DBEnvironment {
   private void newStringToStringDB(String tableName) throws TCDatabaseException {
     TCStringToStringDatabase db = new DerbyTCStringToStringDatabase(tableName, connection);
     tables.put(tableName, db);
+  }
+
+  private void newMapsDatabase() throws TCDatabaseException {
+    TCMapsDatabase db = new DerbyTCMapsDatabase(MAP_DB_NAME, connection);
+    tables.put(MAP_DB_NAME, db);
   }
 
   public synchronized void close() throws TCDatabaseException {
@@ -150,9 +156,8 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return (DerbyTCIntToBytesDatabase) tables.get(CLASS_DB_NAME);
   }
 
-  public TCMapsDatabase getMapsDatabase() throws TCDatabaseException {
-    // TODO
-    return null;
+  public TCMapsDatabase getMapsDatabase() {
+    return (DerbyTCMapsDatabase) tables.get(MAP_DB_NAME);
   }
 
   public TCLongToStringDatabase getStringIndexDatabase() {

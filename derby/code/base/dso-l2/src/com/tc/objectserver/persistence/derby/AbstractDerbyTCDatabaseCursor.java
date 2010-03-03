@@ -35,6 +35,4 @@ public abstract class AbstractDerbyTCDatabaseCursor<K, V> implements TCDatabaseC
   }
 
   public abstract boolean getNext(TCDatabaseEntry<K, V> entry);
-
-  public abstract boolean getSearchKeyRange(TCDatabaseEntry<K, V> entry);
 }

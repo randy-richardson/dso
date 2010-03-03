@@ -11,7 +11,7 @@ import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
 
 public class BerkeleyTCDatabaseCursor implements TCDatabaseCursor<byte[], byte[]> {
-  private final Cursor cursor;
+  protected final Cursor cursor;
 
   public BerkeleyTCDatabaseCursor(Cursor cursor) {
     this.cursor = cursor;
@@ -32,14 +32,4 @@ public class BerkeleyTCDatabaseCursor implements TCDatabaseCursor<byte[], byte[]
     entry.setKey(entryKey.getData()).setValue(entryValue.getData());
     return status.equals(OperationStatus.SUCCESS);
   }
-
-  public boolean getSearchKeyRange(TCDatabaseEntry<byte[], byte[]> entry) {
-    DatabaseEntry entryKey = new DatabaseEntry();
-    DatabaseEntry entryValue = new DatabaseEntry();
-    entryKey.setData(entry.getKey());
-    OperationStatus status = cursor.getSearchKeyRange(entryKey, entryValue, LockMode.DEFAULT);
-    entry.setKey(entryKey.getData()).setValue(entryValue.getData());
-    return status.equals(OperationStatus.SUCCESS);
-  }
-
 }

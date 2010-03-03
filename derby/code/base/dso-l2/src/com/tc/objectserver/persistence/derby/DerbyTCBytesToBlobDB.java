@@ -118,10 +118,5 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
       return false;
     }
 
-    @Override
-    public boolean getSearchKeyRange(TCDatabaseEntry<byte[], byte[]> entry) {
-      throw new UnsupportedOperationException();
-    }
-
   }
 }

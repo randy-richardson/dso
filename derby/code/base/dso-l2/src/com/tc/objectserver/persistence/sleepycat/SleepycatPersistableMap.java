@@ -163,7 +163,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
         byte[] key = persistor.serialize(id, k);
         written += key.length;
         try {
-          boolean status = db.delete(key, tx);
+          boolean status = db.delete(id, key, tx);
           if (!status) {
             // make the formatter happy
             throw new DBException("Unable to remove Map Entry for object id: " + id + ", status: " + status + ", key: "
@@ -191,7 +191,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
       written += value.length;
       written += key.length;
       try {
-        boolean status = db.put(value, key, tx);
+        boolean status = db.put(id, value, key, tx);
         if (!status) { throw new DBException("Unable to update Map table : " + id + " status : " + status); }
       } catch (Exception t) {
         throw new TCDatabaseException(t.getMessage());
@@ -224,14 +224,6 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
   // }
   // }
 
-  private boolean partialMatch(byte[] idbytes, byte[] key) {
-    if (key.length < idbytes.length) return false;
-    for (int i = 0; i < idbytes.length; i++) {
-      if (idbytes[i] != key[i]) return false;
-    }
-    return true;
-  }
-
   @Override
   public boolean equals(Object other) {
     if (!(other instanceof Map)) { return false; }
@@ -259,22 +251,15 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
       throws TCDatabaseException {
     // XXX:: Since we read in one direction and since we have to read the first record of the next map to break out, we
     // need READ_COMMITTED to avoid deadlocks between commit thread and DGC thread.
-    TCDatabaseCursor<byte[], byte[]> c = db.openCursor(tx);
+    TCDatabaseCursor<byte[], byte[]> c = db.openCursor(tx, id);
     byte idb[] = Conversion.long2Bytes(id);
     TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
     entry.setKey(idb);
     try {
-      if (c.getSearchKeyRange(entry)) {
-        do {
-          if (partialMatch(idb, entry.getKey())) {
-            Object mkey = persistor.deserialize(idb.length, entry.getKey());
-            Object mvalue = persistor.deserialize(entry.getValue());
-            map.put(mkey, mvalue);
-            // System.err.println("map.put() = " + mkey + " , " + mvalue);
-          } else {
-            break;
-          }
-        } while (c.getNext(entry));
+      while (c.getNext(entry)) {
+        Object mkey = persistor.deserialize(idb.length, entry.getKey());
+        Object mvalue = persistor.deserialize(entry.getValue());
+        map.put(mkey, mvalue);
       }
       c.close();
     } catch (Exception t) {

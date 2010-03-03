@@ -9,6 +9,8 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
+import com.tc.objectserver.persistence.TCDatabaseCursor;
+import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
@@ -18,6 +20,19 @@ public class BerkeleyTCMapsDatabase extends BerkeleyTCBytesBytesDatabase impleme
 
   public BerkeleyTCMapsDatabase(Database db) {
     super(db);
+  }
+
+  public TCDatabaseCursor openCursor(PersistenceTransaction tx, long objectID) {
+    Cursor cursor = this.db.openCursor(pt2nt(tx), CursorConfig.READ_COMMITTED);
+    return new BerkeleyMapsTCDatabaseCursor(cursor, objectID);
+  }
+
+  public boolean delete(long id, byte[] key, PersistenceTransaction tx) {
+    return super.delete(key, tx);
+  }
+
+  public boolean put(long id, byte[] key, byte[] value, PersistenceTransaction tx) {
+    return super.put(key, value, tx);
   }
 
   public int deleteCollection(long objectID, PersistenceTransaction tx) throws TCDatabaseException {
@@ -47,11 +62,51 @@ public class BerkeleyTCMapsDatabase extends BerkeleyTCBytesBytesDatabase impleme
     return written;
   }
 
-  private boolean partialMatch(byte[] idbytes, byte[] key) {
+  private static boolean partialMatch(byte[] idbytes, byte[] key) {
     if (key.length < idbytes.length) return false;
     for (int i = 0; i < idbytes.length; i++) {
       if (idbytes[i] != key[i]) return false;
     }
     return true;
+  }
+
+  private static class BerkeleyMapsTCDatabaseCursor extends BerkeleyTCDatabaseCursor {
+    private boolean isInit        = false;
+    private boolean noMoreMatches = false;
+    private long    objectID;
+
+    public BerkeleyMapsTCDatabaseCursor(Cursor cursor, long objectID) {
+      super(cursor);
+      this.objectID = objectID;
+    }
+
+    @Override
+    public boolean getNext(TCDatabaseEntry<byte[], byte[]> entry) {
+      if (!isInit && !getSearchKeyRange(entry)) { return false; }
+
+      if (noMoreMatches) { return false; }
+
+      if (!isInit) {
+        isInit = true;
+      } else if (!super.getNext(entry)) { return false; }
+
+      byte idb[] = Conversion.long2Bytes(objectID);
+
+      if (partialMatch(idb, entry.getKey())) {
+        return true;
+      } else {
+        noMoreMatches = true;
+        return false;
+      }
+    }
+
+    public boolean getSearchKeyRange(TCDatabaseEntry<byte[], byte[]> entry) {
+      DatabaseEntry entryKey = new DatabaseEntry();
+      DatabaseEntry entryValue = new DatabaseEntry();
+      entryKey.setData(entry.getKey());
+      OperationStatus status = cursor.getSearchKeyRange(entryKey, entryValue, LockMode.DEFAULT);
+      entry.setKey(entryKey.getData()).setValue(entryValue.getData());
+      return status.equals(OperationStatus.SUCCESS);
+    }
   }
 }

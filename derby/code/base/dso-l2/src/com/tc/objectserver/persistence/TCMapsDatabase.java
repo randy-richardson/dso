@@ -7,14 +7,14 @@ import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 
 public interface TCMapsDatabase {
-  public boolean put(byte[] key, byte[] value, PersistenceTransaction tx);
+  public boolean put(long id, byte[] key, byte[] value, PersistenceTransaction tx);
 
-  public boolean delete(byte[] key, PersistenceTransaction tx);
+  public boolean delete(long id, byte[] key, PersistenceTransaction tx);
 
   /**
    * Returns no of bytes written
    */
-  public int deleteCollection(long objectID, PersistenceTransaction tx) throws TCDatabaseException;
+  public int deleteCollection(long id, PersistenceTransaction tx) throws TCDatabaseException;
 
-  public TCDatabaseCursor<byte[], byte[]> openCursor(PersistenceTransaction tx);
+  public TCDatabaseCursor<byte[], byte[]> openCursor(PersistenceTransaction tx, long objectID);
 }
