@@ -26,11 +26,12 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
     super(tableName, connection);
   }
 
-  protected final void createTableIfNotExists() throws SQLException {
+  protected final void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (32672) FOR BIT DATA, " + VALUE + " BIGINT )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (32672) FOR BIT DATA, " + VALUE
+                   + " BIGINT, PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
@@ -38,6 +39,8 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
 
   public long get(byte[] rootName, PersistenceTransaction tx) {
     ResultSet rs = null;
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName + " WHERE "
                                                                + KEY + " = ?");
@@ -49,12 +52,16 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
       return temp;
     } catch (SQLException e) {
       throw new DBException("Could not retrieve root", e);
+    } finally {
+      closeResultSet(rs);
     }
   }
 
   public Set<ObjectID> getRootIds(PersistenceTransaction tx) {
     ResultSet rs = null;
     Set<ObjectID> set = new HashSet<ObjectID>();
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName);
       rs = psSelect.executeQuery();
@@ -67,6 +74,7 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
       throw new DBException("Could not retrieve root ids", e);
     } finally {
       try {
+        closeResultSet(rs);
         connection.commit();
       } catch (SQLException e) {
         // ignore
@@ -77,6 +85,8 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
   public List<byte[]> getRootNames(PersistenceTransaction tx) {
     ResultSet rs = null;
     ArrayList<byte[]> list = new ArrayList<byte[]>();
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + " FROM " + tableName);
       rs = psSelect.executeQuery();
@@ -89,6 +99,7 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
       throw new DBException("Could not retrieve root ids", e);
     } finally {
       try {
+        closeResultSet(rs);
         connection.commit();
       } catch (SQLException e) {
         // ignore
@@ -99,6 +110,8 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
   public Map<byte[], Long> getRootNamesToId(PersistenceTransaction tx) {
     ResultSet rs = null;
     Map<byte[], Long> map = new HashMap<byte[], Long>();
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + ", " + VALUE + " FROM " + tableName);
       rs = psSelect.executeQuery();
@@ -111,6 +124,7 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
       throw new DBException("Could not retrieve root map", e);
     } finally {
       try {
+        closeResultSet(rs);
         connection.commit();
       } catch (SQLException e) {
         // ignore
@@ -119,7 +133,17 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
   }
 
   public boolean put(byte[] rootName, long id, PersistenceTransaction tx) {
+    if (get(rootName, tx) == ObjectID.NULL_ID.toLong()) {
+      return insert(rootName, id, tx);
+    } else {
+      return update(rootName, id, tx);
+    }
+  }
+
+  private boolean insert(byte[] rootName, long id, PersistenceTransaction tx) {
     PreparedStatement psPut;
+    Connection connection = pt2nt(tx);
+
     try {
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?)");
       psPut.setBytes(1, rootName);
@@ -129,6 +153,22 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
       throw new DBException("Could not put root", e);
     }
     return true;
+
+  }
+
+  private boolean update(byte[] rootName, long id, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
+    try {
+      PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + tableName + " SET " + VALUE + " = ? "
+                                                               + " WHERE " + KEY + " = ?");
+      psUpdate.setLong(1, id);
+      psUpdate.setBytes(2, rootName);
+      psUpdate.executeUpdate();
+      return true;
+    } catch (SQLException e) {
+      throw new DBException(e);
+    }
   }
 
 }

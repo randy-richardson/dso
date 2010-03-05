@@ -49,9 +49,9 @@ public class DerbyDBEnvironment implements DBEnvironment {
   private DerbyControlDB        controlDB;
   private static final Object   CONTROL_LOCK = new Object();
 
-  public DerbyDBEnvironment(boolean paranoid, File envHome) throws IOException {
+  public DerbyDBEnvironment(boolean paranoid, File home) throws IOException {
     this.isParanoid = paranoid;
-    this.envHome = envHome;
+    this.envHome = home;
     FileUtils.forceMkdir(this.envHome);
   }
 
@@ -80,7 +80,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
 
       // now open control db
       synchronized (CONTROL_LOCK) {
-        controlDB = new DerbyControlDB(CONTROL_DB, connection);
+        controlDB = new DerbyControlDB(CONTROL_DB, createConnection());
         openResult = new DatabaseOpenResult(controlDB.isClean());
         if (!openResult.isClean()) {
           this.status = DBEnvironmentStatus.STATUS_INIT;
@@ -131,13 +131,17 @@ public class DerbyDBEnvironment implements DBEnvironment {
       throw new TCDatabaseException(message);
     }
 
-    Properties attributesProps = new Properties();
-    attributesProps.put("create", "true");
+    this.connection = createConnection();
+  }
 
+  protected Connection createConnection() throws TCDatabaseException {
     try {
-      this.connection = DriverManager.getConnection(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME
+      Properties attributesProps = new Properties();
+      attributesProps.put("create", "true");
+      Connection conn = DriverManager.getConnection(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME
                                                     + ";", attributesProps);
-      this.connection.setAutoCommit(false);
+      conn.setAutoCommit(false);
+      return conn;
     } catch (SQLException sqlE) {
       throw new TCDatabaseException(sqlE);
     }
@@ -155,6 +159,17 @@ public class DerbyDBEnvironment implements DBEnvironment {
     newLongToStringDB(STRING_INDEX_DB_NAME);
     newStringToStringDB(CLUSTER_STATE_STORE);
     newMapsDatabase();
+
+    try {
+      DerbyDBSequence.createSequenceTable(connection);
+    } catch (SQLException e) {
+      try {
+        connection.rollback();
+      } catch (SQLException e1) {
+        throw new TCDatabaseException(e1);
+      }
+      throw new TCDatabaseException(e);
+    }
   }
 
   private void newObjectDB() throws TCDatabaseException {
@@ -207,6 +222,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
 
   private void forceClose() throws TCDatabaseException {
     try {
+      if (connection == null) return;
       connection.close();
     } catch (SQLException e) {
       throw new TCDatabaseException(e);
@@ -283,14 +299,14 @@ public class DerbyDBEnvironment implements DBEnvironment {
   public MutableSequence getSequence(PersistenceTransactionProvider ptxp, TCLogger log, String sequenceID,
                                      int startValue) {
     try {
-      return new DerbyDBSequence(connection, sequenceID, startValue);
+      return new DerbyDBSequence((DerbyPersistenceTransactionProvider) ptxp, sequenceID, startValue);
     } catch (SQLException e) {
       throw new DBException(e);
     }
   }
 
   public PersistenceTransactionProvider getPersistenceTransactionProvider() {
-    return new DerbyPersistenceTransactionProvider(connection);
+    return new DerbyPersistenceTransactionProvider(this);
   }
 
   public boolean isParanoidMode() {

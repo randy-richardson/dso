@@ -13,6 +13,8 @@ public interface TCBytesBytesDatabase {
   public boolean delete(byte[] key, PersistenceTransaction tx);
 
   public TCDatabaseCursor<byte[], byte[]> openCursor(PersistenceTransaction tx);
+  
+  public TCDatabaseCursor<byte[], byte[]> openCursorUpdatable(PersistenceTransaction tx);
 
   public boolean putNoOverwrite(PersistenceTransaction tx, byte[] key, byte[] value);
 }

@@ -32,6 +32,7 @@ public class SRABerkeleyDB implements StatisticRetrievalAction {
   private void forceUpdate() {
     EnvironmentStats stats;
     try {
+      if(dbEnv == null) return;
       stats = dbEnv.getStats();
     } catch (TCDatabaseException e) {
       return;

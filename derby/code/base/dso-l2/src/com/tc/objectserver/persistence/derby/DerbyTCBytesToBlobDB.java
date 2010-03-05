@@ -21,22 +21,33 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
     super(tableName, connection);
   }
 
-  protected final void createTableIfNotExists() throws SQLException {
+  protected final void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
     String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (32672) FOR BIT DATA, " + VALUE
-                   + " BLOB (16M) )";
+                   + " BLOB (16M), PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
   }
 
   public boolean delete(byte[] key, PersistenceTransaction tx) {
-    return false;
+    Connection connection = pt2nt(tx);
+
+    try {
+      PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
+      psUpdate.setBytes(1, key);
+      psUpdate.executeUpdate();
+      return true;
+    } catch (SQLException e) {
+      throw new DBException(e);
+    }
   }
 
   public byte[] get(byte[] key, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     ResultSet rs = null;
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName + " WHERE "
@@ -49,11 +60,26 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
       return temp;
     } catch (SQLException e) {
       throw new DBException(e);
+    } finally {
+      closeResultSet(rs);
+    }
+  }
+
+  public TCDatabaseCursor<byte[], byte[]> openCursorUpdatable(PersistenceTransaction tx) {
+    try {
+      Connection connection = pt2nt(tx);
+      PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + "," + VALUE + " FROM " + tableName,
+                                                               ResultSet.TYPE_SCROLL_SENSITIVE,
+                                                               ResultSet.CONCUR_UPDATABLE);
+      return new DerbyTCBytesBytesCursor(psSelect.executeQuery());
+    } catch (SQLException e) {
+      throw new DBException(e);
     }
   }
 
   public TCDatabaseCursor<byte[], byte[]> openCursor(PersistenceTransaction tx) {
     try {
+      Connection connection = pt2nt(tx);
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + "," + VALUE + " FROM " + tableName);
       return new DerbyTCBytesBytesCursor(psSelect.executeQuery());
     } catch (SQLException e) {
@@ -63,14 +89,15 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
 
   public boolean put(byte[] key, byte[] val, PersistenceTransaction tx) {
     if (get(key, tx) == null) {
-      return insert(key, val);
+      return insert(key, val, tx);
     } else {
-      return update(key, val);
+      return update(key, val, tx);
     }
   }
 
-  private boolean update(byte[] key, byte[] val) {
+  private boolean update(byte[] key, byte[] val, PersistenceTransaction tx) {
     try {
+      Connection connection = pt2nt(tx);
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + tableName + " SET " + VALUE + " = ? "
                                                                + " WHERE " + KEY + " = ?");
       psUpdate.setBytes(1, val);
@@ -82,9 +109,10 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
     }
   }
 
-  private boolean insert(byte[] key, byte[] val) {
+  private boolean insert(byte[] key, byte[] val, PersistenceTransaction tx) {
     PreparedStatement psPut;
     try {
+      Connection connection = pt2nt(tx);
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?)");
       psPut.setBytes(1, key);
       psPut.setBytes(2, val);
@@ -96,7 +124,7 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
   }
 
   public boolean putNoOverwrite(PersistenceTransaction tx, byte[] key, byte[] value) {
-    if (get(key, tx) == null) { return insert(key, value); }
+    if (get(key, tx) == null) { return insert(key, value, tx); }
     return false;
   }
 

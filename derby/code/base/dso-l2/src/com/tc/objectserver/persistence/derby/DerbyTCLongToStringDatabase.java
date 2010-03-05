@@ -23,12 +23,12 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
   }
 
   @Override
-  protected void createTableIfNotExists() throws SQLException {
+  protected void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " INT, " + VALUE + " VARCHAR (" + Integer.MAX_VALUE
-                   + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " INT, " + VALUE + " VARCHAR (" + (32672)
+                   + "), PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
@@ -36,6 +36,8 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
 
   public TLongObjectHashMap loadMappingsInto(TLongObjectHashMap target, PersistenceTransaction tx) {
     ResultSet rs = null;
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + "," + VALUE + " FROM " + tableName);
       rs = psSelect.executeQuery();
@@ -48,6 +50,7 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
       throw new DBException(e);
     } finally {
       try {
+        closeResultSet(rs);
         connection.commit();
       } catch (SQLException e) {
         // Ignore
@@ -56,14 +59,14 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
   }
 
   public boolean put(long id, String string, PersistenceTransaction tx) {
-    if(get(id) == null) {
-      return insert(id, string);
-    }
+    if (get(id, tx) == null) { return insert(id, string, tx); }
     return false;
   }
 
-  private boolean insert(long id, String b) {
+  private boolean insert(long id, String b, PersistenceTransaction tx) {
     PreparedStatement psPut;
+    Connection connection = pt2nt(tx);
+
     try {
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?)");
       psPut.setLong(1, id);
@@ -74,9 +77,11 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
     }
     return true;
   }
-  
-  private byte[] get(long id) {
+
+  private byte[] get(long id, PersistenceTransaction tx) {
     ResultSet rs = null;
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName + " WHERE "
                                                                + KEY + " = ?");
@@ -88,6 +93,8 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
       return temp;
     } catch (SQLException e) {
       throw new DBException(e);
+    } finally {
+      closeResultSet(rs);
     }
   }
 }

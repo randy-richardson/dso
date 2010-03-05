@@ -24,18 +24,21 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
   }
 
   @Override
-  protected void createTableIfNotExists() throws SQLException {
+  protected void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
     String query = "CREATE TABLE " + tableName + "(" + OBJECT_ID + " BIGINT, " + KEY
-                   + " VARCHAR (32672) FOR BIT DATA, " + VALUE + " BLOB (16M) )";
+                   + " VARCHAR (32672) FOR BIT DATA, " + VALUE + " BLOB (16M), PRIMARY KEY(" + KEY + "," + OBJECT_ID
+                   + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
   }
 
   public boolean delete(long objectID, byte[] key, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
       psUpdate.setBytes(1, key);
@@ -50,6 +53,8 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
    * TODO: This should return no of bytes and not no of rows updated.
    */
   public int deleteCollection(long objectID, PersistenceTransaction tx) throws TCDatabaseException {
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + OBJECT_ID
                                                                + " = ?");
@@ -63,6 +68,7 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
 
   public TCDatabaseCursor<byte[], byte[]> openCursor(PersistenceTransaction tx, long objectID) {
     try {
+      Connection connection = pt2nt(tx);
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + "," + VALUE + " FROM " + tableName
                                                                + " WHERE " + OBJECT_ID + " = ?");
       psSelect.setLong(1, objectID);
@@ -73,15 +79,16 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
   }
 
   public boolean put(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
-    if(!contains(id, k)) {
-      return insert(id, k, v);
+    if (!contains(id, k, tx)) {
+      return insert(id, k, v, tx);
     } else {
-      return update(id, k, v);
+      return update(id, k, v, tx);
     }
   }
-  
-  private boolean contains(long id, byte[] k) {
+
+  private boolean contains(long id, byte[] k, PersistenceTransaction tx) {
     ResultSet rs = null;
+    Connection connection = pt2nt(tx);
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName + " WHERE "
                                                                + KEY + " = ? AND " + OBJECT_ID + " = ? ");
@@ -93,11 +100,14 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
       return true;
     } catch (SQLException e) {
       throw new DBException("Error retrieving object id: " + id + "; error: " + e.getMessage());
+    } finally {
+      closeResultSet(rs);
     }
   }
 
+  private boolean update(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
 
-  private boolean update(long id, byte[] k, byte[] v) {
     try {
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + tableName + " SET " + VALUE + " = ? "
                                                                + " WHERE " + KEY + " = ? AND " + OBJECT_ID + " = ? ");
@@ -111,7 +121,9 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
     }
   }
 
-  private boolean insert(long id, byte[] k, byte[] v) {
+  private boolean insert(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     PreparedStatement psPut;
     try {
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?, ?)");

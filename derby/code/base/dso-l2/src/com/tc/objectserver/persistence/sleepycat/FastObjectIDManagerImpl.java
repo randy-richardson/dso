@@ -166,13 +166,13 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     synchronized (objectIDUpdateLock) {
       if (stoppedFlag.isStopped()) return isAllFlushed;
       OidBitsArrayMapDiskStoreImpl oidStoreMap = new OidBitsArrayMapDiskStoreImpl(longsPerDiskEntry,
-                                                                                  this.objectOidStoreDB);
+                                                                                  this.objectOidStoreDB, ptp);
       OidBitsArrayMapDiskStoreImpl mapOidStoreMap = new OidBitsArrayMapDiskStoreImpl(longsPerStateEntry,
-                                                                                     this.mapsOidStoreDB);
+                                                                                     this.mapsOidStoreDB, ptp);
       PersistenceTransaction tx = null;
       try {
         tx = ptp.newTransaction();
-        TCDatabaseCursor<byte[], byte[]> cursor = oidStoreLogDB.openCursor(tx);
+        TCDatabaseCursor<byte[], byte[]> cursor = oidStoreLogDB.openCursorUpdatable(tx);
         TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
         int changes = 0;
         try {

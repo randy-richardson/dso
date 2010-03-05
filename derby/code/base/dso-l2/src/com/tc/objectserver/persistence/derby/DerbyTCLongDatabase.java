@@ -24,17 +24,19 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
   }
 
   @Override
-  protected void createTableIfNotExists() throws SQLException {
+  protected void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " BIGINT )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " BIGINT, PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
   }
 
   public boolean contains(long key, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     ResultSet rs = null;
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + " FROM " + tableName + " WHERE " + KEY
@@ -46,11 +48,14 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
       return true;
     } catch (SQLException e) {
       throw new DBException(e);
+    } finally {
+      closeResultSet(rs);
     }
   }
 
   public Status delete(long key, PersistenceTransaction tx) {
     if (!contains(key, tx)) { return Status.NOT_FOUND; }
+    Connection connection = pt2nt(tx);
 
     try {
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
@@ -65,6 +70,7 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
   public Set<Long> getAllKeys(PersistenceTransaction tx) {
     ResultSet rs = null;
     Set<Long> set = new HashSet<Long>();
+    Connection connection = pt2nt(tx);
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + " FROM " + tableName);
       rs = psSelect.executeQuery();
@@ -88,12 +94,13 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
     if (contains(key, tx)) {
       return false;
     } else {
-      return insert(key);
+      return insert(key, tx);
     }
   }
 
-  private boolean insert(long key) {
+  private boolean insert(long key, PersistenceTransaction tx) {
     PreparedStatement psPut;
+    Connection connection = pt2nt(tx);
     try {
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?)");
       psPut.setLong(1, key);

@@ -12,6 +12,7 @@ import com.tc.management.beans.L2MBeanNames;
 import com.tc.management.beans.TCServerInfoMBean;
 import com.tc.objectserver.control.ExtraProcessServerControl;
 import com.tc.objectserver.control.ServerControl;
+import com.tc.objectserver.persistence.derby.DerbyDBEnvironment;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.stats.DGCMBean;
 import com.tc.stats.DSOMBean;
@@ -820,7 +821,9 @@ public class ActivePassiveServerManager extends MultipleServerManager {
   public void cleanupServerDB(int index) throws Exception {
     if (serverNetworkShare && serverPersistence.equals(MultipleServersPersistenceMode.PERMANENT_STORE)) {
       System.out.println("Deleting data directory for server=[" + servers[index].getDsoPort() + "]");
-      deleteDirectory(serverConfigCreator.getDataLocation(startIndexOfServer + index));
+      // TODO: hack to remove 
+      deleteDirectory(serverConfigCreator.getDataLocation(startIndexOfServer + index) + File.separator
+                      + DerbyDBEnvironment.DB_NAME);
     }
   }
 

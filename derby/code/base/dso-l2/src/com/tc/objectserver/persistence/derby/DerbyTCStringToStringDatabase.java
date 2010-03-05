@@ -23,12 +23,12 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
   }
 
   @Override
-  protected void createTableIfNotExists() throws SQLException {
+  protected void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (" + Integer.MAX_VALUE + ") , " + VALUE
-                   + " VARCHAR (" + Integer.MAX_VALUE + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (" + (32672) + ") , " + VALUE + " VARCHAR ("
+                   + (32672) + "), PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
@@ -38,10 +38,10 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
     TCDatabaseEntry<String, String> entry = new TCDatabaseEntry<String, String>();
     entry.setKey(key);
     Status status = get(entry, tx);
-    if(status != Status.SUCCESS) {
-      return status;
-    }
-    
+    if (status != Status.SUCCESS) { return status; }
+
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
       psUpdate.setString(1, key);
@@ -54,6 +54,8 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
 
   public Status get(TCDatabaseEntry<String, String> entry, PersistenceTransaction tx) {
     ResultSet rs = null;
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName + " WHERE "
                                                                + KEY + " = ?");
@@ -65,6 +67,8 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
       return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
+    } finally {
+      closeResultSet(rs);
     }
   }
 
@@ -72,16 +76,18 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
     TCDatabaseEntry<String, String> entry = new TCDatabaseEntry<String, String>();
     entry.setKey(key);
     Status status = get(entry, tx);
-    if(status == Status.SUCCESS) {
-      return insert(key, value);
+    if (status == Status.SUCCESS) {
+      return insert(key, value, tx);
     } else {
-      return update(key, value);
+      return update(key, value, tx);
     }
 
   }
 
-  private boolean update(String key, String value) {
+  private boolean update(String key, String value, PersistenceTransaction tx) {
     try {
+      Connection connection = pt2nt(tx);
+
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + tableName + " SET " + VALUE + " = ? "
                                                                + " WHERE " + KEY + " = ?");
       psUpdate.setString(1, value);
@@ -93,9 +99,11 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
     }
   }
 
-  private boolean insert(String key, String value) {
+  private boolean insert(String key, String value, PersistenceTransaction tx) {
     PreparedStatement psPut;
     try {
+      Connection connection = pt2nt(tx);
+
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?)");
       psPut.setString(1, value);
       psPut.setString(2, key);

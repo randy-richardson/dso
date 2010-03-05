@@ -203,6 +203,7 @@ public interface TCPropertiesConsts {
    * (l2.berkeleydb is removed before giving to Berkeley DB JE)
    * </code>
    ********************************************************************************************************************/
+  public static final String   L2_DERBY_ENABLED                                              = "l2.derby.enabled";
   public static final String   L2_BERKELEYDB_JE_LOCK_TIMEOUT                                 = "l2.berkeleydb.je.lock.timeout";
   public static final String   L2_BERKELEYDB_JE_MAXMEMORYPERCENT                             = "l2.berkeleydb.je.maxMemoryPercent";
   public static final String   L2_BERKELEYDB_JE_LOCK_NLOCK_TABLES                            = "l2.berkeleydb.je.lock.nLockTables";
@@ -424,8 +425,8 @@ public interface TCPropertiesConsts {
   public static final String   L1_TRANSACTIONMANAGER_FOLDING_DEBUG                           = "l1.transactionmanager.folding.debug";
   public static final String   L1_TRANSACTIONMANAGER_TIMEOUTFORACK_ONEXIT                    = "l1.transactionmanager.timeoutForAckOnExit";
 
-  public static final String   TC_TRANSPORT_HANDSHAKE_TIMEOUT                                     = "tc.transport.handshake.timeout";
-  public static final String   TC_CONFIG_SOURCEGET_TIMEOUT                                        = "tc.config.getFromSource.timeout";
+  public static final String   TC_TRANSPORT_HANDSHAKE_TIMEOUT                                = "tc.transport.handshake.timeout";
+  public static final String   TC_CONFIG_SOURCEGET_TIMEOUT                                   = "tc.config.getFromSource.timeout";
 
   /*********************************************************************************************************************
    * <code>

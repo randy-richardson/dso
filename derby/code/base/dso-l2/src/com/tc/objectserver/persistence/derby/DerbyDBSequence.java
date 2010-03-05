@@ -13,21 +13,22 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DerbyDBSequence implements MutableSequence {
-  public static final String  SEQUENCE_TABLE = "sequenceTable";
-  private static final String SEUQENCE_NAME  = "sequenceName";
-  private static final String SEQUENCE_UID   = "sequenceUid";
-  private static final String SEQUENCE_VALUE = "sequenceValue";
+  public static final String                        SEQUENCE_TABLE = "sequenceTable";
+  private static final String                       SEUQENCE_NAME  = "sequenceName";
+  private static final String                       SEQUENCE_UID   = "sequenceUid";
+  private static final String                       SEQUENCE_VALUE = "sequenceValue";
 
-  private final Connection    connection;
-  private final String        entryName;
-  private final String        uid;
+  private final String                              entryName;
+  private final String                              uid;
+  private final DerbyPersistenceTransactionProvider ptxp;
 
   /**
    * Assuming connection is already open and sequence table has already been created.
    */
-  public DerbyDBSequence(Connection connection, String entryName, int startValue) throws SQLException {
-    this.connection = connection;
+  public DerbyDBSequence(DerbyPersistenceTransactionProvider ptxp, String entryName, int startValue)
+      throws SQLException {
     this.entryName = entryName;
+    this.ptxp = ptxp;
     if (startValue < 0) throw new IllegalArgumentException("start value cannot be < 0");
 
     createSequenceIfNeccesary(startValue);
@@ -36,6 +37,7 @@ public class DerbyDBSequence implements MutableSequence {
 
   private String setUID() throws SQLException {
     ResultSet rs = null;
+    Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getConnection();
     PreparedStatement psSelect = connection.prepareStatement("SELECT " + SEQUENCE_UID + " FROM " + SEQUENCE_TABLE
                                                              + " WHERE " + SEUQENCE_NAME + " = ?");
     psSelect.setString(1, entryName);
@@ -44,7 +46,8 @@ public class DerbyDBSequence implements MutableSequence {
     if (rs.next()) {
       String seqID = rs.getString(SEQUENCE_UID);
       rs.close();
-      this.connection.commit();
+      connection.commit();
+      connection.close();
       return seqID;
     }
 
@@ -67,6 +70,8 @@ public class DerbyDBSequence implements MutableSequence {
     if (current > next) { throw new AssertionError("Current = " + current + " Next = " + next); }
 
     try {
+      Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getConnection();
+
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + SEQUENCE_TABLE + " SET " + SEQUENCE_VALUE
                                                                + " = ? " + " WHERE " + SEUQENCE_NAME + " = ?");
       psUpdate.setLong(1, next);
@@ -74,6 +79,7 @@ public class DerbyDBSequence implements MutableSequence {
       psUpdate.executeUpdate();
 
       connection.commit();
+      connection.close();
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -83,6 +89,7 @@ public class DerbyDBSequence implements MutableSequence {
     ResultSet rs = null;
     PreparedStatement psSelect;
     try {
+      Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getConnection();
       psSelect = connection.prepareStatement("SELECT " + SEQUENCE_VALUE + " FROM " + SEQUENCE_TABLE + " WHERE "
                                              + SEUQENCE_NAME + " = ?");
       psSelect.setString(1, entryName);
@@ -92,7 +99,8 @@ public class DerbyDBSequence implements MutableSequence {
 
       long current = rs.getLong(1);
       rs.close();
-      this.connection.commit();
+      connection.commit();
+      connection.close();
       return current;
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -106,6 +114,8 @@ public class DerbyDBSequence implements MutableSequence {
   public void createSequenceIfNeccesary(int startVal) throws SQLException {
     if (exists()) { return; }
 
+    Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getConnection();
+
     PreparedStatement psPut = connection.prepareStatement("INSERT INTO " + SEQUENCE_TABLE + " VALUES (?, ?, ?)");
     psPut.setString(1, entryName);
     psPut.setLong(2, startVal);
@@ -114,10 +124,13 @@ public class DerbyDBSequence implements MutableSequence {
     psPut.executeUpdate();
     psPut.close();
     connection.commit();
+    connection.close();
   }
 
   private boolean exists() throws SQLException {
     ResultSet rs = null;
+    Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getConnection();
+
     PreparedStatement psSelect = connection.prepareStatement("SELECT " + SEQUENCE_VALUE + " FROM " + SEQUENCE_TABLE
                                                              + " WHERE " + SEUQENCE_NAME + " = ?");
     psSelect.setString(1, entryName);
@@ -125,9 +138,12 @@ public class DerbyDBSequence implements MutableSequence {
 
     if (!rs.next()) {
       rs.close();
-      this.connection.commit();
+      connection.commit();
+      connection.close();
       return false;
     }
+    connection.commit();
+    connection.close();
     return true;
   }
 
@@ -138,8 +154,8 @@ public class DerbyDBSequence implements MutableSequence {
     if (DerbyDBEnvironment.tableExists(connection, SEQUENCE_TABLE)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + SEQUENCE_TABLE + "(" + SEUQENCE_NAME + " CHAR (50), " + SEQUENCE_VALUE
-                   + " BIGINT, " + SEQUENCE_UID + " CHAR (100))";
+    String query = "CREATE TABLE " + SEQUENCE_TABLE + "(" + SEUQENCE_NAME + " VARCHAR (50), " + SEQUENCE_VALUE
+                   + " BIGINT, " + SEQUENCE_UID + " VARCHAR (50), PRIMARY KEY(" + SEUQENCE_NAME + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();

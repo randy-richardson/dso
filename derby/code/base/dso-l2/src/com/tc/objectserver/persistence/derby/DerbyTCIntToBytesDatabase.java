@@ -23,17 +23,20 @@ public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implement
   }
 
   @Override
-  protected void createTableIfNotExists() throws SQLException {
+  protected void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " INT, " + VALUE + " BLOB (16M) )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " INT, " + VALUE + " BLOB (16M), PRIMARY KEY(" + KEY
+                   + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
   }
 
   public byte[] get(int id, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     ResultSet rs = null;
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName + " WHERE "
@@ -46,10 +49,14 @@ public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implement
       return temp;
     } catch (SQLException e) {
       throw new DBException("Error retrieving object id: " + id + "; error: " + e.getMessage());
+    } finally {
+      closeResultSet(rs);
     }
   }
 
   public Map<Integer, byte[]> getAll(PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     ResultSet rs = null;
     Map<Integer, byte[]> map = new HashMap<Integer, byte[]>();
     try {
@@ -64,6 +71,7 @@ public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implement
       throw new DBException(e);
     } finally {
       try {
+        closeResultSet(rs);
         connection.commit();
       } catch (SQLException e) {
         // Ignore
@@ -73,13 +81,15 @@ public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implement
 
   public boolean put(int id, byte[] b, PersistenceTransaction tx) {
     if (get(id, tx) == null) {
-      return insert(id, b);
+      return insert(id, b, tx);
     } else {
-      return update(id, b);
+      return update(id, b, tx);
     }
   }
 
-  private boolean update(int id, byte[] b) {
+  private boolean update(int id, byte[] b, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + tableName + " SET " + VALUE + " = ? "
                                                                + " WHERE " + KEY + " = ?");
@@ -92,7 +102,9 @@ public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implement
     }
   }
 
-  private boolean insert(int id, byte[] b) {
+  private boolean insert(int id, byte[] b, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     PreparedStatement psPut;
     try {
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?)");

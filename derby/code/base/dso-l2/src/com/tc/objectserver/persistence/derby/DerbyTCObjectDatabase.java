@@ -25,11 +25,12 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     super(tableName, connection);
   }
 
-  protected final void createTableIfNotExists() throws SQLException {
+  protected final void createTableIfNotExists(Connection connection) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " BIGINT, " + VALUE + " BLOB (16M) )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " BIGINT, " + VALUE + " BLOB (16M), PRIMARY KEY(" + KEY
+                   + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
@@ -37,6 +38,8 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
 
   public boolean delete(long id, PersistenceTransaction tx) {
     try {
+      Connection connection = pt2nt(tx);
+
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
       psUpdate.setLong(1, id);
       psUpdate.executeUpdate();
@@ -49,6 +52,8 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
   public byte[] get(long id, PersistenceTransaction tx) {
     ResultSet rs = null;
     try {
+      Connection connection = pt2nt(tx);
+
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + VALUE + " FROM " + tableName + " WHERE "
                                                                + KEY + " = ?");
       psSelect.setLong(1, id);
@@ -59,12 +64,16 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
       return temp;
     } catch (SQLException e) {
       throw new DBException("Error retrieving object id: " + id + "; error: " + e.getMessage());
+    } finally {
+      closeResultSet(rs);
     }
   }
 
   public ObjectIDSet getAllObjectIds(PersistenceTransaction tx) {
     ResultSet rs = null;
     ObjectIDSet set = new ObjectIDSet();
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + " FROM " + tableName);
       rs = psSelect.executeQuery();
@@ -77,9 +86,10 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
       logger.error("Error Reading Object IDs", e);
     } finally {
       try {
+        closeResultSet(rs);
         connection.commit();
       } catch (SQLException e) {
-        // Ignore
+        e.printStackTrace();
       }
     }
     return null;
@@ -87,13 +97,15 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
 
   public boolean put(long id, byte[] b, PersistenceTransaction tx) {
     if (get(id, tx) == null) {
-      return insert(id, b);
+      return insert(id, b, tx);
     } else {
-      return update(id, b);
+      return update(id, b, tx);
     }
   }
 
-  private boolean update(long id, byte[] b) {
+  private boolean update(long id, byte[] b, PersistenceTransaction tx) {
+    Connection connection = pt2nt(tx);
+
     try {
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + tableName + " SET " + VALUE + " = ? "
                                                                + " WHERE " + KEY + " = ?");
@@ -106,8 +118,9 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     }
   }
 
-  private boolean insert(long id, byte[] b) {
+  private boolean insert(long id, byte[] b, PersistenceTransaction tx) {
     PreparedStatement psPut;
+    Connection connection = pt2nt(tx);
     try {
       psPut = connection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?)");
       psPut.setLong(1, id);

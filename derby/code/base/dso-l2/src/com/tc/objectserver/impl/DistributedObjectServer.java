@@ -190,6 +190,7 @@ import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.api.Persistor;
 import com.tc.objectserver.persistence.api.TransactionPersistor;
 import com.tc.objectserver.persistence.api.TransactionStore;
+import com.tc.objectserver.persistence.derby.DerbyDBEnvironment;
 import com.tc.objectserver.persistence.impl.InMemoryPersistor;
 import com.tc.objectserver.persistence.impl.InMemorySequenceProvider;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
@@ -529,16 +530,26 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       CallbackOnExitHandler dirtydbHandler = new CallbackDatabaseDirtyAlertAdapter(logger, consoleLogger);
       this.threadGroup.addCallbackOnExitExceptionHandler(DatabaseDirtyException.class, dirtydbHandler);
 
-      DBEnvironment dbenv = new BerkeleyDBEnvironment(persistent, dbhome, this.l2Properties
-          .getPropertiesFor("berkeleydb").addAllPropertiesTo(new Properties()));
+      boolean isDerby = TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_DERBY_ENABLED);
+      DBEnvironment dbenv = null;
+      if (isDerby) {
+        dbenv = new DerbyDBEnvironment(persistent, dbhome);
+      } else {
+        dbenv = new BerkeleyDBEnvironment(persistent, dbhome, this.l2Properties.getPropertiesFor("berkeleydb")
+            .addAllPropertiesTo(new Properties()));
+      }
       SerializationAdapterFactory serializationAdapterFactory = new CustomSerializationAdapterFactory();
 
       this.persistor = new SleepycatPersistor(TCLogging.getLogger(SleepycatPersistor.class), dbenv,
                                               serializationAdapterFactory, this.configSetupManager.commonl2Config()
                                                   .dataPath().getFile(), this.objectStatsRecorder);
-      sraBdb = new SRABerkeleyDB((BerkeleyDBEnvironment) dbenv);
+      if (isDerby) {
+        sraBdb = new SRABerkeleyDB(null);
+      } else {
+        sraBdb = new SRABerkeleyDB((BerkeleyDBEnvironment) dbenv);
+      }
       // Setting the DB environment for the bean which takes backup of the active server
-      if (persistent) {
+      if (persistent && !isDerby) {
         ServerDBBackup mbean = this.l2Management.findServerDbBackupMBean();
         mbean.setDbEnvironment(((BerkeleyDBEnvironment) dbenv).getEnvironment(), dbenv.getEnvironmentHome());
       }

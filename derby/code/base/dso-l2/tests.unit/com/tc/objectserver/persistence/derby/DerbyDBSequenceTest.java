@@ -8,10 +8,6 @@ import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Properties;
 
 public class DerbyDBSequenceTest extends TCTestCase {
   public static final String DRIVER     = "org.apache.derby.jdbc.EmbeddedDriver";
@@ -21,7 +17,7 @@ public class DerbyDBSequenceTest extends TCTestCase {
   private File               envHome;
   private static int         count      = 0;
 
-  private Connection         connection = null;
+  private DerbyDBEnvironment env;
 
   protected void setUp() throws Exception {
     super.setUp();
@@ -34,55 +30,31 @@ public class DerbyDBSequenceTest extends TCTestCase {
   }
 
   public void open() throws Exception {
-
-    // loading the Driver
-    try {
-      Class.forName(DRIVER).newInstance();
-      System.out.println("Loaded DERBY Embedded JDBC driver");
-    } catch (ClassNotFoundException cnfe) {
-      System.err.println("\nUnable to load the JDBC driver " + DRIVER);
-      System.err.println("Please check your CLASSPATH.");
-      cnfe.printStackTrace(System.err);
-    } catch (InstantiationException ie) {
-      System.err.println("\nUnable to instantiate the JDBC driver " + DRIVER);
-      ie.printStackTrace(System.err);
-    } catch (IllegalAccessException iae) {
-      System.err.println("\nNot allowed to access the JDBC driver " + DRIVER);
-      iae.printStackTrace(System.err);
-    }
-
-    Properties attributesProps = new Properties();
-    attributesProps.put("create", "true");
-
-    try {
-      this.connection = DriverManager.getConnection(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME
-                                                    + ";", attributesProps);
-      this.connection.setAutoCommit(false);
-
-      DerbyDBSequence.createSequenceTable(this.connection);
-    } catch (SQLException sqlE) {
-      throw new RuntimeException(sqlE);
-    }
+    env = new DerbyDBEnvironment(true, envHome);
+    env.open();
   }
 
   public void tearDown() throws Exception {
     super.tearDown();
-    connection.close();
     envHome.delete();
+    env.close();
   }
 
   public void testUID() throws Exception {
-    DerbyDBSequence sequence = new DerbyDBSequence(this.connection, SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 0);
+    DerbyDBSequence sequence = new DerbyDBSequence((DerbyPersistenceTransactionProvider) env
+        .getPersistenceTransactionProvider(), SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 0);
     String uid1 = sequence.getUID();
     assertNotNull(uid1);
     System.err.println("UID is " + uid1);
-    sequence = new DerbyDBSequence(this.connection, SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 0);
+    sequence = new DerbyDBSequence((DerbyPersistenceTransactionProvider) env.getPersistenceTransactionProvider(),
+                                   SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 0);
 
     String uid2 = sequence.getUID();
     System.err.println("UID is " + uid2);
     assertEquals(uid1, uid2);
 
-    sequence = new DerbyDBSequence(this.connection, SleepycatSequenceKeys.TRANSACTION_SEQUENCE_DB_NAME, 0);
+    sequence = new DerbyDBSequence((DerbyPersistenceTransactionProvider) env.getPersistenceTransactionProvider(),
+                                   SleepycatSequenceKeys.TRANSACTION_SEQUENCE_DB_NAME, 0);
 
     String uid3 = sequence.getUID();
     System.err.println("UID is " + uid3);
@@ -90,7 +62,8 @@ public class DerbyDBSequenceTest extends TCTestCase {
   }
 
   public void testBasic() throws Exception {
-    DerbyDBSequence sequence = new DerbyDBSequence(this.connection, SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
+    DerbyDBSequence sequence = new DerbyDBSequence((DerbyPersistenceTransactionProvider) env
+        .getPersistenceTransactionProvider(), SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
 
     assertEquals(1, sequence.current());
     long id = sequence.next();
@@ -128,7 +101,8 @@ public class DerbyDBSequenceTest extends TCTestCase {
   }
 
   public void testLongBatchSize() throws Exception {
-    DerbyDBSequence sequence = new DerbyDBSequence(this.connection, SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
+    DerbyDBSequence sequence = new DerbyDBSequence((DerbyPersistenceTransactionProvider) env
+        .getPersistenceTransactionProvider(), SleepycatSequenceKeys.CLIENTID_SEQUENCE_NAME, 1);
 
     long id = sequence.next();
     assertEquals(1, id);
@@ -145,16 +119,18 @@ public class DerbyDBSequenceTest extends TCTestCase {
   private void closeDBAndCheckSequence() throws Exception {
     String KEY_NAME = "SEQUENCE_TEST";
 
-    DerbyDBSequence sequence = new DerbyDBSequence(this.connection, KEY_NAME, 1);
+    DerbyDBSequence sequence = new DerbyDBSequence((DerbyPersistenceTransactionProvider) env
+        .getPersistenceTransactionProvider(), KEY_NAME, 1);
 
     for (int i = 0; i < 10; i++) {
       sequence.nextBatch(2);
     }
 
-    this.connection.close();
+    this.env.close();
     this.open();
 
-    sequence = new DerbyDBSequence(this.connection, KEY_NAME, 1);
+    sequence = new DerbyDBSequence((DerbyPersistenceTransactionProvider) env.getPersistenceTransactionProvider(),
+                                   KEY_NAME, 1);
     long seqnum = sequence.nextBatch(2);
     Assert.assertEquals(21, seqnum);
   }

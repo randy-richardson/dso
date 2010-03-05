@@ -19,18 +19,22 @@ public class DerbyControlDB extends AbstractDerbyTCDatabase {
   private final static short DIRTY_FLAG = 2;
   private final static short NULL_FLAG  = -1;
 
+  private final Connection   connection;
+
   public DerbyControlDB(String tableName, Connection connection) throws TCDatabaseException {
     super(tableName, connection);
+    this.connection = connection;
   }
 
-  protected void createTableIfNotExists() throws SQLException {
-    if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
+  protected void createTableIfNotExists(Connection conn) throws SQLException {
+    if (DerbyDBEnvironment.tableExists(conn, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " CHAR (10), " + VALUE + " SMALLINT )";
+    Statement statement = conn.createStatement();
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (10), " + VALUE + " SMALLINT, PRIMARY KEY("
+                   + KEY + ") )";
     statement.execute(query);
     statement.close();
-    connection.commit();
+    conn.commit();
   }
 
   public boolean isClean() throws TCDatabaseException {

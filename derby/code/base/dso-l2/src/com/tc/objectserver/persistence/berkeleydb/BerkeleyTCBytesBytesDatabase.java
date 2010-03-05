@@ -57,4 +57,8 @@ public class BerkeleyTCBytesBytesDatabase extends AbstractBerkeleyDatabase imple
     OperationStatus status = this.db.putNoOverwrite(pt2nt(tx), entryValue, entryKey);
     return status.equals(OperationStatus.SUCCESS);
   }
+
+  public TCDatabaseCursor<byte[], byte[]> openCursorUpdatable(PersistenceTransaction tx) {
+    return openCursor(tx);
+  }
 }
