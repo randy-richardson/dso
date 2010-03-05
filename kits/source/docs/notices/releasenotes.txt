@@ -1,4 +1,4 @@
-3.2.0-ee-patch-1
+3.2.0-ee-patch-2
 
 Documentation: http://www.terracotta.org/kit/reflector?kitID=3.2&pageID=Documentation
 Forums:        http://forums.terracotta.org/forums/forums/list.page
@@ -10,6 +10,10 @@ PATCH HISTORY
 Patch Level 1
 - DEV-3688
 - Terracotta Reference Already Present Failure during failover
+
+Patch Level 2
+- DEV-3878
+-  Fix client dies but the server lock manager state shows that the client is still holding the lock.
 
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
