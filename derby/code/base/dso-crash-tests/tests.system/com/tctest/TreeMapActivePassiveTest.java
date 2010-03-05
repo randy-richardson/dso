@@ -31,7 +31,7 @@ public class TreeMapActivePassiveTest extends ActivePassiveTransparentTestBase {
     setupManager.setServerCrashMode(MultipleServersCrashMode.CONTINUOUS_ACTIVE_CRASH);
     setupManager.setServerCrashWaitTimeInSec(30);
     setupManager.setServerShareDataMode(MultipleServersSharedDataMode.NETWORK);
-    setupManager.setServerPersistenceMode(MultipleServersPersistenceMode.PERMANENT_STORE);
+    setupManager.setServerPersistenceMode(MultipleServersPersistenceMode.TEMPORARY_SWAP_ONLY);
   }
 
 }

@@ -4,25 +4,22 @@
 package com.tc.objectserver.persistence.derby;
 
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
-import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class DerbyPersistenceTransactionProvider implements PersistenceTransactionProvider {
-  protected final DerbyDBEnvironment             derbyDBEnv;
-  protected final static DerbyTransactionWrapper NULL_TX = new DerbyTransactionWrapper(null);
+public class NullDerbyPersistenceTransactionProvider extends DerbyPersistenceTransactionProvider {
 
-  public DerbyPersistenceTransactionProvider(DerbyDBEnvironment derbyDBEnv) {
-    this.derbyDBEnv = derbyDBEnv;
+  public NullDerbyPersistenceTransactionProvider(DerbyDBEnvironment derbyDBEnv) {
+    super(derbyDBEnv);
   }
 
   public PersistenceTransaction newTransaction() {
     try {
       Connection connection = derbyDBEnv.createConnection();
-      connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+      connection.setTransactionIsolation(Connection.TRANSACTION_NONE);
       return new DerbyTransactionWrapper(connection);
     } catch (TCDatabaseException e) {
       e.printStackTrace();
@@ -32,9 +29,4 @@ public class DerbyPersistenceTransactionProvider implements PersistenceTransacti
       throw new DBException(e);
     }
   }
-
-  public PersistenceTransaction nullTransaction() {
-    return NULL_TX;
-  }
-
 }

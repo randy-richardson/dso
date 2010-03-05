@@ -4,6 +4,8 @@
  */
 package com.tc.objectserver.impl;
 
+import org.apache.commons.io.FileUtils;
+
 import bsh.EvalError;
 import bsh.Interpreter;
 
@@ -191,6 +193,7 @@ import com.tc.objectserver.persistence.api.Persistor;
 import com.tc.objectserver.persistence.api.TransactionPersistor;
 import com.tc.objectserver.persistence.api.TransactionStore;
 import com.tc.objectserver.persistence.derby.DerbyDBEnvironment;
+import com.tc.objectserver.persistence.derby.NullDerbyPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.InMemoryPersistor;
 import com.tc.objectserver.persistence.impl.InMemorySequenceProvider;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
@@ -513,7 +516,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     logger.debug("server swap enabled: " + swapEnabled);
     final ManagedObjectChangeListenerProviderImpl managedObjectChangeListenerProvider = new ManagedObjectChangeListenerProviderImpl();
     SRABerkeleyDB sraBdb = null;
+    boolean isDerby = TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_DERBY_ENABLED);
 
+    DBEnvironment dbenv = null;
     if (swapEnabled) {
       File dbhome = new File(this.configSetupManager.commonl2Config().dataPath().getFile(),
                              NewL2DSOConfig.OBJECTDB_DIRNAME);
@@ -522,6 +527,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
         if (dbhome.exists()) {
           logger.debug("deleting persistence database...");
           TCFileUtils.forceDelete(dbhome, "jdb");
+          FileUtils.cleanDirectory(dbhome);
           logger.debug("persistence database deleted.");
         }
       }
@@ -530,8 +536,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       CallbackOnExitHandler dirtydbHandler = new CallbackDatabaseDirtyAlertAdapter(logger, consoleLogger);
       this.threadGroup.addCallbackOnExitExceptionHandler(DatabaseDirtyException.class, dirtydbHandler);
 
-      boolean isDerby = TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_DERBY_ENABLED);
-      DBEnvironment dbenv = null;
       if (isDerby) {
         dbenv = new DerbyDBEnvironment(persistent, dbhome);
       } else {
@@ -616,7 +620,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       gidSequence = new InMemorySequenceProvider();
 
       transactionPersistor = new NullTransactionPersistor();
-      transactionStorePTP = new NullPersistenceTransactionProvider();
+      if (isDerby) {
+        transactionStorePTP = new NullPersistenceTransactionProvider();
+      } else {
+        transactionStorePTP = new NullDerbyPersistenceTransactionProvider((DerbyDBEnvironment) dbenv);
+      }
     }
 
     GlobalTransactionIDBatchRequestHandler gidSequenceProvider = new GlobalTransactionIDBatchRequestHandler(gidSequence);
