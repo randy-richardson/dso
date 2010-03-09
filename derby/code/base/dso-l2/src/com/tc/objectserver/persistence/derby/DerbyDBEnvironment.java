@@ -5,8 +5,9 @@ package com.tc.objectserver.persistence.derby;
 
 import org.apache.commons.io.FileUtils;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.mchange.v2.c3p0.DataSources;
 import com.tc.logging.TCLogger;
-import com.tc.logging.TCLogging;
 import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesBytesDatabase;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
@@ -23,6 +24,7 @@ import com.tc.objectserver.persistence.sleepycat.DatabaseOpenResult;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 import com.tc.util.sequence.MutableSequence;
 
+import java.beans.PropertyVetoException;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
@@ -39,10 +41,8 @@ public class DerbyDBEnvironment implements DBEnvironment {
   public static final String    PROTOCOL     = "jdbc:derby:";
   public static final String    DB_NAME      = "objectDB";
 
-  private static final TCLogger logger       = TCLogging.getLogger(DerbyDBEnvironment.class);
-
   private final Map             tables       = new HashMap();
-  private Connection            connection;
+  private ComboPooledDataSource cpds;
   private final boolean         isParanoid;
   private final File            envHome;
   private DBEnvironmentStatus   status;
@@ -108,38 +108,58 @@ public class DerbyDBEnvironment implements DBEnvironment {
       forceClose();
       throw e;
     }
+
     status = DBEnvironmentStatus.STATUS_OPEN;
     return openResult;
   }
 
-  public void openDatabase() throws TCDatabaseException {
+  public void createDatabase() throws TCDatabaseException {
     // loading the Driver
     try {
       Class.forName(DRIVER).newInstance();
-      logger.info("Loaded DERBY Embedded JDBC driver");
     } catch (ClassNotFoundException cnfe) {
       String message = "Unable to load the JDBC driver " + DRIVER;
-      logger.info(message, cnfe);
       throw new TCDatabaseException(message);
     } catch (InstantiationException ie) {
       String message = "Unable to instantiate the JDBC driver " + DRIVER;
-      logger.info(message, ie);
       throw new TCDatabaseException(message);
     } catch (IllegalAccessException iae) {
       String message = "Not allowed to access the JDBC driver " + DRIVER;
-      logger.info(message, iae);
       throw new TCDatabaseException(message);
     }
 
-    this.connection = createConnection();
+    Properties attributesProps = new Properties();
+    attributesProps.put("create", "true");
+    Connection conn;
+    try {
+      conn = DriverManager.getConnection(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME + ";",
+                                         attributesProps);
+      conn.setAutoCommit(false);
+      conn.close();
+    } catch (SQLException e) {
+      throw new TCDatabaseException(e);
+    }
+  }
+
+  public void openDatabase() throws TCDatabaseException {
+    createDatabase();
+
+    try {
+      cpds = new ComboPooledDataSource();
+      cpds.setDriverClass(DRIVER);
+      cpds.setJdbcUrl(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME + ";");
+      cpds.setAutoCommitOnClose(false);
+      cpds.setMinPoolSize(50);
+      cpds.setAcquireIncrement(5);
+      cpds.setMaxPoolSize(300);
+    } catch (PropertyVetoException e) {
+      throw new TCDatabaseException(e.getMessage());
+    }
   }
 
   protected Connection createConnection() throws TCDatabaseException {
     try {
-      Properties attributesProps = new Properties();
-      attributesProps.put("create", "true");
-      Connection conn = DriverManager.getConnection(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME
-                                                    + ";", attributesProps);
+      Connection conn = cpds.getConnection();
       conn.setAutoCommit(false);
       return conn;
     } catch (SQLException sqlE) {
@@ -148,66 +168,75 @@ public class DerbyDBEnvironment implements DBEnvironment {
   }
 
   private void createTablesIfRequired() throws TCDatabaseException {
-    newObjectDB();
-    newRootDB();
-    newBytesToBlobDB(OBJECT_OID_STORE_DB_NAME);
-    newBytesToBlobDB(MAPS_OID_STORE_DB_NAME);
-    newBytesToBlobDB(OID_STORE_LOG_DB_NAME);
-    newLongDB(CLIENT_STATE_DB_NAME);
-    newBytesToBlobDB(TRANSACTION_DB_NAME);
-    newIntToBytesDB(CLASS_DB_NAME);
-    newLongToStringDB(STRING_INDEX_DB_NAME);
-    newStringToStringDB(CLUSTER_STATE_STORE);
-    newMapsDatabase();
+    Connection connection = createConnection();
+
+    newObjectDB(connection);
+    newRootDB(connection);
+    newBytesToBlobDB(OBJECT_OID_STORE_DB_NAME, connection);
+    newBytesToBlobDB(MAPS_OID_STORE_DB_NAME, connection);
+    newBytesToBlobDB(OID_STORE_LOG_DB_NAME, connection);
+    newLongDB(CLIENT_STATE_DB_NAME, connection);
+    newBytesToBlobDB(TRANSACTION_DB_NAME, connection);
+    newIntToBytesDB(CLASS_DB_NAME, connection);
+    newLongToStringDB(STRING_INDEX_DB_NAME, connection);
+    newStringToStringDB(CLUSTER_STATE_STORE, connection);
+    newMapsDatabase(connection);
 
     try {
       DerbyDBSequence.createSequenceTable(connection);
     } catch (SQLException e) {
       try {
         connection.rollback();
+        connection.close();
       } catch (SQLException e1) {
         throw new TCDatabaseException(e1);
       }
       throw new TCDatabaseException(e);
     }
+
+    try {
+      connection.close();
+    } catch (SQLException e) {
+      throw new TCDatabaseException(e);
+    }
   }
 
-  private void newObjectDB() throws TCDatabaseException {
+  private void newObjectDB(Connection connection) throws TCDatabaseException {
     TCObjectDatabase db = new DerbyTCObjectDatabase(OBJECT_DB_NAME, connection);
     tables.put(OBJECT_DB_NAME, db);
   }
 
-  private void newRootDB() throws TCDatabaseException {
+  private void newRootDB(Connection connection) throws TCDatabaseException {
     TCRootDatabase db = new DerbyTCRootDatabase(ROOT_DB_NAME, connection);
     tables.put(ROOT_DB_NAME, db);
   }
 
-  private void newBytesToBlobDB(String tableName) throws TCDatabaseException {
+  private void newBytesToBlobDB(String tableName, Connection connection) throws TCDatabaseException {
     TCBytesBytesDatabase db = new DerbyTCBytesToBlobDB(tableName, connection);
     tables.put(tableName, db);
   }
 
-  private void newLongDB(String tableName) throws TCDatabaseException {
+  private void newLongDB(String tableName, Connection connection) throws TCDatabaseException {
     TCLongDatabase db = new DerbyTCLongDatabase(tableName, connection);
     tables.put(tableName, db);
   }
 
-  private void newIntToBytesDB(String tableName) throws TCDatabaseException {
+  private void newIntToBytesDB(String tableName, Connection connection) throws TCDatabaseException {
     TCIntToBytesDatabase db = new DerbyTCIntToBytesDatabase(tableName, connection);
     tables.put(tableName, db);
   }
 
-  private void newLongToStringDB(String tableName) throws TCDatabaseException {
+  private void newLongToStringDB(String tableName, Connection connection) throws TCDatabaseException {
     TCLongToStringDatabase db = new DerbyTCLongToStringDatabase(tableName, connection);
     tables.put(tableName, db);
   }
 
-  private void newStringToStringDB(String tableName) throws TCDatabaseException {
+  private void newStringToStringDB(String tableName, Connection connection) throws TCDatabaseException {
     TCStringToStringDatabase db = new DerbyTCStringToStringDatabase(tableName, connection);
     tables.put(tableName, db);
   }
 
-  private void newMapsDatabase() throws TCDatabaseException {
+  private void newMapsDatabase(Connection connection) throws TCDatabaseException {
     TCMapsDatabase db = new DerbyTCMapsDatabase(MAP_DB_NAME, connection);
     tables.put(MAP_DB_NAME, db);
   }
@@ -222,8 +251,8 @@ public class DerbyDBEnvironment implements DBEnvironment {
 
   private void forceClose() throws TCDatabaseException {
     try {
-      if (connection == null) return;
-      connection.close();
+      if (cpds == null) return;
+      DataSources.destroy(cpds);
     } catch (SQLException e) {
       throw new TCDatabaseException(e);
     }

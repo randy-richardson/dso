@@ -69,7 +69,7 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
     try {
       Connection connection = pt2nt(tx);
       PreparedStatement psSelect = connection.prepareStatement("SELECT " + KEY + "," + VALUE + " FROM " + tableName,
-                                                               ResultSet.TYPE_SCROLL_SENSITIVE,
+                                                               ResultSet.TYPE_SCROLL_INSENSITIVE,
                                                                ResultSet.CONCUR_UPDATABLE);
       return new DerbyTCBytesBytesCursor(psSelect.executeQuery());
     } catch (SQLException e) {
