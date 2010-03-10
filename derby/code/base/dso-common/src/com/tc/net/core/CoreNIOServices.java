@@ -82,32 +82,9 @@ class CoreNIOServices implements TCListenerEventListener, TCConnectionEventListe
     writerComm.cleanupChannel(channel, callback);
   }
 
-  public void detach(final SocketChannel channel) throws IOException {
-    if (isReaderThread()) {
-      readerComm.unregister(channel);
-    } else {
-      readerComm.addSelectorTask(new Runnable() {
-        public void run() {
-          readerComm.unregister(channel);
-        }
-      });
-    }
-
-    if (isWriterThread()) {
-      writerComm.unregister(channel);
-      channel.configureBlocking(true);
-    } else {
-      writerComm.addSelectorTask(new Runnable() {
-        public void run() {
-          writerComm.unregister(channel);
-          try {
-            channel.configureBlocking(true);
-          } catch (IOException e) {
-            logger.info("Channel configure blocking IOException " + e);
-          }
-        }
-      });
-    }
+  public void detach(final SocketChannel channel) {
+    readerComm.unregister(channel);
+    writerComm.unregister(channel);
   }
 
   public void closeEvent(TCListenerEvent event) {
@@ -208,37 +185,13 @@ class CoreNIOServices implements TCListenerEventListener, TCConnectionEventListe
     // MainComm Thread
     if (workerCommMgr == null) { return; }
 
-    if (isReaderThread()) {
-      readerComm.unregister(channel);
-    } else {
-      final CountDownLatch latch = new CountDownLatch(1);
-      readerComm.addSelectorTask(new Runnable() {
-        public void run() {
-          readerComm.unregister(channel);
-          latch.countDown();
-        }
-      });
-      try {
-        latch.await();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
+    readerComm.unregister(channel);
     synchronized (managedConnectionsMap) {
       final CoreNIOServices workerComm = workerCommMgr.getNextWorkerComm();
       connection.setCommWorker(workerComm);
       workerComm.addConnection(connection, addWeightBy);
       workerComm.requestReadWriteInterest(connection, channel);
     }
-  }
-
-  private boolean isReaderThread() {
-    return (Thread.currentThread() == this.readerComm);
-  }
-
-  private boolean isWriterThread() {
-    return (Thread.currentThread() == this.writerComm);
   }
 
   private void addConnection(TCConnectionJDK14 connection, int initialWeight) {
@@ -401,13 +354,26 @@ class CoreNIOServices implements TCListenerEventListener, TCConnectionEventListe
     }
 
     void unregister(final SelectableChannel channel) {
-      SelectionKey key = null;
-      Assert.eval(Thread.currentThread() == this);
-      key = channel.keyFor(this.selector);
-
-      if (key != null) {
-        key.cancel();
-        key.attach(null);
+      if (Thread.currentThread() != this) {
+        final CountDownLatch latch = new CountDownLatch(1);
+        this.addSelectorTask(new Runnable() {
+          public void run() {
+            CommThread.this.unregister(channel);
+            latch.countDown();
+          }
+        });
+        try {
+          latch.await();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        SelectionKey key = null;
+        key = channel.keyFor(this.selector);
+        if (key != null) {
+          key.cancel();
+          key.attach(null);
+        }
       }
     }
 
