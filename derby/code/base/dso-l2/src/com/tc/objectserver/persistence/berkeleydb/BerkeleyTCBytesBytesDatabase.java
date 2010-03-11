@@ -39,7 +39,7 @@ public class BerkeleyTCBytesBytesDatabase extends AbstractBerkeleyDatabase imple
     DatabaseEntry entryKey = new DatabaseEntry();
     entryKey.setData(key);
     DatabaseEntry entryValue = new DatabaseEntry();
-    entryValue.setData(key);
+    entryValue.setData(val);
     if (!OperationStatus.SUCCESS.equals(this.db.put(pt2nt(tx), entryKey, entryValue))) { return false; }
     return true;
   }
@@ -53,7 +53,7 @@ public class BerkeleyTCBytesBytesDatabase extends AbstractBerkeleyDatabase imple
     DatabaseEntry entryKey = new DatabaseEntry();
     entryKey.setData(key);
     DatabaseEntry entryValue = new DatabaseEntry();
-    entryValue.setData(key);
+    entryValue.setData(value);
     OperationStatus status = this.db.putNoOverwrite(pt2nt(tx), entryValue, entryKey);
     return status.equals(OperationStatus.SUCCESS);
   }
