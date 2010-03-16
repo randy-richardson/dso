@@ -537,7 +537,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       this.threadGroup.addCallbackOnExitExceptionHandler(DatabaseDirtyException.class, dirtydbHandler);
 
       if (isDerby) {
-        dbenv = new DerbyDBEnvironment(persistent, dbhome);
+        dbenv = new DerbyDBEnvironment(persistent, dbhome, this.l2Properties.getPropertiesFor("derbydb")
+            .addAllPropertiesTo(new Properties()));
       } else {
         dbenv = new BerkeleyDBEnvironment(persistent, dbhome, this.l2Properties.getPropertiesFor("berkeleydb")
             .addAllPropertiesTo(new Properties()));

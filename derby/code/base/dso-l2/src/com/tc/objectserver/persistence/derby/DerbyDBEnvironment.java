@@ -42,6 +42,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
   public static final String    DB_NAME      = "objectDB";
 
   private final Map             tables       = new HashMap();
+  private final Properties      derbyProps;
   private ComboPooledDataSource cpds;
   private final boolean         isParanoid;
   private final File            envHome;
@@ -50,8 +51,13 @@ public class DerbyDBEnvironment implements DBEnvironment {
   private static final Object   CONTROL_LOCK = new Object();
 
   public DerbyDBEnvironment(boolean paranoid, File home) throws IOException {
+    this(paranoid, home, new Properties());
+  }
+
+  public DerbyDBEnvironment(boolean paranoid, File home, Properties props) throws IOException {
     this.isParanoid = paranoid;
     this.envHome = home;
+    this.derbyProps = props;
     FileUtils.forceMkdir(this.envHome);
   }
 
@@ -152,6 +158,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
       cpds.setMinPoolSize(50);
       cpds.setAcquireIncrement(5);
       cpds.setMaxPoolSize(300);
+      cpds.setProperties(derbyProps);
     } catch (PropertyVetoException e) {
       throw new TCDatabaseException(e.getMessage());
     }
