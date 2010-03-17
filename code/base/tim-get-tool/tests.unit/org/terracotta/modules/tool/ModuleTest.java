@@ -651,6 +651,7 @@ public final class ModuleTest extends TCTestCase {
     }
 
     public void notify(Object source, InstallNotification type, String message) {
+      System.out.println("notification from  " + source + ", message: " + message);
       if (!InstallNotification.INSTALLED.equals(type) && !InstallNotification.SKIPPED.equals(type)) return;
       installedList.add(source.toString());
     }
