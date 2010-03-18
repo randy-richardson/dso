@@ -21,9 +21,7 @@ public class DerbyTransactionWrapper implements PersistenceTransaction {
 
   public void abort() {
     try {
-      if (connection != null) {
-        connection.rollback();
-      }
+      connection.rollback();
     } catch (SQLException e) {
       throw new DBException(e);
     }
@@ -31,10 +29,20 @@ public class DerbyTransactionWrapper implements PersistenceTransaction {
 
   public void commit() {
     try {
-      if (connection != null) {
-        connection.commit();
-        connection.close();
-      }
+      connection.commit();
+    } catch (SQLException e) {
+      throw new DBException(e);
+    } finally {
+      closeConnection();
+    }
+  }
+
+  /**
+   * This is done to return the connection to the connection pool
+   */
+  private void closeConnection() {
+    try {
+      connection.close();
     } catch (SQLException e) {
       throw new DBException(e);
     }
@@ -47,7 +55,7 @@ public class DerbyTransactionWrapper implements PersistenceTransaction {
   public Object setProperty(Object key, Object value) {
     return properties.put(key, value);
   }
-  
+
   public Connection getConnection() {
     return connection;
   }

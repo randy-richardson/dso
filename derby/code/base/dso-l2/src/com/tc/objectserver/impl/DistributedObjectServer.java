@@ -193,7 +193,7 @@ import com.tc.objectserver.persistence.api.Persistor;
 import com.tc.objectserver.persistence.api.TransactionPersistor;
 import com.tc.objectserver.persistence.api.TransactionStore;
 import com.tc.objectserver.persistence.derby.DerbyDBEnvironment;
-import com.tc.objectserver.persistence.derby.NullDerbyPersistenceTransactionProvider;
+import com.tc.objectserver.persistence.derby.TransactionLessDerbyPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.InMemoryPersistor;
 import com.tc.objectserver.persistence.impl.InMemorySequenceProvider;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
@@ -624,7 +624,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       if (isDerby) {
         transactionStorePTP = new NullPersistenceTransactionProvider();
       } else {
-        transactionStorePTP = new NullDerbyPersistenceTransactionProvider((DerbyDBEnvironment) dbenv);
+        transactionStorePTP = new TransactionLessDerbyPersistenceTransactionProvider((DerbyDBEnvironment) dbenv);
       }
     }
 

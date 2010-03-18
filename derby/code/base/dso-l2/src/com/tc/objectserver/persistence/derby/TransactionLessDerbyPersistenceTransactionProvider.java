@@ -10,9 +10,9 @@ import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class NullDerbyPersistenceTransactionProvider extends DerbyPersistenceTransactionProvider {
+public class TransactionLessDerbyPersistenceTransactionProvider extends DerbyPersistenceTransactionProvider {
 
-  public NullDerbyPersistenceTransactionProvider(DerbyDBEnvironment derbyDBEnv) {
+  public TransactionLessDerbyPersistenceTransactionProvider(DerbyDBEnvironment derbyDBEnv) {
     super(derbyDBEnv);
   }
 

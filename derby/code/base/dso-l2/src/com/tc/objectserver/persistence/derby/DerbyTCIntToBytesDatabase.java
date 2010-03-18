@@ -27,8 +27,8 @@ public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implement
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " INT, " + VALUE + " BLOB (16M), PRIMARY KEY(" + KEY
-                   + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_INT + ", " + VALUE
+    + " " + DerbyDataTypes.TC_BYTE_ARRAY_VALUE + ", PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();

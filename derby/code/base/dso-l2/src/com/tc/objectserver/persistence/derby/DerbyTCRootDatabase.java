@@ -30,8 +30,8 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (32672) FOR BIT DATA, " + VALUE
-                   + " BIGINT, PRIMARY KEY(" + KEY + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_BYTE_ARRAY_KEY + ", " + VALUE
+                   + " " + DerbyDataTypes.TC_LONG + ", PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();

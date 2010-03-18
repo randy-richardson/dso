@@ -27,8 +27,8 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (" + (32672) + ") , " + VALUE + " VARCHAR ("
-                   + (32672) + "), PRIMARY KEY(" + KEY + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_STRING + ", " + VALUE + " "
+                   + DerbyDataTypes.TC_STRING + ", PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();

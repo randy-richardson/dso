@@ -29,8 +29,8 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " BIGINT, " + VALUE + " BLOB (16M), PRIMARY KEY(" + KEY
-                   + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_LONG + ", " + VALUE + " "
+                   + DerbyDataTypes.TC_BYTE_ARRAY_VALUE + ", PRIMARY KEY(" + KEY + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();

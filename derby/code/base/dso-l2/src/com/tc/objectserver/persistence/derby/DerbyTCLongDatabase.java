@@ -28,7 +28,8 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " BIGINT, PRIMARY KEY(" + KEY + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_LONG + ", PRIMARY KEY(" + KEY
+                   + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();

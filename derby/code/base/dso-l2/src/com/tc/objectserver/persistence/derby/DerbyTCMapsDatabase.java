@@ -28,9 +28,9 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + OBJECT_ID + " BIGINT, " + KEY
-                   + " VARCHAR (32672) FOR BIT DATA, " + VALUE + " BLOB (16M), PRIMARY KEY(" + KEY + "," + OBJECT_ID
-                   + ") )";
+    String query = "CREATE TABLE " + tableName + "(" + OBJECT_ID + " " + DerbyDataTypes.TC_LONG + ", " + KEY + " "
+                   + DerbyDataTypes.TC_BYTE_ARRAY_KEY + ", " + VALUE + " " + DerbyDataTypes.TC_BYTE_ARRAY_VALUE
+                   + ", PRIMARY KEY(" + KEY + "," + OBJECT_ID + ") )";
     statement.execute(query);
     statement.close();
     connection.commit();
