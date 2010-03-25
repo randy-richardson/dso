@@ -8,7 +8,9 @@ import com.tc.util.ObjectIDSet;
 
 public interface TCObjectDatabase {
 
-  public boolean put(long id, byte[] b, PersistenceTransaction tx);
+  public boolean insert(long id, byte[] b, PersistenceTransaction tx);
+  
+  public boolean update(long id, byte[] b, PersistenceTransaction tx);
 
   public byte[] get(long id, PersistenceTransaction tx);
 

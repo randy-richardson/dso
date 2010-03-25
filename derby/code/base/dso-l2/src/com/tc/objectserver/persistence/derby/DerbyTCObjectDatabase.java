@@ -95,15 +95,15 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     return null;
   }
 
-  public boolean put(long id, byte[] b, PersistenceTransaction tx) {
-    if (get(id, tx) == null) {
-      return insert(id, b, tx);
-    } else {
-      return update(id, b, tx);
-    }
-  }
+  // public boolean put(long id, byte[] b, PersistenceTransaction tx) {
+  // if (get(id, tx) == null) {
+  // return insert(id, b, tx);
+  // } else {
+  // return update(id, b, tx);
+  // }
+  // }
 
-  private boolean update(long id, byte[] b, PersistenceTransaction tx) {
+  public boolean update(long id, byte[] b, PersistenceTransaction tx) {
     Connection connection = pt2nt(tx);
 
     try {
@@ -118,7 +118,7 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     }
   }
 
-  private boolean insert(long id, byte[] b, PersistenceTransaction tx) {
+  public boolean insert(long id, byte[] b, PersistenceTransaction tx) {
     PreparedStatement psPut;
     Connection connection = pt2nt(tx);
     try {

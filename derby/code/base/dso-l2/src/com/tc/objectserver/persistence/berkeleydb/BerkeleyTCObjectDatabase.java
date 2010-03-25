@@ -45,7 +45,7 @@ public class BerkeleyTCObjectDatabase extends AbstractBerkeleyDatabase implement
     throw new DBException("Error retrieving object id: " + id + "; status: " + status);
   }
 
-  public boolean put(long id, byte[] val, PersistenceTransaction tx) {
+  private boolean put(long id, byte[] val, PersistenceTransaction tx) {
     DatabaseEntry key = new DatabaseEntry();
     key.setData(Conversion.long2Bytes(id));
 
@@ -93,5 +93,13 @@ public class BerkeleyTCObjectDatabase extends AbstractBerkeleyDatabase implement
     } catch (Throwable e) {
       logger.error("Error closing cursor", e);
     }
+  }
+
+  public boolean insert(long id, byte[] b, PersistenceTransaction tx) {
+    return put(id, b, tx);
+  }
+
+  public boolean update(long id, byte[] b, PersistenceTransaction tx) {
+    return put(id, b, tx);
   }
 }

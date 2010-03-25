@@ -334,7 +334,11 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     int length = value.length;
     length += 8;
     try {
-      status = this.objectDB.put(managedObject.getID().toLong(), value, tx);
+      if (managedObject.isNew()) {
+        status = this.objectDB.insert(managedObject.getID().toLong(), value, tx);
+      } else {
+        status = this.objectDB.update(managedObject.getID().toLong(), value, tx);
+      }
       if (status) {
         length += basicSaveCollection(tx, managedObject);
         managedObject.setIsDirty(false);
