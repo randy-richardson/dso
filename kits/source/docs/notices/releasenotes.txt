@@ -13,9 +13,6 @@ Patch Level 1
 - DEV-3956
 - fix clearing references does not look at the fields in the superclass of the physical objects
 
-- DEV-3937
-- bug fix to L2 state dump
-
 - DEV-3932
 - Changed GroupTickerTokenManager to a setting in the properties file, with a default of 1 second
 l2.objectmanager.dgc.enterpriseMarkStageInterval = 1000 
