@@ -133,7 +133,6 @@ import com.tc.object.cache.Cacheable;
 import com.tc.object.compression.CompressedData;
 import com.tc.object.compression.StringCompressionUtil;
 import com.tc.object.config.DSOClientConfigHelper;
-import com.tc.object.config.DSOSpringConfigHelper;
 import com.tc.object.config.StandardDSOClientConfigHelperImpl;
 import com.tc.object.config.TransparencyClassSpec;
 import com.tc.object.dna.impl.ProxyInstance;
@@ -520,7 +519,6 @@ public class BootJarTool {
       loadTerracottaClass(ClassProcessor.class.getName());
       loadTerracottaClass(ClassPreProcessor.class.getName());
       loadTerracottaClass(ClassPostProcessor.class.getName());
-      loadTerracottaClass(DSOSpringConfigHelper.class.getName());
       loadTerracottaClass(DSOContext.class.getName());
       loadTerracottaClass(ClassProvider.class.getName());
       loadTerracottaClass(TCRuntimeException.class.getName());
@@ -540,7 +538,6 @@ public class BootJarTool {
       loadTerracottaClass(TCByteArrayOutputStream.class.getName());
 
       loadTerracottaClass("com.tc.object.bytecode.hook.impl.ArrayManager");
-      loadTerracottaClass("com.tc.object.bytecode.NonDistributableObjectRegistry");
       loadTerracottaClass(ProxyInstance.class.getName());
       loadTerracottaClass(JavaLangArrayHelpers.class.getName());
 
