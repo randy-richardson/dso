@@ -17,6 +17,13 @@ Patch Level 1
 - Changed GroupTickerTokenManager to a setting in the properties file, with a default of 1 second
 l2.objectmanager.dgc.enterpriseMarkStageInterval = 1000 
 
+Patch Level 2
+- DEV-3972
+- Fix for Assertion Error in process transaction stage after client shutdown
+
+- DEV-3994
+- allow pin() and unpin() during txn apply
+
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
