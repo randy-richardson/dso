@@ -6,7 +6,7 @@ package com.tc.admin.dso;
 import com.tc.admin.common.ApplicationContext;
 import com.tc.admin.common.XObjectTableModel;
 import com.tc.stats.TerracottaSubSystemEventStats;
-import com.tc.tcevent.stats.TerracottaSubSystemEventsStatsImpl;
+import com.tc.subsystemevent.stats.TerracottaSubSystemEventsStatsImpl;
 
 public class TerracottaSubSystemEventsTableModel extends XObjectTableModel {
   private static final String[] FIELDS  = { "EventTime", "NodeID", "TCEventType", "System", "Message" };

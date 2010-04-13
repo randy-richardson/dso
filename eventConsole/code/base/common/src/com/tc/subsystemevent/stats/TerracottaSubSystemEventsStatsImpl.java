@@ -1,7 +1,7 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.tcevent.stats;
+package com.tc.subsystemevent.stats;
 
 import com.tc.net.NodeID;
 import com.tc.stats.TerracottaSubSystemEventStats;

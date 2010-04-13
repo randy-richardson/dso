@@ -3,8 +3,8 @@
  */
 package com.tc.logging;
 
-import com.tc.tcevent.TerracottaSubSystemEvent;
-import com.tc.tcevent.TerracottaSubSystemEventCallback;
+import com.tc.subsystemevent.TerracottaSubSystemEvent;
+import com.tc.subsystemevent.TerracottaSubSystemEventCallback;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -16,7 +16,7 @@ public class TerracottaSubSystemEventLogger {
     this.callbacks.add(tcEventCallback);
   }
   
-  public void fireEvent(TerracottaSubSystemEvent event){
+  public void fireTCSubSystemEvent(TerracottaSubSystemEvent event){
     for(TerracottaSubSystemEventCallback callback : callbacks){
       callback.fireClusterEvent(event);
     }

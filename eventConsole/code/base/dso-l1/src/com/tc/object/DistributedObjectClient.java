@@ -22,6 +22,8 @@ import com.tc.logging.ClientIDLoggerProvider;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.logging.TerracottaSubSystemEventLogger;
+import com.tc.logging.TerracottaSubSystemEventLogging;
 import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.ClientLockStatManager;
 import com.tc.management.L1Management;
@@ -153,6 +155,8 @@ import com.tc.stats.counter.sampled.SampledCounter;
 import com.tc.stats.counter.sampled.SampledCounterConfig;
 import com.tc.stats.counter.sampled.derived.SampledRateCounter;
 import com.tc.stats.counter.sampled.derived.SampledRateCounterConfig;
+import com.tc.subsystemevent.TerracottaSubSystemEventCallback;
+import com.tc.subsystemevent.TerracottaSubSystemEventCallbackLogger;
 import com.tc.util.Assert;
 import com.tc.util.CommonShutDownHook;
 import com.tc.util.ProductInfo;
@@ -514,6 +518,15 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         .getInstrumentationLogger(), this.config.rawConfigText(), this, this.config.getMBeanSpecs());
     this.l1Management.start(this.createDedicatedMBeanServer);
 
+    //register the subsystem event logger
+    TerracottaSubSystemEventCallback tcSubSystemEventCallback = new TerracottaSubSystemEventCallbackLogger(
+                                                                                                           DSO_LOGGER,
+                                                                                                           this.l1Management
+                                                                                                               .findTCSubSystemEventMBean());
+
+    TerracottaSubSystemEventLogger tcEventLogger = TerracottaSubSystemEventLogging.getEventLogger();
+    tcEventLogger.registerEventCallback(tcSubSystemEventCallback);
+    
     // Setup the lock manager
     ClientLockStatManager lockStatManager = this.dsoClientBuilder.createLockStatsManager();
     this.lockManager = this.dsoClientBuilder.createLockManager(this.channel, new ClientIDLogger(this.channel
@@ -564,7 +577,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     // more likely an AssertionError
     Stage pauseStage = stageManager.createStage(ClientConfigurationContext.CLIENT_COORDINATION_STAGE,
                                                 new ClientCoordinationHandler(), 1, maxSize);
-    
+
     Stage clusterMembershipEventStage = stageManager
         .createStage(ClientConfigurationContext.CLUSTER_MEMBERSHIP_EVENT_STAGE,
                      new ClusterMemberShipEventsHandler(this.dsoCluster), 1, maxSize);

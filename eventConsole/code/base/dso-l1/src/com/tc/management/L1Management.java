@@ -49,26 +49,26 @@ import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
 public final class L1Management extends TerracottaManagement {
-  private static final TCLogger          logger = TCLogging.getLogger(L1Management.class);
+  private static final TCLogger                logger = TCLogging.getLogger(L1Management.class);
 
-  private final SetOnceFlag              started;
-  private final TunnelingEventHandler    tunnelingHandler;
-  private final Object                   mBeanServerLock;
-  private MBeanServer                    mBeanServer;
+  private final SetOnceFlag                    started;
+  private final TunnelingEventHandler          tunnelingHandler;
+  private final Object                         mBeanServerLock;
+  private MBeanServer                          mBeanServer;
 
-  private final SessionMonitor           httpSessionsMonitor;
-  private final TerracottaCluster        clusterBean;
-  private final L1Info                   l1InfoBean;
-  private final TerracottaSubSystemEventsMbean    l1criCriticalEventsBean;
-  private final InstrumentationLogging   instrumentationLoggingBean;
-  private final RuntimeOutputOptions     runtimeOutputOptionsBean;
-  private final RuntimeLogging           runtimeLoggingBean;
+  private final SessionMonitor                 httpSessionsMonitor;
+  private final TerracottaCluster              clusterBean;
+  private final L1Info                         l1InfoBean;
+  private final TerracottaSubSystemEventsMbean l1SubSystemEventsBean;
+  private final InstrumentationLogging         instrumentationLoggingBean;
+  private final RuntimeOutputOptions           runtimeOutputOptionsBean;
+  private final RuntimeLogging                 runtimeLoggingBean;
 
-  private final StatisticsAgentSubSystem statisticsAgentSubSystem;
+  private final StatisticsAgentSubSystem       statisticsAgentSubSystem;
 
-  private final MBeanSpec[]              mbeanSpecs;
+  private final MBeanSpec[]                    mbeanSpecs;
 
-  private final L1Dumper                 l1DumpBean;
+  private final L1Dumper                       l1DumpBean;
 
   public L1Management(final TunnelingEventHandler tunnelingHandler,
                       final StatisticsAgentSubSystem statisticsAgentSubSystem, final RuntimeLogger runtimeLogger,
@@ -89,7 +89,7 @@ public final class L1Management extends TerracottaManagement {
       instrumentationLoggingBean = new InstrumentationLogging(instrumentationLogger);
       runtimeOutputOptionsBean = new RuntimeOutputOptions(runtimeLogger);
       runtimeLoggingBean = new RuntimeLogging(runtimeLogger);
-      l1criCriticalEventsBean = new TerracottaSubSystemClusterEvent();
+      l1SubSystemEventsBean = new TerracottaSubSystemClusterEvent();
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
@@ -170,6 +170,10 @@ public final class L1Management extends TerracottaManagement {
   public L1InfoMBean findL1InfoMBean() {
     return l1InfoBean;
   }
+  
+  public TerracottaSubSystemEventsMbean findTCSubSystemEventMBean(){
+    return this.l1SubSystemEventsBean;
+  }
 
   public InstrumentationLoggingMBean findInstrumentationLoggingMBean() {
     return instrumentationLoggingBean;
@@ -209,7 +213,7 @@ public final class L1Management extends TerracottaManagement {
     registerMBean(instrumentationLoggingBean, L1MBeanNames.INSTRUMENTATION_LOGGING_PUBLIC);
     registerMBean(runtimeOutputOptionsBean, L1MBeanNames.RUNTIME_OUTPUT_OPTIONS_PUBLIC);
     registerMBean(runtimeLoggingBean, L1MBeanNames.RUNTIME_LOGGING_PUBLIC);
-    registerMBean(l1criCriticalEventsBean, L1MBeanNames.L1CLUSTEREVENTS_PUBLIC);
+    registerMBean(l1SubSystemEventsBean, L1MBeanNames.L1_SUSBSYSTEM_EVENTS_PUBLIC);
     if (mbeanSpecs != null) {
       for (MBeanSpec spec : mbeanSpecs) {
         for (Map.Entry<ObjectName, Object> bean : spec.getMBeans().entrySet()) {
