@@ -4,8 +4,8 @@
 package com.tc.management.beans;
 
 import com.tc.management.TerracottaMBean;
-import com.tc.management.criticalevents.CriticalEvent;
+import com.tc.tcevent.TCClusterEvent;
 
-public interface L1CriticalEventsMbean extends TerracottaMBean {
-  void fireL1CriticalEvent(CriticalEvent tcEvent);
+public interface TCClusterEventsMbean extends TerracottaMBean {
+  void fireTCClusterEvent(TCClusterEvent tcEvent);
 }

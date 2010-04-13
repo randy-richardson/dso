@@ -1,9 +1,9 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.management.criticalevents;
+package com.tc.tcevent;
 
-public interface CriticalEvent {
+public interface TCClusterEvent {
   public static final int CRITICAL = 0;
   
   public static final String LONG_GC = "LONG_GC";

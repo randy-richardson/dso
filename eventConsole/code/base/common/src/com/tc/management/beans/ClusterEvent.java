@@ -3,18 +3,18 @@
  */
 package com.tc.management.beans;
 
-import com.tc.management.criticalevents.CriticalEvent;
 import com.tc.stats.AbstractNotifyingMBean;
+import com.tc.tcevent.TCClusterEvent;
 
 import javax.management.NotCompliantMBeanException;
 
-public class L1CriticalEvent extends AbstractNotifyingMBean implements L1CriticalEventsMbean{
+public class ClusterEvent extends AbstractNotifyingMBean implements TCClusterEventsMbean{
 
-  public L1CriticalEvent() throws NotCompliantMBeanException {
-    super(L1CriticalEventsMbean.class);
+  public ClusterEvent() throws NotCompliantMBeanException {
+    super(TCClusterEventsMbean.class);
   }
 
-  public void fireL1CriticalEvent(CriticalEvent tcEvent) {
+  public void fireTCClusterEvent(TCClusterEvent tcEvent) {
     sendNotification(tcEvent.getEventName(), this);
   }
 

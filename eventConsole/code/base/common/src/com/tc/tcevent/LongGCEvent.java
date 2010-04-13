@@ -1,9 +1,9 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.management.criticalevents;
+package com.tc.tcevent;
 
-public class LongGCEvent implements CriticalEvent{
+public class LongGCEvent implements TCClusterEvent{
 
   public String getEventName() {
     return LONG_GC;

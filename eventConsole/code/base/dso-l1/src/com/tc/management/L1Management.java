@@ -8,8 +8,8 @@ import com.sun.jmx.remote.opt.util.EnvHelp;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.management.beans.L1CriticalEvent;
-import com.tc.management.beans.L1CriticalEventsMbean;
+import com.tc.management.beans.ClusterEvent;
+import com.tc.management.beans.TCClusterEventsMbean;
 import com.tc.management.beans.L1Dumper;
 import com.tc.management.beans.L1MBeanNames;
 import com.tc.management.beans.MBeanNames;
@@ -59,7 +59,7 @@ public final class L1Management extends TerracottaManagement {
   private final SessionMonitor           httpSessionsMonitor;
   private final TerracottaCluster        clusterBean;
   private final L1Info                   l1InfoBean;
-  private final L1CriticalEventsMbean    l1criCriticalEventsBean;
+  private final TCClusterEventsMbean    l1criCriticalEventsBean;
   private final InstrumentationLogging   instrumentationLoggingBean;
   private final RuntimeOutputOptions     runtimeOutputOptionsBean;
   private final RuntimeLogging           runtimeLoggingBean;
@@ -89,7 +89,7 @@ public final class L1Management extends TerracottaManagement {
       instrumentationLoggingBean = new InstrumentationLogging(instrumentationLogger);
       runtimeOutputOptionsBean = new RuntimeOutputOptions(runtimeLogger);
       runtimeLoggingBean = new RuntimeLogging(runtimeLogger);
-      l1criCriticalEventsBean = new L1CriticalEvent();
+      l1criCriticalEventsBean = new ClusterEvent();
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
