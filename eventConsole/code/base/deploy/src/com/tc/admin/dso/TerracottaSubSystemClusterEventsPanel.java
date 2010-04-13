@@ -195,10 +195,10 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
       if (theClusterModel == null) { return; }
 
       if (oldActive != null) {
-        oldActive.removeClusterEvnetsListener(TerracottaSubSystemClusterEventsPanel.this);
+        oldActive.removeTerracottaSubSystemEventsListener(TerracottaSubSystemClusterEventsPanel.this);
       }
       if (newActive != null) {
-        newActive.addClusterEventsListener(TerracottaSubSystemClusterEventsPanel.this);
+        newActive.addTerracottaSubSystemEventsListener(TerracottaSubSystemClusterEventsPanel.this);
       }
     }
 
@@ -224,7 +224,7 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
       IServer activeCoord = clusterModel.getActiveCoordinator();
       if (activeCoord != null) {
         System.out.println("added cluster events listener");
-        activeCoord.addClusterEventsListener(this);
+        activeCoord.addTerracottaSubSystemEventsListener(this);
       }
     }
     if (table != null) {
@@ -433,7 +433,7 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
 
     IServer activeCoord = getActiveCoordinator();
     if (activeCoord != null) {
-      activeCoord.removeClusterEvnetsListener(this);
+      activeCoord.removeTerracottaSubSystemEventsListener(this);
     }
 
     super.tearDown();

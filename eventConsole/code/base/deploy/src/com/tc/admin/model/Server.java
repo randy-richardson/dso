@@ -1488,7 +1488,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     listenerList.add(DGCListener.class, listener);
   }
 
-  public void addClusterEventsListener(TerracottaSubSystemEventsListener listener) {
+  public void addTerracottaSubSystemEventsListener(TerracottaSubSystemEventsListener listener) {
     listenerList.add(TerracottaSubSystemEventsListener.class, listener);
   }
 
@@ -1496,7 +1496,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     listenerList.remove(DGCListener.class, listener);
   }
 
-  public void removeClusterEvnetsListener(TerracottaSubSystemEventsListener listener) {
+  public void removeTerracottaSubSystemEventsListener(TerracottaSubSystemEventsListener listener) {
     listenerList.remove(TerracottaSubSystemEventsListener.class, listener);
   }
 

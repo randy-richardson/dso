@@ -164,11 +164,11 @@ public interface IServer extends IClusterNode, ManagedObjectFacadeProvider {
 
   void addDGCListener(DGCListener listener);
 
-  void addClusterEventsListener(TerracottaSubSystemEventsListener listener);
+  void addTerracottaSubSystemEventsListener(TerracottaSubSystemEventsListener listener);
 
   void removeDGCListener(DGCListener listener);
 
-  void removeClusterEvnetsListener(TerracottaSubSystemEventsListener listener);
+  void removeTerracottaSubSystemEventsListener(TerracottaSubSystemEventsListener listener);
 
   void runGC();
 
