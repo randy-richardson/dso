@@ -23,6 +23,6 @@ public interface TCGroupMemberDiscovery extends GroupEventsListener {
   
   public boolean isValidClusterNode(NodeID nodeID);
 
-  public void removeNodeDynamically(Node nodeAddedDynamically);
+  public void removePassiveDynamically(Node nodeAddedDynamically);
   
 }

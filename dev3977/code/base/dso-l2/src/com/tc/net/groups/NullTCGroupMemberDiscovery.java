@@ -55,7 +55,7 @@ public class NullTCGroupMemberDiscovery implements TCGroupMemberDiscovery {
     //
   }
 
-  public void removeNodeDynamically(Node nodeAddedDynamically) {
+  public void removePassiveDynamically(Node nodeAddedDynamically) {
     //
   }
 }

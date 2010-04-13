@@ -211,6 +211,8 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
 
   public void reloadConfig() throws ConfigurationSetupException {
     StandardTVSConfigurationSetupManagerFactory factory = new StandardTVSConfigurationSetupManagerFactory(
+                                                                                                          StandardTVSConfigurationSetupManagerFactory
+                                                                                                              .getCommandLineArgs(),
                                                                                                           false,
                                                                                                           new FatalIllegalConfigurationChangeHandler());
     L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();

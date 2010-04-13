@@ -40,7 +40,12 @@ public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigur
   private final String        defaultL2Identifier;
   private final String        configSpec;
   private final File          cwd;
-
+  
+  /**
+   * Store some parameters for reloading config ... 
+   */
+  private static CommandLine commandLine = null;
+  
   public StandardTVSConfigurationSetupManagerFactory(boolean isForL2,
                                                      IllegalConfigurationChangeHandler illegalChangeHandler)
       throws ConfigurationSetupException {
@@ -84,6 +89,8 @@ public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigur
                                                      IllegalConfigurationChangeHandler illegalChangeHandler,
                                                      String configSpec) throws ConfigurationSetupException {
     super(illegalChangeHandler);
+    
+    StandardTVSConfigurationSetupManagerFactory.commandLine = commandLine;
 
     String configFileOnCommandLine = null;
     String l2NameOnCommandLine = null;
@@ -187,6 +194,10 @@ public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigur
 
     return new StandardL2TVSConfigurationSetupManager(configurationCreator, l2Name, this.defaultValueProvider,
                                                       this.xmlObjectComparator, this.illegalChangeHandler);
+  }
+  
+  public static CommandLine getCommandLineArgs() {
+    return commandLine;
   }
 
 }

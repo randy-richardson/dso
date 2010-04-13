@@ -78,7 +78,7 @@ public class AddNewPassiveTestApp {
 
     ThreadUtil.reallySleep(15000);
 
-    printList();
+    doAsserts(2000);
 
     killServer(jmxPort2);
   }
@@ -152,11 +152,15 @@ public class AddNewPassiveTestApp {
     }
   }
 
-  private static void printList() {
+  private static void doAsserts(int size) {
     synchronized (mySharedArrayList) {
+      int expected = 0;
       for (Integer i : mySharedArrayList) {
-        System.out.println("List contains = " + i);
+        Assert.assertEquals(new Integer(expected), i);
+        expected++;
       }
+      System.out.println("Size === " + mySharedArrayList.size());
+      Assert.assertEquals(size, mySharedArrayList.size());
     }
   }
 

@@ -76,7 +76,7 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
     }
   }
 
-  public void removeNodeDynamically(Node nodeAddedDynamically) {
+  public void removePassiveDynamically(Node nodeAddedDynamically) {
     DiscoveryStateMachine old = nodeStateMap.get(getNodeName(nodeAddedDynamically));
     Assert.assertNotNull("Tried removing node which was not present", old);
   }
