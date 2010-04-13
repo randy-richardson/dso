@@ -34,6 +34,7 @@ public class ClusteredHeapNode extends ComponentNode implements HyperlinkListene
     add(createRootsNode());
     add(new ClassesNode(adminClientContext, clusterModel));
     add(createGCStatsNode());
+    add(createClusterEvnetsStatsNode());
   }
 
   protected RootsNode createRootsNode() {
@@ -46,6 +47,10 @@ public class ClusteredHeapNode extends ComponentNode implements HyperlinkListene
 
   protected GCStatsNode createGCStatsNode() {
     return new GCStatsNode(adminClientContext, getClusterModel());
+  }
+  
+  protected TerracottaSubSystemClusterEventNode createClusterEvnetsStatsNode() {
+    return new TerracottaSubSystemClusterEventNode(adminClientContext, getClusterModel());
   }
 
   synchronized IClusterModel getClusterModel() {

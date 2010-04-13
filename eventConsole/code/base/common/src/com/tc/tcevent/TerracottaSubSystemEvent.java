@@ -3,7 +3,7 @@
  */
 package com.tc.tcevent;
 
-public interface TCClusterEvent {
+public interface TerracottaSubSystemEvent {
   public static final int CRITICAL = 0;
   
   public static final String LONG_GC = "LONG_GC";

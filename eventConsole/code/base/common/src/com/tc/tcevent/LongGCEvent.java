@@ -3,7 +3,7 @@
  */
 package com.tc.tcevent;
 
-public class LongGCEvent implements TCClusterEvent{
+public class LongGCEvent implements TerracottaSubSystemEvent{
 
   public String getEventName() {
     return LONG_GC;

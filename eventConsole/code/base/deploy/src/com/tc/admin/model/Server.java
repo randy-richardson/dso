@@ -1488,8 +1488,16 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     listenerList.add(DGCListener.class, listener);
   }
 
+  public void addClusterEventsListener(TerracottaSubSystemEventsListener listener) {
+    listenerList.add(TerracottaSubSystemEventsListener.class, listener);
+  }
+
   public void removeDGCListener(DGCListener listener) {
     listenerList.remove(DGCListener.class, listener);
+  }
+
+  public void removeClusterEvnetsListener(TerracottaSubSystemEventsListener listener) {
+    listenerList.remove(TerracottaSubSystemEventsListener.class, listener);
   }
 
   private void fireStatusUpdated(GCStats gcStats) {

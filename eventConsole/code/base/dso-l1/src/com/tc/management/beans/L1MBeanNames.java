@@ -19,7 +19,7 @@ public class L1MBeanNames {
   public static final ObjectName RUNTIME_LOGGING_PUBLIC;
   public static final ObjectName INSTRUMENTATION_LOGGING_PUBLIC;
   public static final ObjectName RUNTIME_OUTPUT_OPTIONS_PUBLIC;
-  public static final ObjectName L1CRITICALEVENTS_PUBLIC;
+  public static final ObjectName L1CLUSTEREVENTS_PUBLIC;
 
   static {
     try {
@@ -31,7 +31,7 @@ public class L1MBeanNames {
                                                                   TerracottaManagement.MBeanDomain.PUBLIC);
       L1INFO_PUBLIC = TerracottaManagement.createObjectName(Type.DsoClient, Subsystem.None, null, "L1 Info Bean",
                                                             TerracottaManagement.MBeanDomain.PUBLIC);
-      L1CRITICALEVENTS_PUBLIC = TerracottaManagement.createObjectName(Type.TcCriticalEvents, Subsystem.None, null,
+      L1CLUSTEREVENTS_PUBLIC = TerracottaManagement.createObjectName(Type.TcCriticalEvents, Subsystem.None, null,
                                                               "Terracotta Critical Cluster Events Bean",
                                                               TerracottaManagement.MBeanDomain.PUBLIC);
       RUNTIME_LOGGING_PUBLIC = TerracottaManagement.createObjectName(Type.DsoClient, Subsystem.Logging, null,

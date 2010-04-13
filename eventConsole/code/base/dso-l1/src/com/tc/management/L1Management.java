@@ -8,8 +8,8 @@ import com.sun.jmx.remote.opt.util.EnvHelp;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.management.beans.ClusterEvent;
-import com.tc.management.beans.TCClusterEventsMbean;
+import com.tc.management.beans.TerracottaSubSystemClusterEvent;
+import com.tc.management.beans.TerracottaSubSystemEventsMbean;
 import com.tc.management.beans.L1Dumper;
 import com.tc.management.beans.L1MBeanNames;
 import com.tc.management.beans.MBeanNames;
@@ -59,7 +59,7 @@ public final class L1Management extends TerracottaManagement {
   private final SessionMonitor           httpSessionsMonitor;
   private final TerracottaCluster        clusterBean;
   private final L1Info                   l1InfoBean;
-  private final TCClusterEventsMbean    l1criCriticalEventsBean;
+  private final TerracottaSubSystemEventsMbean    l1criCriticalEventsBean;
   private final InstrumentationLogging   instrumentationLoggingBean;
   private final RuntimeOutputOptions     runtimeOutputOptionsBean;
   private final RuntimeLogging           runtimeLoggingBean;
@@ -89,7 +89,7 @@ public final class L1Management extends TerracottaManagement {
       instrumentationLoggingBean = new InstrumentationLogging(instrumentationLogger);
       runtimeOutputOptionsBean = new RuntimeOutputOptions(runtimeLogger);
       runtimeLoggingBean = new RuntimeLogging(runtimeLogger);
-      l1criCriticalEventsBean = new ClusterEvent();
+      l1criCriticalEventsBean = new TerracottaSubSystemClusterEvent();
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
@@ -209,7 +209,7 @@ public final class L1Management extends TerracottaManagement {
     registerMBean(instrumentationLoggingBean, L1MBeanNames.INSTRUMENTATION_LOGGING_PUBLIC);
     registerMBean(runtimeOutputOptionsBean, L1MBeanNames.RUNTIME_OUTPUT_OPTIONS_PUBLIC);
     registerMBean(runtimeLoggingBean, L1MBeanNames.RUNTIME_LOGGING_PUBLIC);
-    registerMBean(l1criCriticalEventsBean, L1MBeanNames.L1CRITICALEVENTS_PUBLIC);
+    registerMBean(l1criCriticalEventsBean, L1MBeanNames.L1CLUSTEREVENTS_PUBLIC);
     if (mbeanSpecs != null) {
       for (MBeanSpec spec : mbeanSpecs) {
         for (Map.Entry<ObjectName, Object> bean : spec.getMBeans().entrySet()) {

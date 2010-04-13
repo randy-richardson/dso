@@ -4,6 +4,6 @@
 package com.tc.tcevent;
 
 
-public interface TCEventCallback {
-  void fireClusterEvent(TCClusterEvent event);
+public interface TerracottaSubSystemEventCallback {
+  void fireClusterEvent(TerracottaSubSystemEvent event);
 }
