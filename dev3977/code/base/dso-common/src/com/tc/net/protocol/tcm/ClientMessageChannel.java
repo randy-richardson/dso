@@ -4,6 +4,7 @@
 package com.tc.net.protocol.tcm;
 
 import com.tc.async.api.Sink;
+import com.tc.net.core.ConnectionAddressProvider;
 
 public interface ClientMessageChannel extends MessageChannel {
 
@@ -20,5 +21,7 @@ public interface ClientMessageChannel extends MessageChannel {
   public int getConnectAttemptCount();
 
   public ChannelIDProvider getChannelIDProvider();
+  
+  public void reloadConfig(ConnectionAddressProvider cap);
   
 }

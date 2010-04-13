@@ -10,6 +10,8 @@ import com.tc.net.NodeID;
 public interface TCGroupMemberDiscovery extends GroupEventsListener {
 
   public void start() throws GroupException;
+  
+  public void addPassiveDynamically(Node nodeAddedDynamically);
 
   public void stop(long timeout);
 
@@ -20,5 +22,7 @@ public interface TCGroupMemberDiscovery extends GroupEventsListener {
   public void discoveryHandler(EventContext context);
   
   public boolean isValidClusterNode(NodeID nodeID);
+
+  public void removeNodeDynamically(Node nodeAddedDynamically);
   
 }

@@ -61,6 +61,26 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
     }
   }
 
+  public void addPassiveDynamically(Node nodeAddedDynamically) {
+    DiscoveryStateMachine stateMachine = new DiscoveryStateMachine(nodeAddedDynamically);
+    DiscoveryStateMachine old = nodeStateMap.put(getNodeName(nodeAddedDynamically), stateMachine);
+    Assert.assertNull("Duplicate nodes specified in config, please check " + getNodeName(nodeAddedDynamically), old);
+    stateMachine.start();
+
+    if (stateMachine.isTimeToConnect()) {
+      stateMachine.connecting();
+      discoveryPut(stateMachine);
+    }
+    synchronized (this) {
+      this.notifyAll();
+    }
+  }
+
+  public void removeNodeDynamically(Node nodeAddedDynamically) {
+    DiscoveryStateMachine old = nodeStateMap.get(getNodeName(nodeAddedDynamically));
+    Assert.assertNotNull("Tried removing node which was not present", old);
+  }
+
   private String getNodeName(Node node) {
     return (node.getServerNodeName());
   }
@@ -575,5 +595,4 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
       return rv;
     }
   }
-
 }

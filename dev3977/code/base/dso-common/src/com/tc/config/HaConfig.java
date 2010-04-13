@@ -4,8 +4,11 @@
  */
 package com.tc.config;
 
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.net.groups.Node;
 import com.tc.net.groups.ServerGroup;
+
+import java.util.List;
 
 public interface HaConfig {
 
@@ -37,4 +40,10 @@ public interface HaConfig {
   Node[] getAllNodes();
 
   boolean isActiveCoordinatorGroup();
+
+  /**
+   * @return true if nodes are removed
+   * @throws ConfigurationSetupException
+   */
+  public boolean reloadConfig(List<Node> nodesRemovedOrAddedForThisGrp) throws ConfigurationSetupException;
 }

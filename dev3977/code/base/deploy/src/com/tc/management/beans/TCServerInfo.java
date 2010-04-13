@@ -8,12 +8,15 @@ import sun.management.ManagementFactory;
 
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
+import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.l2.context.StateChangedEvent;
 import com.tc.l2.state.StateChangeListener;
 import com.tc.l2.state.StateManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.AbstractTerracottaMBean;
+import com.tc.objectserver.impl.DistributedObjectServer;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.runtime.JVMMemoryManager;
 import com.tc.runtime.TCRuntime;
@@ -67,8 +70,12 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
 
   private final ObjectStatsRecorder            objectStatsRecorder;
 
-  public TCServerInfo(final TCServer server, final L2State l2State, final ObjectStatsRecorder objectStatsRecorder)
-      throws NotCompliantMBeanException {
+  private final L2TVSConfigurationSetupManager l2ConfigurationSetupManager;
+
+  private DistributedObjectServer              dsoServer;
+
+  public TCServerInfo(final TCServer server, final L2State l2State, final ObjectStatsRecorder objectStatsRecorder,
+                      final L2TVSConfigurationSetupManager setupManager) throws NotCompliantMBeanException {
     super(TCServerInfoMBean.class, true);
     this.server = server;
     this.l2State = l2State;
@@ -78,6 +85,7 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     nextSequenceNumber = 1;
     stateChangeNotificationInfo = new StateChangeNotificationInfo();
     manager = TCRuntime.getJVMMemoryManager();
+    this.l2ConfigurationSetupManager = setupManager;
 
     try {
       Class sraCpuType = Class.forName("com.tc.statistics.retrieval.actions.SRACpuCombined");
@@ -94,6 +102,10 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     }
 
     this.objectStatsRecorder = objectStatsRecorder;
+  }
+
+  public void setDistributedObjectServer(DistributedObjectServer server) {
+    this.dsoServer = server;
   }
 
   public ObjectStatsRecorder getObjectStatsRecorder() {
@@ -440,5 +452,10 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     boolean oldValue = isVerboseGC();
     ManagementFactory.getMemoryMXBean().setVerbose(verboseGC);
     _sendNotification("VerboseGC changed", "VerboseGC", "java.lang.Boolean", oldValue, verboseGC);
+  }
+
+  public void reloadConfig() throws ConfigurationSetupException {
+    l2ConfigurationSetupManager.reloadConfiguration();
+    dsoServer.reloadConfiguration();
   }
 }

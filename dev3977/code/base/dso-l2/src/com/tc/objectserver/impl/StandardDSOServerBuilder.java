@@ -80,7 +80,9 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                              StageManager stageManager, ServerID serverNodeID, Sink httpSink,
                                              StripeIDStateManager stripeStateManager,
                                              ServerGlobalTransactionManager gtxm) {
-    if (networkedHA) {
+    // TODO: currently making all with L2hacoordinator which should probably the case after this feature
+    // if (networkedHA) {
+    if (true) {
       return new TCGroupManagerImpl(configManager, stageManager, serverNodeID, httpSink);
     } else {
       return new SingleNodeGroupManager();

@@ -34,20 +34,20 @@ import java.net.UnknownHostException;
  */
 public class ClientConnectionEstablisher {
 
-  private static final long               CONNECT_RETRY_INTERVAL;
-  private static final long               MIN_RETRY_INTERVAL    = 10;
-  public static final String              RECONNECT_THREAD_NAME = "ConnectionEstablisher";
+  private static final long            CONNECT_RETRY_INTERVAL;
+  private static final long            MIN_RETRY_INTERVAL    = 10;
+  public static final String           RECONNECT_THREAD_NAME = "ConnectionEstablisher";
 
-  private final String                    desc;
-  private final int                       maxReconnectTries;
-  private final int                       timeout;
-  private final ConnectionAddressProvider connAddressProvider;
-  private final TCConnectionManager       connManager;
-  private final SynchronizedBoolean       asyncReconnecting     = new SynchronizedBoolean(false);
-  private final SynchronizedBoolean       allowReconnects       = new SynchronizedBoolean(true);
+  private final String                 desc;
+  private final int                    maxReconnectTries;
+  private final int                    timeout;
+  private ConnectionAddressProvider    connAddressProvider;
+  private final TCConnectionManager    connManager;
+  private final SynchronizedBoolean    asyncReconnecting     = new SynchronizedBoolean(false);
+  private final SynchronizedBoolean    allowReconnects       = new SynchronizedBoolean(true);
 
-  private Thread                          connectionEstablisher;
-  private final NoExceptionLinkedQueue    reconnectRequest      = new NoExceptionLinkedQueue();  // <ConnectionRequest>
+  private Thread                       connectionEstablisher;
+  private final NoExceptionLinkedQueue reconnectRequest      = new NoExceptionLinkedQueue();  // <ConnectionRequest>
 
   static {
     TCLogger logger = TCLogging.getLogger(ClientConnectionEstablisher.class);
@@ -393,5 +393,9 @@ public class ClientConnectionEstablisher {
     public long getTimeoutMillis() {
       return this.timeoutMillis;
     }
+  }
+
+  public void reloadConfig(ConnectionAddressProvider cap) {
+    this.connAddressProvider = cap;
   }
 }

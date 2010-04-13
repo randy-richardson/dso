@@ -4,16 +4,11 @@
  */
 package com.tc.net.core;
 
-import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.util.StringUtil;
 
 public class ConnectionAddressProvider {
 
   private final ConnectionInfo[] addresses;
-
-  public ConnectionAddressProvider(ConfigItem source) {
-    this((ConnectionInfo[]) source.getObject());
-  }
 
   public ConnectionAddressProvider(ConnectionInfo[] addresses) {
     this.addresses = (addresses == null) ? ConnectionInfo.EMPTY_ARRAY : addresses;

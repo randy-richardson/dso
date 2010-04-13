@@ -104,4 +104,8 @@ public class SingleNodeGroupManager implements GroupManager {
     return true;
   }
 
+  public void addOrRemovePassiveDynamically(List<Node> nodeAddedDynamically, boolean isRemoved) {
+    // NOP
+  }
+
 }

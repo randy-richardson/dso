@@ -4,19 +4,26 @@
  */
 package com.tc.net.groups;
 
+import com.tc.config.HaConfigImpl;
 import com.tc.config.schema.ActiveServerGroupConfig;
 import com.tc.config.schema.NewHaConfig;
+import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.net.GroupID;
+import com.tc.object.config.schema.NewL2DSOConfig;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class ServerGroup {
 
   private final GroupID     groupId;
-  private final String[]    members;
+  private String[]          members;
   private final NewHaConfig haMode;
   private final Map         nodes;
 
@@ -27,13 +34,61 @@ public class ServerGroup {
     this.nodes = new HashMap();
   }
 
+  public boolean reloadAndGetNodesRemoved(L2TVSConfigurationSetupManager manager, final ActiveServerGroupConfig group,
+                                          List<Node> nodesAddedOrRemoved) throws ConfigurationSetupException {
+    List<String> membersBefore = convertStringToList(this.members);
+    List<String> membersNow = convertStringToList(group.getMembers().getMemberArray());
+
+    boolean isRemoved = false;
+    if (membersNow.size() > membersBefore.size()) {
+      isRemoved = false;
+      addNodes(manager, group, nodesAddedOrRemoved, membersNow, membersBefore);
+    } else if (membersNow.size() < membersBefore.size()) {
+      isRemoved = true;
+      removeNodes(nodesAddedOrRemoved, membersNow, membersBefore);
+    }
+    
+    this.members = group.getMembers().getMemberArray();
+    return isRemoved;
+  }
+
+  private ArrayList<String> convertStringToList(String[] strArray) {
+    ArrayList<String> list = new ArrayList<String>();
+    for (String str : strArray) {
+      list.add(str);
+    }
+    return list;
+  }
+
+  private void removeNodes(List<Node> nodesAddedOrRemoved, List<String> membersNow, List<String> membersBefore) {
+    membersBefore.removeAll(membersNow);
+    for (String member : membersBefore) {
+      nodesAddedOrRemoved.add((Node) this.nodes.remove(member));
+    }
+  }
+
+  private void addNodes(L2TVSConfigurationSetupManager configSetupManager, ActiveServerGroupConfig group,
+                        List<Node> nodesAddedOrRemoved, List<String> membersNow, List<String> membersBefore)
+      throws ConfigurationSetupException {
+    membersNow.removeAll(membersBefore);
+    for (String member : membersNow) {
+      NewL2DSOConfig l2 = configSetupManager.dsoL2ConfigFor(member);
+      Node node = HaConfigImpl.makeNode(l2);
+      nodesAddedOrRemoved.add(node);
+    }
+  }
+
   public GroupID getGroupId() {
     return groupId;
   }
 
-  public Collection getNodes() {
+  public Collection<Node> getNodes() {
+    return getNodes(false);
+  }
+  
+  public Collection<Node> getNodes(boolean ignoreCheck) {
     Collection c = this.nodes.values();
-    if (c.size() != this.members.length) { throw new AssertionError(
+    if (!ignoreCheck && c.size() != this.members.length) { throw new AssertionError(
                                                                     "Not all members are present in this collection: collections=["
                                                                         + getCollectionsToString(c) + "] members=["
                                                                         + getMembersToString() + "]"); }
@@ -97,5 +152,9 @@ public class ServerGroup {
       if (members[i].equals(serverName)) { return true; }
     }
     return false;
+  }
+
+  public List<String> getMembers() {
+    return Arrays.asList(members);
   }
 }

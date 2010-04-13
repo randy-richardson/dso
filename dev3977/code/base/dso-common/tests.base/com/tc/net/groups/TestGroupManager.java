@@ -9,6 +9,7 @@ import com.tc.exception.TCRuntimeException;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -24,6 +25,10 @@ public class TestGroupManager implements GroupManager {
 
   public NodeID join(Node thisNode, Node[] allNodes) {
     return localNodeID;
+  }
+
+  public void addOrRemovePassiveDynamically(List<Node> nodeAddedDynamically, boolean isRemoved) {
+    // NOP
   }
 
   public void registerForGroupEvents(GroupEventsListener listener) {

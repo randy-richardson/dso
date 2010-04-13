@@ -15,6 +15,7 @@ import com.tc.async.api.StageManager;
 import com.tc.async.impl.NullSink;
 import com.tc.config.HaConfig;
 import com.tc.config.HaConfigImpl;
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.CleanDirtyDatabaseException;
 import com.tc.exception.TCRuntimeException;
@@ -688,7 +689,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
                                                              managedObjectFlushHandler,
                                                              (persistent ? 1 : this.l2Properties
                                                                  .getInt("seda.flushstage.threads")), -1);
-    long enterpriseMarkStageInterval = objManagerProperties.getPropertiesFor("dgc").getLong("enterpriseMarkStageInterval");
+    long enterpriseMarkStageInterval = objManagerProperties.getPropertiesFor("dgc")
+        .getLong("enterpriseMarkStageInterval");
     TCProperties youngDGCProperties = objManagerProperties.getPropertiesFor("dgc").getPropertiesFor("young");
     boolean enableYoungGenDGC = youngDGCProperties.getBoolean("enabled");
     long youngGenDGCFrequency = youngDGCProperties.getLong("frequencyInMillis");
@@ -975,7 +977,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       }
     });
 
-    if (networkedHA) {
+    // TODO: currently making all with L2hacoordinator which should probably the case after this feature
+    // if (networkedHA) {
+    if (true) {
       WeightGeneratorFactory weightGeneratorFactory = new ZapNodeProcessorWeightGeneratorFactory(
                                                                                                  channelManager,
                                                                                                  transactionBatchManager,
@@ -1051,6 +1055,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       logger.error("Caught Exception :", e);
       throw new RuntimeException(e);
     }
+  }
+
+  public void reloadConfiguration() throws ConfigurationSetupException {
+    // find with ha config all
+    List<Node> nodesRemovedOrAddedForThisGrp = new ArrayList<Node>();
+    boolean isRemoved = haConfig.reloadConfig(nodesRemovedOrAddedForThisGrp);
+
+    this.groupCommManager.addOrRemovePassiveDynamically(nodesRemovedOrAddedForThisGrp, isRemoved);
   }
 
   protected void initRouteMessages(final Stage processTx, final Stage rootRequest, final Stage requestLock,

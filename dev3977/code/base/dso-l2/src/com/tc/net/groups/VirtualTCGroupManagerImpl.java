@@ -12,6 +12,7 @@ import com.tc.net.ServerID;
 import com.tc.util.Assert;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -154,4 +155,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     return groupManager.isConnectionToNodeActive(sid);
   }
 
+  public void addOrRemovePassiveDynamically(List<Node> nodeAddedDynamically, boolean isRemoved) {
+    throw new UnsupportedOperationException();
+  }
 }

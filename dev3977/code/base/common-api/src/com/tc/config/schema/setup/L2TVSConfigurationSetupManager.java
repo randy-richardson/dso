@@ -50,4 +50,6 @@ public interface L2TVSConfigurationSetupManager {
   NewCommonL2Config commonL2ConfigFor(String name) throws ConfigurationSetupException;
 
   NewL2DSOConfig dsoL2ConfigFor(String name) throws ConfigurationSetupException;
+
+  void reloadConfiguration() throws ConfigurationSetupException;
 }

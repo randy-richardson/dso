@@ -4,6 +4,7 @@
  */
 package com.tc.management.beans.l1;
 
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.management.RuntimeStatisticConstants;
 import com.tc.management.TerracottaMBean;
 import com.tc.statistics.StatisticData;
@@ -54,4 +55,6 @@ public interface L1InfoMBean extends TerracottaMBean, NotificationEmitter, Runti
   void setVerboseGC(boolean verboseGC);
 
   void gc();
+  
+  void reloadConfig() throws ConfigurationSetupException;
 }

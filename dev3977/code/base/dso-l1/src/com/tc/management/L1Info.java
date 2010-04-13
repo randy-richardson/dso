@@ -6,6 +6,7 @@ package com.tc.management;
 
 import sun.management.ManagementFactory;
 
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.handler.LockInfoDumpHandler;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -263,5 +264,9 @@ public class L1Info extends AbstractTerracottaMBean implements L1InfoMBean {
     boolean oldValue = isVerboseGC();
     ManagementFactory.getMemoryMXBean().setVerbose(verboseGC);
     _sendNotification("VerboseGC changed", "VerboseGC", "java.lang.Boolean", oldValue, verboseGC);
+  }
+
+  public void reloadConfig() throws ConfigurationSetupException {
+    client.reloadConfig();
   }
 }

@@ -39,7 +39,7 @@ import java.util.Set;
  */
 public class BaseTVSConfigurationSetupManager {
   private final MutableBeanRepository             clientBeanRepository;
-  private final MutableBeanRepository             serversBeanRepository;
+  protected MutableBeanRepository                 serversBeanRepository;
   private final MutableBeanRepository             systemBeanRepository;
   private final MutableBeanRepository             tcPropertiesRepository;
   private final ApplicationsRepository            applicationsRepository;

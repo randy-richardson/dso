@@ -27,6 +27,7 @@ import com.tc.config.schema.UpdateCheckConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.repository.ChildBeanFetcher;
 import com.tc.config.schema.repository.ChildBeanRepository;
+import com.tc.config.schema.repository.StandardBeanRepository;
 import com.tc.config.schema.utils.XmlObjectComparator;
 import com.tc.license.Capability;
 import com.tc.license.LicenseCheck;
@@ -66,18 +67,18 @@ import java.util.Set;
 public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfigurationSetupManager implements
     L2TVSConfigurationSetupManager {
 
-  private static final TCLogger          logger = TCLogging.getLogger(StandardL2TVSConfigurationSetupManager.class);
+  private static final TCLogger      logger = TCLogging.getLogger(StandardL2TVSConfigurationSetupManager.class);
 
-  private final ConfigurationCreator     configurationCreator;
-  private NewSystemConfig                systemConfig;
-  private final Map                      l2ConfigData;
-  private final NewHaConfig              haConfig;
-  private final ActiveServerGroupsConfig activeServerGroupsConfig;
-  private final UpdateCheckConfig        updateCheckConfig;
+  private final ConfigurationCreator configurationCreator;
+  private NewSystemConfig            systemConfig;
+  private final Map                  l2ConfigData;
+  private final NewHaConfig          haConfig;
+  private ActiveServerGroupsConfig   activeServerGroupsConfig;
+  private final UpdateCheckConfig    updateCheckConfig;
 
-  private String                         thisL2Identifier;
-  private L2ConfigData                   myConfigData;
-  private final ConfigTCProperties       configTCProperties;
+  private String                     thisL2Identifier;
+  private L2ConfigData               myConfigData;
+  private final ConfigTCProperties   configTCProperties;
 
   public StandardL2TVSConfigurationSetupManager(ConfigurationCreator configurationCreator, String thisL2Identifier,
                                                 DefaultValueProvider defaultValueProvider,
@@ -125,6 +126,17 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     validateGroups();
     validateDSOClusterPersistenceMode();
     validateLicenseCapabilities();
+  }
+
+  public void reloadConfiguration() throws ConfigurationSetupException {
+    this.serversBeanRepository = new StandardBeanRepository(Servers.class);
+    runConfigurationCreator(this.configurationCreator);
+
+    try {
+      this.activeServerGroupsConfig = getActiveServerGroupsConfig();
+    } catch (XmlException e) {
+      throw new ConfigurationSetupException(e);
+    }
   }
 
   public String getL2Identifier() {

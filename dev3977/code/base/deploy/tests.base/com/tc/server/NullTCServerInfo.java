@@ -227,4 +227,8 @@ public class NullTCServerInfo extends AbstractTerracottaMBean implements TCServe
   public void setVerboseGC(boolean verboseGC) {
     /**/
   }
+
+  public void reloadConfig() {
+    //
+  }
 }

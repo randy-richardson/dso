@@ -156,4 +156,11 @@ public class TestClientMessageChannel implements ClientMessageChannel {
     throw new ImplementMe();
   }
 
+  public void reloadConfig() {
+    throw new ImplementMe();
+  }
+
+  public void reloadConfig(ConnectionAddressProvider cap) {
+    throw new ImplementMe();
+  }
 }

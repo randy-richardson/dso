@@ -5,6 +5,7 @@
 package com.tc.object.net;
 
 import com.tc.async.api.Sink;
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.management.lock.stats.LockStatisticsReponseMessageFactory;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.GroupID;
@@ -77,4 +78,5 @@ public interface DSOClientMessageChannel {
 
   public GroupID[] getGroupIDs();
 
+  public void reloadConfig() throws ConfigurationSetupException;
 }

@@ -832,4 +832,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
       e.printStackTrace();
     }
   }
+
+  public void reloadConfig() throws ConfigurationSetupException {
+    this.channel.reloadConfig();
+  }
 }
