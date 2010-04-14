@@ -34,22 +34,15 @@ public class ServerGroup {
     this.nodes = new HashMap();
   }
 
-  public boolean reloadAndGetNodesRemoved(L2TVSConfigurationSetupManager manager, final ActiveServerGroupConfig group,
-                                          List<Node> nodesAddedOrRemoved) throws ConfigurationSetupException {
+  public void reloadGroup(L2TVSConfigurationSetupManager manager, final ActiveServerGroupConfig group,
+                          List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException {
     List<String> membersBefore = convertStringToList(this.members);
     List<String> membersNow = convertStringToList(group.getMembers().getMemberArray());
 
-    boolean isRemoved = false;
-    if (membersNow.size() > membersBefore.size()) {
-      isRemoved = false;
-      addNodes(manager, group, nodesAddedOrRemoved, membersNow, membersBefore);
-    } else if (membersNow.size() < membersBefore.size()) {
-      isRemoved = true;
-      removeNodes(nodesAddedOrRemoved, membersNow, membersBefore);
-    }
-    
+    addNodes(manager, group, nodesAdded, membersNow, membersBefore);
+    removeNodes(nodesRemoved, membersNow, membersBefore);
+
     this.members = group.getMembers().getMemberArray();
-    return isRemoved;
   }
 
   private ArrayList<String> convertStringToList(String[] strArray) {
@@ -60,21 +53,21 @@ public class ServerGroup {
     return list;
   }
 
-  private void removeNodes(List<Node> nodesAddedOrRemoved, List<String> membersNow, List<String> membersBefore) {
+  private void removeNodes(List<Node> nodesRemoved, List<String> membersNow, List<String> membersBefore) {
     membersBefore.removeAll(membersNow);
     for (String member : membersBefore) {
-      nodesAddedOrRemoved.add((Node) this.nodes.remove(member));
+      nodesRemoved.add((Node) this.nodes.remove(member));
     }
   }
 
   private void addNodes(L2TVSConfigurationSetupManager configSetupManager, ActiveServerGroupConfig group,
-                        List<Node> nodesAddedOrRemoved, List<String> membersNow, List<String> membersBefore)
+                        List<Node> nodesAdded, List<String> membersNow, List<String> membersBefore)
       throws ConfigurationSetupException {
     membersNow.removeAll(membersBefore);
     for (String member : membersNow) {
       NewL2DSOConfig l2 = configSetupManager.dsoL2ConfigFor(member);
       Node node = HaConfigImpl.makeNode(l2);
-      nodesAddedOrRemoved.add(node);
+      nodesAdded.add(node);
     }
   }
 
@@ -85,13 +78,14 @@ public class ServerGroup {
   public Collection<Node> getNodes() {
     return getNodes(false);
   }
-  
+
   public Collection<Node> getNodes(boolean ignoreCheck) {
     Collection c = this.nodes.values();
     if (!ignoreCheck && c.size() != this.members.length) { throw new AssertionError(
-                                                                    "Not all members are present in this collection: collections=["
-                                                                        + getCollectionsToString(c) + "] members=["
-                                                                        + getMembersToString() + "]"); }
+                                                                                    "Not all members are present in this collection: collections=["
+                                                                                        + getCollectionsToString(c)
+                                                                                        + "] members=["
+                                                                                        + getMembersToString() + "]"); }
     return c;
   }
 

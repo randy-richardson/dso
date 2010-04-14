@@ -27,7 +27,7 @@ public class TestGroupManager implements GroupManager {
     return localNodeID;
   }
 
-  public void addOrRemovePassiveDynamically(List<Node> nodeAddedDynamically, boolean isRemoved) {
+  public void addOrRemovePassiveDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
     // NOP
   }
 

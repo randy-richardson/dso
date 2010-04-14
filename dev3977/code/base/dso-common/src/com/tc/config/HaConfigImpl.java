@@ -18,6 +18,7 @@ import com.tc.util.Assert;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,12 @@ public class HaConfigImpl implements HaConfig {
   private final ServerGroup                    activeCoordinatorGroup;
   private final Node                           thisNode;
   private final ServerGroup                    thisGroup;
+
+  /**
+   * Need name to group id for StripeTCGroupManagerImpl Map<NodeName, GID> Need node names for this grp
+   */
+  private HashSet<String>                      nodeNamesForThisGrp = new HashSet<String>();
+  private HashMap<String, GroupID>             nodeNameToGidMap    = new HashMap<String, GroupID>();
 
   public HaConfigImpl(L2TVSConfigurationSetupManager configSetupManager) {
     this.configSetupManager = configSetupManager;
@@ -62,34 +69,49 @@ public class HaConfigImpl implements HaConfig {
     this.allNodes = makeAllNodes();
     this.thisNode = makeThisNode();
     this.thisGroup = getThisGroupFrom(this.groups, this.configSetupManager.getActiveServerGroupForThisL2());
+
+    buildServerGroupIDMap();
+    buildNodeNamesForThisGroup();
+  }
+
+  private void buildServerGroupIDMap() {
+    for (ServerGroup group : groups) {
+      for (Node node : group.getNodes()) {
+        nodeNameToGidMap.put(node.getServerNodeName(), group.getGroupId());
+      }
+    }
+  }
+
+  private void buildNodeNamesForThisGroup() {
+    for (Node n : thisGroup.getNodes()) {
+      nodeNamesForThisGrp.add(n.getServerNodeName());
+    }
   }
 
   /**
    * @return true if nodes are removed
    * @throws ConfigurationSetupException
    */
-  public boolean reloadConfig(List<Node> nodesRemovedOrAddedForThisGrp) throws ConfigurationSetupException {
+  public void reloadConfig(List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException {
     ActiveServerGroupsConfig asgsc = this.configSetupManager.activeServerGroupsConfig();
     int grpCount = asgsc.getActiveServerGroupCount();
 
     ActiveServerGroupConfig[] asgcArray = asgsc.getActiveServerGroupArray();
-    boolean isRemovedForThisGroup = false;
     for (int i = 0; i < grpCount; i++) {
       GroupID gid = asgcArray[i].getGroupId();
-      ServerGroup sg = null;
       for (int j = 0; j < grpCount; j++) {
         if (groups[i].getGroupId().equals(gid)) {
-          sg = groups[i];
-          List<Node> nodesAddedOrRemoved = new ArrayList<Node>();
-          boolean isRemoved = sg.reloadAndGetNodesRemoved(this.configSetupManager, asgcArray[i], nodesAddedOrRemoved);
-          if (sg == this.thisGroup) {
-            nodesRemovedOrAddedForThisGrp.addAll(nodesAddedOrRemoved);
-            isRemovedForThisGroup = isRemoved;
-          }
-          if (isRemoved) {
-            allNodes.removeAll(nodesAddedOrRemoved);
-          } else {
-            allNodes.addAll(nodesAddedOrRemoved);
+          ArrayList<Node> tempAdded = new ArrayList<Node>();
+          ArrayList<Node> tempRemoved = new ArrayList<Node>();
+          groups[i].reloadGroup(this.configSetupManager, asgcArray[i], tempAdded, tempRemoved);
+
+          nodesAdded.addAll(tempAdded);
+          nodesRemoved.addAll(tempRemoved);
+
+          addAndRemoveNameToGid(tempAdded, tempRemoved, gid);
+
+          if (groups[i] == this.thisGroup) {
+            addAndRemoveNamesForThisGrp(tempAdded, tempRemoved);
           }
         }
       }
@@ -99,8 +121,26 @@ public class HaConfigImpl implements HaConfig {
     Node[] tempNodeArray = new Node[nodes.size()];
     nodes.toArray(tempNodeArray);
     this.thisGroupNodes = tempNodeArray;
+  }
 
-    return isRemovedForThisGroup;
+  private void addAndRemoveNameToGid(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved, GroupID gid) {
+    for (Node n : tempAdded) {
+      nodeNameToGidMap.put(n.getServerNodeName(), gid);
+    }
+
+    for (Node n : tempRemoved) {
+      nodeNameToGidMap.remove(n.getServerNodeName());
+    }
+  }
+
+  private void addAndRemoveNamesForThisGrp(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved) {
+    for (Node n : tempAdded) {
+      nodeNamesForThisGrp.add(n.getServerNodeName());
+    }
+
+    for (Node n : tempRemoved) {
+      nodeNamesForThisGrp.remove(n.getServerNodeName());
+    }
   }
 
   private ServerGroup getThisGroupFrom(ServerGroup[] sg, ActiveServerGroupConfig activeServerGroupForThisL2) {
@@ -213,5 +253,13 @@ public class HaConfigImpl implements HaConfig {
 
   public boolean isActiveCoordinatorGroup() {
     return this.thisGroup == this.activeCoordinatorGroup;
+  }
+
+  public HashMap<String, GroupID> getNodeNamesToGidMap() {
+    return nodeNameToGidMap;
+  }
+
+  public HashSet<String> getNodeNames() {
+    return nodeNamesForThisGrp;
   }
 }

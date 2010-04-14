@@ -11,7 +11,6 @@ import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 import com.tc.util.Assert;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,13 +25,11 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   private final CopyOnWriteArrayList<GroupEventsListener> groupListeners   = new CopyOnWriteArrayList<GroupEventsListener>();
   private final Map<String, GroupMessageListener>         messageListeners = new ConcurrentHashMap<String, GroupMessageListener>();
   private final Set<NodeID>                               groupNodeIDs     = new CopyOnWriteArraySet<NodeID>();
-  private final Set<String>                               groupNodes       = new HashSet<String>();
+  private final Set<String>                               groupNodes;
 
-  public VirtualTCGroupManagerImpl(GroupManager groupManager, Node[] virtualGroupNodes) {
+  public VirtualTCGroupManagerImpl(GroupManager groupManager, Set<String> groupNodes) {
     this.groupManager = groupManager;
-    for (Node n : virtualGroupNodes) {
-      groupNodes.add(n.getServerNodeName());
-    }
+    this.groupNodes = groupNodes;
     groupManager.registerForGroupEvents(this);
   }
 
@@ -155,7 +152,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     return groupManager.isConnectionToNodeActive(sid);
   }
 
-  public void addOrRemovePassiveDynamically(List<Node> nodeAddedDynamically, boolean isRemoved) {
+  public void addOrRemovePassiveDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
     throw new UnsupportedOperationException();
   }
 }

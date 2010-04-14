@@ -32,6 +32,7 @@ import com.tc.util.concurrent.QueueFactory;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -185,11 +186,13 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
     VirtualTCGroupManagerImpl[] virtualMgr = new VirtualTCGroupManagerImpl[virtuals];
     Node[] virtualNodes = new Node[virtuals];
+    HashSet<String> names = new HashSet<String>();
     for (int i = 0; i < virtuals; ++i) {
       virtualNodes[i] = allNodes[i];
+      names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], virtualNodes);
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], names);
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];
@@ -279,11 +282,13 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
     VirtualTCGroupManagerImpl[] virtualMgr = new VirtualTCGroupManagerImpl[virtuals];
     Node[] virtualNodes = new Node[virtuals];
+    HashSet<String> names = new HashSet<String>();
     for (int i = 0; i < virtuals; ++i) {
       virtualNodes[i] = allNodes[i];
+      names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], virtualNodes);
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], names);
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];
@@ -345,11 +350,13 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
     VirtualTCGroupManagerImpl[] virtualMgr = new VirtualTCGroupManagerImpl[virtuals];
     Node[] virtualNodes = new Node[virtuals];
+    HashSet<String> names = new HashSet<String>();
     for (int i = 0; i < virtuals; ++i) {
       virtualNodes[i] = allNodes[i];
+      names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], virtualNodes);
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], names);
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];
