@@ -306,7 +306,7 @@ public class ClientConnectEventHandler extends AbstractEventHandler {
               MBeanMirror mirror = MBeanMirrorFactory.newMBeanMirror(l1Connection, objName);
               l2MBeanServer.registerMBean(mirror, modifiedObjName);
               // TODO: different way to see if its the same mbean rather than String.contains
-              if(modifiedObjName.toString().contains("Terracotta Critical Cluster Events Bean")){
+              if (modifiedObjName.toString().contains("Terracotta Operator Events Bean")) {
                 l2MBeanServer.addNotificationListener(modifiedObjName, this.tcSubSystemEventListener, null, null);
               }
             } catch (Throwable t) {

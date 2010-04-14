@@ -270,7 +270,7 @@ public class L2Management extends TerracottaManagement {
     return serverDbBackupBean;
   }
 
-  public TerracottaOperatorEventsMbean findTCSubSystemEventMBean() {
+  public TerracottaOperatorEventsMbean findTCOperatorEventMBean() {
     return this.l2OperatorEventsMbean;
   }
 
@@ -281,7 +281,7 @@ public class L2Management extends TerracottaManagement {
     mBeanServer.registerMBean(objectManagementBean, L2MBeanNames.OBJECT_MANAGEMENT);
     mBeanServer.registerMBean(serverDbBackupBean, L2MBeanNames.SERVER_DB_BACKUP);
     mBeanServer.registerMBean(lockStatistics, L2MBeanNames.LOCK_STATISTICS);
-    mBeanServer.registerMBean(l2OperatorEventsMbean, L2MBeanNames.L2_SUSBSYSTEM_EVENTS_PUBLIC);
+    mBeanServer.registerMBean(l2OperatorEventsMbean, L2MBeanNames.L2_OPERATOR_EVENTS_PUBLIC);
     if (statisticsAgentSubSystem.isActive()) {
       statisticsAgentSubSystem.registerMBeans(mBeanServer);
     }

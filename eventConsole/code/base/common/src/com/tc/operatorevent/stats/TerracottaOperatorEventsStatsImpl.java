@@ -3,53 +3,43 @@
  */
 package com.tc.operatorevent.stats;
 
-import com.tc.net.NodeID;
 import com.tc.stats.TerracottaOperatorEventStats;
-
-import java.util.Date;
 
 public class TerracottaOperatorEventsStatsImpl implements TerracottaOperatorEventStats {
 
-  private NodeID nodeId;
-  private String eventType;
-  private Date   startTime;
-  
-  public TerracottaOperatorEventsStatsImpl(String eventType) {
-    this.nodeId = null;
-    this.eventType = eventType;
-    this.startTime = new Date();
-  }
+  private final int    eventType;
+  private final String time;
+  private final String eventMessage;
+  private final String nodeId;
+  private final String eventSystem;
 
-  public synchronized void setNodeId(NodeID nodeId) {
+  public TerracottaOperatorEventsStatsImpl(String eventTime, int eventType, String eventSystem, String nodeId,
+                                           String eventMessage) {
     this.nodeId = nodeId;
-  }
-
-  public synchronized void setEventType(String eventType) {
     this.eventType = eventType;
+    this.time = eventTime;
+    this.eventMessage = eventMessage;
+    this.eventSystem = eventSystem;
   }
 
-  public synchronized void setStartTime(Date startTime) {
-    this.startTime = startTime;
+  public String getEventTime() {
+    return this.time;
   }
 
-  public Date getEventTime() {
-    return this.startTime;
-  }
-
-  public NodeID getNodeID() {
+  public String getNodeID() {
     return this.nodeId;
   }
 
-  public String getTCEventType() {
+  public int getTCEventType() {
     return this.eventType;
   }
 
   public String getMessage() {
-    return "Long GC Happened";
+    return this.eventMessage;
   }
 
   public String getSystem() {
-    return "MEMORY MONITOR";
+    return this.eventSystem;
   }
 
 }

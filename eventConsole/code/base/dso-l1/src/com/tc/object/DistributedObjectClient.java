@@ -518,7 +518,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         .getInstrumentationLogger(), this.config.rawConfigText(), this, this.config.getMBeanSpecs());
     this.l1Management.start(this.createDedicatedMBeanServer);
 
-    //register the subsystem event logger
+    // register the terracotta operator event logger
     TerracottaOperatorEventCallback tcOperatorEventCallback = new TerracottaOperatorEventCallbackLogger(
                                                                                                            DSO_LOGGER,
                                                                                                            this.l1Management

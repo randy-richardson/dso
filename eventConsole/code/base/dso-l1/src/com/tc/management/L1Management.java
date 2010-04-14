@@ -213,7 +213,7 @@ public final class L1Management extends TerracottaManagement {
     registerMBean(instrumentationLoggingBean, L1MBeanNames.INSTRUMENTATION_LOGGING_PUBLIC);
     registerMBean(runtimeOutputOptionsBean, L1MBeanNames.RUNTIME_OUTPUT_OPTIONS_PUBLIC);
     registerMBean(runtimeLoggingBean, L1MBeanNames.RUNTIME_LOGGING_PUBLIC);
-    registerMBean(l1OperatorEventsBean, L1MBeanNames.L1_SUSBSYSTEM_EVENTS_PUBLIC);
+    registerMBean(l1OperatorEventsBean, L1MBeanNames.L1_OPERATOR_EVENTS_PUBLIC);
     if (mbeanSpecs != null) {
       for (MBeanSpec spec : mbeanSpecs) {
         for (Map.Entry<ObjectName, Object> bean : spec.getMBeans().entrySet()) {

@@ -484,11 +484,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       System.exit(-1);
     }
 
-    // register the subsystem event logger
+    // register the terracotta operator event logger
     TerracottaOperatorEventCallback tcOperatorEventCallback = new TerracottaOperatorEventCallbackLogger(
                                                                                                          logger,
                                                                                                          this.l2Management
-                                                                                                             .findTCSubSystemEventMBean());
+                                                                                                             .findTCOperatorEventMBean());
 
     TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
     tcEventLogger.registerEventCallback(tcOperatorEventCallback);

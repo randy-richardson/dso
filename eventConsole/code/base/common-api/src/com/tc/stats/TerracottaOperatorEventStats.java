@@ -3,17 +3,14 @@
  */
 package com.tc.stats;
 
-import com.tc.net.NodeID;
-
-import java.util.Date;
 
 public interface TerracottaOperatorEventStats {
   
-  NodeID getNodeID();
+  String getNodeID();
 
-  String getTCEventType();
+  int getTCEventType();
   
-  Date getEventTime();
+  String getEventTime();
   
   String getSystem();
   

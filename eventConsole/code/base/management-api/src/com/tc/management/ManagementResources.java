@@ -91,6 +91,6 @@ class ManagementResources {
   }
 
   public String getTerracottaCriticalEventType() {
-    return TerracottaManagement.quoteIfNecessary(resources.getString("type.tc-critical-events"));
+    return TerracottaManagement.quoteIfNecessary(resources.getString("type.tc-operator-events"));
   }
 }

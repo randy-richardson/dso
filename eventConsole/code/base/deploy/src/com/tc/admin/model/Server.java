@@ -25,6 +25,8 @@ import com.tc.objectserver.api.NoSuchObjectException;
 import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.mgmt.MapEntryFacade;
+import com.tc.operatorevent.TerracottaOperatorEvent;
+import com.tc.operatorevent.stats.TerracottaOperatorEventsStatsImpl;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.beans.StatisticsLocalGathererMBean;
 import com.tc.statistics.beans.StatisticsMBeanNames;
@@ -32,6 +34,7 @@ import com.tc.statistics.config.StatisticsConfig;
 import com.tc.stats.DSOClassInfo;
 import com.tc.stats.DSOMBean;
 import com.tc.stats.DSORootMBean;
+import com.tc.stats.TerracottaOperatorEventStats;
 import com.tc.util.Assert;
 import com.tc.util.ProductInfo;
 
@@ -230,6 +233,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       theReadySet.add(L2MBeanNames.OBJECT_MANAGEMENT);
       theReadySet.add(L2MBeanNames.LOGGER);
       theReadySet.add(L2MBeanNames.LOCK_STATISTICS);
+      theReadySet.add(L2MBeanNames.L2_OPERATOR_EVENTS_PUBLIC);
       theReadySet.add(StatisticsMBeanNames.STATISTICS_GATHERER);
     }
   }
@@ -967,6 +971,8 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
         initLockProfilerBean();
       } else if (beanName.equals(L2MBeanNames.TC_SERVER_INFO)) {
         initServerInfoBean();
+      } else if (beanName.equals(L2MBeanNames.L2_OPERATOR_EVENTS_PUBLIC)) {
+        initOperatorEventsBean();
       }
 
       synchronized (this) {
@@ -987,6 +993,17 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     }
   }
 
+  private void initOperatorEventsBean() {
+    ConnectionContext cc = getConnectionContext();
+    if (cc != null) {
+      try {
+        cc.addNotificationListener(L2MBeanNames.L2_OPERATOR_EVENTS_PUBLIC, new OperatorEventsListener());
+      } catch (Exception e) {
+        /**/
+      }
+    }
+  }
+
   private synchronized boolean isMBeanRegistered(ObjectName beanName) {
     try {
       ConnectionContext cc = getConnectionContext();
@@ -998,6 +1015,27 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
 
   private synchronized boolean haveClient(ObjectName clientObjectName) {
     return clientMap.containsKey(clientObjectName);
+  }
+
+  private class OperatorEventsListener implements NotificationListener {
+
+    public void handleNotification(Notification notification, Object handback) {
+      TerracottaOperatorEvent tcOperatorEvent = (TerracottaOperatorEvent) notification.getSource();
+      fireOperatorEvent(tcOperatorEvent);
+    }
+
+    private void fireOperatorEvent(TerracottaOperatorEvent tcOperatorEvent) {
+      Object[] listeners = listenerList.getListenerList();
+      for (int i = listeners.length - 2; i >= 0; i -= 2) {
+        if (listeners[i] == TerracottaOperatorEventsListener.class) {
+          TerracottaOperatorEventStats tcOperatorEventStats = new TerracottaOperatorEventsStatsImpl(tcOperatorEvent
+              .getEventTime(), tcOperatorEvent.getEventType(), tcOperatorEvent.getEventSystem(), tcOperatorEvent
+              .getNodeId(), tcOperatorEvent.getEventMessage());
+          ((TerracottaOperatorEventsListener) listeners[i + 1]).statusUpdate(tcOperatorEventStats);
+        }
+      }
+    }
+
   }
 
   private class ClientChangeListener implements PropertyChangeListener {
