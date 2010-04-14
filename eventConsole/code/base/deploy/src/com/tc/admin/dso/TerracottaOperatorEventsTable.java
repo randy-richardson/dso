@@ -12,7 +12,7 @@ import java.util.Date;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 
-public class TerracottaSubSystemEventsTable extends XObjectTable {
+public class TerracottaOperatorEventsTable extends XObjectTable {
   private static final BaseRenderer             START_TIME_RENDERER      = new BaseRenderer(DateFormat
                                                                              .getDateTimeInstance(DateFormat.SHORT,
                                                                                                   DateFormat.MEDIUM));
@@ -20,7 +20,7 @@ public class TerracottaSubSystemEventsTable extends XObjectTable {
 
   private static final DefaultTableCellRenderer HEADER_RENDERER          = new DefaultTableCellRenderer();
 
-  public TerracottaSubSystemEventsTable() {
+  public TerracottaOperatorEventsTable() {
     super();
     setDefaultRenderer(Long.class, UNDEFINED_VALUE_RENDERER);
     setDefaultRenderer(Date.class, START_TIME_RENDERER);

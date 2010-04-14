@@ -7,7 +7,7 @@ import com.tc.net.NodeID;
 
 import java.util.Date;
 
-public interface TerracottaSubSystemEventStats {
+public interface TerracottaOperatorEventStats {
   
   NodeID getNodeID();
 

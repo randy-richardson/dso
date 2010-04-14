@@ -1,20 +1,20 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.subsystemevent.stats;
+package com.tc.operatorevent.stats;
 
 import com.tc.net.NodeID;
-import com.tc.stats.TerracottaSubSystemEventStats;
+import com.tc.stats.TerracottaOperatorEventStats;
 
 import java.util.Date;
 
-public class TerracottaSubSystemEventsStatsImpl implements TerracottaSubSystemEventStats {
+public class TerracottaOperatorEventsStatsImpl implements TerracottaOperatorEventStats {
 
   private NodeID nodeId;
   private String eventType;
   private Date   startTime;
   
-  public TerracottaSubSystemEventsStatsImpl(String eventType) {
+  public TerracottaOperatorEventsStatsImpl(String eventType) {
     this.nodeId = null;
     this.eventType = eventType;
     this.startTime = new Date();

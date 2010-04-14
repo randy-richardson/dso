@@ -5,12 +5,12 @@
 package com.tc.runtime.logging;
 
 import com.tc.logging.TCLogger;
-import com.tc.logging.TerracottaSubSystemEventLogger;
-import com.tc.logging.TerracottaSubSystemEventLogging;
+import com.tc.logging.TerracottaOperatorEventLogger;
+import com.tc.logging.TerracottaOperatorEventLogging;
+import com.tc.operatorevent.LongGCOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.runtime.MemoryEventsListener;
 import com.tc.runtime.MemoryUsage;
-import com.tc.subsystemevent.LongGCSubSystemEvent;
-import com.tc.subsystemevent.TerracottaSubSystemEvent;
 
 import java.util.Date;
 
@@ -19,7 +19,7 @@ public class LongGCLogger implements MemoryEventsListener {
   private long        gcTimeout;
   private MemoryUsage lastMemoryUsage;
   private TCLogger    logger;
-  private final TerracottaSubSystemEventLogger tcEventLogger = TerracottaSubSystemEventLogging.getEventLogger();
+  private final TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
 
   public LongGCLogger(TCLogger logger, long gcTimeOut) {
     this.logger = logger;
@@ -42,8 +42,8 @@ public class LongGCLogger implements MemoryEventsListener {
   private void fireEvent(LongGCEventType type, long collectionCountDiff, long collectionTimeDiff) {
     String message = "Detected Long GC > " + gcTimeout + " ms. Event Type : " + type + " GC Collection Count: "
                      + collectionCountDiff + " GC Collection Time: " + collectionTimeDiff + " ms";
-    TerracottaSubSystemEvent tcEvent = new LongGCSubSystemEvent(TerracottaSubSystemEvent.WARN, new Date().toString(), "node id", message);
-    tcEventLogger.fireTCSubSystemEvent(tcEvent);
+    TerracottaOperatorEvent tcEvent = new LongGCOperatorEvent(TerracottaOperatorEvent.WARN, new Date().toString(), "node id", message);
+    tcEventLogger.fireOperatorEvent(tcEvent);
     logger.warn(message);
   }
 }

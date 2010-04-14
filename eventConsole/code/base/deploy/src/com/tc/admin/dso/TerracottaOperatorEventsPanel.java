@@ -30,11 +30,11 @@ import com.tc.admin.common.XLabel;
 import com.tc.admin.common.XObjectTable;
 import com.tc.admin.common.XScrollPane;
 import com.tc.admin.common.XSplitPane;
-import com.tc.admin.model.TerracottaSubSystemEventsListener;
 import com.tc.admin.model.IClusterModel;
 import com.tc.admin.model.IServer;
+import com.tc.admin.model.TerracottaOperatorEventsListener;
 import com.tc.objectserver.api.GCStats;
-import com.tc.stats.TerracottaSubSystemEventStats;
+import com.tc.stats.TerracottaOperatorEventStats;
 import com.tc.util.ProductInfo;
 
 import java.awt.BorderLayout;
@@ -59,7 +59,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 
-public class TerracottaSubSystemClusterEventsPanel extends XContainer implements TerracottaSubSystemEventsListener {
+public class TerracottaOperatorEventsPanel extends XContainer implements TerracottaOperatorEventsListener {
   private ApplicationContext appContext;
   private IClusterModel      clusterModel;
   private ClusterListener    clusterListener;
@@ -75,7 +75,7 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
   private boolean            fZoomed;
   private AbstractAction     fRestoreDefaultRangeAction;
 
-  public TerracottaSubSystemClusterEventsPanel(ApplicationContext appContext, IClusterModel clusterModel) {
+  public TerracottaOperatorEventsPanel(ApplicationContext appContext, IClusterModel clusterModel) {
     super(new BorderLayout());
 
     this.appContext = appContext;
@@ -105,8 +105,8 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
     XContainer eventsStatsPanel = new XContainer(new BorderLayout());
     eventsStatsPanel.add(topPanel, BorderLayout.NORTH);
 
-    table = new TerracottaSubSystemEventsTable();
-    table.setModel(new TerracottaSubSystemEventsTableModel(appContext));
+    table = new TerracottaOperatorEventsTable();
+    table.setModel(new TerracottaOperatorEventsTableModel(appContext));
     eventsStatsPanel.add(new XScrollPane(table), BorderLayout.CENTER);
 
     endObjectCountSeries = new TimeSeries(appContext.getString("end.object.count"), Second.class);
@@ -195,10 +195,10 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
       if (theClusterModel == null) { return; }
 
       if (oldActive != null) {
-        oldActive.removeTerracottaSubSystemEventsListener(TerracottaSubSystemClusterEventsPanel.this);
+        oldActive.removeTerracottaOperatorEventsListener(TerracottaOperatorEventsPanel.this);
       }
       if (newActive != null) {
-        newActive.addTerracottaSubSystemEventsListener(TerracottaSubSystemClusterEventsPanel.this);
+        newActive.addTerracottaOperatorEventsListener(TerracottaOperatorEventsPanel.this);
       }
     }
 
@@ -224,11 +224,11 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
       IServer activeCoord = clusterModel.getActiveCoordinator();
       if (activeCoord != null) {
         System.out.println("added cluster events listener");
-        activeCoord.addTerracottaSubSystemEventsListener(this);
+        activeCoord.addTerracottaOperatorEventsListener(this);
       }
     }
     if (table != null) {
-      TerracottaSubSystemEventsTableModel model = (TerracottaSubSystemEventsTableModel) table.getModel();
+      TerracottaOperatorEventsTableModel model = (TerracottaOperatorEventsTableModel) table.getModel();
       model.clear();
       model.fireTableDataChanged();
 
@@ -270,7 +270,7 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
     }
   }
 
-  public void statusUpdate(TerracottaSubSystemEventStats eventsStats) {
+  public void statusUpdate(TerracottaOperatorEventStats eventsStats) {
     IClusterModel theClusterModel = getClusterModel();
     if (theClusterModel == null) { return; }
 
@@ -278,9 +278,9 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
   }
 
   private class ModelUpdater implements Runnable {
-    private final TerracottaSubSystemEventStats eventsStats;
+    private final TerracottaOperatorEventStats eventsStats;
 
-    private ModelUpdater(TerracottaSubSystemEventStats eventsStats) {
+    private ModelUpdater(TerracottaOperatorEventStats eventsStats) {
       this.eventsStats = eventsStats;
     }
 
@@ -288,7 +288,7 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
       IClusterModel theClusterModel = getClusterModel();
       if (theClusterModel == null) { return; }
 
-      TerracottaSubSystemEventsTableModel model = (TerracottaSubSystemEventsTableModel) table.getModel();
+      TerracottaOperatorEventsTableModel model = (TerracottaOperatorEventsTableModel) table.getModel();
       model.addEventsStats(eventsStats);
     }
   }
@@ -433,7 +433,7 @@ public class TerracottaSubSystemClusterEventsPanel extends XContainer implements
 
     IServer activeCoord = getActiveCoordinator();
     if (activeCoord != null) {
-      activeCoord.removeTerracottaSubSystemEventsListener(this);
+      activeCoord.removeTerracottaOperatorEventsListener(this);
     }
 
     super.tearDown();

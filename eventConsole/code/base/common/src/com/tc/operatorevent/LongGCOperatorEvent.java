@@ -1,17 +1,17 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.subsystemevent;
+package com.tc.operatorevent;
 
 
-public class LongGCSubSystemEvent implements TerracottaSubSystemEvent{
+public class LongGCOperatorEvent implements TerracottaOperatorEvent{
   
   private final String time;
   private final String eventMessage;
   private final int eventType;
   private final String nodeId;
   
-  public LongGCSubSystemEvent(int eventType, String time, String nodeId, String message) {
+  public LongGCOperatorEvent(int eventType, String time, String nodeId, String message) {
     this.eventType = eventType;
     this.time = time;
     this.nodeId = nodeId;

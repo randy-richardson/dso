@@ -42,8 +42,8 @@ import com.tc.logging.CustomerLogging;
 import com.tc.logging.DumpHandler;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.logging.TerracottaSubSystemEventLogger;
-import com.tc.logging.TerracottaSubSystemEventLogging;
+import com.tc.logging.TerracottaOperatorEventLogger;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.L2LockStatsManager;
 import com.tc.management.L2Management;
@@ -52,7 +52,7 @@ import com.tc.management.beans.L2State;
 import com.tc.management.beans.LockStatisticsMonitor;
 import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
-import com.tc.management.beans.TerracottaSubSystemClusterEvent;
+import com.tc.management.beans.TerracottaOperatorClusterEvent;
 import com.tc.management.beans.object.ServerDBBackup;
 import com.tc.management.beans.object.ObjectManagementMonitor.ObjectIdsFetcher;
 import com.tc.management.lock.stats.L2LockStatisticsManagerImpl;
@@ -215,6 +215,8 @@ import com.tc.objectserver.tx.TransactionFilter;
 import com.tc.objectserver.tx.TransactionalObjectManager;
 import com.tc.objectserver.tx.TransactionalObjectManagerImpl;
 import com.tc.objectserver.tx.TransactionalStagesCoordinatorImpl;
+import com.tc.operatorevent.TerracottaOperatorEventCallback;
+import com.tc.operatorevent.TerracottaOperatorEventCallbackLogger;
 import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
@@ -255,8 +257,6 @@ import com.tc.stats.counter.sampled.SampledCounter;
 import com.tc.stats.counter.sampled.SampledCounterConfig;
 import com.tc.stats.counter.sampled.derived.SampledRateCounter;
 import com.tc.stats.counter.sampled.derived.SampledRateCounterConfig;
-import com.tc.subsystemevent.TerracottaSubSystemEventCallback;
-import com.tc.subsystemevent.TerracottaSubSystemEventCallbackLogger;
 import com.tc.util.Assert;
 import com.tc.util.CommonShutDownHook;
 import com.tc.util.PortChooser;
@@ -298,7 +298,7 @@ import javax.management.remote.JMXConnectorServer;
 public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   private final ConnectionPolicy                 connectionPolicy;
   private final TCServerInfoMBean                tcServerInfoMBean;
-  private final TerracottaSubSystemClusterEvent  l2SubSystemEventsMbean;
+  private final TerracottaOperatorClusterEvent   l2OperatorEventsMbean;
   private final ObjectStatsRecorder              objectStatsRecorder;
   private final L2State                          l2State;
   private final DSOServerBuilder                 serverBuilder;
@@ -379,7 +379,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     this.seda = seda;
     this.serverBuilder = createServerBuilder(this.haConfig, logger);
     try {
-      this.l2SubSystemEventsMbean = new TerracottaSubSystemClusterEvent();
+      this.l2OperatorEventsMbean = new TerracottaOperatorClusterEvent();
     } catch (NotCompliantMBeanException e) {
       throw new RuntimeException(
                                  "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
@@ -485,13 +485,13 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     }
 
     // register the subsystem event logger
-    TerracottaSubSystemEventCallback tcSubSystemEventCallback = new TerracottaSubSystemEventCallbackLogger(
-                                                                                                           logger,
-                                                                                                           this.l2Management
-                                                                                                               .findTCSubSystemEventMBean());
+    TerracottaOperatorEventCallback tcOperatorEventCallback = new TerracottaOperatorEventCallbackLogger(
+                                                                                                         logger,
+                                                                                                         this.l2Management
+                                                                                                             .findTCSubSystemEventMBean());
 
-    TerracottaSubSystemEventLogger tcEventLogger = TerracottaSubSystemEventLogging.getEventLogger();
-    tcEventLogger.registerEventCallback(tcSubSystemEventCallback);
+    TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
+    tcEventLogger.registerEventCallback(tcOperatorEventCallback);
 
     NIOWorkarounds.solaris10Workaround();
 
@@ -920,14 +920,13 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     Stage jmxEventsStage = stageManager.createStage(ServerConfigurationContext.JMX_EVENTS_STAGE,
                                                     new JMXEventsHandler(appEvents), 1, maxStageSize);
 
-    final Stage jmxRemoteConnectStage = stageManager.createStage(ServerConfigurationContext.JMXREMOTE_CONNECT_STAGE,
-                                                                 new ClientConnectEventHandler(this.statisticsGateway, this.l2SubSystemEventsMbean),
-                                                                 1, maxStageSize);
+    final Stage jmxRemoteConnectStage = stageManager
+        .createStage(ServerConfigurationContext.JMXREMOTE_CONNECT_STAGE,
+                     new ClientConnectEventHandler(this.statisticsGateway, this.l2OperatorEventsMbean), 1, maxStageSize);
 
     final Stage jmxRemoteDisconnectStage = stageManager
         .createStage(ServerConfigurationContext.JMXREMOTE_DISCONNECT_STAGE,
-                     new ClientConnectEventHandler(this.statisticsGateway, this.l2SubSystemEventsMbean), 1,
-                     maxStageSize);
+                     new ClientConnectEventHandler(this.statisticsGateway, this.l2OperatorEventsMbean), 1, maxStageSize);
 
     cteh.setStages(jmxRemoteConnectStage.getSink(), jmxRemoteDisconnectStage.getSink());
     final Stage jmxRemoteTunnelStage = stageManager.createStage(ServerConfigurationContext.JMXREMOTE_TUNNEL_STAGE,
@@ -1434,7 +1433,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       jmxPort = new PortChooser().chooseRandomPort();
     }
 
-    this.l2Management = new L2Management(this.tcServerInfoMBean, this.l2SubSystemEventsMbean, this.lockStatisticsMBean,
+    this.l2Management = new L2Management(this.tcServerInfoMBean, this.l2OperatorEventsMbean, this.lockStatisticsMBean,
                                          this.statisticsAgentSubSystem, this.statisticsGateway,
                                          this.configSetupManager, this, bind, jmxPort, remoteEventsSink);
     this.l2Management.start();

@@ -5,21 +5,21 @@ package com.tc.admin.dso;
 
 import com.tc.admin.common.ApplicationContext;
 import com.tc.admin.common.XObjectTableModel;
-import com.tc.stats.TerracottaSubSystemEventStats;
-import com.tc.subsystemevent.stats.TerracottaSubSystemEventsStatsImpl;
+import com.tc.operatorevent.stats.TerracottaOperatorEventsStatsImpl;
+import com.tc.stats.TerracottaOperatorEventStats;
 
-public class TerracottaSubSystemEventsTableModel extends XObjectTableModel {
+public class TerracottaOperatorEventsTableModel extends XObjectTableModel {
   private static final String[] FIELDS  = { "EventTime", "NodeID", "TCEventType", "System", "Message" };
 
   private final String[]        HEADERS = { "cluster.events.timeOfEvent", "cluster.events.node",
       "cluster.events.eventType", "cluster.events.system", "cluster.events.message" };
 
-  public TerracottaSubSystemEventsTableModel(ApplicationContext appContext) {
+  public TerracottaOperatorEventsTableModel(ApplicationContext appContext) {
     super();
-    configure(TerracottaSubSystemEventsStatsImpl.class, FIELDS, appContext.getMessages(HEADERS));
+    configure(TerracottaOperatorEventsStatsImpl.class, FIELDS, appContext.getMessages(HEADERS));
   }
 
-  public void addEventsStats(TerracottaSubSystemEventStats eventsStats) {
+  public void addEventsStats(TerracottaOperatorEventStats eventsStats) {
     add(eventsStats);
     int rowCount = getRowCount();
     fireTableRowsInserted(rowCount, rowCount);

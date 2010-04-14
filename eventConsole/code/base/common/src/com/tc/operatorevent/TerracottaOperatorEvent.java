@@ -1,12 +1,12 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.subsystemevent;
+package com.tc.operatorevent;
 
 import java.io.Serializable;
 
 
-public interface TerracottaSubSystemEvent extends Serializable {
+public interface TerracottaOperatorEvent extends Serializable {
   public static final int INFO = 0;
   public static final int WARN = 1;
   public static final int DEBUG = 2;
