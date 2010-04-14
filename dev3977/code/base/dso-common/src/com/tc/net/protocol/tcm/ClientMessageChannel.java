@@ -4,9 +4,10 @@
 package com.tc.net.protocol.tcm;
 
 import com.tc.async.api.Sink;
+import com.tc.config.ReloadConfig;
 import com.tc.net.core.ConnectionAddressProvider;
 
-public interface ClientMessageChannel extends MessageChannel {
+public interface ClientMessageChannel extends MessageChannel, ReloadConfig {
 
   public void addClassMapping(TCMessageType type, Class msgClass);
 
@@ -22,6 +23,5 @@ public interface ClientMessageChannel extends MessageChannel {
 
   public ChannelIDProvider getChannelIDProvider();
   
-  public void reloadConfig(ConnectionAddressProvider cap);
-  
+  public void reloadConfig(ConnectionAddressProvider[] cap);
 }

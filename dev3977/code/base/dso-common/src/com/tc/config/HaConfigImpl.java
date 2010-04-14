@@ -116,6 +116,9 @@ public class HaConfigImpl implements HaConfig {
         }
       }
     }
+    
+    allNodes.addAll(nodesAdded);
+    allNodes.removeAll(nodesRemoved);
 
     Collection<Node> nodes = this.thisGroup.getNodes(true);
     Node[] tempNodeArray = new Node[nodes.size()];

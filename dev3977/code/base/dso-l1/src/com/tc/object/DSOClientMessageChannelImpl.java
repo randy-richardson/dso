@@ -223,7 +223,6 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
     ConfigItem connectionInfoItem = connComp.createConnectionInfoConfigItem();
     ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
     ConnectionAddressProvider cap = new ConnectionAddressProvider(connectionInfo);
-    this.channel.reloadConfig(cap);
+    this.channel.reloadConfig(new ConnectionAddressProvider[] { cap });
   }
-
 }

@@ -978,8 +978,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     });
 
     // TODO: currently making all with L2hacoordinator which should probably the case after this feature
-    // if (networkedHA) {
-    if (true) {
+    if (networkedHA) {
       WeightGeneratorFactory weightGeneratorFactory = new ZapNodeProcessorWeightGeneratorFactory(
                                                                                                  channelManager,
                                                                                                  transactionBatchManager,

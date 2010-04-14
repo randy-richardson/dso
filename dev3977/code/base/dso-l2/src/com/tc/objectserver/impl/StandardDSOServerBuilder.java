@@ -81,8 +81,7 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                              StripeIDStateManager stripeStateManager,
                                              ServerGlobalTransactionManager gtxm) {
     // TODO: currently making all with L2hacoordinator which should probably the case after this feature
-    // if (networkedHA) {
-    if (true) {
+    if (networkedHA) {
       return new TCGroupManagerImpl(configManager, stageManager, serverNodeID, httpSink);
     } else {
       return new SingleNodeGroupManager();

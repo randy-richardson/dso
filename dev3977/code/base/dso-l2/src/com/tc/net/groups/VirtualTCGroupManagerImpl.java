@@ -153,6 +153,6 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   }
 
   public void addOrRemovePassiveDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
-    throw new UnsupportedOperationException();
+    this.groupManager.addOrRemovePassiveDynamically(nodesAdded, nodesRemoved);
   }
 }

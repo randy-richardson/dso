@@ -36,13 +36,12 @@ public class ServerGroup {
 
   public void reloadGroup(L2TVSConfigurationSetupManager manager, final ActiveServerGroupConfig group,
                           List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException {
-    List<String> membersBefore = convertStringToList(this.members);
-    List<String> membersNow = convertStringToList(group.getMembers().getMemberArray());
+    String[] membersBefore = this.members;
+    String[] membersNow = group.getMembers().getMemberArray();
+    this.members = group.getMembers().getMemberArray();
 
     addNodes(manager, group, nodesAdded, membersNow, membersBefore);
     removeNodes(nodesRemoved, membersNow, membersBefore);
-
-    this.members = group.getMembers().getMemberArray();
   }
 
   private ArrayList<String> convertStringToList(String[] strArray) {
@@ -53,7 +52,9 @@ public class ServerGroup {
     return list;
   }
 
-  private void removeNodes(List<Node> nodesRemoved, List<String> membersNow, List<String> membersBefore) {
+  private void removeNodes(List<Node> nodesRemoved, String[] membersNowArray, String[] membersBeforeArray) {
+    List<String> membersBefore = convertStringToList(membersBeforeArray);
+    List<String> membersNow = convertStringToList(membersNowArray);
     membersBefore.removeAll(membersNow);
     for (String member : membersBefore) {
       nodesRemoved.add((Node) this.nodes.remove(member));
@@ -61,13 +62,16 @@ public class ServerGroup {
   }
 
   private void addNodes(L2TVSConfigurationSetupManager configSetupManager, ActiveServerGroupConfig group,
-                        List<Node> nodesAdded, List<String> membersNow, List<String> membersBefore)
+                        List<Node> nodesAdded, String[] membersNowArray, String[] membersBeforeArray)
       throws ConfigurationSetupException {
+    List<String> membersBefore = convertStringToList(membersBeforeArray);
+    List<String> membersNow = convertStringToList(membersNowArray);
     membersNow.removeAll(membersBefore);
     for (String member : membersNow) {
       NewL2DSOConfig l2 = configSetupManager.dsoL2ConfigFor(member);
       Node node = HaConfigImpl.makeNode(l2);
       nodesAdded.add(node);
+      this.addNode(node, member);
     }
   }
 

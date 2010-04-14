@@ -21,6 +21,7 @@ import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.object.msg.DSOMessageBase;
 import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionProvider;
+import com.tc.util.Assert;
 import com.tc.util.TCTimeoutException;
 
 import java.io.IOException;
@@ -151,8 +152,15 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     return channelSessionID;
   }
 
+  public void reloadConfig(ConnectionAddressProvider[] caps) {
+    Assert.assertEquals(1, caps.length);
+    ConnectionAddressProvider cap = caps[0];
+
+    reloadConfig(cap);
+  }
+
   public void reloadConfig(ConnectionAddressProvider cap) {
-    if(this.sendLayer instanceof ClientMessageTransport) {
+    if (this.sendLayer instanceof ClientMessageTransport) {
       ClientConnectionEstablisher cce = ((ClientMessageTransport) this.sendLayer).getConnectionEstablisher();
       cce.reloadConfig(cap);
       return;
