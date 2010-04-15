@@ -454,8 +454,12 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     _sendNotification("VerboseGC changed", "VerboseGC", "java.lang.Boolean", oldValue, verboseGC);
   }
 
-  public void reloadConfig() throws ConfigurationSetupException {
+  public boolean reloadConfig() throws ConfigurationSetupException {
+    String[] serversBefore = l2ConfigurationSetupManager.allCurrentlyKnownServers();
+    
     l2ConfigurationSetupManager.reloadConfiguration();
     dsoServer.reloadConfiguration();
+    
+    return !(Arrays.equals(l2ConfigurationSetupManager.allCurrentlyKnownServers(), serversBefore));
   }
 }

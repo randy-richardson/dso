@@ -228,7 +228,7 @@ public class NullTCServerInfo extends AbstractTerracottaMBean implements TCServe
     /**/
   }
 
-  public void reloadConfig() {
-    //
+  public boolean reloadConfig() {
+    return false;
   }
 }
