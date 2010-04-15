@@ -223,7 +223,6 @@ public class TerracottaOperatorEventsPanel extends XContainer implements Terraco
     if (clusterModel.isReady()) {
       IServer activeCoord = clusterModel.getActiveCoordinator();
       if (activeCoord != null) {
-        System.out.println("added cluster events listener");
         activeCoord.addTerracottaOperatorEventsListener(this);
       }
     }

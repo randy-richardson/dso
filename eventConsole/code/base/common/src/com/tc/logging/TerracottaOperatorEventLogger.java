@@ -16,7 +16,7 @@ public class TerracottaOperatorEventLogger {
     this.callbacks.add(tcEventCallback);
   }
   
-  public void fireOperatorEvent(TerracottaOperatorEvent event){
+  public void fireOperatorEvent(TerracottaOperatorEvent event) {
     for(TerracottaOperatorEventCallback callback : callbacks){
       callback.fireOperatorEvent(event);
     }
