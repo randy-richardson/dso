@@ -17,7 +17,8 @@
 	</xs:complexType>
 	<xs:complexType name="server-info">
 		<xs:sequence minOccurs="1" maxOccurs="1">
-			<xs:element name="name" type="xs:string"/>
+			<xs:element name="host" type="xs:string"/>
+			<xs:element name="member-name" type="xs:string"/>
 	    	<xs:element name="dso-port" type="xs:integer"/>
 	   	</xs:sequence>
 	</xs:complexType>

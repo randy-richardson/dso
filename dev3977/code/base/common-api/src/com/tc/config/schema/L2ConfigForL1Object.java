@@ -7,6 +7,9 @@ package com.tc.config.schema;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlInteger;
 import org.apache.xmlbeans.XmlObject;
+import org.terracotta.groupConfigForL1.ServerGroup;
+import org.terracotta.groupConfigForL1.ServerInfo;
+import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
 
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.dynamic.ObjectArrayConfigItem;
@@ -22,8 +25,10 @@ import com.terracottatech.config.System;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,16 +40,24 @@ import java.util.Set;
  */
 public class L2ConfigForL1Object implements L2ConfigForL1 {
 
-  private static final String         DEFAULT_HOST = "localhost";
+  private static final String                 DEFAULT_HOST   = "localhost";
 
-  private final ConfigContext         l2sContext;
-  private final ConfigContext         systemContext;
+  private final ConfigContext                 l2sContext;
+  private final ConfigContext                 systemContext;
 
-  private final ObjectArrayConfigItem l2Data;
-  private final L2Data                defaultL2Data;
-  private final Map                   l2DataByName;
-  private final Map                   l2DataByGroupId;
-  private ObjectArrayConfigItem[]     l2DataByGroup;
+  private final ObjectArrayConfigItem         l2Data;
+  private final L2Data                        defaultL2Data;
+  private final Map                           l2DataByName;
+  private final LinkedHashMap                 l2DataByGroupId;
+  private ObjectArrayConfigItem[]             l2DataByGroup;
+  private boolean                             isActiveActive = false;
+  private static HashMap<Set<String>, String> serverNamesToGroupNameFromL2;
+
+  /**
+   * To be used only while constructing <code>l2DataByGroup</code><br>
+   * Fragile: handle with care ;)
+   */
+  private MirrorGroup[]                       tempActiveServerGroupArray;
 
   public L2ConfigForL1Object(final ConfigContext l2sContext, final ConfigContext systemContext) {
     this(l2sContext, systemContext, null);
@@ -81,7 +94,6 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
             String host = l2.getHost();
             String name = l2.getName();
 
-            // if (host == null) host = l2.getName();
             if (host == null) {
               host = L2ConfigForL1Object.this.defaultL2Data.host();
             }
@@ -97,62 +109,73 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
           }
         }
 
-        organizeByGroup(xmlObject);
-
+        tempActiveServerGroupArray = readOrConstructActiveServerGroups(xmlObject);
         return data;
       }
-
-      private void organizeByGroup(final XmlObject xmlObject) {
-        MirrorGroups asgs = ((Servers) xmlObject).getMirrorGroups();
-        if (asgs == null) {
-          asgs = ((Servers) xmlObject).addNewMirrorGroups();
-        }
-        MirrorGroup[] asgArray = asgs.getMirrorGroupArray();
-        if (asgArray == null || asgArray.length == 0) {
-          MirrorGroup group = asgs.addNewMirrorGroup();
-          Members members = group.addNewMembers();
-          for (Iterator iter = L2ConfigForL1Object.this.l2DataByName.keySet().iterator(); iter.hasNext();) {
-            String host = (String) iter.next();
-            members.addMember(host);
-          }
-          asgArray = asgs.getMirrorGroupArray();
-        }
-        Assert.assertNotNull(asgArray);
-        Assert.assertTrue(asgArray.length >= 1);
-
-        // Set group names if not already set
-        for (int i = 0; i < asgArray.length; i++) {
-          String groupName = asgArray[i].getGroupName();
-          if (groupName == null) {
-            groupName = ActiveCoordinatorHelper.getGroupNameFrom(asgArray[i].getMembers().getMemberArray());
-            asgArray[i].setGroupName(groupName);
-          }
-        }
-        // Sort the array according to the group names
-        Arrays.sort(asgArray, new MirrorGroupNameComparator());
-
-        for (int i = 0; i < asgArray.length; i++) {
-          String[] members = asgArray[i].getMembers().getMemberArray();
-          List groupList = (List) L2ConfigForL1Object.this.l2DataByGroupId.get(new Integer(i));
-          if (groupList == null) {
-            groupList = new ArrayList();
-            L2ConfigForL1Object.this.l2DataByGroupId.put(new Integer(i), groupList);
-          }
-          for (String member : members) {
-            L2Data data = (L2Data) L2ConfigForL1Object.this.l2DataByName.get(member);
-            if (data == null) { throw new RuntimeException(
-                                                           "The member \""
-                                                               + member
-                                                               + "\" is not persent in the server section. Please verify the configuration."); }
-            Assert.assertNotNull(data);
-            data.setGroupId(i);
-            String groupName = asgArray[i].getGroupName();
-            data.setGroupName(groupName);
-            groupList.add(data);
-          }
-        }
-      }
     };
+  }
+
+  private MirrorGroup[] readOrConstructActiveServerGroups(final XmlObject xmlObject) {
+    MirrorGroups asgs = ((Servers) xmlObject).getMirrorGroups();
+    if (asgs == null) {
+      asgs = ((Servers) xmlObject).addNewMirrorGroups();
+    }
+    MirrorGroup[] asgArray = asgs.getMirrorGroupArray();
+    if (asgArray == null || asgArray.length == 0) {
+      MirrorGroup group = asgs.addNewMirrorGroup();
+      Members members = group.addNewMembers();
+      for (Iterator iter = L2ConfigForL1Object.this.l2DataByName.keySet().iterator(); iter.hasNext();) {
+        String host = (String) iter.next();
+        members.addMember(host);
+      }
+      asgArray = asgs.getMirrorGroupArray();
+    }
+    Assert.assertNotNull(asgArray);
+    Assert.assertTrue(asgArray.length >= 1);
+
+    isActiveActive = asgArray.length > 1 ? true : false;
+    return asgArray;
+  }
+
+  private void setGroups(Map<Set<String>, String> membersToGroupNameMap) {
+    // Set group names if not already set
+    for (int i = 0; i < tempActiveServerGroupArray.length; i++) {
+      String groupName = tempActiveServerGroupArray[i].getGroupName();
+      if (groupName == null) {
+        HashSet<String> tempMembers = new HashSet<String>();
+        Collections.addAll(tempMembers, tempActiveServerGroupArray[i].getMembers().getMemberArray());
+
+        groupName = membersToGroupNameMap.get(tempMembers);
+        if (groupName == null && tempActiveServerGroupArray.length == 1) {
+          groupName = ActiveCoordinatorHelper.getGroupNameFrom(tempActiveServerGroupArray[i].getMembers()
+              .getMemberArray());
+        }
+        tempActiveServerGroupArray[i].setGroupName(groupName);
+      }
+    }
+    // Sort the array according to the group names
+    Arrays.sort(tempActiveServerGroupArray, new MirrorGroupNameComparator());
+
+    for (int i = 0; i < tempActiveServerGroupArray.length; i++) {
+      String[] members = tempActiveServerGroupArray[i].getMembers().getMemberArray();
+      List groupList = (List) L2ConfigForL1Object.this.l2DataByGroupId.get(new Integer(i));
+      if (groupList == null) {
+        groupList = new ArrayList();
+        L2ConfigForL1Object.this.l2DataByGroupId.put(new Integer(i), groupList);
+      }
+      for (String member : members) {
+        L2Data data = (L2Data) L2ConfigForL1Object.this.l2DataByName.get(member);
+        if (data == null) { throw new RuntimeException(
+                                                       "The member \""
+                                                           + member
+                                                           + "\" is not persent in the server section. Please verify the configuration."); }
+        Assert.assertNotNull(data);
+        data.setGroupId(i);
+        String groupName = tempActiveServerGroupArray[i].getGroupName();
+        data.setGroupName(groupName);
+        groupList.add(data);
+      }
+    }
   }
 
   private int getL2IntDefault(final String xpath) {
@@ -169,7 +192,9 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
 
   public synchronized ObjectArrayConfigItem[] getL2DataByGroup() {
     if (this.l2DataByGroup == null) {
+      setGroups(serverNamesToGroupNameFromL2);
       createL2DataByGroup();
+      Assert.assertNotNull(l2DataByGroup);
     }
 
     Assert.assertNoNullElements(this.l2DataByGroup);
@@ -211,5 +236,31 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
     public int compare(MirrorGroup obj1, MirrorGroup obj2) {
       return obj1.getGroupName().compareTo(obj2.getGroupName());
     }
+  }
+
+  public boolean isActiveActive() {
+    return isActiveActive;
+  }
+
+  public synchronized boolean updateGroupNames(ServerGroups serverGroupsFromL2) {
+    serverNamesToGroupNameFromL2 = createMembersToGroupName(serverGroupsFromL2);
+    return false;
+  }
+
+  private HashMap<Set<String>, String> createMembersToGroupName(ServerGroups serverGroupsFromL2) {
+    HashMap<Set<String>, String> map = new HashMap<Set<String>, String>();
+
+    ServerGroup[] serverGrps = serverGroupsFromL2.getServerGroupArray();
+    for (ServerGroup serverGrp : serverGrps) {
+      String grpName = serverGrp.getGroupName();
+      ServerInfo[] serverInfos = serverGrp.getServerInfoArray();
+      HashSet<String> serverNames = new HashSet<String>();
+      for (ServerInfo serverInfo : serverInfos) {
+        serverNames.add(serverInfo.getMemberName());
+      }
+      map.put(serverNames, grpName);
+    }
+
+    return map;
   }
 }
