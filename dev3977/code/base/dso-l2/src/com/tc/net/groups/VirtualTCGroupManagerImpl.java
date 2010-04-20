@@ -152,7 +152,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     return groupManager.isConnectionToNodeActive(sid);
   }
 
-  public void addOrRemovePassiveDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
-    this.groupManager.addOrRemovePassiveDynamically(nodesAdded, nodesRemoved);
+  public void addOrRemovePassivesDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
+    this.groupManager.addOrRemovePassivesDynamically(nodesAdded, nodesRemoved);
   }
 }

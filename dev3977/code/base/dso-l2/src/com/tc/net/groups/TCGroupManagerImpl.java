@@ -359,7 +359,7 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     return (getNodeID());
   }
 
-  public void addOrRemovePassiveDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
+  public void addOrRemovePassivesDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
     for (Node nodeAdded : nodesAdded) {
       discover.addPassiveDynamically(nodeAdded);
     }

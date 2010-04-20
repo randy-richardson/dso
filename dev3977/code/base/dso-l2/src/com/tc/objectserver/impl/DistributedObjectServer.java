@@ -1057,12 +1057,12 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   }
 
   public void reloadConfiguration() throws ConfigurationSetupException {
-    // find with ha config all
+    // find with ha config all nodes added or removed
     List<Node> nodesAdded = new ArrayList<Node>();
     List<Node> nodesRemoved = new ArrayList<Node>();
-    haConfig.reloadConfig(nodesAdded, nodesRemoved);
+    haConfig.reloadConfiguration(nodesAdded, nodesRemoved);
 
-    this.groupCommManager.addOrRemovePassiveDynamically(nodesAdded, nodesRemoved);
+    this.groupCommManager.addOrRemovePassivesDynamically(nodesAdded, nodesRemoved);
   }
 
   protected void initRouteMessages(final Stage processTx, final Stage rootRequest, final Stage requestLock,

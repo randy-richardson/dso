@@ -15,6 +15,7 @@ import com.tc.object.config.schema.NewL2DSOConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +32,7 @@ public class ServerGroup {
     this.groupId = group.getGroupId();
     this.members = group.getMembers().getMemberArray();
     this.haMode = group.getHa();
-    this.nodes = new HashMap();
+    this.nodes = Collections.synchronizedMap(new HashMap());
   }
 
   public void reloadGroup(L2TVSConfigurationSetupManager manager, final ActiveServerGroupConfig group,

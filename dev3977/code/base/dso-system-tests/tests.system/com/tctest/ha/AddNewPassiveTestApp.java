@@ -201,7 +201,7 @@ public class AddNewPassiveTestApp {
     MBeanServerConnection mbs = getMBeanServerConnection(jmxConnector, "localhost", jmxPort1);
     TCServerInfoMBean serverInfoMbean = getTCServerInfoMbean(mbs);
     try {
-      serverInfoMbean.reloadConfig();
+      serverInfoMbean.reloadConfiguration();
     } catch (ConfigurationSetupException e) {
       e.printStackTrace();
       throw new RuntimeException(e);

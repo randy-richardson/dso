@@ -40,5 +40,5 @@ public interface GroupManager {
   
   public boolean isConnectionToNodeActive(NodeID sid);
   
-  void addOrRemovePassiveDynamically(List<Node> nodesAdded, List<Node> nodesRemoved);
+  void addOrRemovePassivesDynamically(List<Node> nodesAdded, List<Node> nodesRemoved);
 }

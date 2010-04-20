@@ -117,5 +117,5 @@ public interface TCServerInfoMBean extends TerracottaMBean, RuntimeStatisticCons
 
   void gc();
   
-  boolean reloadConfig() throws ConfigurationSetupException;
+  boolean reloadConfiguration() throws ConfigurationSetupException;
 }

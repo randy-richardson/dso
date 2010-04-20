@@ -5,13 +5,11 @@
 package com.tc.config;
 
 import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.net.GroupID;
 import com.tc.net.groups.Node;
 import com.tc.net.groups.ServerGroup;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public interface HaConfig {
 
@@ -48,9 +46,9 @@ public interface HaConfig {
    * @return true if nodes are removed
    * @throws ConfigurationSetupException
    */
-  public void reloadConfig(List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException;
+  public void reloadConfiguration(List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException;
 
-  public HashMap<String, GroupID> getNodeNamesToGidMap();
+  public ServerNameToGroupID getServerNameToGroupID();
 
-  public HashSet<String> getNodeNames();
+  public CopyOnWriteArraySet<String> getNodeNames();
 }
