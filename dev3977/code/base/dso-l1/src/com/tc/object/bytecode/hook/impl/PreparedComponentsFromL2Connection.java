@@ -39,8 +39,8 @@ public class PreparedComponentsFromL2Connection {
   }
   
   public boolean isActiveActive() {
-    this.config.l2Config().l2Data().getObject();
-    return this.config.l2Config().isActiveActive();
+    ConfigItem[] groups = createConnectionInfoConfigItemByGroup();
+    return (groups.length > 1);
   }
 
 }

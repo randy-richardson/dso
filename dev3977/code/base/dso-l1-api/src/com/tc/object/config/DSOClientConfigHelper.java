@@ -5,7 +5,6 @@
 package com.tc.object.config;
 
 import org.osgi.framework.Bundle;
-import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
 
 import com.tc.asm.ClassAdapter;
 import com.tc.asm.ClassVisitor;
@@ -277,11 +276,9 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig {
 
   boolean reflectionEnabled();
 
-  ReconnectConfig getL1ReconnectProperties();
+  public ReconnectConfig getL1ReconnectProperties();
 
-  void validateGroupInfo(ServerGroups serverGroupsFromL2) throws ConfigurationSetupException;
-  
-  ServerGroups getAndSetGroupNamesFromServer();
+  public void validateGroupInfo() throws ConfigurationSetupException;
 
   boolean useResolveLockWhenClearing(Class clazz);
 

@@ -35,10 +35,6 @@ public class GroupInfoServlet extends HttpServlet {
 
   public void init() {
     configSetupManager = (L2TVSConfigurationSetupManager) getServletContext().getAttribute(GROUP_INFO_ATTRIBUTE);
-    reloadConfig();
-  }
-
-  private void reloadConfig() {
     serverGroupsDocument = ServerGroupsDocument.Factory.newInstance();
     createServerNameToDsoPortAndHostname();
     ServerGroups serverGroups = serverGroupsDocument.addNewServerGroups();
@@ -73,22 +69,12 @@ public class GroupInfoServlet extends HttpServlet {
     String[] members = activeServerGroupConfig.getMembers().getMemberArray();
     for (int i = 0; i < members.length; i++) {
       ServerInfo serverInfo = group.addNewServerInfo();
-      serverInfo.setHost(serverNameToHostName.get(members[i]));
-      serverInfo.setMemberName(members[i]);
       serverInfo.setDsoPort(new BigInteger(serverNameToDsoPort.get(members[i]).intValue() + ""));
+      serverInfo.setName(serverNameToHostName.get(members[i]));
     }
-  }
-  
-  private void reloadConfigIfNecessary() {
-    if(configSetupManager.allCurrentlyKnownServers().length == serverNameToHostName.keySet().size()) {
-      return;
-    }
-    reloadConfig();
   }
 
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    reloadConfigIfNecessary();
-    
     OutputStream out = response.getOutputStream();
     IOUtils.copy(this.serverGroupsDocument.newInputStream(), out);
     response.flushBuffer();

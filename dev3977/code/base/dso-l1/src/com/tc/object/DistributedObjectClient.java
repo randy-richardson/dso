@@ -4,8 +4,6 @@
  */
 package com.tc.object;
 
-import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
-
 import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 import bsh.EvalError;
 import bsh.Interpreter;
@@ -339,14 +337,13 @@ public class DistributedObjectClient extends SEDA implements TCClient {
   }
 
   public synchronized void start() {
-    ServerGroups serverGrpsFrmL2 = this.config.getAndSetGroupNamesFromServer();
-    
+
     // Check config topology
     boolean toCheckTopology = TCPropertiesImpl.getProperties()
         .getBoolean(TCPropertiesConsts.L1_L2_CONFIG_VALIDATION_ENABLED);
     if (toCheckTopology) {
       try {
-        this.config.validateGroupInfo(serverGrpsFrmL2);
+        this.config.validateGroupInfo();
       } catch (ConfigurationSetupException e) {
         CONSOLE_LOGGER.error(e.getMessage());
         System.exit(1);
@@ -837,6 +834,6 @@ public class DistributedObjectClient extends SEDA implements TCClient {
   }
 
   public void reloadConfig() throws ConfigurationSetupException {
-      this.channel.reloadConfig();
+    this.channel.reloadConfig();
   }
 }

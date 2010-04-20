@@ -1863,7 +1863,7 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     return null;
   }
 
-  public static ServerGroups getServerGroupsFromL2(final PreparedComponentsFromL2Connection serverInfos) {
+  private static ServerGroups getServerGroupsFromL2(final PreparedComponentsFromL2Connection serverInfos) {
     InputStream in = null;
     String serverList = "";
     boolean loggedInConsole = false;
@@ -1919,16 +1919,10 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
 
     return serversGrpDocument.getServerGroups();
   }
-  
-  public ServerGroups getAndSetGroupNamesFromServer() {
+
+  public void validateGroupInfo() throws ConfigurationSetupException {
     PreparedComponentsFromL2Connection connectionComponents = new PreparedComponentsFromL2Connection(configSetupManager);
     ServerGroups serverGroupsFromL2 = getServerGroupsFromL2(connectionComponents);
-    configSetupManager.l2Config().updateGroupNames(serverGroupsFromL2);
-    return serverGroupsFromL2;
-  }
-
-  public void validateGroupInfo(ServerGroups serverGroupsFromL2) throws ConfigurationSetupException {
-    PreparedComponentsFromL2Connection connectionComponents = new PreparedComponentsFromL2Connection(configSetupManager);
 
     ConfigItem[] connectionInfoItems = connectionComponents.createConnectionInfoConfigItemByGroup();
     HashSet<ConnectionInfo> connInfoFromL1 = new HashSet<ConnectionInfo>();
@@ -1948,7 +1942,7 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
       String grpName = grpArray[i].getGroupName();
       ServerInfo[] serverInfos = grpArray[i].getServerInfoArray();
       for (int j = 0; j < serverInfos.length; j++) {
-        ConnectionInfo connectionIn = new ConnectionInfo(getIpAddressOfServer(serverInfos[j].getHost()), serverInfos[j]
+        ConnectionInfo connectionIn = new ConnectionInfo(getIpAddressOfServer(serverInfos[j].getName()), serverInfos[j]
             .getDsoPort().intValue(), i * j + j, grpName);
         connInfoFromL2.add(connectionIn);
       }

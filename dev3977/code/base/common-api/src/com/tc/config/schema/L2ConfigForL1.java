@@ -6,7 +6,6 @@ package com.tc.config.schema;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
 
 import com.tc.config.schema.dynamic.ObjectArrayConfigItem;
 import com.tc.util.Assert;
@@ -42,7 +41,7 @@ public interface L2ConfigForL1 {
     }
 
     public int getGroupId() {
-      // Assert.assertTrue(groupId > -1);
+      Assert.assertTrue(groupId > -1);
       return groupId;
     }
 
@@ -75,9 +74,5 @@ public interface L2ConfigForL1 {
   ObjectArrayConfigItem l2Data();
 
   ObjectArrayConfigItem[] getL2DataByGroup();
-
-  boolean isActiveActive();
-
-  boolean updateGroupNames(ServerGroups serverGroupsFromL2);
 
 }

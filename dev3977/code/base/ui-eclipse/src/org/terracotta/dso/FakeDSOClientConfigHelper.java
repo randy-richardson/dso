@@ -5,7 +5,6 @@
 package org.terracotta.dso;
 
 import org.osgi.framework.Bundle;
-import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
 
 import com.tc.asm.ClassAdapter;
 import com.tc.asm.ClassVisitor;
@@ -432,7 +431,7 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
     return true;
   }
 
-  public void validateGroupInfo(ServerGroups grps) {
+  public void validateGroupInfo() {
     //
   }
 
@@ -495,10 +494,6 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
 
   public void addWebApplication(final String pattern, final SessionConfiguration config) {
     //
-  }
-
-  public ServerGroups getAndSetGroupNamesFromServer() {
-    return null;
   }
 
 }
