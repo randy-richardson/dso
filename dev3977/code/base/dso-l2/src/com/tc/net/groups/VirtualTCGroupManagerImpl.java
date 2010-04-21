@@ -5,6 +5,7 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
+import com.tc.config.HaConfig;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.NodeID;
@@ -25,11 +26,11 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   private final CopyOnWriteArrayList<GroupEventsListener> groupListeners   = new CopyOnWriteArrayList<GroupEventsListener>();
   private final Map<String, GroupMessageListener>         messageListeners = new ConcurrentHashMap<String, GroupMessageListener>();
   private final Set<NodeID>                               groupNodeIDs     = new CopyOnWriteArraySet<NodeID>();
-  private final Set<String>                               groupNodes;
+  private final HaConfig                                  haConfig;
 
-  public VirtualTCGroupManagerImpl(GroupManager groupManager, Set<String> groupNodes) {
+  public VirtualTCGroupManagerImpl(GroupManager groupManager, HaConfig haConfig) {
     this.groupManager = groupManager;
-    this.groupNodes = groupNodes;
+    this.haConfig = haConfig;
     groupManager.registerForGroupEvents(this);
   }
 
@@ -133,7 +134,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   private boolean isThisGroup(NodeID nodeID) {
     Assert.assertTrue(nodeID instanceof ServerID);
     ServerID serverID = (ServerID) nodeID;
-    return groupNodes.contains(serverID.getName());
+    return haConfig.getNodeNames().contains(serverID.getName());
   }
 
   private void fireNodeEvent(NodeID nodeID, boolean joined) {
@@ -152,7 +153,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     return groupManager.isConnectionToNodeActive(sid);
   }
 
-  public void addOrRemovePassivesDynamically(List<Node> nodesAdded, List<Node> nodesRemoved) {
-    this.groupManager.addOrRemovePassivesDynamically(nodesAdded, nodesRemoved);
+  public void updatePassives(List<Node> nodesAdded, List<Node> nodesRemoved) {
+    this.groupManager.updatePassives(nodesAdded, nodesRemoved);
   }
 }

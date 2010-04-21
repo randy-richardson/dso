@@ -22,30 +22,30 @@ import java.io.File;
  */
 public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigurationSetupManagerFactory {
 
-  private static final String CONFIG_SPEC_ARGUMENT_NAME = "config";
+  private static final String         CONFIG_SPEC_ARGUMENT_NAME = "config";
   /**
    * <code>public</code> for <strong>TESTS AND DOCUMENTATION ONLY</strong>.
    */
-  public static final String  CONFIG_SPEC_ARGUMENT_WORD = "--" + CONFIG_SPEC_ARGUMENT_NAME;
-  public static final String  SERVER_NAME_ARGUMENT_WORD = "-n";
+  public static final String          CONFIG_SPEC_ARGUMENT_WORD = "--" + CONFIG_SPEC_ARGUMENT_NAME;
+  public static final String          SERVER_NAME_ARGUMENT_WORD = "-n";
 
-  private static final String L2_NAME_PROPERTY_NAME     = "tc.server.name";
-  public static final String  DEFAULT_CONFIG_SPEC       = "tc-config.xml";
-  public static final String  DEFAULT_CONFIG_PATH       = "default-config.xml";
-  public static final String  DEFAULT_CONFIG_URI        = "resource:///"
-                                                          + StandardTVSConfigurationSetupManagerFactory.class
-                                                              .getPackage().getName().replace('.', '/') + "/"
-                                                          + DEFAULT_CONFIG_PATH;
+  private static final String         L2_NAME_PROPERTY_NAME     = "tc.server.name";
+  public static final String          DEFAULT_CONFIG_SPEC       = "tc-config.xml";
+  public static final String          DEFAULT_CONFIG_PATH       = "default-config.xml";
+  public static final String          DEFAULT_CONFIG_URI        = "resource:///"
+                                                                  + StandardTVSConfigurationSetupManagerFactory.class
+                                                                      .getPackage().getName().replace('.', '/') + "/"
+                                                                  + DEFAULT_CONFIG_PATH;
 
-  private final String        defaultL2Identifier;
-  private final String        configSpec;
-  private final File          cwd;
-  
+  private final String                defaultL2Identifier;
+  private final String                configSpec;
+  private final File                  cwd;
+
   /**
-   * Store some parameters for reloading config ... 
+   * Store some parameters for reloading config ...
    */
-  private static CommandLine commandLine = null;
-  
+  private static volatile CommandLine commandLine               = null;
+
   public StandardTVSConfigurationSetupManagerFactory(boolean isForL2,
                                                      IllegalConfigurationChangeHandler illegalChangeHandler)
       throws ConfigurationSetupException {
@@ -56,6 +56,13 @@ public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigur
                                                      IllegalConfigurationChangeHandler illegalChangeHandler)
       throws ConfigurationSetupException {
     this(parseDefaultCommandLine(args, isForL2), isForL2, illegalChangeHandler);
+  }
+
+  public StandardTVSConfigurationSetupManagerFactory(boolean useStoredCmdLine, boolean isForL2,
+                                                     IllegalConfigurationChangeHandler illegalChangeHandler)
+      throws ConfigurationSetupException {
+    this(commandLine, isForL2, illegalChangeHandler, System
+        .getProperty(TVSConfigurationSetupManagerFactory.CONFIG_FILE_PROPERTY_NAME));
   }
 
   public StandardTVSConfigurationSetupManagerFactory(CommandLine commandLine, boolean isForL2,
@@ -89,8 +96,10 @@ public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigur
                                                      IllegalConfigurationChangeHandler illegalChangeHandler,
                                                      String configSpec) throws ConfigurationSetupException {
     super(illegalChangeHandler);
-    
-    StandardTVSConfigurationSetupManagerFactory.commandLine = commandLine;
+
+    if (StandardTVSConfigurationSetupManagerFactory.commandLine == null) {
+      StandardTVSConfigurationSetupManagerFactory.commandLine = commandLine;
+    }
 
     String configFileOnCommandLine = null;
     String l2NameOnCommandLine = null;
@@ -194,10 +203,6 @@ public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigur
 
     return new StandardL2TVSConfigurationSetupManager(configurationCreator, l2Name, this.defaultValueProvider,
                                                       this.xmlObjectComparator, this.illegalChangeHandler);
-  }
-  
-  public static CommandLine getCommandLineArgs() {
-    return commandLine;
   }
 
 }

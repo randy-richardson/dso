@@ -1062,7 +1062,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     List<Node> nodesRemoved = new ArrayList<Node>();
     haConfig.reloadConfiguration(nodesAdded, nodesRemoved);
 
-    this.groupCommManager.addOrRemovePassivesDynamically(nodesAdded, nodesRemoved);
+    this.groupCommManager.updatePassives(nodesAdded, nodesRemoved);
   }
 
   protected void initRouteMessages(final Stage processTx, final Stage rootRequest, final Stage requestLock,

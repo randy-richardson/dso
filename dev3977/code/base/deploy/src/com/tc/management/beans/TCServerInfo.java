@@ -29,11 +29,14 @@ import com.tc.util.runtime.ThreadDumpUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -460,6 +463,19 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     l2ConfigurationSetupManager.reloadConfiguration();
     dsoServer.reloadConfiguration();
 
-    return !(Arrays.equals(l2ConfigurationSetupManager.allCurrentlyKnownServers(), serversBefore));
+    return checkIfConfigChanged(serversBefore);
+  }
+
+  /**
+   * @return true if changed
+   */
+  private boolean checkIfConfigChanged(String[] serversBefore) {
+    Set<String> setBefore = new HashSet<String>();
+    Collections.addAll(setBefore, serversBefore);
+
+    HashSet<String> setAfter = new HashSet<String>();
+    Collections.addAll(setAfter, l2ConfigurationSetupManager.allCurrentlyKnownServers());
+
+    return !setAfter.equals(setBefore);
   }
 }

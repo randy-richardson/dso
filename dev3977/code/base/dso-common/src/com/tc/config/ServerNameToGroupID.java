@@ -24,7 +24,7 @@ public class ServerNameToGroupID {
     return serverNameToGidMap.get(name);
   }
 
-  public void addAndRemoveServerNames(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved, GroupID gid) {
+  public void updateServerNames(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved, GroupID gid) {
     HashMap<String, GroupID> tempMap = (HashMap<String, GroupID>) serverNameToGidMap.clone();
     for (Node n : tempAdded) {
       tempMap.put(n.getServerNodeName(), gid);

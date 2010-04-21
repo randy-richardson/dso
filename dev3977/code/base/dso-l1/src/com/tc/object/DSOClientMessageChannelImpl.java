@@ -209,10 +209,9 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
     return this.groups;
   }
 
-  public void reloadConfig() throws ConfigurationSetupException {
+  public void reloadConfiguration() throws ConfigurationSetupException {
     StandardTVSConfigurationSetupManagerFactory factory = new StandardTVSConfigurationSetupManagerFactory(
-                                                                                                          StandardTVSConfigurationSetupManagerFactory
-                                                                                                              .getCommandLineArgs(),
+                                                                                                          true,
                                                                                                           false,
                                                                                                           new FatalIllegalConfigurationChangeHandler());
     L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();

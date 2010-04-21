@@ -267,6 +267,6 @@ public class L1Info extends AbstractTerracottaMBean implements L1InfoMBean {
   }
 
   public void reloadConfiguration() throws ConfigurationSetupException {
-    client.reloadConfig();
+    client.reloadConfiguration();
   }
 }

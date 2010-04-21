@@ -78,5 +78,5 @@ public interface DSOClientMessageChannel {
 
   public GroupID[] getGroupIDs();
 
-  public void reloadConfig() throws ConfigurationSetupException;
+  public void reloadConfiguration() throws ConfigurationSetupException;
 }

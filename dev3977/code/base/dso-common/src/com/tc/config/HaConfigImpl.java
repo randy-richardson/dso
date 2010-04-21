@@ -33,8 +33,8 @@ public class HaConfigImpl implements HaConfig {
   private final ServerGroup                    activeCoordinatorGroup;
   private final Node                           thisNode;
   private final ServerGroup                    thisGroup;
-  private final CopyOnWriteArraySet<String>    serverNamesForThisGrp = new CopyOnWriteArraySet<String>();
-  private final ServerNameToGroupID            serverNameToGidMap;
+  private final CopyOnWriteArraySet<String>    serverNamesForThisGroup = new CopyOnWriteArraySet<String>();
+  private final ServerNameToGroupID            serverNameToGid;
 
   public HaConfigImpl(L2TVSConfigurationSetupManager configSetupManager) {
     this.configSetupManager = configSetupManager;
@@ -67,7 +67,7 @@ public class HaConfigImpl implements HaConfig {
     this.thisNode = makeThisNode();
     this.thisGroup = getThisGroupFrom(this.groups, this.configSetupManager.getActiveServerGroupForThisL2());
 
-    this.serverNameToGidMap = new ServerNameToGroupID(buildServerGroupIDMap());
+    this.serverNameToGid = new ServerNameToGroupID(buildServerGroupIDMap());
     buildNodeNamesForThisGroup();
   }
 
@@ -83,12 +83,11 @@ public class HaConfigImpl implements HaConfig {
 
   private void buildNodeNamesForThisGroup() {
     for (Node n : thisGroup.getNodes()) {
-      serverNamesForThisGrp.add(n.getServerNodeName());
+      serverNamesForThisGroup.add(n.getServerNodeName());
     }
   }
 
   /**
-   * @return true if nodes are removed
    * @throws ConfigurationSetupException
    */
   public void reloadConfiguration(List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException {
@@ -107,10 +106,10 @@ public class HaConfigImpl implements HaConfig {
           nodesAdded.addAll(tempAdded);
           nodesRemoved.addAll(tempRemoved);
 
-          serverNameToGidMap.addAndRemoveServerNames(tempAdded, tempRemoved, gid);
+          serverNameToGid.updateServerNames(tempAdded, tempRemoved, gid);
 
           if (groups[i] == this.thisGroup) {
-            addAndRemoveNamesForThisGrp(tempAdded, tempRemoved);
+            updateNamesForThisGroup(tempAdded, tempRemoved);
           }
         }
       }
@@ -119,19 +118,23 @@ public class HaConfigImpl implements HaConfig {
     allNodes.addAll(nodesAdded);
     allNodes.removeAll(nodesRemoved);
 
+    reloadThisGroupNodes();
+  }
+
+  private void reloadThisGroupNodes() {
     Collection<Node> nodes = this.thisGroup.getNodes(true);
     Node[] tempNodeArray = new Node[nodes.size()];
     nodes.toArray(tempNodeArray);
     this.thisGroupNodes = tempNodeArray;
   }
 
-  private void addAndRemoveNamesForThisGrp(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved) {
+  private void updateNamesForThisGroup(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved) {
     for (Node n : tempAdded) {
-      serverNamesForThisGrp.add(n.getServerNodeName());
+      serverNamesForThisGroup.add(n.getServerNodeName());
     }
 
     for (Node n : tempRemoved) {
-      serverNamesForThisGrp.remove(n.getServerNodeName());
+      serverNamesForThisGroup.remove(n.getServerNodeName());
     }
   }
 
@@ -248,10 +251,10 @@ public class HaConfigImpl implements HaConfig {
   }
 
   public ServerNameToGroupID getServerNameToGroupID() {
-    return serverNameToGidMap;
+    return serverNameToGid;
   }
 
   public CopyOnWriteArraySet<String> getNodeNames() {
-    return serverNamesForThisGrp;
+    return serverNamesForThisGroup;
   }
 }

@@ -135,7 +135,7 @@ public class MockChannel implements DSOClientMessageChannel {
     throw new ImplementMe();
   }
 
-  public void reloadConfig() {
+  public void reloadConfiguration() {
     throw new ImplementMe();
   }
 }

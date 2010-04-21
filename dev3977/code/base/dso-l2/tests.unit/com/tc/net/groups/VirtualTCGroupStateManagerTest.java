@@ -24,6 +24,7 @@ import com.tc.logging.TCLogging;
 import com.tc.net.NodeID;
 import com.tc.net.TCSocketAddress;
 import com.tc.net.protocol.transport.NullConnectionPolicy;
+import com.tc.object.net.groups.HaConfigForGroupNameTests;
 import com.tc.test.TCTestCase;
 import com.tc.util.PortChooser;
 import com.tc.util.State;
@@ -192,7 +193,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
       names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], names);
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names));
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];
@@ -288,7 +289,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
       names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], names);
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names));
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];
@@ -356,7 +357,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
       names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], names);
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names));
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];

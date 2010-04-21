@@ -61,10 +61,10 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
     }
   }
 
-  public void addPassiveDynamically(Node nodeAddedDynamically) {
-    DiscoveryStateMachine stateMachine = new DiscoveryStateMachine(nodeAddedDynamically);
-    DiscoveryStateMachine old = nodeStateMap.put(getNodeName(nodeAddedDynamically), stateMachine);
-    Assert.assertNull("Duplicate nodes specified in config, please check " + getNodeName(nodeAddedDynamically), old);
+  public void addPassive(Node node) {
+    DiscoveryStateMachine stateMachine = new DiscoveryStateMachine(node);
+    DiscoveryStateMachine old = nodeStateMap.put(getNodeName(node), stateMachine);
+    Assert.assertNull("Duplicate nodes specified in config, please check " + getNodeName(node), old);
     stateMachine.start();
 
     if (stateMachine.isTimeToConnect()) {
@@ -76,8 +76,8 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
     }
   }
 
-  public void removePassiveDynamically(Node nodeAddedDynamically) {
-    DiscoveryStateMachine old = nodeStateMap.get(getNodeName(nodeAddedDynamically));
+  public void removePassive(Node node) {
+    DiscoveryStateMachine old = nodeStateMap.get(getNodeName(node));
     Assert.assertNotNull("Tried removing node which was not present", old);
   }
 
