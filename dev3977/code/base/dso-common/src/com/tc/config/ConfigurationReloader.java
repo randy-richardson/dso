@@ -5,6 +5,6 @@ package com.tc.config;
 
 import com.tc.net.core.ConnectionAddressProvider;
 
-public interface ReloadConfig {
-  public void reloadConfig(ConnectionAddressProvider cap);
+public interface ConfigurationReloader {
+  public void reloadConfiguration(ConnectionAddressProvider... cap);
 }

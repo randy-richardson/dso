@@ -266,7 +266,7 @@ public class L1Info extends AbstractTerracottaMBean implements L1InfoMBean {
     _sendNotification("VerboseGC changed", "VerboseGC", "java.lang.Boolean", oldValue, verboseGC);
   }
 
-  public void reloadConfig() throws ConfigurationSetupException {
+  public void reloadConfiguration() throws ConfigurationSetupException {
     client.reloadConfig();
   }
 }

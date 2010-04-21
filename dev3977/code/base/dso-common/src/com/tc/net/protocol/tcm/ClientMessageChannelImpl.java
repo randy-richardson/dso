@@ -4,7 +4,7 @@
  */
 package com.tc.net.protocol.tcm;
 
-import com.tc.config.ReloadConfig;
+import com.tc.config.ConfigurationReloader;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
@@ -14,8 +14,6 @@ import com.tc.net.NodeID;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
-import com.tc.net.protocol.transport.ClientConnectionEstablisher;
-import com.tc.net.protocol.transport.ClientMessageTransport;
 import com.tc.net.protocol.transport.ConnectionID;
 import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.object.msg.DSOMessageBase;
@@ -31,7 +29,7 @@ import java.net.UnknownHostException;
  * @author orion
  */
 
-public class ClientMessageChannelImpl extends AbstractMessageChannel implements ClientMessageChannel, ReloadConfig {
+public class ClientMessageChannelImpl extends AbstractMessageChannel implements ClientMessageChannel, ConfigurationReloader {
   private static final TCLogger       logger           = TCLogging.getLogger(ClientMessageChannel.class);
   private final TCMessageFactory      msgFactory;
   private int                         connectAttemptCount;
@@ -152,19 +150,8 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
     return channelSessionID;
   }
 
-  public void reloadConfig(ConnectionAddressProvider[] caps) {
+  public void reloadConfiguration(ConnectionAddressProvider... caps) {
     Assert.assertEquals(1, caps.length);
-    ConnectionAddressProvider cap = caps[0];
-
-    reloadConfig(cap);
-  }
-
-  public void reloadConfig(ConnectionAddressProvider cap) {
-    if (this.sendLayer instanceof ClientMessageTransport) {
-      ClientConnectionEstablisher cce = ((ClientMessageTransport) this.sendLayer).getConnectionEstablisher();
-      cce.reloadConfig(cap);
-      return;
-    }
-    ((ReloadConfig) this.sendLayer).reloadConfig(cap);
+    ((ConfigurationReloader) this.sendLayer).reloadConfiguration(caps);
   }
 }

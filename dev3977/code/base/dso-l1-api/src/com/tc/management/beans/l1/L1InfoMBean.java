@@ -56,5 +56,5 @@ public interface L1InfoMBean extends TerracottaMBean, NotificationEmitter, Runti
 
   void gc();
   
-  void reloadConfig() throws ConfigurationSetupException;
+  void reloadConfiguration() throws ConfigurationSetupException;
 }

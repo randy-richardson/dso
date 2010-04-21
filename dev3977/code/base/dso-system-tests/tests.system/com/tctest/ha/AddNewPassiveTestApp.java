@@ -187,7 +187,7 @@ public class AddNewPassiveTestApp {
       L1InfoMBean l1InfoMbean = (L1InfoMBean) MBeanServerInvocationHandler.newProxyInstance(mbsc, clients[i]
           .getL1InfoBeanName(), L1InfoMBean.class, false);
       try {
-        l1InfoMbean.reloadConfig();
+        l1InfoMbean.reloadConfiguration();
       } catch (ConfigurationSetupException e) {
         e.printStackTrace();
         throw new RuntimeException(e);
