@@ -193,7 +193,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
       names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names));
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names).getServerNamesOfThisGroup());
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];
@@ -289,7 +289,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
       names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names));
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names).getServerNamesOfThisGroup());
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];
@@ -357,7 +357,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
       names.add(virtualNodes[i].getServerNodeName());
     }
     for (int i = 0; i < virtuals; ++i) {
-      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names));
+      virtualMgr[i] = new VirtualTCGroupManagerImpl(groupMgr[i], new HaConfigForGroupNameTests(names).getServerNamesOfThisGroup());
     }
 
     ChangeSink[] sinks = new ChangeSink[nodes];

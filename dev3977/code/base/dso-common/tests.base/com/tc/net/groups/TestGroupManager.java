@@ -5,11 +5,11 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
+import com.tc.config.ReloadConfigChangeContext;
 import com.tc.exception.TCRuntimeException;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -27,7 +27,7 @@ public class TestGroupManager implements GroupManager {
     return localNodeID;
   }
 
-  public void updatePassives(List<Node> nodesAdded, List<Node> nodesRemoved) {
+  public void updateNodes(ReloadConfigChangeContext context) {
     // NOP
   }
 

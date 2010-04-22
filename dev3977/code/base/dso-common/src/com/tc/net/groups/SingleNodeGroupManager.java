@@ -5,6 +5,7 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
+import com.tc.config.ReloadConfigChangeContext;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 
@@ -104,7 +105,7 @@ public class SingleNodeGroupManager implements GroupManager {
     return true;
   }
 
-  public void updatePassives(List<Node> nodeAdded, List<Node> nodeRemoved) {
+  public void updateNodes(ReloadConfigChangeContext reloadContext) {
     // NOP
   }
 

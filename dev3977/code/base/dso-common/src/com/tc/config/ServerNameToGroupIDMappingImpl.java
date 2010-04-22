@@ -6,17 +6,16 @@ package com.tc.config;
 import com.tc.net.GroupID;
 import com.tc.net.groups.Node;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
-public class ServerNameToGroupID {
-  private HashMap<String, GroupID> serverNameToGidMap = new HashMap<String, GroupID>();
+public class ServerNameToGroupIDMappingImpl implements ServerNameToGroupIDMapping {
+  private volatile HashMap<String, GroupID> serverNameToGidMap = new HashMap<String, GroupID>();
 
-  ServerNameToGroupID(HashMap<String, GroupID> serverNameToGidMap) {
+  ServerNameToGroupIDMappingImpl(HashMap<String, GroupID> serverNameToGidMap) {
     this.serverNameToGidMap = serverNameToGidMap;
   }
 
-  public boolean containsGroupName(String name) {
+  public boolean containsServerName(String name) {
     return serverNameToGidMap.containsKey(name);
   }
 
@@ -24,13 +23,13 @@ public class ServerNameToGroupID {
     return serverNameToGidMap.get(name);
   }
 
-  public void updateServerNames(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved, GroupID gid) {
+  void updateServerNames(ReloadConfigChangeContext context, GroupID gid) {
     HashMap<String, GroupID> tempMap = (HashMap<String, GroupID>) serverNameToGidMap.clone();
-    for (Node n : tempAdded) {
+    for (Node n : context.getNodesAdded()) {
       tempMap.put(n.getServerNodeName(), gid);
     }
 
-    for (Node n : tempRemoved) {
+    for (Node n : context.getNodesRemoved()) {
       tempMap.remove(n.getServerNodeName());
     }
     this.serverNameToGidMap = tempMap;

@@ -7,6 +7,7 @@ package com.tc.net.groups;
 import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
 import com.tc.async.api.StageManager;
+import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.TCRuntimeException;
 import com.tc.l2.ha.L2HAZapNodeRequestProcessor;
@@ -359,12 +360,12 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     return (getNodeID());
   }
 
-  public void updatePassives(List<Node> nodesAdded, List<Node> nodesRemoved) {
-    for (Node nodeAdded : nodesAdded) {
-      discover.addPassive(nodeAdded);
+  public void updateNodes(ReloadConfigChangeContext reloadContext) {
+    for (Node nodeAdded : reloadContext.getNodesAdded()) {
+      discover.addNode(nodeAdded);
     }
-    for (Node nodeRemoved : nodesRemoved) {
-      discover.removePassive(nodeRemoved);
+    for (Node nodeRemoved : reloadContext.getNodesRemoved()) {
+      discover.removeNode(nodeRemoved);
     }
   }
 

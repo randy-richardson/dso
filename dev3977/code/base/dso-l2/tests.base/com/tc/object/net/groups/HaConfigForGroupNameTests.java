@@ -4,25 +4,26 @@
 package com.tc.object.net.groups;
 
 import com.tc.config.HaConfig;
-import com.tc.config.ServerNameToGroupID;
+import com.tc.config.ReloadConfigChangeContext;
+import com.tc.config.ServerNameToGroupIDMapping;
+import com.tc.config.ServerNamesOfThisGroup;
+import com.tc.config.ServerNamesOfThisGroupImpl;
 import com.tc.exception.ImplementMe;
+import com.tc.net.GroupID;
 import com.tc.net.groups.Node;
 import com.tc.net.groups.ServerGroup;
 
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 public class HaConfigForGroupNameTests implements HaConfig {
 
-  private final CopyOnWriteArraySet<String> set;
+  private final ServerNamesOfThisGroupImpl set;
 
   public HaConfigForGroupNameTests(Set<String> tempSet) {
-    this.set = new CopyOnWriteArraySet<String>();
-    this.set.addAll(tempSet);
+    this.set = new ServerNamesOfThisGroupImpl(tempSet);
   }
 
-  public ServerGroup getActiveCoordinatorGroup() {
+  public GroupID getActiveCoordinatorGroupID() {
     throw new ImplementMe();
   }
 
@@ -33,12 +34,20 @@ public class HaConfigForGroupNameTests implements HaConfig {
   public Node[] getAllNodes() {
     throw new ImplementMe();
   }
+  
+  public GroupID getThisGroupID() {
+    throw new ImplementMe();
+  }
 
-  public CopyOnWriteArraySet<String> getNodeNames() {
+  public GroupID[] getGroupIDs() {
+    throw new ImplementMe();
+  }
+  
+  public ServerNamesOfThisGroup getServerNamesOfThisGroup() {
     return this.set;
   }
 
-  public ServerNameToGroupID getServerNameToGroupID() {
+  public ServerNameToGroupIDMapping getServerNameToGroupID() {
     throw new ImplementMe();
   }
 
@@ -70,7 +79,7 @@ public class HaConfigForGroupNameTests implements HaConfig {
     throw new ImplementMe();
   }
 
-  public void reloadConfiguration(List<Node> nodesAdded, List<Node> nodesRemoved) {
+  public ReloadConfigChangeContext reloadConfiguration() {
     throw new ImplementMe();
   }
 }

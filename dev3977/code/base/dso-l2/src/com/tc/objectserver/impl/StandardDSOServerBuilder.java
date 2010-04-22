@@ -60,7 +60,7 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
   public StandardDSOServerBuilder(HaConfig haConfig, TCLogger logger) {
     logger.info("Standard DSO Server created");
     this.haConfig = haConfig;
-    this.thisGroupID = this.haConfig.getThisGroup().getGroupId();
+    this.thisGroupID = this.haConfig.getThisGroupID();
   }
 
   public GarbageCollector createGarbageCollector(List<PostInit> toInit, ObjectManagerConfig objectManagerConfig,

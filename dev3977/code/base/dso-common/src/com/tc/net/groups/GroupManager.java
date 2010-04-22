@@ -5,9 +5,9 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
+import com.tc.config.ReloadConfigChangeContext;
 import com.tc.net.NodeID;
 
-import java.util.List;
 import java.util.Set;
 
 public interface GroupManager {
@@ -40,5 +40,5 @@ public interface GroupManager {
   
   public boolean isConnectionToNodeActive(NodeID sid);
   
-  void updatePassives(List<Node> nodesAdded, List<Node> nodesRemoved);
+  void updateNodes(ReloadConfigChangeContext context);
 }

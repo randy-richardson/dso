@@ -61,7 +61,7 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
     }
   }
 
-  public void addPassive(Node node) {
+  public void addNode(Node node) {
     DiscoveryStateMachine stateMachine = new DiscoveryStateMachine(node);
     DiscoveryStateMachine old = nodeStateMap.put(getNodeName(node), stateMachine);
     Assert.assertNull("Duplicate nodes specified in config, please check " + getNodeName(node), old);
@@ -76,7 +76,7 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
     }
   }
 
-  public void removePassive(Node node) {
+  public void removeNode(Node node) {
     DiscoveryStateMachine old = nodeStateMap.get(getNodeName(node));
     Assert.assertNotNull("Tried removing node which was not present", old);
   }

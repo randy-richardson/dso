@@ -16,40 +16,39 @@ import com.tc.net.groups.ServerGroup;
 import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.util.Assert;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 public class HaConfigImpl implements HaConfig {
 
   private final L2TVSConfigurationSetupManager configSetupManager;
+  private final GroupID[]                      groupIDs;
+  private final GroupID                        thisGroupID;
+
   private final ServerGroup[]                  groups;
   private Node[]                               thisGroupNodes;
+
   private final Set                            allNodes;
   private final ServerGroup                    activeCoordinatorGroup;
   private final Node                           thisNode;
   private final ServerGroup                    thisGroup;
-  private final CopyOnWriteArraySet<String>    serverNamesForThisGroup = new CopyOnWriteArraySet<String>();
-  private final ServerNameToGroupID            serverNameToGid;
+  private final ServerNamesOfThisGroupImpl     serverNamesForThisGroup;
+  private final ServerNameToGroupIDMappingImpl serverNameToGid;
 
   public HaConfigImpl(L2TVSConfigurationSetupManager configSetupManager) {
     this.configSetupManager = configSetupManager;
     ActiveServerGroupsConfig groupsConfig = this.configSetupManager.activeServerGroupsConfig();
     int groupCount = groupsConfig.getActiveServerGroupCount();
     this.groups = new ServerGroup[groupCount];
+    this.groupIDs = new GroupID[groupCount];
     for (int i = 0; i < groupCount; i++) {
       this.groups[i] = new ServerGroup(groupsConfig.getActiveServerGroupArray()[i]);
+      this.groupIDs[i] = groups[i].getGroupId();
     }
-    // Create GroupIds array and get the active-coordinator group id
-    GroupID[] grpIds = new GroupID[groupCount];
-    for (int i = 0; i < groupCount; i++) {
-      grpIds[i] = groups[i].getGroupId();
-    }
-    GroupID activeCoordinatorGroupId = new OrderedGroupIDs(grpIds).getActiveCoordinatorGroup();
+
+    GroupID activeCoordinatorGroupId = new OrderedGroupIDs(groupIDs).getActiveCoordinatorGroup();
     ServerGroup tempServerGrp = null;
     // Search for the group id which matches activeCoordinator GroupId
     for (int i = 0; i < groupCount; i++) {
@@ -66,9 +65,10 @@ public class HaConfigImpl implements HaConfig {
     this.allNodes = makeAllNodes();
     this.thisNode = makeThisNode();
     this.thisGroup = getThisGroupFrom(this.groups, this.configSetupManager.getActiveServerGroupForThisL2());
+    this.thisGroupID = this.thisGroup.getGroupId();
 
-    this.serverNameToGid = new ServerNameToGroupID(buildServerGroupIDMap());
-    buildNodeNamesForThisGroup();
+    this.serverNameToGid = new ServerNameToGroupIDMappingImpl(buildServerGroupIDMap());
+    this.serverNamesForThisGroup = new ServerNamesOfThisGroupImpl(getNodeNamesForThisGroup());
   }
 
   private HashMap<String, GroupID> buildServerGroupIDMap() {
@@ -81,44 +81,45 @@ public class HaConfigImpl implements HaConfig {
     return tempMap;
   }
 
-  private void buildNodeNamesForThisGroup() {
+  private Set<String> getNodeNamesForThisGroup() {
+    Set<String> tmpSet = new HashSet<String>();
     for (Node n : thisGroup.getNodes()) {
-      serverNamesForThisGroup.add(n.getServerNodeName());
+      tmpSet.add(n.getServerNodeName());
     }
+    return tmpSet;
   }
 
   /**
    * @throws ConfigurationSetupException
    */
-  public void reloadConfiguration(List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException {
+  public ReloadConfigChangeContext reloadConfiguration() throws ConfigurationSetupException {
     ActiveServerGroupsConfig asgsc = this.configSetupManager.activeServerGroupsConfig();
     int grpCount = asgsc.getActiveServerGroupCount();
 
+    ReloadConfigChangeContext context = new ReloadConfigChangeContext();
+    
     ActiveServerGroupConfig[] asgcArray = asgsc.getActiveServerGroupArray();
     for (int i = 0; i < grpCount; i++) {
       GroupID gid = asgcArray[i].getGroupId();
       for (int j = 0; j < grpCount; j++) {
         if (groups[i].getGroupId().equals(gid)) {
-          ArrayList<Node> tempAdded = new ArrayList<Node>();
-          ArrayList<Node> tempRemoved = new ArrayList<Node>();
-          groups[i].reloadGroup(this.configSetupManager, asgcArray[i], tempAdded, tempRemoved);
+          ReloadConfigChangeContext tempContext = groups[i].reloadGroup(this.configSetupManager, asgcArray[i]);
+          context.update(tempContext);
 
-          nodesAdded.addAll(tempAdded);
-          nodesRemoved.addAll(tempRemoved);
-
-          serverNameToGid.updateServerNames(tempAdded, tempRemoved, gid);
+          serverNameToGid.updateServerNames(tempContext, gid);
 
           if (groups[i] == this.thisGroup) {
-            updateNamesForThisGroup(tempAdded, tempRemoved);
+            updateNamesForThisGroup(tempContext);
           }
         }
       }
     }
 
-    allNodes.addAll(nodesAdded);
-    allNodes.removeAll(nodesRemoved);
+    allNodes.addAll(context.getNodesAdded());
+    allNodes.removeAll(context.getNodesRemoved());
 
     reloadThisGroupNodes();
+    return context;
   }
 
   private void reloadThisGroupNodes() {
@@ -128,14 +129,8 @@ public class HaConfigImpl implements HaConfig {
     this.thisGroupNodes = tempNodeArray;
   }
 
-  private void updateNamesForThisGroup(ArrayList<Node> tempAdded, ArrayList<Node> tempRemoved) {
-    for (Node n : tempAdded) {
-      serverNamesForThisGroup.add(n.getServerNodeName());
-    }
-
-    for (Node n : tempRemoved) {
-      serverNamesForThisGroup.remove(n.getServerNodeName());
-    }
+  private void updateNamesForThisGroup(ReloadConfigChangeContext context) {
+    serverNamesForThisGroup.updateServerNames(context);
   }
 
   private ServerGroup getThisGroupFrom(ServerGroup[] sg, ActiveServerGroupConfig activeServerGroupForThisL2) {
@@ -158,12 +153,16 @@ public class HaConfigImpl implements HaConfig {
     return this.configSetupManager.haConfig().isNetworkedActivePassive();
   }
 
-  public ServerGroup getActiveCoordinatorGroup() {
-    return this.activeCoordinatorGroup;
+  public GroupID getActiveCoordinatorGroupID() {
+    return this.activeCoordinatorGroup.getGroupId();
   }
 
-  public ServerGroup[] getAllActiveServerGroups() {
-    return this.groups;
+  public GroupID getThisGroupID() {
+    return this.thisGroupID;
+  }
+
+  public GroupID[] getGroupIDs() {
+    return this.groupIDs;
   }
 
   private Node[] makeThisGroupNodes() {
@@ -232,10 +231,6 @@ public class HaConfigImpl implements HaConfig {
     return this.thisNode;
   }
 
-  public ServerGroup getThisGroup() {
-    return this.thisGroup;
-  }
-
   private Node makeThisNode() {
     NewL2DSOConfig l2 = this.configSetupManager.dsoL2Config();
     return makeNode(l2);
@@ -250,11 +245,11 @@ public class HaConfigImpl implements HaConfig {
     return this.thisGroup == this.activeCoordinatorGroup;
   }
 
-  public ServerNameToGroupID getServerNameToGroupID() {
+  public ServerNameToGroupIDMapping getServerNameToGroupID() {
     return serverNameToGid;
   }
 
-  public CopyOnWriteArraySet<String> getNodeNames() {
+  public ServerNamesOfThisGroup getServerNamesOfThisGroup() {
     return serverNamesForThisGroup;
   }
 }

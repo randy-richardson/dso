@@ -15,6 +15,7 @@ import com.tc.async.api.StageManager;
 import com.tc.async.impl.NullSink;
 import com.tc.config.HaConfig;
 import com.tc.config.HaConfigImpl;
+import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.CleanDirtyDatabaseException;
@@ -743,7 +744,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     stripeIDStateManager = new StripeIDStateManagerImpl(haConfig, this.persistor.getPersistentStateStore());
 
     ProductInfo pInfo = ProductInfo.getInstance();
-    DSOChannelManager channelManager = new DSOChannelManagerImpl(haConfig.getThisGroup().getGroupId(), this.l1Listener
+    DSOChannelManager channelManager = new DSOChannelManagerImpl(haConfig.getThisGroupID(), this.l1Listener
         .getChannelManager(), this.communicationsManager.getConnectionManager(), pInfo.version(), stripeIDStateManager);
     channelManager.addEventListener(cteh);
     channelManager.addEventListener(this.connectionIdFactory);
@@ -1058,11 +1059,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
   public void reloadConfiguration() throws ConfigurationSetupException {
     // find with ha config all nodes added or removed
-    List<Node> nodesAdded = new ArrayList<Node>();
-    List<Node> nodesRemoved = new ArrayList<Node>();
-    haConfig.reloadConfiguration(nodesAdded, nodesRemoved);
-
-    this.groupCommManager.updatePassives(nodesAdded, nodesRemoved);
+    ReloadConfigChangeContext reloadContext = haConfig.reloadConfiguration();
+    this.groupCommManager.updateNodes(reloadContext);
   }
 
   protected void initRouteMessages(final Stage processTx, final Stage rootRequest, final Stage requestLock,

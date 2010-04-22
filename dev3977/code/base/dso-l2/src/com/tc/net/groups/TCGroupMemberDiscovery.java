@@ -11,7 +11,7 @@ public interface TCGroupMemberDiscovery extends GroupEventsListener {
 
   public void start() throws GroupException;
   
-  public void addPassive(Node node);
+  public void addNode(Node node);
 
   public void stop(long timeout);
 
@@ -23,6 +23,6 @@ public interface TCGroupMemberDiscovery extends GroupEventsListener {
   
   public boolean isValidClusterNode(NodeID nodeID);
 
-  public void removePassive(Node node);
+  public void removeNode(Node node);
   
 }

@@ -5,6 +5,7 @@
 package com.tc.net.groups;
 
 import com.tc.config.HaConfigImpl;
+import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.schema.ActiveServerGroupConfig;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.setup.ConfigurationSetupException;
@@ -35,14 +36,16 @@ public class ServerGroup {
     this.nodes = Collections.synchronizedMap(new HashMap());
   }
 
-  public void reloadGroup(L2TVSConfigurationSetupManager manager, final ActiveServerGroupConfig group,
-                          List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException {
+  public ReloadConfigChangeContext reloadGroup(L2TVSConfigurationSetupManager manager,
+                                               final ActiveServerGroupConfig group) throws ConfigurationSetupException {
     String[] membersBefore = this.members;
     String[] membersNow = group.getMembers().getMemberArray();
     this.members = group.getMembers().getMemberArray();
 
-    addNodes(manager, group, nodesAdded, membersNow, membersBefore);
-    removeNodes(nodesRemoved, membersNow, membersBefore);
+    ReloadConfigChangeContext context = new ReloadConfigChangeContext();
+    addNodes(manager, group, context.getNodesAdded(), membersNow, membersBefore);
+    removeNodes(context.getNodesRemoved(), membersNow, membersBefore);
+    return context;
   }
 
   private ArrayList<String> convertStringToList(String[] strArray) {

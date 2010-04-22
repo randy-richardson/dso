@@ -5,11 +5,8 @@
 package com.tc.config;
 
 import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.net.GroupID;
 import com.tc.net.groups.Node;
-import com.tc.net.groups.ServerGroup;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 public interface HaConfig {
 
@@ -28,13 +25,13 @@ public interface HaConfig {
    */
   boolean isDiskedBasedActivePassive();
 
-  ServerGroup getActiveCoordinatorGroup();
-
-  ServerGroup[] getAllActiveServerGroups();
+  GroupID getActiveCoordinatorGroupID();
+  
+  GroupID[] getGroupIDs();
 
   Node getThisNode();
 
-  ServerGroup getThisGroup();
+  GroupID getThisGroupID();
 
   Node[] getThisGroupNodes();
 
@@ -46,9 +43,9 @@ public interface HaConfig {
    * @return true if nodes are removed
    * @throws ConfigurationSetupException
    */
-  public void reloadConfiguration(List<Node> nodesAdded, List<Node> nodesRemoved) throws ConfigurationSetupException;
+  public ReloadConfigChangeContext reloadConfiguration() throws ConfigurationSetupException;
 
-  public ServerNameToGroupID getServerNameToGroupID();
+  public ServerNameToGroupIDMapping getServerNameToGroupID();
 
-  public CopyOnWriteArraySet<String> getNodeNames();
+  public ServerNamesOfThisGroup getServerNamesOfThisGroup();
 }

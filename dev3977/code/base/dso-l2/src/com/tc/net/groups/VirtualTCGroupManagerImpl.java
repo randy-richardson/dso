@@ -5,14 +5,14 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
-import com.tc.config.HaConfig;
+import com.tc.config.ReloadConfigChangeContext;
+import com.tc.config.ServerNamesOfThisGroup;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 import com.tc.util.Assert;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,12 +26,12 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   private final CopyOnWriteArrayList<GroupEventsListener> groupListeners   = new CopyOnWriteArrayList<GroupEventsListener>();
   private final Map<String, GroupMessageListener>         messageListeners = new ConcurrentHashMap<String, GroupMessageListener>();
   private final Set<NodeID>                               groupNodeIDs     = new CopyOnWriteArraySet<NodeID>();
-  private final HaConfig                                  haConfig;
+  private final ServerNamesOfThisGroup                    serverNamesOfThisGroup;
 
-  public VirtualTCGroupManagerImpl(GroupManager groupManager, HaConfig haConfig) {
+  public VirtualTCGroupManagerImpl(GroupManager groupManager, ServerNamesOfThisGroup serverNamesOfThisGroup) {
     this.groupManager = groupManager;
-    this.haConfig = haConfig;
     groupManager.registerForGroupEvents(this);
+    this.serverNamesOfThisGroup = serverNamesOfThisGroup;
   }
 
   public NodeID getLocalNodeID() {
@@ -134,7 +134,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   private boolean isThisGroup(NodeID nodeID) {
     Assert.assertTrue(nodeID instanceof ServerID);
     ServerID serverID = (ServerID) nodeID;
-    return haConfig.getNodeNames().contains(serverID.getName());
+    return serverNamesOfThisGroup.containsServer(serverID.getName());
   }
 
   private void fireNodeEvent(NodeID nodeID, boolean joined) {
@@ -153,7 +153,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     return groupManager.isConnectionToNodeActive(sid);
   }
 
-  public void updatePassives(List<Node> nodesAdded, List<Node> nodesRemoved) {
-    this.groupManager.updatePassives(nodesAdded, nodesRemoved);
+  public void updateNodes(ReloadConfigChangeContext context) {
+    this.groupManager.updateNodes(context);
   }
 }
