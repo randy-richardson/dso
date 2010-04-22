@@ -8,14 +8,12 @@ import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
 
 import com.tc.async.api.Sink;
 import com.tc.bytes.TCByteBuffer;
-import com.tc.config.ConfigurationReloader;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
-import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.core.TCConnection;
 import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
@@ -40,7 +38,7 @@ import java.util.Timer;
  * NetworkLayer implementation for once and only once message delivery protocol.
  */
 public class OnceAndOnlyOnceProtocolNetworkLayerImpl extends AbstractMessageTransport implements
-    OnceAndOnlyOnceProtocolNetworkLayer, OOOProtocolMessageDelivery, ConfigurationReloader {
+    OnceAndOnlyOnceProtocolNetworkLayer, OOOProtocolMessageDelivery {
   private static final TCLogger           logger           = TCLogging
                                                                .getLogger(OnceAndOnlyOnceProtocolNetworkLayerImpl.class);
   private final OOOProtocolMessageFactory messageFactory;
@@ -456,10 +454,5 @@ public class OnceAndOnlyOnceProtocolNetworkLayerImpl extends AbstractMessageTran
   // for testing
   public NetworkLayer getSendLayer() {
     return this.sendLayer;
-  }
-
-  public void reloadConfiguration(ConnectionAddressProvider... caps) {
-    Assert.assertEquals(1, caps.length);
-    ((ConfigurationReloader) this.sendLayer).reloadConfiguration(caps);
   }
 }

@@ -4,9 +4,8 @@
 package com.tc.net.protocol.tcm;
 
 import com.tc.async.api.Sink;
-import com.tc.config.ConfigurationReloader;
 
-public interface ClientMessageChannel extends MessageChannel, ConfigurationReloader {
+public interface ClientMessageChannel extends MessageChannel {
 
   public void addClassMapping(TCMessageType type, Class msgClass);
 

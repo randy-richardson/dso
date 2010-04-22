@@ -4,14 +4,12 @@
  */
 package com.tc.net.protocol.tcm;
 
-import com.tc.config.ConfigurationReloader;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.NodeID;
-import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.net.protocol.transport.ConnectionID;
@@ -19,7 +17,6 @@ import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.object.msg.DSOMessageBase;
 import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionProvider;
-import com.tc.util.Assert;
 import com.tc.util.TCTimeoutException;
 
 import java.io.IOException;
@@ -29,7 +26,7 @@ import java.net.UnknownHostException;
  * @author orion
  */
 
-public class ClientMessageChannelImpl extends AbstractMessageChannel implements ClientMessageChannel, ConfigurationReloader {
+public class ClientMessageChannelImpl extends AbstractMessageChannel implements ClientMessageChannel {
   private static final TCLogger       logger           = TCLogging.getLogger(ClientMessageChannel.class);
   private final TCMessageFactory      msgFactory;
   private int                         connectAttemptCount;
@@ -148,10 +145,5 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
   // for testing purpose
   protected SessionID getSessionID() {
     return channelSessionID;
-  }
-
-  public void reloadConfiguration(ConnectionAddressProvider... caps) {
-    Assert.assertEquals(1, caps.length);
-    ((ConfigurationReloader) this.sendLayer).reloadConfiguration(caps);
   }
 }

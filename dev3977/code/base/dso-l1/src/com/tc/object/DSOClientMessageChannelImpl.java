@@ -5,24 +5,15 @@
 package com.tc.object;
 
 import com.tc.async.api.Sink;
-import com.tc.config.schema.L2ConfigForL1.L2Data;
-import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.FatalIllegalConfigurationChangeHandler;
-import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
-import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory;
 import com.tc.management.lock.stats.LockStatisticsReponseMessageFactory;
 import com.tc.management.lock.stats.LockStatisticsResponseMessage;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.GroupID;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.NodeID;
-import com.tc.net.core.ConnectionAddressProvider;
-import com.tc.net.core.ConnectionInfo;
 import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ClientMessageChannel;
 import com.tc.net.protocol.tcm.TCMessageType;
-import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.object.msg.AcknowledgeTransactionMessage;
 import com.tc.object.msg.AcknowledgeTransactionMessageFactory;
 import com.tc.object.msg.ClientHandshakeMessage;
@@ -47,7 +38,6 @@ import com.tc.object.msg.RequestManagedObjectMessageFactory;
 import com.tc.object.msg.RequestRootMessage;
 import com.tc.object.msg.RequestRootMessageFactory;
 import com.tc.object.net.DSOClientMessageChannel;
-import com.tc.util.Assert;
 import com.tc.util.TCTimeoutException;
 
 import java.io.IOException;
@@ -207,21 +197,5 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
 
   public GroupID[] getGroupIDs() {
     return this.groups;
-  }
-
-  public void reloadConfiguration() throws ConfigurationSetupException {
-    StandardTVSConfigurationSetupManagerFactory factory = new StandardTVSConfigurationSetupManagerFactory(
-                                                                                                          true,
-                                                                                                          false,
-                                                                                                          new FatalIllegalConfigurationChangeHandler());
-    L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();
-    L2Data[] l2Data = (L2Data[]) config.l2Config().l2Data().getObjects();
-    Assert.assertNotNull(l2Data);
-
-    PreparedComponentsFromL2Connection connComp = new PreparedComponentsFromL2Connection(config);
-    ConfigItem connectionInfoItem = connComp.createConnectionInfoConfigItem();
-    ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
-    ConnectionAddressProvider cap = new ConnectionAddressProvider(connectionInfo);
-    this.channel.reloadConfiguration(cap);
   }
 }

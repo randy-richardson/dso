@@ -36,6 +36,7 @@ import com.tc.net.CommStackMismatchException;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.TCSocketAddress;
 import com.tc.net.core.ConnectionInfo;
+import com.tc.net.core.ClusterTopologyChangedListener;
 import com.tc.net.protocol.NetworkStackHarnessFactory;
 import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OOOEventHandler;
@@ -409,7 +410,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                                                        + socketConnectTimeout); }
     this.channel = this.dsoClientBuilder.createDSOClientMessageChannel(this.communicationsManager,
                                                                        this.connectionComponents, sessionProvider,
-                                                                       maxConnectRetries, socketConnectTimeout);
+                                                                       maxConnectRetries, socketConnectTimeout, this);
     ClientIDLoggerProvider cidLoggerProvider = new ClientIDLoggerProvider(this.channel.getClientIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 
@@ -564,7 +565,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     // more likely an AssertionError
     Stage pauseStage = stageManager.createStage(ClientConfigurationContext.CLIENT_COORDINATION_STAGE,
                                                 new ClientCoordinationHandler(), 1, maxSize);
-    
+
     Stage clusterMembershipEventStage = stageManager
         .createStage(ClientConfigurationContext.CLUSTER_MEMBERSHIP_EVENT_STAGE,
                      new ClusterMemberShipEventsHandler(this.dsoCluster), 1, maxSize);
@@ -834,6 +835,11 @@ public class DistributedObjectClient extends SEDA implements TCClient {
   }
 
   public void reloadConfiguration() throws ConfigurationSetupException {
-    this.channel.reloadConfiguration();
+    if (false) { throw new ConfigurationSetupException(); }
+    throw new UnsupportedOperationException();
+  }
+
+  public void addServerConfigurationChangedListeners(ClusterTopologyChangedListener listener) {
+    throw new UnsupportedOperationException();
   }
 }

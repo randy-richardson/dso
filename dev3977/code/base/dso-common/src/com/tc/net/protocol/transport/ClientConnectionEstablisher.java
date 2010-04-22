@@ -395,7 +395,7 @@ public class ClientConnectionEstablisher {
     }
   }
 
-  public void reloadConfig(ConnectionAddressProvider cap) {
+  public void reloadConfiguration(ConnectionAddressProvider cap) {
     this.connAddressProvider = cap;
   }
 }

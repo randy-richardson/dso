@@ -6,13 +6,11 @@ package com.tc.net.protocol.transport;
 
 import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
 
-import com.tc.config.ConfigurationReloader;
 import com.tc.exception.TCInternalError;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.TCLogging;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.MaxConnectionsExceededException;
-import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.core.TCConnection;
 import com.tc.net.core.event.TCConnectionEvent;
 import com.tc.net.protocol.NetworkLayer;
@@ -32,7 +30,7 @@ import java.util.List;
 /**
  * Client implementation of the transport network layer.
  */
-public class ClientMessageTransport extends MessageTransportBase implements ConfigurationReloader {
+public class ClientMessageTransport extends MessageTransportBase {
   public static final long                  TRANSPORT_HANDSHAKE_SYNACK_TIMEOUT = TCPropertiesImpl
                                                                                    .getProperties()
                                                                                    .getLong(
@@ -352,10 +350,5 @@ public class ClientMessageTransport extends MessageTransportBase implements Conf
 
   public ClientConnectionEstablisher getConnectionEstablisher() {
     return this.connectionEstablisher;
-  }
-
-  public void reloadConfiguration(ConnectionAddressProvider... caps) {
-    Assert.assertEquals(1, caps.length);
-    this.connectionEstablisher.reloadConfig(caps[0]);
   }
 }
