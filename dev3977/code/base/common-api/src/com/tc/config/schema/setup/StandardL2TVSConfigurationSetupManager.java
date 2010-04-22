@@ -27,7 +27,6 @@ import com.tc.config.schema.UpdateCheckConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.repository.ChildBeanFetcher;
 import com.tc.config.schema.repository.ChildBeanRepository;
-import com.tc.config.schema.repository.StandardBeanRepository;
 import com.tc.config.schema.utils.XmlObjectComparator;
 import com.tc.license.Capability;
 import com.tc.license.LicenseCheck;
@@ -143,7 +142,6 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public void reloadConfiguration() throws ConfigurationSetupException {
-    this.serversBeanRepository = new StandardBeanRepository(Servers.class);
     runConfigurationCreator(this.configurationCreator);
 
     try {
