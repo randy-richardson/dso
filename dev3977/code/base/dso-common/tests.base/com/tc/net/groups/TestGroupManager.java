@@ -5,6 +5,7 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
+import com.tc.config.NodesStore;
 import com.tc.config.ReloadConfigChangeContext;
 import com.tc.exception.TCRuntimeException;
 import com.tc.net.NodeID;
@@ -23,7 +24,7 @@ public class TestGroupManager implements GroupManager {
     return localNodeID;
   }
 
-  public NodeID join(Node thisNode, Node[] allNodes) {
+  public NodeID join(Node thisNode, NodesStore nodeStore) {
     return localNodeID;
   }
 

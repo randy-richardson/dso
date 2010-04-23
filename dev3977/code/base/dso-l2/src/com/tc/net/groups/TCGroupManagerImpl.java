@@ -7,7 +7,9 @@ package com.tc.net.groups;
 import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
 import com.tc.async.api.StageManager;
+import com.tc.config.NodesStore;
 import com.tc.config.ReloadConfigChangeContext;
+import com.tc.config.TopologyChangeListener;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.TCRuntimeException;
 import com.tc.l2.ha.L2HAZapNodeRequestProcessor;
@@ -81,7 +83,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventListener {
+public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventListener, TopologyChangeListener {
   private static final TCLogger                             logger                      = TCLogging
                                                                                             .getLogger(TCGroupManagerImpl.class);
   public static final String                                HANDSHAKE_STATE_MACHINE_TAG = "TcGroupCommHandshake";
@@ -346,18 +348,23 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     return true;
   }
 
-  public NodeID join(Node thisNode, Node[] allNodes) throws GroupException {
+  public NodeID join(Node thisNode, NodesStore nodesStore) throws GroupException {
     if (!alreadyJoined.compareAndSet(false, true)) { throw new GroupException("Already Joined"); }
 
     // discover must be started before listener thread to avoid missing nodeJoined group events.
-    discover.setupNodes(thisNode, allNodes);
+    discover.setupNodes(thisNode, nodesStore.getAllNodes());
     discover.start();
     try {
       groupListener.start(new HashSet());
     } catch (IOException e) {
       throw new GroupException(e);
     }
+    nodesStore.addListener(this);
     return (getNodeID());
+  }
+  
+  public void topologyChanged(ReloadConfigChangeContext context) {
+    updateNodes(context);
   }
 
   public void updateNodes(ReloadConfigChangeContext reloadContext) {

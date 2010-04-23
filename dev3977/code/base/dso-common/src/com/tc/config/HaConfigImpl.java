@@ -16,7 +16,6 @@ import com.tc.net.groups.ServerGroup;
 import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.util.Assert;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,14 +26,11 @@ public class HaConfigImpl implements HaConfig {
   private final GroupID[]                      groupIDs;
   private final GroupID                        thisGroupID;
 
+  private final NodesStoreImpl                     nodeStore;
   private final ServerGroup[]                  groups;
-  private Node[]                               thisGroupNodes;
-
-  private final Set                            allNodes;
   private final ServerGroup                    activeCoordinatorGroup;
   private final Node                           thisNode;
   private final ServerGroup                    thisGroup;
-  private final ServerNamesOfThisGroupImpl     serverNamesForThisGroup;
   private final ServerNameToGroupIDMappingImpl serverNameToGid;
 
   public HaConfigImpl(L2TVSConfigurationSetupManager configSetupManager) {
@@ -61,14 +57,13 @@ public class HaConfigImpl implements HaConfig {
     this.activeCoordinatorGroup = tempServerGrp;
     Assert.assertNotNull(this.activeCoordinatorGroup);
 
-    this.thisGroupNodes = makeThisGroupNodes();
-    this.allNodes = makeAllNodes();
+    Set<Node> nodes = makeAllNodes();
     this.thisNode = makeThisNode();
     this.thisGroup = getThisGroupFrom(this.groups, this.configSetupManager.getActiveServerGroupForThisL2());
     this.thisGroupID = this.thisGroup.getGroupId();
 
+    this.nodeStore = new NodesStoreImpl(nodes, getNodeNamesForThisGroup());
     this.serverNameToGid = new ServerNameToGroupIDMappingImpl(buildServerGroupIDMap());
-    this.serverNamesForThisGroup = new ServerNamesOfThisGroupImpl(getNodeNamesForThisGroup());
   }
 
   private HashMap<String, GroupID> buildServerGroupIDMap() {
@@ -97,7 +92,7 @@ public class HaConfigImpl implements HaConfig {
     int grpCount = asgsc.getActiveServerGroupCount();
 
     ReloadConfigChangeContext context = new ReloadConfigChangeContext();
-    
+
     ActiveServerGroupConfig[] asgcArray = asgsc.getActiveServerGroupArray();
     for (int i = 0; i < grpCount; i++) {
       GroupID gid = asgcArray[i].getGroupId();
@@ -115,22 +110,12 @@ public class HaConfigImpl implements HaConfig {
       }
     }
 
-    allNodes.addAll(context.getNodesAdded());
-    allNodes.removeAll(context.getNodesRemoved());
-
-    reloadThisGroupNodes();
+    nodeStore.updateNodes(context);
     return context;
   }
 
-  private void reloadThisGroupNodes() {
-    Collection<Node> nodes = this.thisGroup.getNodes(true);
-    Node[] tempNodeArray = new Node[nodes.size()];
-    nodes.toArray(tempNodeArray);
-    this.thisGroupNodes = tempNodeArray;
-  }
-
   private void updateNamesForThisGroup(ReloadConfigChangeContext context) {
-    serverNamesForThisGroup.updateServerNames(context);
+    nodeStore.updateServerNames(context);
   }
 
   private ServerGroup getThisGroupFrom(ServerGroup[] sg, ActiveServerGroupConfig activeServerGroupForThisL2) {
@@ -165,30 +150,7 @@ public class HaConfigImpl implements HaConfig {
     return this.groupIDs;
   }
 
-  private Node[] makeThisGroupNodes() {
-    ActiveServerGroupConfig asgc = this.configSetupManager.getActiveServerGroupForThisL2();
-    Assert.assertNotNull(asgc);
-    String[] l2Names = asgc.getMembers().getMemberArray();
-    Node[] rv = new Node[l2Names.length];
-
-    for (int i = 0; i < l2Names.length; i++) {
-      NewL2DSOConfig l2;
-      try {
-        l2 = this.configSetupManager.dsoL2ConfigFor(l2Names[i]);
-      } catch (ConfigurationSetupException e) {
-        throw new RuntimeException("Error getting l2 config for: " + l2Names[i], e);
-      }
-      rv[i] = makeNode(l2);
-      addNodeToGroup(rv[i], l2Names[i]);
-    }
-    return rv;
-  }
-
-  public Node[] getThisGroupNodes() {
-    return this.thisGroupNodes;
-  }
-
-  private Set makeAllNodes() {
+  private Set<Node> makeAllNodes() {
     Set allClusterNodes = new HashSet();
     ActiveServerGroupConfig[] asgcs = this.configSetupManager.activeServerGroupsConfig().getActiveServerGroupArray();
     for (int j = 0; j < asgcs.length; ++j) {
@@ -207,11 +169,6 @@ public class HaConfigImpl implements HaConfig {
       }
     }
     return allClusterNodes;
-  }
-
-  public Node[] getAllNodes() {
-    Assert.assertTrue(this.allNodes.size() > 0);
-    return (Node[]) this.allNodes.toArray(new Node[this.allNodes.size()]);
   }
 
   // servers and groups were checked in configSetupManger
@@ -250,6 +207,10 @@ public class HaConfigImpl implements HaConfig {
   }
 
   public ServerNamesOfThisGroup getServerNamesOfThisGroup() {
-    return serverNamesForThisGroup;
+    return nodeStore;
+  }
+
+  public NodesStore getNodesStore() {
+    return nodeStore;
   }
 }

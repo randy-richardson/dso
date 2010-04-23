@@ -33,9 +33,7 @@ public interface HaConfig {
 
   GroupID getThisGroupID();
 
-  Node[] getThisGroupNodes();
-
-  Node[] getAllNodes();
+  NodesStore getNodesStore();
 
   boolean isActiveCoordinatorGroup();
 

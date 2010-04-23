@@ -11,6 +11,8 @@ import com.tc.async.api.StageManager;
 import com.tc.async.impl.ConfigurationContextImpl;
 import com.tc.async.impl.MockSink;
 import com.tc.async.impl.StageManagerImpl;
+import com.tc.config.NodesStore;
+import com.tc.config.NodesStoreImpl;
 import com.tc.l2.context.StateChangedEvent;
 import com.tc.l2.ha.WeightGeneratorFactory;
 import com.tc.l2.msg.L2StateMessage;
@@ -34,6 +36,7 @@ import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -210,8 +213,11 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
     // joining
     System.out.println("*** Start Joining...");
+    Set<Node> nodeSet = new HashSet<Node>();
+    Collections.addAll(nodeSet, allNodes);
+    NodesStore nodeStore = new NodesStoreImpl(nodeSet);
     for (int i = 0; i < nodes; ++i) {
-      groupMgr[i].join(allNodes[i], allNodes);
+      groupMgr[i].join(allNodes[i], nodeStore);
     }
     ThreadUtil.reallySleep(1000 * nodes);
 
@@ -306,14 +312,17 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
     // Joining and Electing
     System.out.println("*** Start Joining and Electing...");
-    groupMgr[0].join(allNodes[0], allNodes);
+    Set<Node> nodeSet = new HashSet<Node>();
+    Collections.addAll(nodeSet, allNodes);
+    NodesStore nodeStore = new NodesStoreImpl(nodeSet);
+    groupMgr[0].join(allNodes[0], nodeStore);
     elections[0].start();
     for (int i = 1; i < virtuals; ++i) {
-      groupMgr[i].join(allNodes[i], allNodes);
+      groupMgr[i].join(allNodes[i], nodeStore);
       elections[i].start();
     }
     for (int i = virtuals + 1; i < nodes; ++i) {
-      groupMgr[i].join(allNodes[i], allNodes);
+      groupMgr[i].join(allNodes[i], nodeStore);
     }
 
     for (int i = 0; i < virtuals; ++i) {
@@ -374,7 +383,10 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
     // the first node to be the active one
     System.out.println("*** First node joins to be an active node...");
-    ids[0] = groupMgr[0].join(allNodes[0], allNodes);
+    Set<Node> nodeSet = new HashSet<Node>();
+    Collections.addAll(nodeSet, allNodes);
+    NodesStore nodeStore = new NodesStoreImpl(nodeSet);
+    ids[0] = groupMgr[0].join(allNodes[0], nodeStore);
     managers[0].startElection();
     ThreadUtil.reallySleep(100);
 
@@ -388,8 +400,11 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
     });
 
     System.out.println("***  Remaining nodes join");
+    nodeSet = new HashSet<Node>();
+    Collections.addAll(nodeSet, allNodes);
+    nodeStore = new NodesStoreImpl(nodeSet);
     for (int i = 1; i < nodes; ++i) {
-      ids[i] = groupMgr[i].join(allNodes[i], allNodes);
+      ids[i] = groupMgr[i].join(allNodes[i], nodeStore);
     }
 
     ThreadUtil.reallySleep(1000);

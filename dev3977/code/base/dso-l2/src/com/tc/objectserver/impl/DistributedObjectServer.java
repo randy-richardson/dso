@@ -15,7 +15,6 @@ import com.tc.async.api.StageManager;
 import com.tc.async.impl.NullSink;
 import com.tc.config.HaConfig;
 import com.tc.config.HaConfigImpl;
-import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.CleanDirtyDatabaseException;
@@ -1049,7 +1048,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
   public void startGroupManagers() {
     try {
-      NodeID myNodeId = this.groupCommManager.join(this.haConfig.getThisNode(), this.haConfig.getThisGroupNodes());
+      NodeID myNodeId = this.groupCommManager.join(this.haConfig.getThisNode(), this.haConfig.getNodesStore());
       logger.info("This L2 Node ID = " + myNodeId);
     } catch (GroupException e) {
       logger.error("Caught Exception :", e);
@@ -1058,9 +1057,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   }
 
   public void reloadConfiguration() throws ConfigurationSetupException {
-    // find with ha config all nodes added or removed
-    ReloadConfigChangeContext reloadContext = haConfig.reloadConfiguration();
-    this.groupCommManager.updateNodes(reloadContext);
+    haConfig.reloadConfiguration();
   }
 
   protected void initRouteMessages(final Stage processTx, final Stage rootRequest, final Stage requestLock,

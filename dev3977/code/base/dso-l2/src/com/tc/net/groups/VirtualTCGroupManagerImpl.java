@@ -5,6 +5,7 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
+import com.tc.config.NodesStore;
 import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.ServerNamesOfThisGroup;
 import com.tc.logging.TCLogger;
@@ -38,7 +39,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     return groupManager.getLocalNodeID();
   }
 
-  public NodeID join(Node thisNode, Node[] allNodes) {
+  public NodeID join(Node thisNode, NodesStore nodesStore) {
     // NOP here, the underlying groupManager should have already joined to the entire clustered.
     return this.groupManager.getLocalNodeID();
   }

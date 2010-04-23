@@ -4,15 +4,16 @@
 package com.tc.object.net.groups;
 
 import com.tc.config.HaConfig;
+import com.tc.config.NodesStore;
 import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.ServerNameToGroupIDMapping;
 import com.tc.config.ServerNamesOfThisGroup;
-import com.tc.config.ServerNamesOfThisGroupImpl;
 import com.tc.exception.ImplementMe;
 import com.tc.net.GroupID;
 import com.tc.net.groups.Node;
 import com.tc.net.groups.ServerGroup;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class HaConfigForGroupNameTests implements HaConfig {
@@ -34,7 +35,7 @@ public class HaConfigForGroupNameTests implements HaConfig {
   public Node[] getAllNodes() {
     throw new ImplementMe();
   }
-  
+
   public GroupID getThisGroupID() {
     throw new ImplementMe();
   }
@@ -42,7 +43,7 @@ public class HaConfigForGroupNameTests implements HaConfig {
   public GroupID[] getGroupIDs() {
     throw new ImplementMe();
   }
-  
+
   public ServerNamesOfThisGroup getServerNamesOfThisGroup() {
     return this.set;
   }
@@ -82,5 +83,35 @@ public class HaConfigForGroupNameTests implements HaConfig {
   public ReloadConfigChangeContext reloadConfiguration() {
     throw new ImplementMe();
   }
-}
 
+  public NodesStore getNodesStore() {
+    throw new ImplementMe();
+  }
+
+  public static class ServerNamesOfThisGroupImpl implements ServerNamesOfThisGroup {
+    public volatile HashSet<String> serverNamesForThisGroup = new HashSet<String>();
+
+    public ServerNamesOfThisGroupImpl(Set<String> set) {
+      this.serverNamesForThisGroup.addAll(set);
+    }
+
+    public boolean containsServer(String serverName) {
+      return serverNamesForThisGroup.contains(serverName);
+    }
+
+    void updateServerNames(ReloadConfigChangeContext context) {
+      HashSet<String> tmp = (HashSet<String>) serverNamesForThisGroup.clone();
+
+      for (Node n : context.getNodesAdded()) {
+        tmp.add(n.getServerNodeName());
+      }
+
+      for (Node n : context.getNodesRemoved()) {
+        tmp.remove(n.getServerNodeName());
+      }
+
+      this.serverNamesForThisGroup = tmp;
+    }
+
+  }
+}
