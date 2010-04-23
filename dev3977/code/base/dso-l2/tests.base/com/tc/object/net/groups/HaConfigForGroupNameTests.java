@@ -6,7 +6,7 @@ package com.tc.object.net.groups;
 import com.tc.config.HaConfig;
 import com.tc.config.NodesStore;
 import com.tc.config.ReloadConfigChangeContext;
-import com.tc.config.ServerNameToGroupIDMapping;
+import com.tc.config.ServerNameGroupIDInfo;
 import com.tc.config.ServerNamesOfThisGroup;
 import com.tc.exception.ImplementMe;
 import com.tc.net.GroupID;
@@ -48,7 +48,7 @@ public class HaConfigForGroupNameTests implements HaConfig {
     return this.set;
   }
 
-  public ServerNameToGroupIDMapping getServerNameToGroupID() {
+  public ServerNameGroupIDInfo getServerNameToGroupID() {
     throw new ImplementMe();
   }
 

@@ -5,7 +5,7 @@ package com.tc.config;
 
 import com.tc.net.GroupID;
 
-public interface ServerNameToGroupIDMapping {
+public interface ServerNameGroupIDInfo {
 
   boolean containsServerName(String name);
 

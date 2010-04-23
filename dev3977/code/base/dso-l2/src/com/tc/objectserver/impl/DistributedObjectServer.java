@@ -1057,7 +1057,10 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   }
 
   public void reloadConfiguration() throws ConfigurationSetupException {
-    haConfig.reloadConfiguration();
+    if(false) {
+      throw new ConfigurationSetupException();
+    }
+    throw new UnsupportedOperationException();
   }
 
   protected void initRouteMessages(final Stage processTx, final Stage rootRequest, final Stage requestLock,

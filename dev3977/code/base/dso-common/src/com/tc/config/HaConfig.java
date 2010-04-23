@@ -43,7 +43,7 @@ public interface HaConfig {
    */
   public ReloadConfigChangeContext reloadConfiguration() throws ConfigurationSetupException;
 
-  public ServerNameToGroupIDMapping getServerNameToGroupID();
+  public ServerNameGroupIDInfo getServerNameToGroupID();
 
   public ServerNamesOfThisGroup getServerNamesOfThisGroup();
 }
