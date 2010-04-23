@@ -16,7 +16,6 @@ import com.tc.l2.state.StateManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.AbstractTerracottaMBean;
-import com.tc.objectserver.impl.DistributedObjectServer;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.runtime.JVMMemoryManager;
 import com.tc.runtime.TCRuntime;
@@ -75,8 +74,6 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
 
   private final L2TVSConfigurationSetupManager l2ConfigurationSetupManager;
 
-  private DistributedObjectServer              dsoServer;
-
   public TCServerInfo(final TCServer server, final L2State l2State, final ObjectStatsRecorder objectStatsRecorder,
                       final L2TVSConfigurationSetupManager setupManager) throws NotCompliantMBeanException {
     super(TCServerInfoMBean.class, true);
@@ -105,10 +102,6 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     }
 
     this.objectStatsRecorder = objectStatsRecorder;
-  }
-
-  public void setDistributedObjectServer(DistributedObjectServer server) {
-    this.dsoServer = server;
   }
 
   public ObjectStatsRecorder getObjectStatsRecorder() {
@@ -461,7 +454,7 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     String[] serversBefore = l2ConfigurationSetupManager.allCurrentlyKnownServers();
 
     l2ConfigurationSetupManager.reloadConfiguration();
-    dsoServer.reloadConfiguration();
+    server.reloadConfiguration();
 
     return checkIfConfigChanged(serversBefore);
   }

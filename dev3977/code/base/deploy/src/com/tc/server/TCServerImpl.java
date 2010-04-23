@@ -460,7 +460,6 @@ public class TCServerImpl extends SEDA implements TCServer {
     this.dsoServer = createDistributedObjectServer(this.configurationSetupManager, this.connectionPolicy, httpSink,
                                                    serverInfo,
                                                    objectStatsRecorder, this.state, this);
-    serverInfo.setDistributedObjectServer(this.dsoServer);
     this.dsoServer.start();
     registerDSOServer();
   }
@@ -656,5 +655,9 @@ public class TCServerImpl extends SEDA implements TCServer {
           throw new AssertionError(e);
         }
       }
+  }
+  
+  public void reloadConfiguration() throws ConfigurationSetupException {
+    dsoServer.reloadConfiguration();
   }
 }
