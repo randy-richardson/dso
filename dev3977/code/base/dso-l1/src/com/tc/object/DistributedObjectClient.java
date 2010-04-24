@@ -192,7 +192,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                                                                              .getConsoleLogger();
 
   private final DSOClientBuilder                     dsoClientBuilder;
-  private final DSOClientConfigHelper                config;
+  protected final DSOClientConfigHelper              config;
   private final ClassProvider                        classProvider;
   private final Manager                              manager;
   private final DsoClusterInternal                   dsoCluster;

@@ -171,7 +171,7 @@ public class StandardTVSConfigurationSetupManagerFactory extends BaseTVSConfigur
 
   public L1TVSConfigurationSetupManager createL1TVSConfigurationSetupManager(TCLogger logger)
       throws ConfigurationSetupException {
-    ConfigurationCreator configurationCreator = new StandardXMLFileConfigurationCreator(logger, this.configSpec,
+    ConfigurationCreator configurationCreator = new StandardXMLFileConfigurationCreator(this.configSpec,
                                                                                         this.cwd, this.beanFactory);
 
     L1TVSConfigurationSetupManager setupManager = new StandardL1TVSConfigurationSetupManager(configurationCreator,
