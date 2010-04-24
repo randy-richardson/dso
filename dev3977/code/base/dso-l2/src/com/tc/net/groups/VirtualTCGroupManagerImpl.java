@@ -135,7 +135,7 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   private boolean isThisGroup(NodeID nodeID) {
     Assert.assertTrue(nodeID instanceof ServerID);
     ServerID serverID = (ServerID) nodeID;
-    return serverNamesOfThisGroup.containsServer(serverID.getName());
+    return serverNamesOfThisGroup.hasServerInGroup(serverID.getName());
   }
 
   private void fireNodeEvent(NodeID nodeID, boolean joined) {

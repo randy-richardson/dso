@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-public class NodesStoreImpl implements NodesStore {
+public class NodesStoreImpl implements NodesStore, TopologyChangeListener {
   private final Set<Node>                                   nodes;
   public volatile HashSet<String>                           serverNamesForThisGroup = new HashSet<String>();
   private volatile HashMap<String, GroupID>                 serverNameToGidMap      = new HashMap<String, GroupID>();
@@ -31,8 +31,8 @@ public class NodesStoreImpl implements NodesStore {
     serverNamesForThisGroup.addAll(nodeNamesForThisGroup);
     this.serverNameToGidMap = serverNameToGidMap;
   }
-
-  void updateNodes(ReloadConfigChangeContext context) {
+  
+  public void topologyChanged(ReloadConfigChangeContext context) {
     this.nodes.addAll(context.getNodesAdded());
     this.nodes.removeAll(context.getNodesRemoved());
 
@@ -54,7 +54,7 @@ public class NodesStoreImpl implements NodesStore {
    * ServerNamesOfThisGroup methods ...
    */
 
-  public boolean containsServer(String serverName) {
+  public boolean hasServerInGroup(String serverName) {
     return serverNamesForThisGroup.contains(serverName);
   }
 
@@ -76,7 +76,7 @@ public class NodesStoreImpl implements NodesStore {
    * ServerNameGroupIDInfo methods ....
    */
 
-  public boolean containsServerName(String name) {
+  public boolean hasServerInCluster(String name) {
     return serverNameToGidMap.containsKey(name);
   }
 

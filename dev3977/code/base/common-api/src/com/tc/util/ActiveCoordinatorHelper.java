@@ -17,21 +17,45 @@ import java.util.Map.Entry;
 public class ActiveCoordinatorHelper {
   private static final String GROUP_NAME_PREFIX = "Tc-Group-";
 
-  private static String getGroupNameFrom(String[] members) {
-    String[] temp = new String[members.length];
-    for (int i = 0; i < temp.length; i++) {
-      temp[i] = members[i];
-    }
-    Arrays.sort(temp);
+  public static ActiveServerGroupConfigObject[] generateGroupInfo(ActiveServerGroupConfigObject[] originalGroupInfos) {
+    TreeMap<String, ActiveServerGroupConfigObject> candidateGroupNames = generateCandidateGroupNames(originalGroupInfos);
 
-    StringBuffer grpName = new StringBuffer();
-    for (int i = 0; i < temp.length; i++) {
-      grpName.append(temp[i]);
+    // Generate Group Info
+    ActiveServerGroupConfigObject[] groupInfos = new ActiveServerGroupConfigObject[originalGroupInfos.length];
+    int groupID = 0;
+    for (Entry<String, ActiveServerGroupConfigObject> entry : candidateGroupNames.entrySet()) {
+      ActiveServerGroupConfigObject groupInfo = entry.getValue();
+      if (groupNameNotSet(groupInfo)) {
+        groupInfo.setGroupName(GROUP_NAME_PREFIX + groupID);
+      }
+      groupInfo.setGroupId(new GroupID(groupID));
+      groupInfos[groupID] = groupInfo;
+      groupID++;
     }
-    return grpName.toString();
+
+    return groupInfos;
   }
 
-  public static ActiveServerGroupConfigObject[] setGroupNamesIDAndSort(ActiveServerGroupConfigObject[] asgcos) {
+  public static MirrorGroup[] generateGroupNames(MirrorGroup[] originalGroupInfos) {
+    TreeMap<String, MirrorGroup> candidateGroupNames = generateCandidateGroupNames(originalGroupInfos);
+
+    // Setting actual group info
+    MirrorGroup[] groupInfos = new MirrorGroup[originalGroupInfos.length];
+    int counter = 0;
+    for (Entry<String, MirrorGroup> entry : candidateGroupNames.entrySet()) {
+      MirrorGroup groupInfo = entry.getValue();
+      if (groupNameNotSet(groupInfo)) {
+        groupInfo.setGroupName(GROUP_NAME_PREFIX + counter);
+      }
+      groupInfos[counter] = groupInfo;
+      counter++;
+    }
+
+    return groupInfos;
+  }
+
+  private static TreeMap<String, ActiveServerGroupConfigObject> generateCandidateGroupNames(
+                                                                                            ActiveServerGroupConfigObject[] asgcos) {
     TreeMap<String, ActiveServerGroupConfigObject> grpNamesToGrp = new TreeMap<String, ActiveServerGroupConfigObject>();
 
     for (int i = 0; i < asgcos.length; i++) {
@@ -44,23 +68,10 @@ public class ActiveCoordinatorHelper {
 
       grpNamesToGrp.put(groupName, asgcos[i]);
     }
-
-    ActiveServerGroupConfigObject[] rv = new ActiveServerGroupConfigObject[asgcos.length];
-    int counter = 0;
-    for (Entry<String, ActiveServerGroupConfigObject> entry : grpNamesToGrp.entrySet()) {
-      ActiveServerGroupConfigObject asgco = entry.getValue();
-      if (groupNameNotSet(asgco)) {
-        asgco.setGroupName(GROUP_NAME_PREFIX + counter);
-      }
-      asgco.setGroupId(new GroupID(counter));
-      rv[counter] = asgco;
-      counter++;
-    }
-
-    return rv;
+    return grpNamesToGrp;
   }
 
-  public static MirrorGroup[] setGroupNamesAndSort(MirrorGroup[] mirrorGroups) {
+  private static TreeMap<String, MirrorGroup> generateCandidateGroupNames(MirrorGroup[] mirrorGroups) {
     TreeMap<String, MirrorGroup> grpNamesToGrp = new TreeMap<String, MirrorGroup>();
 
     for (int i = 0; i < mirrorGroups.length; i++) {
@@ -73,19 +84,7 @@ public class ActiveCoordinatorHelper {
 
       grpNamesToGrp.put(groupName, mirrorGroups[i]);
     }
-
-    MirrorGroup[] rv = new MirrorGroup[mirrorGroups.length];
-    int counter = 0;
-    for (Entry<String, MirrorGroup> entry : grpNamesToGrp.entrySet()) {
-      MirrorGroup mirrorGrp = entry.getValue();
-      if (groupNameNotSet(mirrorGrp)) {
-        mirrorGrp.setGroupName(GROUP_NAME_PREFIX + counter);
-      }
-      rv[counter] = mirrorGrp;
-      counter++;
-    }
-
-    return rv;
+    return grpNamesToGrp;
   }
 
   private static boolean groupNameNotSet(ActiveServerGroupConfigObject asgco) {
@@ -94,6 +93,20 @@ public class ActiveCoordinatorHelper {
 
   private static boolean groupNameNotSet(MirrorGroup asgco) {
     return asgco.getGroupName() == null || asgco.getGroupName() == "";
+  }
+
+  private static String getGroupNameFrom(String[] members) {
+    String[] temp = new String[members.length];
+    for (int i = 0; i < temp.length; i++) {
+      temp[i] = members[i];
+    }
+    Arrays.sort(temp);
+
+    StringBuffer grpName = new StringBuffer();
+    for (int i = 0; i < temp.length; i++) {
+      grpName.append(temp[i]);
+    }
+    return grpName.toString();
   }
 
   public static class ActiveGroupIDComparator implements Comparator<ActiveServerGroupConfig> {

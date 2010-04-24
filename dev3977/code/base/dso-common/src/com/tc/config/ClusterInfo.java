@@ -5,9 +5,9 @@ package com.tc.config;
 
 import com.tc.net.GroupID;
 
-public interface ServerNameGroupIDInfo {
+public interface ClusterInfo {
 
-  boolean containsServerName(String name);
+  boolean hasServerInCluster(String name);
 
   GroupID getGroupIDFromServerName(String name);
 

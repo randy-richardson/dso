@@ -96,7 +96,7 @@ public class HaConfigImpl implements HaConfig {
       }
     }
 
-    nodeStore.updateNodes(context);
+    nodeStore.topologyChanged(context);
     return context;
   }
 
@@ -188,7 +188,7 @@ public class HaConfigImpl implements HaConfig {
     return this.thisGroupID.equals(this.activeCoordinatorGroupID);
   }
 
-  public ServerNameGroupIDInfo getServerNameToGroupID() {
+  public ClusterInfo getServerNameToGroupID() {
     return nodeStore;
   }
 

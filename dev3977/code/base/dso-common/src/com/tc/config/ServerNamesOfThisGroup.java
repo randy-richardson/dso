@@ -4,5 +4,5 @@
 package com.tc.config;
 
 public interface ServerNamesOfThisGroup {
-  boolean containsServer(String serverName);
+  boolean hasServerInGroup(String serverName);
 }

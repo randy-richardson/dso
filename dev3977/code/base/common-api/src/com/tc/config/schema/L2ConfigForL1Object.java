@@ -118,7 +118,7 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
         Assert.assertNotNull(asgArray);
         Assert.assertTrue(asgArray.length >= 1);
 
-        asgArray = ActiveCoordinatorHelper.setGroupNamesAndSort(asgArray);
+        asgArray = ActiveCoordinatorHelper.generateGroupNames(asgArray);
 
         for (int i = 0; i < asgArray.length; i++) {
           String[] members = asgArray[i].getMembers().getMemberArray();

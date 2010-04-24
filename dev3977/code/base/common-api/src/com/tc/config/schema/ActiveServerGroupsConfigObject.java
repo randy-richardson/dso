@@ -52,7 +52,7 @@ public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implemen
                                                                   setupManager);
     }
 
-    this.groupConfigArray = ActiveCoordinatorHelper.setGroupNamesIDAndSort(tempGroupConfigArray);
+    this.groupConfigArray = ActiveCoordinatorHelper.generateGroupInfo(tempGroupConfigArray);
   }
 
   public int getActiveServerGroupCount() {

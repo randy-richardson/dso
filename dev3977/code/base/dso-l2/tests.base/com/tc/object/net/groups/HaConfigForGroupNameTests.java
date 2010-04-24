@@ -6,7 +6,7 @@ package com.tc.object.net.groups;
 import com.tc.config.HaConfig;
 import com.tc.config.NodesStore;
 import com.tc.config.ReloadConfigChangeContext;
-import com.tc.config.ServerNameGroupIDInfo;
+import com.tc.config.ClusterInfo;
 import com.tc.config.ServerNamesOfThisGroup;
 import com.tc.exception.ImplementMe;
 import com.tc.net.GroupID;
@@ -48,7 +48,7 @@ public class HaConfigForGroupNameTests implements HaConfig {
     return this.set;
   }
 
-  public ServerNameGroupIDInfo getServerNameToGroupID() {
+  public ClusterInfo getServerNameToGroupID() {
     throw new ImplementMe();
   }
 
@@ -95,7 +95,7 @@ public class HaConfigForGroupNameTests implements HaConfig {
       this.serverNamesForThisGroup.addAll(set);
     }
 
-    public boolean containsServer(String serverName) {
+    public boolean hasServerInGroup(String serverName) {
       return serverNamesForThisGroup.contains(serverName);
     }
 

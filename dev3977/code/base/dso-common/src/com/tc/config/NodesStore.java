@@ -5,7 +5,7 @@ package com.tc.config;
 
 import com.tc.net.groups.Node;
 
-public interface NodesStore extends ServerNamesOfThisGroup, ServerNameGroupIDInfo {
+public interface NodesStore extends ServerNamesOfThisGroup, ClusterInfo {
 
   void addListener(TopologyChangeListener listener);
 

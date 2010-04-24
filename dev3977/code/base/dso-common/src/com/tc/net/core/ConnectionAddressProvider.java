@@ -22,7 +22,7 @@ public class ConnectionAddressProvider implements ClusterTopologyChangedListener
     return new ConnectionAddressIterator(addresses);
   }
   
-  public synchronized void serverAdded(ConnectionAddressProvider... addressProviders) {
+  public synchronized void serversUpdated(ConnectionAddressProvider... addressProviders) {
     for(ConnectionAddressProvider cap: addressProviders) {
       if(cap.getGroupId() == this.getGroupId()) {
         this.addresses = cap.addresses;
