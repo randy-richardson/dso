@@ -6,7 +6,6 @@ package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
 import com.tc.config.NodesStore;
-import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.ServerNamesOfThisGroup;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -152,9 +151,5 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
 
   public boolean isConnectionToNodeActive(NodeID sid) {
     return groupManager.isConnectionToNodeActive(sid);
-  }
-
-  public void updateNodes(ReloadConfigChangeContext context) {
-    this.groupManager.updateNodes(context);
   }
 }

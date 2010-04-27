@@ -6,7 +6,6 @@ package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
 import com.tc.config.NodesStore;
-import com.tc.config.ReloadConfigChangeContext;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 
@@ -105,9 +104,4 @@ public class SingleNodeGroupManager implements GroupManager {
   public boolean isConnectionToNodeActive(NodeID sid) {
     return true;
   }
-
-  public void updateNodes(ReloadConfigChangeContext reloadContext) {
-    // NOP
-  }
-
 }

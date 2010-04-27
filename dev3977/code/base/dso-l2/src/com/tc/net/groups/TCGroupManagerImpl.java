@@ -362,12 +362,8 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     nodesStore.addListener(this);
     return (getNodeID());
   }
-  
-  public void topologyChanged(ReloadConfigChangeContext context) {
-    updateNodes(context);
-  }
 
-  public void updateNodes(ReloadConfigChangeContext reloadContext) {
+  public void topologyChanged(ReloadConfigChangeContext reloadContext) {
     for (Node nodeAdded : reloadContext.getNodesAdded()) {
       discover.addNode(nodeAdded);
     }

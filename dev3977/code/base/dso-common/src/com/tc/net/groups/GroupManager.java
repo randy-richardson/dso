@@ -6,7 +6,6 @@ package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
 import com.tc.config.NodesStore;
-import com.tc.config.ReloadConfigChangeContext;
 import com.tc.net.NodeID;
 
 import java.util.Set;
@@ -40,6 +39,4 @@ public interface GroupManager {
   public void setZapNodeRequestProcessor(ZapNodeRequestProcessor processor);
 
   public boolean isConnectionToNodeActive(NodeID sid);
-
-  void updateNodes(ReloadConfigChangeContext context);
 }
