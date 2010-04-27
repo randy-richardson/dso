@@ -152,4 +152,8 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   public boolean isConnectionToNodeActive(NodeID sid) {
     return groupManager.isConnectionToNodeActive(sid);
   }
+
+  public boolean isServerConnected(String nodeName) {
+    return this.groupManager.isServerConnected(nodeName);
+  }
 }

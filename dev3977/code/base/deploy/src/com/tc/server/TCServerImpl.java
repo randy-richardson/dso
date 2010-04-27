@@ -72,6 +72,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -659,5 +660,9 @@ public class TCServerImpl extends SEDA implements TCServer {
   
   public void reloadConfiguration() throws ConfigurationSetupException {
     dsoServer.reloadConfiguration();
+  }
+
+  public boolean areTheseServersConnected(Set<String> membersRemoved) {
+    return dsoServer.areTheseServersConnected(membersRemoved);
   }
 }

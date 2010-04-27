@@ -104,4 +104,8 @@ public class SingleNodeGroupManager implements GroupManager {
   public boolean isConnectionToNodeActive(NodeID sid) {
     return true;
   }
+
+  public boolean isServerConnected(String nodeName) {
+    throw new UnsupportedOperationException();
+  }
 }

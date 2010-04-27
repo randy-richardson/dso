@@ -595,4 +595,8 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
       return rv;
     }
   }
+
+  public boolean isServerConnected(String nodeName) {
+    return nodeStateMap.get(nodeName).isMemberInGroup();
+  }
 }

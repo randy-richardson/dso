@@ -58,4 +58,8 @@ public class NullTCGroupMemberDiscovery implements TCGroupMemberDiscovery {
   public void removeNode(Node node) {
     //
   }
+
+  public boolean isServerConnected(String nodeName) {
+    throw new UnsupportedOperationException();
+  }
 }

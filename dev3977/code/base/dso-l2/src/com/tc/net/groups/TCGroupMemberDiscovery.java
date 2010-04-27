@@ -24,5 +24,7 @@ public interface TCGroupMemberDiscovery extends GroupEventsListener {
   public boolean isValidClusterNode(NodeID nodeID);
 
   public void removeNode(Node node);
+
+  public boolean isServerConnected(String nodeName);
   
 }

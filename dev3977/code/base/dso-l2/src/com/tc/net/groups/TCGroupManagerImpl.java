@@ -1127,4 +1127,8 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     zappedSet.add(nodeID);
   }
 
+  public boolean isServerConnected(String nodeName) {
+    return this.discover.isServerConnected(nodeName);
+  }
+
 }

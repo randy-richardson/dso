@@ -31,9 +31,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -449,9 +451,15 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
   }
 
   public TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException {
-    TopologyReloadStatus status = l2ConfigurationSetupManager.reloadConfiguration();
+    Set<String> membersRemoved = new HashSet<String>();
+    
+    TopologyReloadStatus status = l2ConfigurationSetupManager.reloadConfiguration(membersRemoved);
     if (status != TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE) { return status; }
 
+    if(server.areTheseServersConnected(membersRemoved)) {
+      return TopologyReloadStatus.SERVER_STILL_ALIVE;
+    }
+    
     server.reloadConfiguration();
     return status;
   }

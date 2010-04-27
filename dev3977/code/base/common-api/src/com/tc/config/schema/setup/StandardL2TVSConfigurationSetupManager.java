@@ -144,7 +144,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     validateLicenseCapabilities();
   }
 
-  public TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException {
+  public TopologyReloadStatus reloadConfiguration(Set<String> membersRemoved) throws ConfigurationSetupException {
     MutableBeanRepository changedl2sBeanRepository = new StandardBeanRepository(Servers.class);
 
     this.configurationCreator.reloadServersConfiguration(changedl2sBeanRepository);
@@ -153,9 +153,10 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                           this.activeServerGroupsConfig);
     TopologyReloadStatus status = topologyVerfier.checkAndValidateConfig();
     if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
-
-    // TODO: add a check to make sure that removed members are not connected
-
+    
+    // Add all the removed members
+    membersRemoved.addAll(topologyVerfier.getRemovedMembers());
+    
     this.configurationCreator.reloadServersConfiguration(serversBeanRepository());
 
     try {

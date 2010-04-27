@@ -41,9 +41,11 @@ public interface HaConfig {
    * @return true if nodes are removed
    * @throws ConfigurationSetupException
    */
-  public ReloadConfigChangeContext reloadConfiguration() throws ConfigurationSetupException;
+  ReloadConfigChangeContext reloadConfiguration() throws ConfigurationSetupException;
 
-  public ClusterInfo getServerNameToGroupID();
+  ClusterInfo getServerNameToGroupID();
 
-  public ServerNamesOfThisGroup getServerNamesOfThisGroup();
+  ServerNamesOfThisGroup getServerNamesOfThisGroup();
+  
+  String getNodeName(String member);
 }

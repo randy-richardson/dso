@@ -1057,9 +1057,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   }
 
   public void reloadConfiguration() throws ConfigurationSetupException {
-    if(false) {
-      throw new ConfigurationSetupException();
-    }
+    if (false) { throw new ConfigurationSetupException(); }
     throw new UnsupportedOperationException();
   }
 
@@ -1448,6 +1446,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
   public ThreadIDMap getThreadIDMap() {
     return new NullThreadIDMapImpl();
+  }
+
+  public boolean areTheseServersConnected(Set<String> membersRemoved) {
+    for (String member : membersRemoved) {
+      String nodeName = haConfig.getNodeName(member);
+      if (this.groupCommManager.isServerConnected(nodeName)) { return true; }
+    }
+    return false;
   }
 
 }

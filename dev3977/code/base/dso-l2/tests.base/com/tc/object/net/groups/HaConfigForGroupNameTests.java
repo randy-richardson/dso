@@ -114,4 +114,8 @@ public class HaConfigForGroupNameTests implements HaConfig {
     }
 
   }
+
+  public String getNodeName(String member) {
+    return null;
+  }
 }

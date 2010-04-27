@@ -199,4 +199,13 @@ public class HaConfigImpl implements HaConfig {
   public NodesStore getNodesStore() {
     return nodeStore;
   }
+
+  public String getNodeName(String member) {
+    for (ServerGroup group : this.groups) {
+      if (group.hasMember(member)) {
+        group.getNode(member).getServerNodeName();
+      }
+    }
+    return null;
+  }
 }
