@@ -1448,11 +1448,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     return new NullThreadIDMapImpl();
   }
 
-  public boolean areTheseServersConnected(Set<String> membersRemoved) {
-    for (String member : membersRemoved) {
-      String nodeName = haConfig.getNodeName(member);
-      if (this.groupCommManager.isServerConnected(nodeName)) { return true; }
-    }
+  public boolean isServerConnected(String member) {
+    String nodeName = haConfig.getNodeName(member);
+    if (this.groupCommManager.isServerConnected(nodeName)) { return true; }
     return false;
   }
 

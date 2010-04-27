@@ -452,14 +452,14 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
 
   public TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException {
     Set<String> membersRemoved = new HashSet<String>();
-    
+
     TopologyReloadStatus status = l2ConfigurationSetupManager.reloadConfiguration(membersRemoved);
     if (status != TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE) { return status; }
 
-    if(server.areTheseServersConnected(membersRemoved)) {
-      return TopologyReloadStatus.SERVER_STILL_ALIVE;
+    for (String member : membersRemoved) {
+      if (server.isServerConnected(member)) { return TopologyReloadStatus.SERVER_STILL_ALIVE; }
     }
-    
+
     server.reloadConfiguration();
     return status;
   }

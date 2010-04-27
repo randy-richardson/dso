@@ -8,8 +8,6 @@ import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 
-import java.util.Set;
-
 public interface TCServer {
   void start() throws Exception;
 
@@ -59,5 +57,5 @@ public interface TCServer {
 
   void reloadConfiguration() throws ConfigurationSetupException;
 
-  boolean areTheseServersConnected(Set<String> membersRemoved);
+  public boolean isServerConnected(String member);
 }

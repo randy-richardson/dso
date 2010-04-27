@@ -72,7 +72,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -456,11 +455,10 @@ public class TCServerImpl extends SEDA implements TCServer {
         .getBoolean(TCPropertiesConsts.L2_OBJECTMANAGER_FLUSH_LOGGING_ENABLED), tcProps
         .getBoolean(TCPropertiesConsts.L2_TRANSACTIONMANAGER_LOGGING_PRINT_BROADCAST_STATS), tcProps
         .getBoolean(TCPropertiesConsts.L2_OBJECTMANAGER_PERSISTOR_LOGGING_ENABLED));
-    
+
     TCServerInfo serverInfo = new TCServerInfo(this, this.state, objectStatsRecorder, this.configurationSetupManager);
     this.dsoServer = createDistributedObjectServer(this.configurationSetupManager, this.connectionPolicy, httpSink,
-                                                   serverInfo,
-                                                   objectStatsRecorder, this.state, this);
+                                                   serverInfo, objectStatsRecorder, this.state, this);
     this.dsoServer.start();
     registerDSOServer();
   }
@@ -644,25 +642,25 @@ public class TCServerImpl extends SEDA implements TCServer {
   }
 
   private synchronized void notifyShutdown() {
-      shutdown = true;
-      notifyAll();
+    shutdown = true;
+    notifyAll();
   }
 
   public synchronized void waitUntilShutdown() {
-      while (!shutdown) {
-        try {
-          wait();
-        } catch (InterruptedException e) {
-          throw new AssertionError(e);
-        }
+    while (!shutdown) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        throw new AssertionError(e);
       }
+    }
   }
-  
+
   public void reloadConfiguration() throws ConfigurationSetupException {
     dsoServer.reloadConfiguration();
   }
 
-  public boolean areTheseServersConnected(Set<String> membersRemoved) {
-    return dsoServer.areTheseServersConnected(membersRemoved);
+  public boolean isServerConnected(String member) {
+    return dsoServer.isServerConnected(member);
   }
 }
