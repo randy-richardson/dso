@@ -10,9 +10,9 @@ import com.tc.admin.model.IClusterModel;
 import java.awt.Component;
 
 public class TerracottaOperatorEventNode extends ComponentNode {
-  private final ApplicationContext  appContext;
-  protected IClusterModel           clusterModel;
-  protected TerracottaOperatorEventsPanel clusterEventsStatsPanel;
+  private final ApplicationContext        appContext;
+  protected IClusterModel                 clusterModel;
+  protected TerracottaOperatorEventsPanel operatorEventsStatsPanel;
 
   public TerracottaOperatorEventNode(ApplicationContext appContext, IClusterModel clusterModel) {
     super();
@@ -32,17 +32,17 @@ public class TerracottaOperatorEventNode extends ComponentNode {
 
   @Override
   public Component getComponent() {
-    if (clusterEventsStatsPanel == null) {
-      clusterEventsStatsPanel = createOperatorEventsStatsPanel();
+    if (operatorEventsStatsPanel == null) {
+      operatorEventsStatsPanel = createOperatorEventsStatsPanel();
     }
-    return clusterEventsStatsPanel;
+    return operatorEventsStatsPanel;
   }
 
   @Override
   public void tearDown() {
-    if (clusterEventsStatsPanel != null) {
-      clusterEventsStatsPanel.tearDown();
-      clusterEventsStatsPanel = null;
+    if (operatorEventsStatsPanel != null) {
+      operatorEventsStatsPanel.tearDown();
+      operatorEventsStatsPanel = null;
     }
     super.tearDown();
   }

@@ -42,8 +42,6 @@ import com.tc.logging.CustomerLogging;
 import com.tc.logging.DumpHandler;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.logging.TerracottaOperatorEventLogger;
-import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.L2LockStatsManager;
 import com.tc.management.L2Management;
@@ -215,8 +213,6 @@ import com.tc.objectserver.tx.TransactionFilter;
 import com.tc.objectserver.tx.TransactionalObjectManager;
 import com.tc.objectserver.tx.TransactionalObjectManagerImpl;
 import com.tc.objectserver.tx.TransactionalStagesCoordinatorImpl;
-import com.tc.operatorevent.TerracottaOperatorEventCallback;
-import com.tc.operatorevent.TerracottaOperatorEventCallbackLogger;
 import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
@@ -306,7 +302,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   private final Sink                             httpSink;
   protected final HaConfig                       haConfig;
 
-  private static final TCLogger                  logger           = CustomerLogging.getDSOGenericLogger();
+  protected static final TCLogger                logger           = CustomerLogging.getDSOGenericLogger();
   private static final TCLogger                  consoleLogger    = CustomerLogging.getConsoleLogger();
 
   private ServerID                               thisServerNodeID = ServerID.NULL_ID;
@@ -328,7 +324,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
   private CacheManager                           cacheManager;
 
-  private L2Management                           l2Management;
+  protected L2Management                         l2Management;
   private L2Coordinator                          l2Coordinator;
 
   private TCProperties                           l2Properties;
@@ -485,13 +481,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     }
 
     // register the terracotta operator event logger
-    TerracottaOperatorEventCallback tcOperatorEventCallback = new TerracottaOperatorEventCallbackLogger(
-                                                                                                         logger,
-                                                                                                         this.l2Management
-                                                                                                             .findTCOperatorEventMBean());
-
-    TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
-    tcEventLogger.registerEventCallback(tcOperatorEventCallback);
+    registerForOperatorEvents();
 
     NIOWorkarounds.solaris10Workaround();
 
@@ -1064,6 +1054,10 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       startActiveMode();
     }
     setLoggerOnExit();
+  }
+
+  protected void registerForOperatorEvents() {
+    // this is an enterprise only feature
   }
 
   public void startGroupManagers() {

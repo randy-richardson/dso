@@ -22,8 +22,6 @@ import com.tc.logging.ClientIDLoggerProvider;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.logging.TerracottaOperatorEventLogger;
-import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.ClientLockStatManager;
 import com.tc.management.L1Management;
@@ -122,8 +120,6 @@ import com.tc.object.tx.ClientTransactionManagerImpl;
 import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.TransactionIDGenerator;
 import com.tc.object.tx.TransactionBatchWriter.FoldingConfig;
-import com.tc.operatorevent.TerracottaOperatorEventCallback;
-import com.tc.operatorevent.TerracottaOperatorEventCallbackLogger;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
@@ -215,7 +211,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
   private ClientHandshakeManager                     clientHandshakeManager;
   private ClusterMetaDataManager                     clusterMetaDataManager;
   private CacheManager                               cacheManager;
-  private L1Management                               l1Management;
+  protected L1Management                             l1Management;
   private TCProperties                               l1Properties;
   private DmiManager                                 dmiManager;
   private boolean                                    createDedicatedMBeanServer          = false;
@@ -519,13 +515,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.l1Management.start(this.createDedicatedMBeanServer);
 
     // register the terracotta operator event logger
-    TerracottaOperatorEventCallback tcOperatorEventCallback = new TerracottaOperatorEventCallbackLogger(
-                                                                                                           DSO_LOGGER,
-                                                                                                           this.l1Management
-                                                                                                               .findTCOperatorEventMBean());
-
-    TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
-    tcEventLogger.registerEventCallback(tcOperatorEventCallback);
+    registerForOperatorEvents();
     
     // Setup the lock manager
     ClientLockStatManager lockStatManager = this.dsoClientBuilder.createLockStatsManager();
@@ -745,6 +735,10 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     }
 
     setLoggerOnExit();
+  }
+
+  protected void registerForOperatorEvents() {
+    // this is enterprise only feature
   }
 
   private void setLoggerOnExit() {
