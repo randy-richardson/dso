@@ -122,12 +122,12 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
    * Setup a communication manager which can establish channel from either sides.
    */
   public TCGroupManagerImpl(L2TVSConfigurationSetupManager configSetupManager, StageManager stageManager,
-                            ServerID thisNodeID, Sink httpSink) {
-    this(configSetupManager, new NullConnectionPolicy(), stageManager, thisNodeID, httpSink);
+                            ServerID thisNodeID, Sink httpSink, NodesStore nodesStore) {
+    this(configSetupManager, new NullConnectionPolicy(), stageManager, thisNodeID, httpSink, nodesStore);
   }
 
   public TCGroupManagerImpl(L2TVSConfigurationSetupManager configSetupManager, ConnectionPolicy connectionPolicy,
-                            StageManager stageManager, ServerID thisNodeID, Sink httpSink) {
+                            StageManager stageManager, ServerID thisNodeID, Sink httpSink, NodesStore nodesStore) {
     this.connectionPolicy = connectionPolicy;
     this.stageManager = stageManager;
     this.thisNodeID = thisNodeID;
@@ -157,6 +157,8 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     init(socketAddress);
     Assert.assertNotNull(thisNodeID);
     setDiscover(new TCGroupMemberDiscoveryStatic(this));
+
+    nodesStore.addListener(this);
   }
 
   public boolean isConnectionToNodeActive(NodeID sid) {
@@ -359,7 +361,6 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     } catch (IOException e) {
       throw new GroupException(e);
     }
-    nodesStore.addListener(this);
     return (getNodeID());
   }
 

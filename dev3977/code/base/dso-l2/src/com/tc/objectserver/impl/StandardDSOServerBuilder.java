@@ -82,7 +82,7 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                              ServerGlobalTransactionManager gtxm) {
     // TODO: currently making all with L2hacoordinator which should probably the case after this feature
     if (networkedHA) {
-      return new TCGroupManagerImpl(configManager, stageManager, serverNodeID, httpSink);
+      return new TCGroupManagerImpl(configManager, stageManager, serverNodeID, httpSink, this.haConfig.getNodesStore());
     } else {
       return new SingleNodeGroupManager();
     }
