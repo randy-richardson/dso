@@ -6,6 +6,7 @@ package com.tc.server;
 
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
+import com.tc.config.schema.setup.TopologyVerfier.TopologyReloadStatus;
 import com.tc.management.AbstractTerracottaMBean;
 import com.tc.management.beans.TCServerInfoMBean;
 import com.tc.statistics.StatisticData;
@@ -228,7 +229,7 @@ public class NullTCServerInfo extends AbstractTerracottaMBean implements TCServe
     /**/
   }
 
-  public boolean reloadConfiguration() {
-    return false;
+  public TopologyReloadStatus reloadConfiguration() {
+    return null;
   }
 }

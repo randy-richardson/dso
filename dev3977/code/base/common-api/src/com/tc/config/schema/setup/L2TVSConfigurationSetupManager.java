@@ -10,6 +10,7 @@ import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
 import com.tc.config.schema.UpdateCheckConfig;
+import com.tc.config.schema.setup.TopologyVerfier.TopologyReloadStatus;
 import com.tc.object.config.schema.NewDSOApplicationConfig;
 import com.tc.object.config.schema.NewL2DSOConfig;
 
@@ -30,7 +31,7 @@ public interface L2TVSConfigurationSetupManager {
   UpdateCheckConfig updateCheckConfig();
 
   ActiveServerGroupsConfig activeServerGroupsConfig();
-  
+
   ActiveServerGroupConfig getActiveServerGroupForThisL2();
 
   String[] applicationNames();
@@ -44,12 +45,12 @@ public interface L2TVSConfigurationSetupManager {
   InputStream effectiveConfigFile();
 
   String[] allCurrentlyKnownServers();
-  
+
   String getL2Identifier();
 
   NewCommonL2Config commonL2ConfigFor(String name) throws ConfigurationSetupException;
 
   NewL2DSOConfig dsoL2ConfigFor(String name) throws ConfigurationSetupException;
 
-  void reloadConfiguration() throws ConfigurationSetupException;
+  TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException;
 }

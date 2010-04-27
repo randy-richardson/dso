@@ -27,6 +27,9 @@ import com.tc.config.schema.UpdateCheckConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.repository.ChildBeanFetcher;
 import com.tc.config.schema.repository.ChildBeanRepository;
+import com.tc.config.schema.repository.MutableBeanRepository;
+import com.tc.config.schema.repository.StandardBeanRepository;
+import com.tc.config.schema.setup.TopologyVerfier.TopologyReloadStatus;
 import com.tc.config.schema.utils.XmlObjectComparator;
 import com.tc.license.Capability;
 import com.tc.license.LicenseCheck;
@@ -141,14 +144,27 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     validateLicenseCapabilities();
   }
 
-  public void reloadConfiguration() throws ConfigurationSetupException {
-    runConfigurationCreator(this.configurationCreator);
+  public TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException {
+    MutableBeanRepository changedl2sBeanRepository = new StandardBeanRepository(Servers.class);
+
+    this.configurationCreator.reloadServersConfiguration(changedl2sBeanRepository);
+
+    TopologyVerfier topologyVerfier = new TopologyVerfier(serversBeanRepository(), changedl2sBeanRepository,
+                                                          this.activeServerGroupsConfig);
+    TopologyReloadStatus status = topologyVerfier.checkAndValidateConfig();
+    if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
+
+    // TODO: add a check to make sure that removed members are not connected
+
+    this.configurationCreator.reloadServersConfiguration(serversBeanRepository());
 
     try {
       this.activeServerGroupsConfig = getActiveServerGroupsConfig();
     } catch (XmlException e) {
       throw new ConfigurationSetupException(e);
     }
+
+    return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE;
   }
 
   public String getL2Identifier() {

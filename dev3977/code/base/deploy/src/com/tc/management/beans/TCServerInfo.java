@@ -10,6 +10,7 @@ import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.TopologyVerfier.TopologyReloadStatus;
 import com.tc.l2.context.StateChangedEvent;
 import com.tc.l2.state.StateChangeListener;
 import com.tc.l2.state.StateManager;
@@ -28,14 +29,11 @@ import com.tc.util.runtime.ThreadDumpUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -450,25 +448,11 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     _sendNotification("VerboseGC changed", "VerboseGC", "java.lang.Boolean", oldValue, verboseGC);
   }
 
-  public boolean reloadConfiguration() throws ConfigurationSetupException {
-    String[] serversBefore = l2ConfigurationSetupManager.allCurrentlyKnownServers();
+  public TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException {
+    TopologyReloadStatus status = l2ConfigurationSetupManager.reloadConfiguration();
+    if (status != TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE) { return status; }
 
-    l2ConfigurationSetupManager.reloadConfiguration();
     server.reloadConfiguration();
-
-    return checkIfConfigChanged(serversBefore);
-  }
-
-  /**
-   * @return true if changed
-   */
-  private boolean checkIfConfigChanged(String[] serversBefore) {
-    Set<String> setBefore = new HashSet<String>();
-    Collections.addAll(setBefore, serversBefore);
-
-    HashSet<String> setAfter = new HashSet<String>();
-    Collections.addAll(setAfter, l2ConfigurationSetupManager.allCurrentlyKnownServers());
-
-    return !setAfter.equals(setBefore);
+    return status;
   }
 }
