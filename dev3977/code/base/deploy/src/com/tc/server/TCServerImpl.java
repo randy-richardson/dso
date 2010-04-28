@@ -456,7 +456,7 @@ public class TCServerImpl extends SEDA implements TCServer {
         .getBoolean(TCPropertiesConsts.L2_TRANSACTIONMANAGER_LOGGING_PRINT_BROADCAST_STATS), tcProps
         .getBoolean(TCPropertiesConsts.L2_OBJECTMANAGER_PERSISTOR_LOGGING_ENABLED));
 
-    TCServerInfo serverInfo = new TCServerInfo(this, this.state, objectStatsRecorder, this.configurationSetupManager);
+    TCServerInfo serverInfo = new TCServerInfo(this, this.state, objectStatsRecorder);
     this.dsoServer = createDistributedObjectServer(this.configurationSetupManager, this.connectionPolicy, httpSink,
                                                    serverInfo, objectStatsRecorder, this.state, this);
     this.dsoServer.start();

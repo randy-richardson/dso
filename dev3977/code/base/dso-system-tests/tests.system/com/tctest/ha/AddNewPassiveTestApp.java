@@ -18,6 +18,7 @@ import com.tc.management.JMXConnectorProxy;
 import com.tc.management.beans.L2MBeanNames;
 import com.tc.management.beans.TCServerInfoMBean;
 import com.tc.management.beans.l1.L1InfoMBean;
+import com.tc.management.beans.object.EnterpriseTCServerMbean;
 import com.tc.objectserver.control.ExtraProcessServerControl;
 import com.tc.stats.DSOClientMBean;
 import com.tc.stats.DSOMBean;
@@ -199,9 +200,9 @@ public class AddNewPassiveTestApp {
   private static void reloadServerConfig() {
     final JMXConnector jmxConnector = CommandLineBuilder.getJMXConnector("localhost", jmxPort1);
     MBeanServerConnection mbs = getMBeanServerConnection(jmxConnector, "localhost", jmxPort1);
-    TCServerInfoMBean serverInfoMbean = getTCServerInfoMbean(mbs);
+    EnterpriseTCServerMbean enterpriseServerMbean = getEnterpriseServerMbean(mbs);
     try {
-      serverInfoMbean.reloadConfiguration();
+      enterpriseServerMbean.reloadConfiguration();
     } catch (ConfigurationSetupException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -239,6 +240,11 @@ public class AddNewPassiveTestApp {
 
   private static TCServerInfoMBean getTCServerInfoMbean(MBeanServerConnection mbs) {
     return MBeanServerInvocationProxy.newMBeanProxy(mbs, L2MBeanNames.TC_SERVER_INFO, TCServerInfoMBean.class, false);
+  }
+
+  private static EnterpriseTCServerMbean getEnterpriseServerMbean(MBeanServerConnection mbs) {
+    return MBeanServerInvocationProxy.newMBeanProxy(mbs, L2MBeanNames.ENTERPRISE_TC_SERVER,
+                                                    EnterpriseTCServerMbean.class, false);
   }
 
   private static void closeJMXConnector(final JMXConnector jmxConnector) {

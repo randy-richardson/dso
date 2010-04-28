@@ -6,8 +6,6 @@ package com.tc.management.beans;
 
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
-import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.TopologyVerifier.TopologyReloadStatus;
 import com.tc.management.RuntimeStatisticConstants;
 import com.tc.management.TerracottaMBean;
 import com.tc.statistics.StatisticData;
@@ -117,6 +115,4 @@ public interface TCServerInfoMBean extends TerracottaMBean, RuntimeStatisticCons
   void setVerboseGC(boolean verboseGC);
 
   void gc();
-  
-  TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException;
 }

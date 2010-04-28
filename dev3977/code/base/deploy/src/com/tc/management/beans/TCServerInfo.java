@@ -8,9 +8,6 @@ import sun.management.ManagementFactory;
 
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
-import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
-import com.tc.config.schema.setup.TopologyVerifier.TopologyReloadStatus;
 import com.tc.l2.context.StateChangedEvent;
 import com.tc.l2.state.StateChangeListener;
 import com.tc.l2.state.StateManager;
@@ -31,11 +28,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -72,10 +67,8 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
 
   private final ObjectStatsRecorder            objectStatsRecorder;
 
-  private final L2TVSConfigurationSetupManager l2ConfigurationSetupManager;
-
-  public TCServerInfo(final TCServer server, final L2State l2State, final ObjectStatsRecorder objectStatsRecorder,
-                      final L2TVSConfigurationSetupManager setupManager) throws NotCompliantMBeanException {
+  public TCServerInfo(final TCServer server, final L2State l2State, final ObjectStatsRecorder objectStatsRecorder)
+      throws NotCompliantMBeanException {
     super(TCServerInfoMBean.class, true);
     this.server = server;
     this.l2State = l2State;
@@ -85,7 +78,6 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     nextSequenceNumber = 1;
     stateChangeNotificationInfo = new StateChangeNotificationInfo();
     manager = TCRuntime.getJVMMemoryManager();
-    this.l2ConfigurationSetupManager = setupManager;
 
     try {
       Class sraCpuType = Class.forName("com.tc.statistics.retrieval.actions.SRACpuCombined");
@@ -448,19 +440,5 @@ public class TCServerInfo extends AbstractTerracottaMBean implements TCServerInf
     boolean oldValue = isVerboseGC();
     ManagementFactory.getMemoryMXBean().setVerbose(verboseGC);
     _sendNotification("VerboseGC changed", "VerboseGC", "java.lang.Boolean", oldValue, verboseGC);
-  }
-
-  public TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException {
-    Set<String> membersRemoved = new HashSet<String>();
-
-    TopologyReloadStatus status = l2ConfigurationSetupManager.reloadConfiguration(membersRemoved);
-    if (status != TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE) { return status; }
-
-    for (String member : membersRemoved) {
-      if (server.isServerConnected(member)) { return TopologyReloadStatus.SERVER_STILL_ALIVE; }
-    }
-
-    server.reloadConfiguration();
-    return status;
   }
 }

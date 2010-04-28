@@ -51,6 +51,7 @@ import com.tc.management.beans.L2State;
 import com.tc.management.beans.LockStatisticsMonitor;
 import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
+import com.tc.management.beans.object.EnterpriseTCServerMbean;
 import com.tc.management.beans.object.ServerDBBackup;
 import com.tc.management.beans.object.ObjectManagementMonitor.ObjectIdsFetcher;
 import com.tc.management.lock.stats.L2LockStatisticsManagerImpl;
@@ -343,6 +344,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   private GroupManager                           groupCommManager;
   private Stage                                  hydrateStage;
   private StripeIDStateManager                   stripeIDStateManager;
+
+  protected EnterpriseTCServerMbean              enterpriseTCMbean;
 
   // used by a test
   public DistributedObjectServer(final L2TVSConfigurationSetupManager configSetupManager,
@@ -1420,7 +1423,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
     this.l2Management = new L2Management(this.tcServerInfoMBean, this.lockStatisticsMBean,
                                          this.statisticsAgentSubSystem, this.statisticsGateway,
-                                         this.configSetupManager, this, bind, jmxPort, remoteEventsSink);
+                                         this.configSetupManager, this, bind, jmxPort, remoteEventsSink,
+                                         this.enterpriseTCMbean);
+
     this.l2Management.start();
   }
 
