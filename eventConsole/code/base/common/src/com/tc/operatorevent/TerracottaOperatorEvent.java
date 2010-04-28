@@ -17,6 +17,8 @@ public interface TerracottaOperatorEvent extends Serializable {
   String getEventTime();
   
   String getNodeId();
+  
+  void setNodeId(String nodeId);
 
   int getEventType();
 

@@ -15,12 +15,18 @@ import javax.management.NotificationListener;
 public class TerracottaOperatorClusterEvent extends AbstractNotifyingMBean implements TerracottaOperatorEventsMbean, NotificationListener{
   
   private TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
+  private final String                  thisNodeId;
 
-  public TerracottaOperatorClusterEvent() throws NotCompliantMBeanException {
+  public TerracottaOperatorClusterEvent(String thisNodeId) throws NotCompliantMBeanException {
     super(TerracottaOperatorEventsMbean.class);
+    this.thisNodeId = thisNodeId;
   }
 
   public void fireOperatorEvent(TerracottaOperatorEvent tcEvent) {
+    // TODO: should be better mechanism to set server's node id
+    if (tcEvent.getNodeId() == null) {
+      tcEvent.setNodeId(thisNodeId);
+    }
     sendNotification(tcEvent.getEventSystem(), tcEvent);
   }
 
@@ -29,6 +35,8 @@ public class TerracottaOperatorClusterEvent extends AbstractNotifyingMBean imple
   }
 
   public void handleNotification(Notification notification, Object handback) {
+    TerracottaOperatorEvent tcOperatorEvent = (TerracottaOperatorEvent) notification.getSource();
+    tcOperatorEvent.setNodeId((String) handback);
     tcEventLogger.fireOperatorEvent((TerracottaOperatorEvent) notification.getSource());
   }
 

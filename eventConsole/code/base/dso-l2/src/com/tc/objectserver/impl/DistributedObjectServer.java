@@ -294,7 +294,7 @@ import javax.management.remote.JMXConnectorServer;
 public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   private final ConnectionPolicy                 connectionPolicy;
   private final TCServerInfoMBean                tcServerInfoMBean;
-  private final TerracottaOperatorClusterEvent   l2OperatorEventsMbean;
+  private TerracottaOperatorClusterEvent         l2OperatorEventsMbean;
   private final ObjectStatsRecorder              objectStatsRecorder;
   private final L2State                          l2State;
   private final DSOServerBuilder                 serverBuilder;
@@ -374,13 +374,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
     this.threadGroup = threadGroup;
     this.seda = seda;
     this.serverBuilder = createServerBuilder(this.haConfig, logger);
-    try {
-      this.l2OperatorEventsMbean = new TerracottaOperatorClusterEvent();
-    } catch (NotCompliantMBeanException e) {
-      throw new RuntimeException(
-                                 "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
-                                 e);
-    }
   }
 
   protected DSOServerBuilder createServerBuilder(final HaConfig config, final TCLogger tcLogger) {
@@ -416,6 +409,15 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
     this.threadGroup.addCallbackOnExitDefaultHandler(new ThreadDumpHandler(this));
     this.thisServerNodeID = makeServerNodeID(this.configSetupManager.dsoL2Config());
+    
+    try {
+      this.l2OperatorEventsMbean = new TerracottaOperatorClusterEvent(this.thisServerNodeID.toString());
+    } catch (NotCompliantMBeanException e) {
+      throw new RuntimeException(
+                                 "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
+                                 e);
+    }
+    
     L2LockStatsManager lockStatsManager = new L2LockStatisticsManagerImpl();
 
     List<PostInit> toInit = new ArrayList<PostInit>();

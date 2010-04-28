@@ -43,7 +43,7 @@ public class LongGCLogger implements MemoryEventsListener {
     String message = "Detected Long GC > " + gcTimeout + " ms. Event Type : " + type + " GC Collection Count: "
                      + collectionCountDiff + " GC Collection Time: " + collectionTimeDiff + " ms";
     TerracottaOperatorEvent tcEvent = new LongGCOperatorEvent(TerracottaOperatorEvent.WARN, new Date().toString(),
-                                                              "node id", message);
+                                                              message);
     tcEventLogger.fireOperatorEvent(tcEvent);
     logger.warn(message);
   }

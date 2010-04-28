@@ -73,7 +73,8 @@ public final class L1Management extends TerracottaManagement {
   public L1Management(final TunnelingEventHandler tunnelingHandler,
                       final StatisticsAgentSubSystem statisticsAgentSubSystem, final RuntimeLogger runtimeLogger,
                       final InstrumentationLogger instrumentationLogger, final String rawConfigText,
-                      final TCClient client, final MBeanSpec[] mbeanSpecs) {
+                      final TCClient client, final MBeanSpec[] mbeanSpecs,
+                      TerracottaOperatorClusterEvent tcOperatorEventMBean) {
     super();
 
     started = new SetOnceFlag();
@@ -89,7 +90,7 @@ public final class L1Management extends TerracottaManagement {
       instrumentationLoggingBean = new InstrumentationLogging(instrumentationLogger);
       runtimeOutputOptionsBean = new RuntimeOutputOptions(runtimeLogger);
       runtimeLoggingBean = new RuntimeLogging(runtimeLogger);
-      l1OperatorEventsBean = new TerracottaOperatorClusterEvent();
+      l1OperatorEventsBean = tcOperatorEventMBean;
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",

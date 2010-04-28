@@ -3,21 +3,19 @@
  */
 package com.tc.operatorevent;
 
+public class LongGCOperatorEvent implements TerracottaOperatorEvent {
 
-public class LongGCOperatorEvent implements TerracottaOperatorEvent{
-  
   private final String time;
   private final String eventMessage;
-  private final int eventType;
-  private final String nodeId;
-  
-  public LongGCOperatorEvent(int eventType, String time, String nodeId, String message) {
+  private final int    eventType;
+  private String       nodeId = null;
+
+  public LongGCOperatorEvent(int eventType, String time, String message) {
     this.eventType = eventType;
     this.time = time;
-    this.nodeId = nodeId;
     this.eventMessage = message;
   }
-  
+
   public String getEventTime() {
     return this.time;
   }
@@ -36,6 +34,10 @@ public class LongGCOperatorEvent implements TerracottaOperatorEvent{
 
   public String getNodeId() {
     return this.nodeId;
+  }
+
+  public synchronized void setNodeId(String nodeId) {
+    this.nodeId = nodeId;
   }
 
 }
