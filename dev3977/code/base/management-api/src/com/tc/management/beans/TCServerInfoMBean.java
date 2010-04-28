@@ -7,7 +7,7 @@ package com.tc.management.beans;
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
 import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.TopologyVerfier.TopologyReloadStatus;
+import com.tc.config.schema.setup.TopologyVerifier.TopologyReloadStatus;
 import com.tc.management.RuntimeStatisticConstants;
 import com.tc.management.TerracottaMBean;
 import com.tc.statistics.StatisticData;

@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class TopologyVerfier {
+public class TopologyVerifier {
   public static enum TopologyReloadStatus {
     TOPOLOGY_CHANGE_ACCEPTABLE, TOPOLOGY_CHANGE_UNACCEPTABLE, TOPOLOGY_UNCHANGED, SPECIFY_MIRROR_GROUPS, SERVER_STILL_ALIVE
   }
@@ -24,7 +24,7 @@ public class TopologyVerfier {
   private final Servers                  newServersBean;
   private final ActiveServerGroupsConfig oldGroupsInfo;
 
-  TopologyVerfier(MutableBeanRepository oldServers, MutableBeanRepository newServers,
+  TopologyVerifier(MutableBeanRepository oldServers, MutableBeanRepository newServers,
                   ActiveServerGroupsConfig oldGroupsInfo) {
     this.oldServersBean = (Servers) oldServers.bean();
     this.newServersBean = (Servers) newServers.bean();
@@ -45,7 +45,7 @@ public class TopologyVerfier {
   }
 
   private TopologyReloadStatus checkGroupInfo() {
-    if (groupSizeEquals1()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE; }
+    if (groupSizeEqualsOne()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE; }
 
     if (!groupNamesSet()) { return TopologyReloadStatus.SPECIFY_MIRROR_GROUPS; }
 
@@ -56,7 +56,7 @@ public class TopologyVerfier {
     return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE;
   }
 
-  private boolean groupSizeEquals1() {
+  private boolean groupSizeEqualsOne() {
     return oldGroupsInfo.getActiveServerGroupCount() == 1
            && (!newServersBean.isSetMirrorGroups() || newServersBean.getMirrorGroups().getMirrorGroupArray().length == 1);
   }

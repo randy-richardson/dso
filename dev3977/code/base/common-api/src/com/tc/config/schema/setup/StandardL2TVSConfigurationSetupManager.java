@@ -29,7 +29,7 @@ import com.tc.config.schema.repository.ChildBeanFetcher;
 import com.tc.config.schema.repository.ChildBeanRepository;
 import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.config.schema.repository.StandardBeanRepository;
-import com.tc.config.schema.setup.TopologyVerfier.TopologyReloadStatus;
+import com.tc.config.schema.setup.TopologyVerifier.TopologyReloadStatus;
 import com.tc.config.schema.utils.XmlObjectComparator;
 import com.tc.license.Capability;
 import com.tc.license.LicenseCheck;
@@ -149,7 +149,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     this.configurationCreator.reloadServersConfiguration(changedl2sBeanRepository);
 
-    TopologyVerfier topologyVerfier = new TopologyVerfier(serversBeanRepository(), changedl2sBeanRepository,
+    TopologyVerifier topologyVerfier = new TopologyVerifier(serversBeanRepository(), changedl2sBeanRepository,
                                                           this.activeServerGroupsConfig);
     TopologyReloadStatus status = topologyVerfier.checkAndValidateConfig();
     if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
