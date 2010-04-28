@@ -15,7 +15,7 @@ import java.util.TreeMap;
 import java.util.Map.Entry;
 
 public class ActiveCoordinatorHelper {
-  private static final String GROUP_NAME_PREFIX = "Tc-Group-";
+  static final String GROUP_NAME_PREFIX = "Tc-Group-";
 
   public static ActiveServerGroupConfigObject[] generateGroupInfo(ActiveServerGroupConfigObject[] originalGroupInfos) {
     TreeMap<String, ActiveServerGroupConfigObject> candidateGroupNames = generateCandidateGroupNames(originalGroupInfos);
