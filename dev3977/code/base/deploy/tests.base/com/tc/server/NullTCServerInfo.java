@@ -133,7 +133,7 @@ public class NullTCServerInfo extends AbstractTerracottaMBean implements TCServe
     return null;
   }
 
-  public String takeThreadDump(long requestMillis) {
+  public byte[] takeCompressedThreadDump(long requestMillis) {
     return null;
   }
 
