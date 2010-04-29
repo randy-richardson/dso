@@ -25,7 +25,7 @@ public class TopologyVerifier {
   private final ActiveServerGroupsConfig oldGroupsInfo;
 
   TopologyVerifier(MutableBeanRepository oldServers, MutableBeanRepository newServers,
-                  ActiveServerGroupsConfig oldGroupsInfo) {
+                   ActiveServerGroupsConfig oldGroupsInfo) {
     this.oldServersBean = (Servers) oldServers.bean();
     this.newServersBean = (Servers) newServers.bean();
     this.oldGroupsInfo = oldGroupsInfo;
@@ -150,15 +150,15 @@ public class TopologyVerifier {
    * check ports, persistence and mode
    */
   private boolean checkServer(Server oldServer, Server newServer) {
-    if ((oldServer.getDsoPort() != newServer.getDsoPort()) && (oldServer.getJmxPort() != newServer.getJmxPort())
-        && (oldServer.getL2GroupPort() != newServer.getL2GroupPort())) { return false; }
+    if ((oldServer.getDsoPort() != newServer.getDsoPort()) || (oldServer.getJmxPort() != newServer.getJmxPort())
+        || (oldServer.getL2GroupPort() != newServer.getL2GroupPort())) { return false; }
 
     if (oldServer.isSetDso() && oldServer.getDso().isSetGarbageCollection()) {
       if (!newServer.isSetDso() || !newServer.getDso().isSetGarbageCollection()) { return false; }
 
       if ((oldServer.getDso().getGarbageCollection().getEnabled() != newServer.getDso().getGarbageCollection()
           .getEnabled())
-          && oldServer.getDso().getGarbageCollection().getInterval() != newServer.getDso().getGarbageCollection()
+          || oldServer.getDso().getGarbageCollection().getInterval() != newServer.getDso().getGarbageCollection()
               .getInterval()) { return false; }
     }
 
