@@ -7,13 +7,13 @@ import com.tc.stats.TerracottaOperatorEventStats;
 
 public class TerracottaOperatorEventsStatsImpl implements TerracottaOperatorEventStats {
 
-  private final int    eventType;
+  private final String eventType;
   private final String time;
   private final String eventMessage;
   private final String nodeId;
   private final String eventSystem;
 
-  public TerracottaOperatorEventsStatsImpl(String eventTime, int eventType, String eventSystem, String nodeId,
+  public TerracottaOperatorEventsStatsImpl(String eventTime, String eventType, String eventSystem, String nodeId,
                                            String eventMessage) {
     this.nodeId = nodeId;
     this.eventType = eventType;
@@ -30,7 +30,7 @@ public class TerracottaOperatorEventsStatsImpl implements TerracottaOperatorEven
     return this.nodeId;
   }
 
-  public int getTCEventType() {
+  public String getTCEventType() {
     return this.eventType;
   }
 

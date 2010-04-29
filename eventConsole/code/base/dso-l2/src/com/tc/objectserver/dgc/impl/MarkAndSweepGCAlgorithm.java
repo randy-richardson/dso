@@ -4,6 +4,8 @@
  */
 package com.tc.objectserver.dgc.impl;
 
+import com.tc.logging.TerracottaOperatorEventLogger;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.core.api.Filter;
@@ -11,6 +13,8 @@ import com.tc.objectserver.core.impl.GarbageCollectionID;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.dgc.api.GarbageCollector;
+import com.tc.operatorevent.DGCTerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.TCCollections;
 import com.tc.util.UUID;
@@ -18,6 +22,7 @@ import com.tc.util.concurrent.LifeCycleState;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -29,6 +34,7 @@ final class MarkAndSweepGCAlgorithm {
   private final GarbageCollectionInfoPublisher gcPublisher;
   private final LifeCycleState                 gcState;
   private final String                         uuid = UUID.getUUID().toString();
+  private final TerracottaOperatorEventLogger  tcOperatorEventLogger = TerracottaOperatorEventLogging.getEventLogger();
 
   public MarkAndSweepGCAlgorithm(GarbageCollector collector, GCHook gcHook, GarbageCollectionInfoPublisher gcPublisher,
                                  LifeCycleState gcState, int gcIteration) {
@@ -58,6 +64,8 @@ final class MarkAndSweepGCAlgorithm {
 
     final ObjectIDSet candidateIDs = gcHook.getGCCandidates();
     final Set rootIDs = gcHook.getRootObjectIDs(candidateIDs);
+    this.tcOperatorEventLogger.fireOperatorEvent(new DGCTerracottaOperatorEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
+        .name(), new Date().toString(), "DGC started - Total Objects:" + candidateIDs.size()));
 
     gcInfo.setBeginObjectCount(candidateIDs.size());
     gcPublisher.fireGCMarkEvent(gcInfo);
@@ -131,11 +139,14 @@ final class MarkAndSweepGCAlgorithm {
     gcInfo.setDeleteStageTime(0);
     gcInfo.setActualGarbageCount(0);
     gcInfo.setEndObjectCount(gcHook.getLiveObjectCount());
-    long endMillis = System.currentTimeMillis();
-    gcInfo.setTotalMarkCycleTime(endMillis - gcInfo.getStartTime());
-    gcInfo.setElapsedTime(endMillis - gcInfo.getStartTime());
+    long elapsedTime = System.currentTimeMillis() - gcInfo.getStartTime();
+    gcInfo.setTotalMarkCycleTime(elapsedTime);
+    gcInfo.setElapsedTime(elapsedTime);
     gcPublisher.fireGCCycleCompletedEvent(gcInfo, new ObjectIDSet());
     gcPublisher.fireGCCompletedEvent(gcInfo);
+    this.tcOperatorEventLogger.fireOperatorEvent(new DGCTerracottaOperatorEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
+        .name(), new Date().toString(), "DGC finished - Collected: 0 Time Taken: "
+                                           + elapsedTime + "ms."));
   }
 
   public ObjectIDSet collect(Filter filter, Collection rootIds, ObjectIDSet managedObjectIds,

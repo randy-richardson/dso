@@ -7,12 +7,14 @@ import java.io.Serializable;
 
 
 public interface TerracottaOperatorEvent extends Serializable {
-  public static final int INFO = 0;
-  public static final int WARN = 1;
-  public static final int DEBUG = 2;
-  public static final int ERROR = 3;
   
-  public static final String LONG_GC = "LONG_GC";
+  public static enum EVENT_TYPE {
+    INFO, WARN, DEBUG, ERROR, CRITICAL
+  }
+
+  public static enum SUB_SYSTEM {
+    MEMORY_MANAGER, DGC, HA
+  }
   
   String getEventTime();
   
@@ -20,7 +22,7 @@ public interface TerracottaOperatorEvent extends Serializable {
   
   void setNodeId(String nodeId);
 
-  int getEventType();
+  String getEventType();
 
   String getEventSystem();
   

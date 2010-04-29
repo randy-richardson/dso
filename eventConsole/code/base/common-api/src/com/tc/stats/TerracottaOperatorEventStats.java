@@ -8,7 +8,7 @@ public interface TerracottaOperatorEventStats {
   
   String getNodeID();
 
-  int getTCEventType();
+  String getTCEventType();
   
   String getEventTime();
   

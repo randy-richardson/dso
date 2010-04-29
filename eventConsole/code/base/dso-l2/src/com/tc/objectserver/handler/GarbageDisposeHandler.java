@@ -8,6 +8,8 @@ import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.EventContext;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.logging.TerracottaOperatorEventLogger;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
@@ -15,7 +17,10 @@ import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
+import com.tc.operatorevent.DGCTerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEvent;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -30,6 +35,7 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
   private final PersistenceTransactionProvider persistenceTransactionProvider;
   private final int                            deleteBatchSize;
   private final GarbageCollectionInfoPublisher publisher;
+  private final TerracottaOperatorEventLogger  tcOperatorEventLogger = TerracottaOperatorEventLogging.getEventLogger();
 
   public GarbageDisposeHandler(GarbageCollectionInfoPublisher publisher, ManagedObjectPersistor managedObjectPersistor,
                                PersistenceTransactionProvider persistenceTransactionProvider, int deleteBatchSize) {
@@ -66,10 +72,13 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
     }
     long elapsed = System.currentTimeMillis() - start;
     gcInfo.setDeleteStageTime(elapsed);
-    long endMillis = System.currentTimeMillis();
-    gcInfo.setElapsedTime(endMillis - gcInfo.getStartTime());
+    long elapsedTime = System.currentTimeMillis() - gcInfo.getStartTime();
+    gcInfo.setElapsedTime(elapsedTime);
     gcInfo.setEndObjectCount(managedObjectPersistor.getObjectCount());
     publisher.fireGCCompletedEvent(gcInfo);
+    this.tcOperatorEventLogger.fireOperatorEvent(new DGCTerracottaOperatorEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
+        .name(), new Date().toString(), "DGC finished - Collected:" + sortedGarbage.size() + " Time Taken: "
+                                           + elapsedTime + "ms."));
   }
 
   private void removeFromStore(SortedSet<ObjectID> sortedGarbage) {

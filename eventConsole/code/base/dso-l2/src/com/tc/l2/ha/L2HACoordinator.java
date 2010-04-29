@@ -42,6 +42,8 @@ import com.tc.l2.state.StateManagerConfigImpl;
 import com.tc.l2.state.StateManagerImpl;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.logging.TerracottaOperatorEventLogger;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.net.groups.GroupEventsListener;
@@ -55,6 +57,8 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.impl.DistributedObjectServer;
 import com.tc.objectserver.tx.ServerTransactionManager;
+import com.tc.operatorevent.ServerNodeJoinedEvent;
+import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.util.sequence.SequenceGenerator;
 import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorException;
 import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorListener;
@@ -62,12 +66,14 @@ import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorListener;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class L2HACoordinator implements L2Coordinator, StateChangeListener, GroupEventsListener,
     SequenceGeneratorListener {
 
-  private static final TCLogger                           logger    = TCLogging.getLogger(L2HACoordinator.class);
+  private static final TCLogger                           logger                = TCLogging
+                                                                                    .getLogger(L2HACoordinator.class);
 
   private final TCLogger                                  consoleLogger;
   private final DistributedObjectServer                   server;
@@ -84,7 +90,9 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
   private SequenceGenerator                               sequenceGenerator;
 
   private final NewHaConfig                               haConfig;
-  private final CopyOnWriteArrayList<StateChangeListener> listeners = new CopyOnWriteArrayList<StateChangeListener>();
+  private final CopyOnWriteArrayList<StateChangeListener> listeners             = new CopyOnWriteArrayList<StateChangeListener>();
+  private final TerracottaOperatorEventLogger             tcOperatorEventLogger = TerracottaOperatorEventLogging
+                                                                                    .getEventLogger();
 
   public L2HACoordinator(TCLogger consoleLogger, DistributedObjectServer server, StageManager stageManager,
                          GroupManager groupCommsManager, PersistentMapStore persistentStateStore,
@@ -215,7 +223,7 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
   public void l2StateChanged(StateChangedEvent sce) {
     // someone wants to be notified earlier
     fireStateChangedEvent(sce);
-    
+
     clusterState.setCurrentState(sce.getCurrentState());
     rTxnManager.l2StateChanged(sce);
     if (sce.movedToActive()) {
@@ -245,6 +253,8 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   public void nodeJoined(NodeID nodeID) {
     log(nodeID + " joined the cluster");
+    this.tcOperatorEventLogger.fireOperatorEvent(new ServerNodeJoinedEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
+        .name(), new Date().toString(), nodeID + " joined the cluster"));
     if (stateManager.isActiveCoordinator()) {
       try {
         stateManager.publishActiveState(nodeID);
@@ -273,6 +283,8 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   public void nodeLeft(NodeID nodeID) {
     warn(nodeID + " left the cluster");
+    this.tcOperatorEventLogger.fireOperatorEvent(new ServerNodeJoinedEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
+        .name(), new Date().toString(), nodeID + " left the cluster"));
     if (stateManager.isActiveCoordinator()) {
       rObjectManager.clear(nodeID);
       rClusterStateMgr.fireNodeLeftEvent(nodeID);

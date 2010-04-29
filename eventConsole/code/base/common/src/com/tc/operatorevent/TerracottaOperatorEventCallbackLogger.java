@@ -6,11 +6,11 @@ package com.tc.operatorevent;
 import com.tc.logging.TCLogger;
 import com.tc.management.beans.TerracottaOperatorEventsMbean;
 
-public class TerracottaOperatorEventCallbackLogger implements TerracottaOperatorEventCallback{
-  
-  private final TCLogger tcLogger;
+public class TerracottaOperatorEventCallbackLogger implements TerracottaOperatorEventCallback {
+
+  private final TCLogger                      tcLogger;
   private final TerracottaOperatorEventsMbean tcOperatorEventsMbean;
-  
+
   public TerracottaOperatorEventCallbackLogger(TCLogger tcLogger, TerracottaOperatorEventsMbean tcOperatorEventsMbean) {
     this.tcLogger = tcLogger;
     this.tcOperatorEventsMbean = tcOperatorEventsMbean;
@@ -22,23 +22,19 @@ public class TerracottaOperatorEventCallbackLogger implements TerracottaOperator
   }
 
   private void logEvent(TerracottaOperatorEvent event) {
-    switch(event.getEventType()){
-      case TerracottaOperatorEvent.INFO:
-        this.tcLogger.info(event.getEventSystem() + ":" + event.getEventMessage());
-        break;
-      case TerracottaOperatorEvent.WARN:
-        this.tcLogger.warn(event.getEventSystem() + ":" + event.getEventMessage());
-        break;
-      case TerracottaOperatorEvent.DEBUG:
-        this.tcLogger.debug(event.getEventSystem() + ":" + event.getEventMessage());
-        break;
-      case TerracottaOperatorEvent.ERROR:
-        this.tcLogger.error(event.getEventSystem() + ":" + event.getEventMessage());
-        break;
-      default:
-        throw new RuntimeException("invalid event type");
+    String eventType = event.getEventType();
+    if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.INFO.name())) {
+      this.tcLogger.info(event.getEventSystem() + ":" + event.getEventMessage());
+    } else if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.WARN.name())) {
+      this.tcLogger.warn(event.getEventSystem() + ":" + event.getEventMessage());
+    } else if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.DEBUG.name())) {
+      this.tcLogger.debug(event.getEventSystem() + ":" + event.getEventMessage());
+    } else if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.ERROR.name())) {
+      this.tcLogger.error(event.getEventSystem() + ":" + event.getEventMessage());
+    } else {
+      throw new RuntimeException("invalid event Type: " + eventType);
     }
-    
+
   }
 
 }
