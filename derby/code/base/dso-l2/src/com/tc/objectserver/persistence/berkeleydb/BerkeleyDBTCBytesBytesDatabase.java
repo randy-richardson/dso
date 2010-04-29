@@ -9,21 +9,22 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 
-public class BerkeleyTCBytesBytesDatabase extends AbstractBerkeleyDatabase implements TCBytesBytesDatabase {
-  public BerkeleyTCBytesBytesDatabase(Database db) {
+public class BerkeleyDBTCBytesBytesDatabase extends AbstractBerkeleyDatabase implements TCBytesToBytesDatabase {
+  public BerkeleyDBTCBytesBytesDatabase(Database db) {
     super(db);
   }
 
-  public boolean delete(byte[] key, PersistenceTransaction tx) {
+  public Status delete(byte[] key, PersistenceTransaction tx) {
     DatabaseEntry entry = new DatabaseEntry();
     entry.setData(key);
     OperationStatus status = this.db.delete(pt2nt(tx), entry);
-    if (!OperationStatus.SUCCESS.equals(status) && !OperationStatus.NOTFOUND.equals(status)) { return false; }
-    return true;
+    if (!OperationStatus.SUCCESS.equals(status) && !OperationStatus.NOTFOUND.equals(status)) { return Status.NOT_SUCCESS; }
+    return Status.SUCCESS;
   }
 
   public byte[] get(byte[] key, PersistenceTransaction tx) {
@@ -35,27 +36,27 @@ public class BerkeleyTCBytesBytesDatabase extends AbstractBerkeleyDatabase imple
     return null;
   }
 
-  public boolean put(byte[] key, byte[] val, PersistenceTransaction tx) {
+  public Status put(byte[] key, byte[] val, PersistenceTransaction tx) {
     DatabaseEntry entryKey = new DatabaseEntry();
     entryKey.setData(key);
     DatabaseEntry entryValue = new DatabaseEntry();
     entryValue.setData(val);
-    if (!OperationStatus.SUCCESS.equals(this.db.put(pt2nt(tx), entryKey, entryValue))) { return false; }
-    return true;
+    if (!OperationStatus.SUCCESS.equals(this.db.put(pt2nt(tx), entryKey, entryValue))) { return Status.NOT_SUCCESS; }
+    return Status.SUCCESS;
   }
 
   public TCDatabaseCursor openCursor(PersistenceTransaction tx) {
     Cursor cursor = this.db.openCursor(pt2nt(tx), CursorConfig.READ_COMMITTED);
-    return new BerkeleyTCDatabaseCursor(cursor);
+    return new BerkeleyDBTCDatabaseCursor(cursor);
   }
 
-  public boolean putNoOverwrite(PersistenceTransaction tx, byte[] key, byte[] value) {
+  public Status putNoOverwrite(PersistenceTransaction tx, byte[] key, byte[] value) {
     DatabaseEntry entryKey = new DatabaseEntry();
     entryKey.setData(key);
     DatabaseEntry entryValue = new DatabaseEntry();
     entryValue.setData(value);
     OperationStatus status = this.db.putNoOverwrite(pt2nt(tx), entryValue, entryKey);
-    return status.equals(OperationStatus.SUCCESS);
+    return status.equals(OperationStatus.SUCCESS) ? Status.SUCCESS : Status.NOT_SUCCESS;
   }
 
   public TCDatabaseCursor<byte[], byte[]> openCursorUpdatable(PersistenceTransaction tx) {

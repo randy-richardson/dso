@@ -12,8 +12,8 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.tc.object.ObjectID;
-import com.tc.objectserver.persistence.TCBytesBytesDatabase;
-import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyDBTCBytesBytesDatabase;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 import com.tc.util.Conversion;
@@ -32,7 +32,7 @@ import java.util.Set;
 public class OidBitsArrayMapTest extends TCTestCase {
   private BerkeleyDBEnvironment        env;
   private Database             oidDB;
-  private TCBytesBytesDatabase oidTcBytesBytesDB;
+  private TCBytesToBytesDatabase oidTcBytesBytesDB;
   private final int            LongPerDiskUnit = 8;
   private final int            TestSize        = 500;
 
@@ -46,7 +46,7 @@ public class OidBitsArrayMapTest extends TCTestCase {
     env = newDBEnvironment(paranoid);
     env.open();
     oidTcBytesBytesDB = env.getObjectOidStoreDatabase();
-    oidDB = ((BerkeleyTCBytesBytesDatabase) oidTcBytesBytesDB).getDatabase();
+    oidDB = ((BerkeleyDBTCBytesBytesDatabase) oidTcBytesBytesDB).getDatabase();
   }
 
   protected void tearDown() throws Exception {

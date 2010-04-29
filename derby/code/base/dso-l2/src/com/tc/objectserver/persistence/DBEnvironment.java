@@ -46,17 +46,17 @@ public interface DBEnvironment {
 
   public abstract TCObjectDatabase getObjectDatabase() throws TCDatabaseException;
 
-  public abstract TCBytesBytesDatabase getObjectOidStoreDatabase() throws TCDatabaseException;
+  public abstract TCBytesToBytesDatabase getObjectOidStoreDatabase() throws TCDatabaseException;
 
-  public abstract TCBytesBytesDatabase getMapsOidStoreDatabase() throws TCDatabaseException;
+  public abstract TCBytesToBytesDatabase getMapsOidStoreDatabase() throws TCDatabaseException;
 
-  public abstract TCBytesBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException;
+  public abstract TCBytesToBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException;
 
   public abstract TCRootDatabase getRootDatabase() throws TCDatabaseException;
 
   public abstract TCLongDatabase getClientStateDatabase() throws TCDatabaseException;
 
-  public abstract TCBytesBytesDatabase getTransactionDatabase() throws TCDatabaseException;
+  public abstract TCBytesToBytesDatabase getTransactionDatabase() throws TCDatabaseException;
 
   public abstract TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException;
 

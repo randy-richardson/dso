@@ -10,16 +10,17 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.util.Conversion;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class BerkeleyTCIntToBytesDatabase extends AbstractBerkeleyDatabase implements TCIntToBytesDatabase {
+public class BerkeleyDBTCIntToBytesDatabase extends AbstractBerkeleyDatabase implements TCIntToBytesDatabase {
   private final CursorConfig cursorConfig = new CursorConfig();
 
-  public BerkeleyTCIntToBytesDatabase(Database db) {
+  public BerkeleyDBTCIntToBytesDatabase(Database db) {
     super(db);
     this.cursorConfig.setReadCommitted(true);
   }
@@ -54,14 +55,14 @@ public class BerkeleyTCIntToBytesDatabase extends AbstractBerkeleyDatabase imple
     return allClazzBytes;
   }
 
-  public boolean put(int id, byte[] b, PersistenceTransaction tx) {
+  public Status put(int id, byte[] b, PersistenceTransaction tx) {
     DatabaseEntry key = new DatabaseEntry();
     key.setData(Conversion.int2Bytes(id));
     DatabaseEntry value = new DatabaseEntry();
     value.setData(b);
     OperationStatus status = this.db.put(pt2nt(tx), key, value);
-    if (status.equals(OperationStatus.SUCCESS)) return true;
-    return false;
+    if (status.equals(OperationStatus.SUCCESS)) return Status.SUCCESS;
+    return Status.NOT_SUCCESS;
   }
 
 }

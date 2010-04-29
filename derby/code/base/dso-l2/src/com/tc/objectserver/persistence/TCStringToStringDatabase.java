@@ -11,5 +11,5 @@ public interface TCStringToStringDatabase {
 
   public Status delete(String key, PersistenceTransaction tx);
 
-  public boolean put(String key, String value, PersistenceTransaction tx);
+  public Status put(String key, String value, PersistenceTransaction tx);
 }

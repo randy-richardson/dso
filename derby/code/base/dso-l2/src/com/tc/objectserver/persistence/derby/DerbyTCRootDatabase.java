@@ -5,6 +5,7 @@ package com.tc.objectserver.persistence.derby;
 
 import com.tc.object.ObjectID;
 import com.tc.objectserver.persistence.TCRootDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
@@ -132,7 +133,7 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
     }
   }
 
-  public boolean put(byte[] rootName, long id, PersistenceTransaction tx) {
+  public Status put(byte[] rootName, long id, PersistenceTransaction tx) {
     if (get(rootName, tx) == ObjectID.NULL_ID.toLong()) {
       return insert(rootName, id, tx);
     } else {
@@ -140,7 +141,7 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
     }
   }
 
-  private boolean insert(byte[] rootName, long id, PersistenceTransaction tx) {
+  private Status insert(byte[] rootName, long id, PersistenceTransaction tx) {
     PreparedStatement psPut;
     Connection connection = pt2nt(tx);
 
@@ -152,11 +153,11 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
     } catch (SQLException e) {
       throw new DBException("Could not put root", e);
     }
-    return true;
+    return Status.SUCCESS;
 
   }
 
-  private boolean update(byte[] rootName, long id, PersistenceTransaction tx) {
+  private Status update(byte[] rootName, long id, PersistenceTransaction tx) {
     Connection connection = pt2nt(tx);
 
     try {
@@ -165,7 +166,7 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
       psUpdate.setLong(1, id);
       psUpdate.setBytes(2, rootName);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }

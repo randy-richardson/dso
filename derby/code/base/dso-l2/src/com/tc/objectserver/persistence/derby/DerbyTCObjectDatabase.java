@@ -7,6 +7,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.persistence.TCObjectDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
@@ -36,14 +37,14 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     connection.commit();
   }
 
-  public boolean delete(long id, PersistenceTransaction tx) {
+  public Status delete(long id, PersistenceTransaction tx) {
     try {
       Connection connection = pt2nt(tx);
 
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
       psUpdate.setLong(1, id);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
@@ -95,15 +96,7 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     return null;
   }
 
-  // public boolean put(long id, byte[] b, PersistenceTransaction tx) {
-  // if (get(id, tx) == null) {
-  // return insert(id, b, tx);
-  // } else {
-  // return update(id, b, tx);
-  // }
-  // }
-
-  public boolean update(long id, byte[] b, PersistenceTransaction tx) {
+  public Status update(long id, byte[] b, PersistenceTransaction tx) {
     Connection connection = pt2nt(tx);
 
     try {
@@ -112,13 +105,13 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
       psUpdate.setBytes(1, b);
       psUpdate.setLong(2, id);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
   }
 
-  public boolean insert(long id, byte[] b, PersistenceTransaction tx) {
+  public Status insert(long id, byte[] b, PersistenceTransaction tx) {
     PreparedStatement psPut;
     Connection connection = pt2nt(tx);
     try {
@@ -129,6 +122,6 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
     } catch (SQLException e) {
       throw new DBException(e);
     }
-    return true;
+    return Status.SUCCESS;
   }
 }

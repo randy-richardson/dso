@@ -3,9 +3,10 @@
  */
 package com.tc.objectserver.persistence.derby;
 
-import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
@@ -16,7 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCBytesBytesDatabase {
+public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCBytesToBytesDatabase {
   public DerbyTCBytesToBlobDB(String tableName, Connection connection) throws TCDatabaseException {
     super(tableName, connection);
   }
@@ -32,14 +33,14 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
     connection.commit();
   }
 
-  public boolean delete(byte[] key, PersistenceTransaction tx) {
+  public Status delete(byte[] key, PersistenceTransaction tx) {
     Connection connection = pt2nt(tx);
 
     try {
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
       psUpdate.setBytes(1, key);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
@@ -87,7 +88,7 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
     }
   }
 
-  public boolean put(byte[] key, byte[] val, PersistenceTransaction tx) {
+  public Status put(byte[] key, byte[] val, PersistenceTransaction tx) {
     if (get(key, tx) == null) {
       return insert(key, val, tx);
     } else {
@@ -95,7 +96,7 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
     }
   }
 
-  private boolean update(byte[] key, byte[] val, PersistenceTransaction tx) {
+  private Status update(byte[] key, byte[] val, PersistenceTransaction tx) {
     try {
       Connection connection = pt2nt(tx);
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + tableName + " SET " + VALUE + " = ? "
@@ -103,13 +104,13 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
       psUpdate.setBytes(1, val);
       psUpdate.setBytes(2, key);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
   }
 
-  private boolean insert(byte[] key, byte[] val, PersistenceTransaction tx) {
+  private Status insert(byte[] key, byte[] val, PersistenceTransaction tx) {
     PreparedStatement psPut;
     try {
       Connection connection = pt2nt(tx);
@@ -117,15 +118,15 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
       psPut.setBytes(1, key);
       psPut.setBytes(2, val);
       psPut.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
   }
 
-  public boolean putNoOverwrite(PersistenceTransaction tx, byte[] key, byte[] value) {
+  public Status putNoOverwrite(PersistenceTransaction tx, byte[] key, byte[] value) {
     if (get(key, tx) == null) { return insert(key, value, tx); }
-    return false;
+    return Status.NOT_SUCCESS;
   }
 
   static class DerbyTCBytesBytesCursor extends AbstractDerbyTCDatabaseCursor<byte[], byte[]> {

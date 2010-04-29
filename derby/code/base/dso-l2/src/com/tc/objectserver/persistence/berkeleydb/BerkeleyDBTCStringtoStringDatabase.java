@@ -13,9 +13,9 @@ import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.util.Conversion;
 
-public class BerkeleyTCStringtoStringDatabase extends AbstractBerkeleyDatabase implements TCStringToStringDatabase {
+public class BerkeleyDBTCStringtoStringDatabase extends AbstractBerkeleyDatabase implements TCStringToStringDatabase {
 
-  public BerkeleyTCStringtoStringDatabase(Database db) {
+  public BerkeleyDBTCStringtoStringDatabase(Database db) {
     super(db);
   }
 
@@ -28,15 +28,15 @@ public class BerkeleyTCStringtoStringDatabase extends AbstractBerkeleyDatabase i
       entry.setValue(Conversion.bytes2String(dvalue.getData()));
       return Status.SUCCESS;
     } else if (status.equals(OperationStatus.NOTFOUND)) { return Status.NOT_FOUND; }
-    return Status.OTHER;
+    return Status.NOT_SUCCESS;
   }
 
-  public boolean put(String key, String value, PersistenceTransaction tx) {
+  public Status put(String key, String value, PersistenceTransaction tx) {
     DatabaseEntry dkey = new DatabaseEntry();
     dkey.setData(Conversion.string2Bytes(key));
     DatabaseEntry dvalue = new DatabaseEntry();
     dvalue.setData(Conversion.string2Bytes(value));
-    return this.db.put(pt2nt(tx), dkey, dvalue).equals(OperationStatus.SUCCESS);
+    return this.db.put(pt2nt(tx), dkey, dvalue).equals(OperationStatus.SUCCESS) ? Status.SUCCESS : Status.NOT_SUCCESS;
   }
 
   public Status delete(String key, PersistenceTransaction tx) {
@@ -46,7 +46,7 @@ public class BerkeleyTCStringtoStringDatabase extends AbstractBerkeleyDatabase i
     if (status.equals(OperationStatus.SUCCESS)) {
       return Status.SUCCESS;
     } else if (status.equals(OperationStatus.NOTFOUND)) { return Status.NOT_FOUND; }
-    return Status.OTHER;
+    return Status.NOT_SUCCESS;
   }
 
 }

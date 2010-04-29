@@ -72,7 +72,7 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
     }
   }
 
-  public boolean put(String key, String value, PersistenceTransaction tx) {
+  public Status put(String key, String value, PersistenceTransaction tx) {
     TCDatabaseEntry<String, String> entry = new TCDatabaseEntry<String, String>();
     entry.setKey(key);
     Status status = get(entry, tx);
@@ -84,7 +84,7 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
 
   }
 
-  private boolean update(String key, String value, PersistenceTransaction tx) {
+  private Status update(String key, String value, PersistenceTransaction tx) {
     try {
       Connection connection = pt2nt(tx);
 
@@ -93,13 +93,13 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
       psUpdate.setString(1, value);
       psUpdate.setString(2, key);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
   }
 
-  private boolean insert(String key, String value, PersistenceTransaction tx) {
+  private Status insert(String key, String value, PersistenceTransaction tx) {
     PreparedStatement psPut;
     try {
       Connection connection = pt2nt(tx);
@@ -111,6 +111,6 @@ public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase imple
     } catch (SQLException e) {
       throw new DBException(e);
     }
-    return true;
+    return Status.SUCCESS;
   }
 }

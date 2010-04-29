@@ -74,8 +74,8 @@ class ClientStatePersistorImpl extends SleepycatPersistorBase implements ClientS
   private void basicSave(long clientID) {
     try {
       PersistenceTransaction tx = ptp.newTransaction();
-      boolean status = db.put(clientID, tx);
-      if (!status) {
+      Status status = db.put(clientID, tx);
+      if (status != Status.SUCCESS) {
         tx.abort();
         throw new DBException("Unable to save client state: ChannelID " + clientID + "; status: " + status);
       }

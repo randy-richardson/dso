@@ -6,6 +6,7 @@ package com.tc.objectserver.persistence.sleepycat;
 
 import com.tc.logging.TCLogger;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.ClassPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
@@ -26,10 +27,10 @@ class ClassPersistorImpl extends SleepycatPersistorBase implements ClassPersisto
     PersistenceTransaction tx = null;
     try {
       tx = ptxp.newTransaction();
-      boolean status = this.classDB.put(clazzId, clazzBytes, tx);
+      Status status = this.classDB.put(clazzId, clazzBytes, tx);
       tx.commit();
 
-      if (!status) {
+      if (status != Status.SUCCESS) {
         // Formatting
         throw new DBException("Unable to store class Bytes: " + clazzId);
       }

@@ -13,24 +13,25 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.persistence.TCObjectDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.util.Conversion;
 import com.tc.util.ObjectIDSet;
 
-public class BerkeleyTCObjectDatabase extends AbstractBerkeleyDatabase implements TCObjectDatabase {
-  private static final TCLogger logger = TCLogging.getLogger(BerkeleyTCObjectDatabase.class);
+public class BerkeleyDBTCObjectDatabase extends AbstractBerkeleyDatabase implements TCObjectDatabase {
+  private static final TCLogger logger = TCLogging.getLogger(BerkeleyDBTCObjectDatabase.class);
 
-  public BerkeleyTCObjectDatabase(Database db) {
+  public BerkeleyDBTCObjectDatabase(Database db) {
     super(db);
   }
 
-  public boolean delete(long id, PersistenceTransaction tx) {
+  public Status delete(long id, PersistenceTransaction tx) {
     DatabaseEntry key = new DatabaseEntry();
     key.setData(Conversion.long2Bytes(id));
     OperationStatus status = this.db.delete(pt2nt(tx), key);
-    if (!(OperationStatus.NOTFOUND.equals(status) || OperationStatus.SUCCESS.equals(status))) { return false; }
-    return true;
+    if (!(OperationStatus.NOTFOUND.equals(status) || OperationStatus.SUCCESS.equals(status))) { return Status.NOT_SUCCESS; }
+    return Status.SUCCESS;
   }
 
   public byte[] get(long id, PersistenceTransaction tx) {
@@ -45,14 +46,14 @@ public class BerkeleyTCObjectDatabase extends AbstractBerkeleyDatabase implement
     throw new DBException("Error retrieving object id: " + id + "; status: " + status);
   }
 
-  private boolean put(long id, byte[] val, PersistenceTransaction tx) {
+  private Status put(long id, byte[] val, PersistenceTransaction tx) {
     DatabaseEntry key = new DatabaseEntry();
     key.setData(Conversion.long2Bytes(id));
 
     DatabaseEntry value = new DatabaseEntry();
     value.setData(val);
     OperationStatus status = this.db.put(pt2nt(tx), key, value);
-    return status.equals(OperationStatus.SUCCESS);
+    return status.equals(OperationStatus.SUCCESS) ? Status.SUCCESS : Status.NOT_SUCCESS;
   }
 
   public ObjectIDSet getAllObjectIds(PersistenceTransaction tx) {
@@ -95,11 +96,11 @@ public class BerkeleyTCObjectDatabase extends AbstractBerkeleyDatabase implement
     }
   }
 
-  public boolean insert(long id, byte[] b, PersistenceTransaction tx) {
+  public Status insert(long id, byte[] b, PersistenceTransaction tx) {
     return put(id, b, tx);
   }
 
-  public boolean update(long id, byte[] b, PersistenceTransaction tx) {
+  public Status update(long id, byte[] b, PersistenceTransaction tx) {
     return put(id, b, tx);
   }
 }

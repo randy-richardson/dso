@@ -8,6 +8,7 @@ import com.tc.object.ObjectID;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.TCMapsDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.util.Conversion;
 
@@ -163,7 +164,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
         byte[] key = persistor.serialize(id, k);
         written += key.length;
         try {
-          boolean status = db.delete(id, key, tx);
+          boolean status = db.delete(id, key, tx) == Status.SUCCESS;
           if (!status) {
             // make the formatter happy
             throw new DBException("Unable to remove Map Entry for object id: " + id + ", status: " + status + ", key: "
@@ -191,7 +192,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
       written += value.length;
       written += key.length;
       try {
-        boolean status = db.put(id, value, key, tx);
+        boolean status = db.put(id, value, key, tx) == Status.SUCCESS;
         if (!status) { throw new DBException("Unable to update Map table : " + id + " status : " + status); }
       } catch (Exception t) {
         throw new TCDatabaseException(t.getMessage());

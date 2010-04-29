@@ -12,17 +12,18 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.tc.objectserver.persistence.TCLongToStringDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.util.Conversion;
 
 import gnu.trove.TLongObjectHashMap;
 
-public class BerkeleyTCLongToStringDatabase extends AbstractBerkeleyDatabase implements TCLongToStringDatabase {
+public class BerkeleyDBTCLongToStringDatabase extends AbstractBerkeleyDatabase implements TCLongToStringDatabase {
   private final CursorConfig  cursorConfig = new CursorConfig();
   private final SerialBinding serialBinding;
 
-  public BerkeleyTCLongToStringDatabase(ClassCatalog catalog, Database db) {
+  public BerkeleyDBTCLongToStringDatabase(ClassCatalog catalog, Database db) {
     super(db);
     this.cursorConfig.setReadCommitted(true);
     this.serialBinding = new SerialBinding(catalog, String.class);
@@ -48,12 +49,13 @@ public class BerkeleyTCLongToStringDatabase extends AbstractBerkeleyDatabase imp
     return target;
   }
 
-  public boolean put(long index, String string, PersistenceTransaction tx) {
+  public Status put(long index, String string, PersistenceTransaction tx) {
     DatabaseEntry entryKey = new DatabaseEntry();
     DatabaseEntry entryValue = new DatabaseEntry();
     entryKey.setData(Conversion.long2Bytes(index));
     string2Bytes(string, entryValue);
-    return this.db.put(pt2nt(tx), entryKey, entryValue).equals(OperationStatus.SUCCESS);
+    return this.db.put(pt2nt(tx), entryKey, entryValue).equals(OperationStatus.SUCCESS) ? Status.SUCCESS
+        : Status.NOT_SUCCESS;
   }
 
   private String bytes2String(DatabaseEntry entry) {

@@ -3,12 +3,13 @@
  */
 package com.tc.objectserver.persistence;
 
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 
 import java.util.Map;
 
 public interface TCIntToBytesDatabase {
-  public boolean put(int id, byte[] b, PersistenceTransaction tx);
+  public Status put(int id, byte[] b, PersistenceTransaction tx);
 
   public byte[] get(int id, PersistenceTransaction tx);
 

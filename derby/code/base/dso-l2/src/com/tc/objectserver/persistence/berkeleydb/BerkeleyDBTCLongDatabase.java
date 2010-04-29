@@ -12,6 +12,7 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.tc.objectserver.persistence.TCDatabaseConstants;
 import com.tc.objectserver.persistence.TCLongDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.util.Conversion;
@@ -19,11 +20,11 @@ import com.tc.util.Conversion;
 import java.util.HashSet;
 import java.util.Set;
 
-public class BerkeleyTCLongDatabase extends AbstractBerkeleyDatabase implements TCLongDatabase {
+public class BerkeleyDBTCLongDatabase extends AbstractBerkeleyDatabase implements TCLongDatabase {
   public static final DatabaseEntry value = new DatabaseEntry();
   private final CursorConfig        cursorConfig;
 
-  public BerkeleyTCLongDatabase(Database db) {
+  public BerkeleyDBTCLongDatabase(Database db) {
     super(db);
     value.setData(Conversion.long2Bytes(0));
     this.cursorConfig = new CursorConfig();
@@ -55,11 +56,11 @@ public class BerkeleyTCLongDatabase extends AbstractBerkeleyDatabase implements 
     return set;
   }
 
-  public boolean put(long key, PersistenceTransaction tx) {
+  public Status put(long key, PersistenceTransaction tx) {
     DatabaseEntry entryKey = new DatabaseEntry();
     entryKey.setData(Conversion.long2Bytes(key));
     OperationStatus status = db.put(pt2nt(tx), entryKey, value);
-    return status.equals(OperationStatus.SUCCESS);
+    return status.equals(OperationStatus.SUCCESS) ? Status.SUCCESS : Status.NOT_SUCCESS;
   }
 
   public TCDatabaseConstants.Status delete(long key, PersistenceTransaction tx) {
@@ -72,7 +73,7 @@ public class BerkeleyTCLongDatabase extends AbstractBerkeleyDatabase implements 
     } else if (status.equals(OperationStatus.NOTFOUND)) {
       return TCDatabaseConstants.Status.NOT_FOUND;
     } else {
-      return TCDatabaseConstants.Status.OTHER;
+      return TCDatabaseConstants.Status.NOT_SUCCESS;
     }
   }
 }

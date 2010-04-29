@@ -4,6 +4,7 @@
 package com.tc.objectserver.persistence.derby;
 
 import com.tc.objectserver.persistence.TCLongToStringDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
@@ -58,12 +59,12 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
     }
   }
 
-  public boolean put(long id, String string, PersistenceTransaction tx) {
+  public Status put(long id, String string, PersistenceTransaction tx) {
     if (get(id, tx) == null) { return insert(id, string, tx); }
-    return false;
+    return Status.NOT_SUCCESS;
   }
 
-  private boolean insert(long id, String b, PersistenceTransaction tx) {
+  private Status insert(long id, String b, PersistenceTransaction tx) {
     PreparedStatement psPut;
     Connection connection = pt2nt(tx);
 
@@ -75,7 +76,7 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
     } catch (SQLException e) {
       throw new DBException(e);
     }
-    return true;
+    return Status.SUCCESS;
   }
 
   private byte[] get(long id, PersistenceTransaction tx) {

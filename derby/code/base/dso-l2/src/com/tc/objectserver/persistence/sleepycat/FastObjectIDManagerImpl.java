@@ -9,9 +9,10 @@ import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.persistence.DBEnvironment;
-import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
@@ -45,9 +46,9 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   private final Object                         checkpointLock      = new Object();
   private final Object                         objectIDUpdateLock  = new Object();
 
-  private final TCBytesBytesDatabase           objectOidStoreDB;
-  private final TCBytesBytesDatabase           mapsOidStoreDB;
-  private final TCBytesBytesDatabase           oidStoreLogDB;
+  private final TCBytesToBytesDatabase         objectOidStoreDB;
+  private final TCBytesToBytesDatabase         mapsOidStoreDB;
+  private final TCBytesToBytesDatabase         oidStoreLogDB;
   private final PersistenceTransactionProvider ptp;
   private final CheckpointRunner               checkpointThread;
   private final MutableSequence                sequence;
@@ -147,7 +148,7 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   private boolean logObjectID(PersistenceTransaction tx, byte[] oids, boolean isAdd) throws TCDatabaseException {
     boolean rtn;
     try {
-      rtn = this.oidStoreLogDB.putNoOverwrite(tx, makeLogKey(isAdd), oids);
+      rtn = this.oidStoreLogDB.putNoOverwrite(tx, makeLogKey(isAdd), oids) == Status.SUCCESS;
     } catch (Exception t) {
       throw new TCDatabaseException(t.getMessage());
     }
@@ -310,12 +311,12 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
    * fast way to load object-Ids at server restart by reading them from bits array
    */
   private class OidObjectIdReader implements Runnable {
-    private long                       startTime;
-    private int                        counter = 0;
-    private final TCBytesBytesDatabase oidDB;
-    private final SyncObjectIdSet      syncObjectIDSet;
+    private long                         startTime;
+    private int                          counter = 0;
+    private final TCBytesToBytesDatabase oidDB;
+    private final SyncObjectIdSet        syncObjectIDSet;
 
-    public OidObjectIdReader(TCBytesBytesDatabase oidDB, SyncObjectIdSet syncObjectIDSet) {
+    public OidObjectIdReader(TCBytesToBytesDatabase oidDB, SyncObjectIdSet syncObjectIDSet) {
       this.oidDB = oidDB;
       this.syncObjectIDSet = syncObjectIDSet;
     }

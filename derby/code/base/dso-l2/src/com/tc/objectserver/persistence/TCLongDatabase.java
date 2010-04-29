@@ -3,12 +3,13 @@
  */
 package com.tc.objectserver.persistence;
 
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 
 import java.util.Set;
 
 public interface TCLongDatabase {
-  public boolean put(long key, PersistenceTransaction tx);
+  public Status put(long key, PersistenceTransaction tx);
 
   public Set<Long> getAllKeys(PersistenceTransaction tx);
 

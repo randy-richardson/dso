@@ -4,6 +4,7 @@
 package com.tc.objectserver.persistence;
 
 import com.tc.object.ObjectID;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface TCRootDatabase {
-  public boolean put(byte[] rootName, long id, PersistenceTransaction tx);
+  public Status put(byte[] rootName, long id, PersistenceTransaction tx);
 
   public long get(byte[] rootName, PersistenceTransaction tx);
 

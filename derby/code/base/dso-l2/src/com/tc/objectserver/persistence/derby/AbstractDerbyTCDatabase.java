@@ -29,7 +29,6 @@ public abstract class AbstractDerbyTCDatabase {
       } catch (SQLException e1) {
         throw new TCDatabaseException(e1);
       }
-      e.printStackTrace();
       throw new TCDatabaseException(e);
     }
   }

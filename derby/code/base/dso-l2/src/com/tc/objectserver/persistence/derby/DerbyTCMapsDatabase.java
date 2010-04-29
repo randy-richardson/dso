@@ -5,6 +5,7 @@ package com.tc.objectserver.persistence.derby;
 
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCMapsDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.derby.DerbyTCBytesToBlobDB.DerbyTCBytesBytesCursor;
 import com.tc.objectserver.persistence.sleepycat.DBException;
@@ -36,14 +37,14 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
     connection.commit();
   }
 
-  public boolean delete(long objectID, byte[] key, PersistenceTransaction tx) {
+  public Status delete(long objectID, byte[] key, PersistenceTransaction tx) {
     Connection connection = pt2nt(tx);
 
     try {
       PreparedStatement psUpdate = connection.prepareStatement("DELETE FROM " + tableName + " WHERE " + KEY + " = ?");
       psUpdate.setBytes(1, key);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
@@ -78,7 +79,7 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
     }
   }
 
-  public boolean put(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
+  public Status put(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
     if (!contains(id, k, tx)) {
       return insert(id, k, v, tx);
     } else {
@@ -105,7 +106,7 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
     }
   }
 
-  private boolean update(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
+  private Status update(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
     Connection connection = pt2nt(tx);
 
     try {
@@ -115,13 +116,13 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
       psUpdate.setBytes(2, k);
       psUpdate.setLong(3, id);
       psUpdate.executeUpdate();
-      return true;
+      return Status.SUCCESS;
     } catch (SQLException e) {
       throw new DBException(e);
     }
   }
 
-  private boolean insert(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
+  private Status insert(long id, byte[] k, byte[] v, PersistenceTransaction tx) {
     Connection connection = pt2nt(tx);
 
     PreparedStatement psPut;
@@ -134,6 +135,6 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
     } catch (SQLException e) {
       throw new DBException(e);
     }
-    return true;
+    return Status.SUCCESS;
   }
 }

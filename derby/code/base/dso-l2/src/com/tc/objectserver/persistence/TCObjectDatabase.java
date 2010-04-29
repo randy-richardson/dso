@@ -3,18 +3,19 @@
  */
 package com.tc.objectserver.persistence;
 
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.util.ObjectIDSet;
 
 public interface TCObjectDatabase {
 
-  public boolean insert(long id, byte[] b, PersistenceTransaction tx);
+  public Status insert(long id, byte[] b, PersistenceTransaction tx);
   
-  public boolean update(long id, byte[] b, PersistenceTransaction tx);
+  public Status update(long id, byte[] b, PersistenceTransaction tx);
 
   public byte[] get(long id, PersistenceTransaction tx);
 
-  public boolean delete(long id, PersistenceTransaction tx);
+  public Status delete(long id, PersistenceTransaction tx);
   
   public ObjectIDSet getAllObjectIds(PersistenceTransaction tx);
 }

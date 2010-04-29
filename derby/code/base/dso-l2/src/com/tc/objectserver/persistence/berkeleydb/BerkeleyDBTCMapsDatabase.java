@@ -12,13 +12,14 @@ import com.sleepycat.je.OperationStatus;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.TCMapsDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 import com.tc.util.Conversion;
 
-public class BerkeleyTCMapsDatabase extends BerkeleyTCBytesBytesDatabase implements TCMapsDatabase {
+public class BerkeleyDBTCMapsDatabase extends BerkeleyDBTCBytesBytesDatabase implements TCMapsDatabase {
 
-  public BerkeleyTCMapsDatabase(Database db) {
+  public BerkeleyDBTCMapsDatabase(Database db) {
     super(db);
   }
 
@@ -27,11 +28,11 @@ public class BerkeleyTCMapsDatabase extends BerkeleyTCBytesBytesDatabase impleme
     return new BerkeleyMapsTCDatabaseCursor(cursor, objectID);
   }
 
-  public boolean delete(long id, byte[] key, PersistenceTransaction tx) {
+  public Status delete(long id, byte[] key, PersistenceTransaction tx) {
     return super.delete(key, tx);
   }
 
-  public boolean put(long id, byte[] key, byte[] value, PersistenceTransaction tx) {
+  public Status put(long id, byte[] key, byte[] value, PersistenceTransaction tx) {
     return super.put(key, value, tx);
   }
 
@@ -70,7 +71,7 @@ public class BerkeleyTCMapsDatabase extends BerkeleyTCBytesBytesDatabase impleme
     return true;
   }
 
-  private static class BerkeleyMapsTCDatabaseCursor extends BerkeleyTCDatabaseCursor {
+  private static class BerkeleyMapsTCDatabaseCursor extends BerkeleyDBTCDatabaseCursor {
     private boolean isInit        = false;
     private boolean noMoreMatches = false;
     private long    objectID;

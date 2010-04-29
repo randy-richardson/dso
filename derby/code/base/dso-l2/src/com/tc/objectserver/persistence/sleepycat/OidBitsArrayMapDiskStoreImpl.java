@@ -6,7 +6,8 @@ package com.tc.objectserver.persistence.sleepycat;
 
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.util.Conversion;
@@ -22,14 +23,14 @@ public class OidBitsArrayMapDiskStoreImpl extends OidBitsArrayMapImpl implements
 
   private static final TCLogger                logger = TCLogging.getTestingLogger(FastObjectIDManagerImpl.class);
 
-  private final TCBytesBytesDatabase           oidDB;
+  private final TCBytesToBytesDatabase         oidDB;
   private final int                            auxKey;
   private final PersistenceTransactionProvider ptp;
 
   /*
    * Compressed bits array for ObjectIDs, backed up by a database. If null database, then only in-memory representation.
    */
-  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, TCBytesBytesDatabase oidDB,
+  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, TCBytesToBytesDatabase oidDB,
                                       PersistenceTransactionProvider ptp) {
     this(longsPerDiskUnit, oidDB, 0, ptp);
   }
@@ -37,7 +38,7 @@ public class OidBitsArrayMapDiskStoreImpl extends OidBitsArrayMapImpl implements
   /*
    * auxKey: (main key + auxKey) to store different data entry to same db.
    */
-  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, TCBytesBytesDatabase oidDB, int auxKey,
+  public OidBitsArrayMapDiskStoreImpl(int longsPerDiskUnit, TCBytesToBytesDatabase oidDB, int auxKey,
                                       PersistenceTransactionProvider ptp) {
     super(longsPerDiskUnit);
     this.oidDB = oidDB;
@@ -79,13 +80,13 @@ public class OidBitsArrayMapDiskStoreImpl extends OidBitsArrayMapImpl implements
 
     try {
       if (!bits.isZero()) {
-        if (!this.oidDB.put(key, bits.arrayToBytes(), txn)) {
+        if (this.oidDB.put(key, bits.arrayToBytes(), txn) != Status.SUCCESS) {
           //
           throw new TCDatabaseException("Failed to update oidDB at " + bits.getKey());
         }
       } else {
         // OperationStatus.NOTFOUND happened if added and then deleted in the same batch
-        if (!this.oidDB.delete(key, txn)) {
+        if (this.oidDB.delete(key, txn) != Status.SUCCESS) {
           //
           throw new TCDatabaseException("Failed to delete oidDB at " + bits.getKey());
         }

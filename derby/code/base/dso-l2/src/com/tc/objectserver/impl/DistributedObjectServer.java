@@ -621,7 +621,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       gidSequence = new InMemorySequenceProvider();
 
       transactionPersistor = new NullTransactionPersistor();
-      if (isDerby) {
+      if (!isDerby) {
         transactionStorePTP = new NullPersistenceTransactionProvider();
       } else {
         transactionStorePTP = new TransactionLessDerbyPersistenceTransactionProvider((DerbyDBEnvironment) dbenv);

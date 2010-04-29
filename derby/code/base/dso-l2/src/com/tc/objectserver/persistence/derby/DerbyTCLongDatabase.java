@@ -91,15 +91,15 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
     }
   }
 
-  public boolean put(long key, PersistenceTransaction tx) {
+  public Status put(long key, PersistenceTransaction tx) {
     if (contains(key, tx)) {
-      return false;
+      return Status.NOT_SUCCESS;
     } else {
       return insert(key, tx);
     }
   }
 
-  private boolean insert(long key, PersistenceTransaction tx) {
+  private Status insert(long key, PersistenceTransaction tx) {
     PreparedStatement psPut;
     Connection connection = pt2nt(tx);
     try {
@@ -109,7 +109,7 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
     } catch (SQLException e) {
       throw new DBException(e);
     }
-    return true;
+    return Status.SUCCESS;
   }
 
 }

@@ -7,7 +7,7 @@ package com.tc.objectserver.persistence.sleepycat;
 import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.objectserver.gtx.GlobalTransactionDescriptor;
-import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
@@ -23,10 +23,10 @@ import java.util.SortedSet;
 
 class TransactionPersistorImpl extends SleepycatPersistorBase implements TransactionPersistor {
 
-  private final TCBytesBytesDatabase           db;
+  private final TCBytesToBytesDatabase           db;
   private final PersistenceTransactionProvider ptp;
 
-  public TransactionPersistorImpl(TCBytesBytesDatabase db, PersistenceTransactionProvider ptp) {
+  public TransactionPersistorImpl(TCBytesToBytesDatabase db, PersistenceTransactionProvider ptp) {
     this.db = db;
     this.ptp = ptp;
   }

@@ -10,10 +10,10 @@ import com.sleepycat.je.OperationStatus;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
 
-public class BerkeleyTCDatabaseCursor implements TCDatabaseCursor<byte[], byte[]> {
+public class BerkeleyDBTCDatabaseCursor implements TCDatabaseCursor<byte[], byte[]> {
   protected final Cursor cursor;
 
-  public BerkeleyTCDatabaseCursor(Cursor cursor) {
+  public BerkeleyDBTCDatabaseCursor(Cursor cursor) {
     this.cursor = cursor;
   }
 

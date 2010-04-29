@@ -13,7 +13,7 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.tc.objectserver.persistence.berkeleydb.BerkeleyTCObjectDatabase;
+import com.tc.objectserver.persistence.berkeleydb.BerkeleyDBTCObjectDatabase;
 import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment.ClassCatalogWrapper;
 import com.tc.test.TCTestCase;
 
@@ -188,7 +188,7 @@ public class DBEnvironmentTest extends TCTestCase {
     result = env.open();
     assertTrue(result.isClean());
 
-    Database db = ((BerkeleyTCObjectDatabase) env.getObjectDatabase()).getDatabase();
+    Database db = ((BerkeleyDBTCObjectDatabase) env.getObjectDatabase()).getDatabase();
 
     DatabaseEntry key = new DatabaseEntry(new byte[] { 1 });
     DatabaseEntry one = new DatabaseEntry(new byte[] { 1 });
@@ -219,7 +219,7 @@ public class DBEnvironmentTest extends TCTestCase {
     databasesByName.clear();
     env = newEnv(databasesByName, databases, paranoid);
     env.open();
-    db = ((BerkeleyTCObjectDatabase) env.getObjectDatabase()).getDatabase();
+    db = ((BerkeleyDBTCObjectDatabase) env.getObjectDatabase()).getDatabase();
     status = db.get(null, key, value, LockMode.DEFAULT);
     assertTrue(ArrayUtils.isEquals(two.getData(), value.getData()));
 
@@ -230,7 +230,7 @@ public class DBEnvironmentTest extends TCTestCase {
     databasesByName.clear();
     env = newEnv(databasesByName, databases, paranoid);
     env.open();
-    db = ((BerkeleyTCObjectDatabase) env.getObjectDatabase()).getDatabase();
+    db = ((BerkeleyDBTCObjectDatabase) env.getObjectDatabase()).getDatabase();
 
     status = db.get(null, key, value, LockMode.DEFAULT);
     assertEquals(OperationStatus.SUCCESS, status);

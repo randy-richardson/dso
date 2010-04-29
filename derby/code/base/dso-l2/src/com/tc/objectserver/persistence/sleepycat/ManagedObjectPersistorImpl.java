@@ -13,6 +13,7 @@ import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCRootDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
@@ -198,7 +199,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     try {
       byte[] rootNameInBytes = setStringData(name);
 
-      status = this.rootDB.put(rootNameInBytes, id.toLong(), tx);
+      status = this.rootDB.put(rootNameInBytes, id.toLong(), tx) == Status.SUCCESS;
     } catch (Throwable t) {
       throw new DBException(t);
     }
@@ -329,7 +330,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
   private boolean basicSaveObject(PersistenceTransaction tx, ManagedObject managedObject) throws TCDatabaseException,
       IOException {
     if (!managedObject.isDirty()) { return true; }
-    boolean status;
+    Status status;
     byte[] value = setManagedObjectData(managedObject);
     int length = value.length;
     length += 8;
@@ -339,7 +340,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
       } else {
         status = this.objectDB.update(managedObject.getID().toLong(), value, tx);
       }
-      if (status) {
+      if (status == Status.SUCCESS) {
         length += basicSaveCollection(tx, managedObject);
         managedObject.setIsDirty(false);
         this.saveCount++;
@@ -353,7 +354,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     } catch (Exception de) {
       throw new TCDatabaseException(de.getMessage());
     }
-    return status;
+    return status == Status.SUCCESS;
   }
 
   private void updateStats(ManagedObject managedObject, int length) {
@@ -448,8 +449,8 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
   private void deleteObjectByID(PersistenceTransaction tx, ObjectID id) {
     validateID(id);
     try {
-      boolean status = this.objectDB.delete(id.toLong(), tx);
-      if (!status) {
+      Status status = this.objectDB.delete(id.toLong(), tx);
+      if (status != Status.SUCCESS) {
         // make the formatter happy
         throw new DBException("Unable to remove ManagedObject for object id: " + id + ", status: " + status);
       } else {

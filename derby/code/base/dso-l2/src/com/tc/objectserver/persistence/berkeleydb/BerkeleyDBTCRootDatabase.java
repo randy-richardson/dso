@@ -11,6 +11,7 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.persistence.TCRootDatabase;
+import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.DBException;
 import com.tc.util.Conversion;
@@ -22,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements TCRootDatabase {
+public class BerkeleyDBTCRootDatabase extends AbstractBerkeleyDatabase implements TCRootDatabase {
   private final CursorConfig rootDBCursorConfig = new CursorConfig();
 
-  public BerkeleyTCRootDatabase(Database db) {
+  public BerkeleyDBTCRootDatabase(Database db) {
     super(db);
     this.rootDBCursorConfig.setReadCommitted(true);
   }
@@ -100,14 +101,14 @@ public class BerkeleyTCRootDatabase extends AbstractBerkeleyDatabase implements 
     return rv;
   }
 
-  public boolean put(byte[] rootName, long id, PersistenceTransaction tx) {
+  public Status put(byte[] rootName, long id, PersistenceTransaction tx) {
     DatabaseEntry key = new DatabaseEntry();
     DatabaseEntry value = new DatabaseEntry();
     key.setData(rootName);
     value.setData(Conversion.long2Bytes(id));
 
     OperationStatus status = this.db.put(pt2nt(tx), key, value);
-    if (!status.equals(OperationStatus.SUCCESS)) return false;
-    return true;
+    if (!status.equals(OperationStatus.SUCCESS)) return Status.NOT_SUCCESS;
+    return Status.SUCCESS;
   }
 }

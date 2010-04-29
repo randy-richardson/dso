@@ -9,7 +9,7 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.mchange.v2.c3p0.DataSources;
 import com.tc.logging.TCLogger;
 import com.tc.objectserver.persistence.DBEnvironment;
-import com.tc.objectserver.persistence.TCBytesBytesDatabase;
+import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCLongToStringDatabase;
@@ -219,7 +219,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
   }
 
   private void newBytesToBlobDB(String tableName, Connection connection) throws TCDatabaseException {
-    TCBytesBytesDatabase db = new DerbyTCBytesToBlobDB(tableName, connection);
+    TCBytesToBytesDatabase db = new DerbyTCBytesToBlobDB(tableName, connection);
     tables.put(tableName, db);
   }
 
@@ -282,17 +282,17 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return (DerbyTCObjectDatabase) tables.get(OBJECT_DB_NAME);
   }
 
-  public synchronized TCBytesBytesDatabase getObjectOidStoreDatabase() throws TCDatabaseException {
+  public synchronized TCBytesToBytesDatabase getObjectOidStoreDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCBytesToBlobDB) tables.get(OBJECT_OID_STORE_DB_NAME);
   }
 
-  public synchronized TCBytesBytesDatabase getMapsOidStoreDatabase() throws TCDatabaseException {
+  public synchronized TCBytesToBytesDatabase getMapsOidStoreDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCBytesToBlobDB) tables.get(MAPS_OID_STORE_DB_NAME);
   }
 
-  public synchronized TCBytesBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException {
+  public synchronized TCBytesToBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCBytesToBlobDB) tables.get(OID_STORE_LOG_DB_NAME);
   }
@@ -307,7 +307,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return (DerbyTCLongDatabase) tables.get(CLIENT_STATE_DB_NAME);
   }
 
-  public TCBytesBytesDatabase getTransactionDatabase() throws TCDatabaseException {
+  public TCBytesToBytesDatabase getTransactionDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCBytesToBlobDB) tables.get(TRANSACTION_DB_NAME);
   }

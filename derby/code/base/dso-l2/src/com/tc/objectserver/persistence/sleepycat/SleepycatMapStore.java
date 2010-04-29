@@ -55,9 +55,10 @@ public class SleepycatMapStore extends SleepycatPersistorBase implements Persist
 
     PersistenceTransaction tx = persistenceTransactionProvider.newTransaction();
     try {
-      boolean status = this.database.put(key, value, tx);
+      Status status = this.database.put(key, value, tx);
 
-      if (!status) { throw new DBException("Unable to store value: " + value + " for key: " + key + "): " + status); }
+      if (status != Status.SUCCESS) { throw new DBException("Unable to store value: " + value + " for key: " + key
+                                                            + "): " + status); }
       tx.commit();
     } catch (Exception t) {
       abortOnError(tx);
