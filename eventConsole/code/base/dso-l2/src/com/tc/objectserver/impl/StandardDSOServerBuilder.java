@@ -60,8 +60,8 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
   private final TCLogger logger;
 
   public StandardDSOServerBuilder(HaConfig haConfig, TCLogger logger) {
-    logger.info("Standard DSO Server created");
     this.logger = logger;
+    this.logger.info("Standard DSO Server created");
     this.haConfig = haConfig;
     this.thisGroupID = this.haConfig.getThisGroup().getGroupId();
   }
