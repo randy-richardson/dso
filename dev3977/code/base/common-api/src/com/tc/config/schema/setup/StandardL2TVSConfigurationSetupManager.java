@@ -40,6 +40,7 @@ import com.tc.object.config.schema.NewL2DSOConfigObject;
 import com.tc.object.config.schema.PersistenceMode;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
+import com.tc.server.ServerConnectionValidator;
 import com.tc.util.Assert;
 import com.terracottatech.config.Application;
 import com.terracottatech.config.Client;
@@ -144,19 +145,23 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     validateLicenseCapabilities();
   }
 
-  public TopologyReloadStatus reloadConfiguration(Set<String> membersRemoved) throws ConfigurationSetupException {
+  public TopologyReloadStatus reloadConfiguration(ServerConnectionValidator serverConnectionValidator)
+      throws ConfigurationSetupException {
     MutableBeanRepository changedl2sBeanRepository = new StandardBeanRepository(Servers.class);
 
     this.configurationCreator.reloadServersConfiguration(changedl2sBeanRepository);
 
     TopologyVerifier topologyVerfier = new TopologyVerifier(serversBeanRepository(), changedl2sBeanRepository,
-                                                          this.activeServerGroupsConfig);
+                                                            this.activeServerGroupsConfig);
     TopologyReloadStatus status = topologyVerfier.checkAndValidateConfig();
     if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
-    
-    // Add all the removed members
-    membersRemoved.addAll(topologyVerfier.getRemovedMembers());
-    
+
+    // Check if removed members are still alive
+    Set<String> membersRemoved = topologyVerfier.getRemovedMembers();
+    for (String member : membersRemoved) {
+      if (serverConnectionValidator.isAlive(member)) { return TopologyReloadStatus.SERVER_STILL_ALIVE; }
+    }
+
     this.configurationCreator.reloadServersConfiguration(serversBeanRepository());
 
     try {

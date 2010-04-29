@@ -659,8 +659,4 @@ public class TCServerImpl extends SEDA implements TCServer {
   public void reloadConfiguration() throws ConfigurationSetupException {
     dsoServer.reloadConfiguration();
   }
-
-  public boolean isServerConnected(String member) {
-    return dsoServer.isServerConnected(member);
-  }
 }

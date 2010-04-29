@@ -56,6 +56,4 @@ public interface TCServer {
   void dump();
 
   void reloadConfiguration() throws ConfigurationSetupException;
-
-  public boolean isServerConnected(String member);
 }

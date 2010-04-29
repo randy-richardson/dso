@@ -341,7 +341,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
   private ReconnectConfig                        l1ReconnectConfig;
 
-  private GroupManager                           groupCommManager;
+  protected GroupManager                         groupCommManager;
   private Stage                                  hydrateStage;
   private StripeIDStateManager                   stripeIDStateManager;
 
@@ -1452,11 +1452,4 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   public ThreadIDMap getThreadIDMap() {
     return new NullThreadIDMapImpl();
   }
-
-  public boolean isServerConnected(String member) {
-    String nodeName = haConfig.getNodeName(member);
-    if (this.groupCommManager.isServerConnected(nodeName)) { return true; }
-    return false;
-  }
-
 }

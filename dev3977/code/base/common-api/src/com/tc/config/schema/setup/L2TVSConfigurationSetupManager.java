@@ -13,9 +13,9 @@ import com.tc.config.schema.UpdateCheckConfig;
 import com.tc.config.schema.setup.TopologyVerifier.TopologyReloadStatus;
 import com.tc.object.config.schema.NewDSOApplicationConfig;
 import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.server.ServerConnectionValidator;
 
 import java.io.InputStream;
-import java.util.Set;
 
 /**
  * Knows how to set up configuration for L2.
@@ -53,5 +53,5 @@ public interface L2TVSConfigurationSetupManager {
 
   NewL2DSOConfig dsoL2ConfigFor(String name) throws ConfigurationSetupException;
 
-  TopologyReloadStatus reloadConfiguration(Set<String> serversRemoved) throws ConfigurationSetupException;
+  TopologyReloadStatus reloadConfiguration(ServerConnectionValidator serverConnectionValidator) throws ConfigurationSetupException;
 }

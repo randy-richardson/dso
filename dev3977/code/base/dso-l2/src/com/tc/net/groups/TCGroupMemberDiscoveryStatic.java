@@ -77,12 +77,12 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
   }
 
   public void removeNode(Node node) {
-    DiscoveryStateMachine old = nodeStateMap.get(getNodeName(node));
+    DiscoveryStateMachine old = nodeStateMap.remove(getNodeName(node));
     Assert.assertNotNull("Tried removing node which was not present", old);
   }
 
   private String getNodeName(Node node) {
-    return (node.getServerNodeName());
+    return node.getServerNodeName();
   }
 
   public boolean isValidClusterNode(NodeID nodeID) {
