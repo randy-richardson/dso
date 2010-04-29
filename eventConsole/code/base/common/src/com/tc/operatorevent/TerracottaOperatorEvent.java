@@ -4,27 +4,28 @@
 package com.tc.operatorevent;
 
 import java.io.Serializable;
+import java.util.Date;
 
 
 public interface TerracottaOperatorEvent extends Serializable {
   
-  public static enum EVENT_TYPE {
+  public static enum EventType {
     INFO, WARN, DEBUG, ERROR, CRITICAL
   }
 
-  public static enum SUB_SYSTEM {
+  public static enum EventSubSystem {
     MEMORY_MANAGER, DGC, HA
   }
   
-  String getEventTime();
+  Date getEventTime();
   
   String getNodeId();
   
   void setNodeId(String nodeId);
 
-  String getEventType();
+  EventType getEventType();
 
-  String getEventSystem();
+  EventSubSystem getEventSubSystem();
   
   String getEventMessage();
   

@@ -5,6 +5,7 @@ package com.tc.operatorevent;
 
 import com.tc.logging.TCLogger;
 import com.tc.management.beans.TerracottaOperatorEventsMbean;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
 
 public class TerracottaOperatorEventCallbackLogger implements TerracottaOperatorEventCallback {
 
@@ -22,19 +23,23 @@ public class TerracottaOperatorEventCallbackLogger implements TerracottaOperator
   }
 
   private void logEvent(TerracottaOperatorEvent event) {
-    String eventType = event.getEventType();
-    if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.INFO.name())) {
-      this.tcLogger.info(event.getEventSystem() + ":" + event.getEventMessage());
-    } else if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.WARN.name())) {
-      this.tcLogger.warn(event.getEventSystem() + ":" + event.getEventMessage());
-    } else if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.DEBUG.name())) {
-      this.tcLogger.debug(event.getEventSystem() + ":" + event.getEventMessage());
-    } else if (eventType.equals(TerracottaOperatorEvent.EVENT_TYPE.ERROR.name())) {
-      this.tcLogger.error(event.getEventSystem() + ":" + event.getEventMessage());
-    } else {
-      throw new RuntimeException("invalid event Type: " + eventType);
+    EventType eventType = event.getEventType();
+    switch (eventType) {
+      case INFO:
+        this.tcLogger.info(event.getEventSubSystem() + ":" + event.getEventMessage());
+        break;
+      case WARN:
+        this.tcLogger.warn(event.getEventSubSystem() + ":" + event.getEventMessage());
+        break;
+      case DEBUG:
+        this.tcLogger.debug(event.getEventSubSystem() + ":" + event.getEventMessage());
+        break;
+      case ERROR:
+        this.tcLogger.error(event.getEventSubSystem() + ":" + event.getEventMessage());
+        break;
+      default:
+        throw new RuntimeException("invalid event Type: " + eventType);
     }
-
   }
 
 }

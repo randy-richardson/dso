@@ -13,8 +13,8 @@ import com.tc.objectserver.core.impl.GarbageCollectionID;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.dgc.api.GarbageCollector;
-import com.tc.operatorevent.DGCTerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.TCCollections;
 import com.tc.util.UUID;
@@ -33,7 +33,7 @@ final class MarkAndSweepGCAlgorithm {
   private final GarbageCollector               collector;
   private final GarbageCollectionInfoPublisher gcPublisher;
   private final LifeCycleState                 gcState;
-  private final String                         uuid = UUID.getUUID().toString();
+  private final String                         uuid                  = UUID.getUUID().toString();
   private final TerracottaOperatorEventLogger  tcOperatorEventLogger = TerracottaOperatorEventLogging.getEventLogger();
 
   public MarkAndSweepGCAlgorithm(GarbageCollector collector, GCHook gcHook, GarbageCollectionInfoPublisher gcPublisher,
@@ -64,8 +64,9 @@ final class MarkAndSweepGCAlgorithm {
 
     final ObjectIDSet candidateIDs = gcHook.getGCCandidates();
     final Set rootIDs = gcHook.getRootObjectIDs(candidateIDs);
-    this.tcOperatorEventLogger.fireOperatorEvent(new DGCTerracottaOperatorEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
-        .name(), new Date().toString(), "DGC started - Total Objects:" + candidateIDs.size()));
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(), "DGC started - Total Objects:"
+                                                                                    + candidateIDs.size()));
 
     gcInfo.setBeginObjectCount(candidateIDs.size());
     gcPublisher.fireGCMarkEvent(gcInfo);
@@ -144,9 +145,9 @@ final class MarkAndSweepGCAlgorithm {
     gcInfo.setElapsedTime(elapsedTime);
     gcPublisher.fireGCCycleCompletedEvent(gcInfo, new ObjectIDSet());
     gcPublisher.fireGCCompletedEvent(gcInfo);
-    this.tcOperatorEventLogger.fireOperatorEvent(new DGCTerracottaOperatorEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
-        .name(), new Date().toString(), "DGC finished - Collected: 0 Time Taken: "
-                                           + elapsedTime + "ms."));
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(),
+                                "DGC finished - Collected: 0 Time Taken: " + elapsedTime + "ms."));
   }
 
   public ObjectIDSet collect(Filter filter, Collection rootIds, ObjectIDSet managedObjectIds,

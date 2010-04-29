@@ -14,7 +14,6 @@ import com.tc.async.api.Stage;
 import com.tc.async.api.StageManager;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.exception.TCRuntimeException;
 import com.tc.handler.CallbackDumpAdapter;
 import com.tc.lang.TCThreadGroup;
 import com.tc.license.LicenseCheck;
@@ -27,7 +26,6 @@ import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.ClientLockStatManager;
 import com.tc.management.L1Management;
 import com.tc.management.TCClient;
-import com.tc.management.beans.TerracottaOperatorClusterEvent;
 import com.tc.management.beans.sessions.SessionMonitor;
 import com.tc.management.lock.stats.LockStatisticsMessage;
 import com.tc.management.lock.stats.LockStatisticsResponseMessageImpl;
@@ -179,8 +177,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import javax.management.NotCompliantMBeanException;
 
 /**
  * This is the main point of entry into the DSO client.
@@ -515,19 +511,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final TunnelingEventHandler teh = this.dsoClientBuilder.createTunnelingEventHandler(this.channel.channel(), config
         .getUUID());
     
-    TerracottaOperatorClusterEvent tcOperatorEventMBean;
-    try {
-       tcOperatorEventMBean = new TerracottaOperatorClusterEvent(this.channel.getClientIDProvider().getClientID()
-          .toString());
-    } catch (NotCompliantMBeanException ncmbe) {
-      throw new TCRuntimeException(
-                                   "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
-                                   ncmbe);
-    }
-    
     this.l1Management = new L1Management(teh, this.statisticsAgentSubSystem, this.runtimeLogger, this.manager
-        .getInstrumentationLogger(), this.config.rawConfigText(), this, this.config.getMBeanSpecs(),
-                                         tcOperatorEventMBean);
+        .getInstrumentationLogger(), this.config.rawConfigText(), this, this.config.getMBeanSpecs());
     this.l1Management.start(this.createDedicatedMBeanServer);
 
     // register the terracotta operator event logger

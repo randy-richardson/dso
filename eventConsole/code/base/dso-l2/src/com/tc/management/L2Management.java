@@ -23,6 +23,7 @@ import com.tc.management.beans.LockStatisticsMonitorMBean;
 import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
 import com.tc.management.beans.TerracottaOperatorEventsMbean;
+import com.tc.management.beans.TerracottaOperatorEventsMbeanImpl;
 import com.tc.management.beans.object.ObjectManagementMonitor;
 import com.tc.management.beans.object.ServerDBBackup;
 import com.tc.net.protocol.tcm.ChannelID;
@@ -85,8 +86,8 @@ public class L2Management extends TerracottaManagement {
   private final Sink                           remoteEventsSink;
   private final TerracottaOperatorEventsMbean  l2OperatorEventsMbean;
 
-  public L2Management(TCServerInfoMBean tcServerInfo, TerracottaOperatorEventsMbean l2OperatorEventsMbean,
-                      LockStatisticsMonitorMBean lockStatistics, StatisticsAgentSubSystem statisticsAgentSubSystem,
+  public L2Management(TCServerInfoMBean tcServerInfo, LockStatisticsMonitorMBean lockStatistics,
+                      StatisticsAgentSubSystem statisticsAgentSubSystem,
                       StatisticsGatewayMBeanImpl statisticsGateway,
                       L2TVSConfigurationSetupManager configurationSetupManager, TCDumper tcDumper,
                       InetAddress bindAddr, int port, Sink remoteEventsSink) throws MBeanRegistrationException,
@@ -100,17 +101,24 @@ public class L2Management extends TerracottaManagement {
     this.bindAddress = bindAddr;
     this.jmxPort = port;
     this.remoteEventsSink = remoteEventsSink;
-    this.l2OperatorEventsMbean = l2OperatorEventsMbean;
+    
+    try {
+      this.l2OperatorEventsMbean = new TerracottaOperatorEventsMbeanImpl();
+    } catch (NotCompliantMBeanException e) {
+      throw new RuntimeException(
+                                 "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
+                                 e);
+    }
 
     try {
-      objectManagementBean = new ObjectManagementMonitor();
+      this.objectManagementBean = new ObjectManagementMonitor();
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L2 MBeans: this is a programming error in one of those beans",
                                    ncmbe);
     }
     try {
-      serverDbBackupBean = new ServerDBBackup(configurationSetupManager);
+      this.serverDbBackupBean = new ServerDBBackup(configurationSetupManager);
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L2 MBeans: this is a programming error in one of those beans",

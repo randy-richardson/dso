@@ -10,24 +10,24 @@ import com.tc.stats.AbstractNotifyingMBean;
 
 import javax.management.NotCompliantMBeanException;
 import javax.management.Notification;
-import javax.management.NotificationListener;
 
-public class TerracottaOperatorClusterEvent extends AbstractNotifyingMBean implements TerracottaOperatorEventsMbean, NotificationListener{
+public class TerracottaOperatorEventsMbeanImpl extends AbstractNotifyingMBean implements TerracottaOperatorEventsMbean {
   
   private TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
-  private final String                  thisNodeId;
 
-  public TerracottaOperatorClusterEvent(String thisNodeId) throws NotCompliantMBeanException {
+  // private final String thisNodeId;
+
+  public TerracottaOperatorEventsMbeanImpl() throws NotCompliantMBeanException {
     super(TerracottaOperatorEventsMbean.class);
-    this.thisNodeId = thisNodeId;
+    // this.thisNodeId = thisNodeId;
   }
 
   public void fireOperatorEvent(TerracottaOperatorEvent tcEvent) {
     // TODO: should be better mechanism to set server's node id
-    if (tcEvent.getNodeId() == null) {
-      tcEvent.setNodeId(thisNodeId);
-    }
-    sendNotification(tcEvent.getEventSystem(), tcEvent);
+    // if (tcEvent.getNodeId() == null) {
+    // tcEvent.setNodeId(thisNodeId);
+    // }
+    sendNotification(tcEvent.getEventSubSystem().name(), tcEvent);
   }
 
   public void reset() {

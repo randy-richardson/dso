@@ -310,8 +310,8 @@ public class ClientConnectEventHandler extends AbstractEventHandler {
                                                                         L2MBeanNames.L2_OPERATOR_EVENTS_PUBLIC
                                                                             .getKeyProperty(MBeanKeys.TYPE))) {
                 l2MBeanServer.addNotificationListener(modifiedObjName, this.tcOperatorEventListener, null,
-                                                      channel.getRemoteAddress().getAddress().getHostName()
-                                                          + ":" + channel.getRemoteAddress().getPort());
+                                                      channel.getRemoteAddress().getAddress().getHostName() + ":"
+                                                          + channel.getRemoteAddress().getPort());
               }
             } catch (Throwable t) {
               beanNames.remove(modifiedObjName);

@@ -6,6 +6,8 @@ package com.tc.management.beans;
 import com.tc.management.TerracottaMBean;
 import com.tc.operatorevent.TerracottaOperatorEvent;
 
-public interface TerracottaOperatorEventsMbean extends TerracottaMBean {
+import javax.management.NotificationListener;
+
+public interface TerracottaOperatorEventsMbean extends TerracottaMBean, NotificationListener {
   void fireOperatorEvent(TerracottaOperatorEvent tcEvent);
 }

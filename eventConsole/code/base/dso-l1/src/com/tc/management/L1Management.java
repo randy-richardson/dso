@@ -11,8 +11,8 @@ import com.tc.logging.TCLogging;
 import com.tc.management.beans.L1Dumper;
 import com.tc.management.beans.L1MBeanNames;
 import com.tc.management.beans.MBeanNames;
-import com.tc.management.beans.TerracottaOperatorClusterEvent;
 import com.tc.management.beans.TerracottaOperatorEventsMbean;
+import com.tc.management.beans.TerracottaOperatorEventsMbeanImpl;
 import com.tc.management.beans.l1.L1InfoMBean;
 import com.tc.management.beans.logging.InstrumentationLogging;
 import com.tc.management.beans.logging.InstrumentationLoggingMBean;
@@ -73,8 +73,7 @@ public final class L1Management extends TerracottaManagement {
   public L1Management(final TunnelingEventHandler tunnelingHandler,
                       final StatisticsAgentSubSystem statisticsAgentSubSystem, final RuntimeLogger runtimeLogger,
                       final InstrumentationLogger instrumentationLogger, final String rawConfigText,
-                      final TCClient client, final MBeanSpec[] mbeanSpecs,
-                      TerracottaOperatorClusterEvent tcOperatorEventMBean) {
+                      final TCClient client, final MBeanSpec[] mbeanSpecs) {
     super();
 
     started = new SetOnceFlag();
@@ -90,7 +89,7 @@ public final class L1Management extends TerracottaManagement {
       instrumentationLoggingBean = new InstrumentationLogging(instrumentationLogger);
       runtimeOutputOptionsBean = new RuntimeOutputOptions(runtimeLogger);
       runtimeLoggingBean = new RuntimeLogging(runtimeLogger);
-      l1OperatorEventsBean = tcOperatorEventMBean;
+      l1OperatorEventsBean = new TerracottaOperatorEventsMbeanImpl();
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",

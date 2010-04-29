@@ -57,8 +57,8 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.impl.DistributedObjectServer;
 import com.tc.objectserver.tx.ServerTransactionManager;
-import com.tc.operatorevent.ServerNodeJoinedEvent;
 import com.tc.operatorevent.TerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.util.sequence.SequenceGenerator;
 import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorException;
 import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorListener;
@@ -253,8 +253,9 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   public void nodeJoined(NodeID nodeID) {
     log(nodeID + " joined the cluster");
-    this.tcOperatorEventLogger.fireOperatorEvent(new ServerNodeJoinedEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
-        .name(), new Date().toString(), nodeID + " joined the cluster"));
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(),
+                                             nodeID + " joined the cluster"));
     if (stateManager.isActiveCoordinator()) {
       try {
         stateManager.publishActiveState(nodeID);
@@ -283,8 +284,10 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   public void nodeLeft(NodeID nodeID) {
     warn(nodeID + " left the cluster");
-    this.tcOperatorEventLogger.fireOperatorEvent(new ServerNodeJoinedEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
-        .name(), new Date().toString(), nodeID + " left the cluster"));
+    this.tcOperatorEventLogger
+        .fireOperatorEvent(TerracottaOperatorEventFactory
+            .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(),
+                                                 nodeID + " left the cluster"));
     if (stateManager.isActiveCoordinator()) {
       rObjectManager.clear(nodeID);
       rClusterStateMgr.fireNodeLeftEvent(nodeID);

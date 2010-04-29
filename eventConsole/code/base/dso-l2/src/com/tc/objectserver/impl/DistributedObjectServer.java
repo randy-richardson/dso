@@ -50,7 +50,6 @@ import com.tc.management.beans.L2State;
 import com.tc.management.beans.LockStatisticsMonitor;
 import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
-import com.tc.management.beans.TerracottaOperatorClusterEvent;
 import com.tc.management.beans.object.ServerDBBackup;
 import com.tc.management.beans.object.ObjectManagementMonitor.ObjectIdsFetcher;
 import com.tc.management.lock.stats.L2LockStatisticsManagerImpl;
@@ -294,7 +293,6 @@ import javax.management.remote.JMXConnectorServer;
 public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
   private final ConnectionPolicy                 connectionPolicy;
   private final TCServerInfoMBean                tcServerInfoMBean;
-  private TerracottaOperatorClusterEvent         l2OperatorEventsMbean;
   private final ObjectStatsRecorder              objectStatsRecorder;
   private final L2State                          l2State;
   private final DSOServerBuilder                 serverBuilder;
@@ -409,14 +407,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
     this.threadGroup.addCallbackOnExitDefaultHandler(new ThreadDumpHandler(this));
     this.thisServerNodeID = makeServerNodeID(this.configSetupManager.dsoL2Config());
-    
-    try {
-      this.l2OperatorEventsMbean = new TerracottaOperatorClusterEvent(this.thisServerNodeID.toString());
-    } catch (NotCompliantMBeanException e) {
-      throw new RuntimeException(
-                                 "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
-                                 e);
-    }
     
     L2LockStatsManager lockStatsManager = new L2LockStatisticsManagerImpl();
 
@@ -914,11 +904,13 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
     final Stage jmxRemoteConnectStage = stageManager
         .createStage(ServerConfigurationContext.JMXREMOTE_CONNECT_STAGE,
-                     new ClientConnectEventHandler(this.statisticsGateway, this.l2OperatorEventsMbean), 1, maxStageSize);
+                     new ClientConnectEventHandler(this.statisticsGateway, this.l2Management.findTCOperatorEventMBean()),
+                     1, maxStageSize);
 
     final Stage jmxRemoteDisconnectStage = stageManager
         .createStage(ServerConfigurationContext.JMXREMOTE_DISCONNECT_STAGE,
-                     new ClientConnectEventHandler(this.statisticsGateway, this.l2OperatorEventsMbean), 1, maxStageSize);
+                     new ClientConnectEventHandler(this.statisticsGateway, this.l2Management.findTCOperatorEventMBean()),
+                     1, maxStageSize);
 
     cteh.setStages(jmxRemoteConnectStage.getSink(), jmxRemoteDisconnectStage.getSink());
     final Stage jmxRemoteTunnelStage = stageManager.createStage(ServerConfigurationContext.JMXREMOTE_TUNNEL_STAGE,
@@ -1429,7 +1421,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       jmxPort = new PortChooser().chooseRandomPort();
     }
 
-    this.l2Management = new L2Management(this.tcServerInfoMBean, this.l2OperatorEventsMbean, this.lockStatisticsMBean,
+    this.l2Management = new L2Management(this.tcServerInfoMBean, this.lockStatisticsMBean,
                                          this.statisticsAgentSubSystem, this.statisticsGateway,
                                          this.configSetupManager, this, bind, jmxPort, remoteEventsSink);
     this.l2Management.start();

@@ -17,8 +17,8 @@ import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
-import com.tc.operatorevent.DGCTerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEventFactory;
 
 import java.util.Date;
 import java.util.Iterator;
@@ -27,9 +27,9 @@ import java.util.TreeSet;
 
 public class GarbageDisposeHandler extends AbstractEventHandler {
 
-  private final static TCLogger                logger           = TCLogging.getLogger(GarbageDisposeHandler.class);
+  private final static TCLogger                logger                = TCLogging.getLogger(GarbageDisposeHandler.class);
 
-  private static final long                    REMOVE_THRESHOLD = 300;
+  private static final long                    REMOVE_THRESHOLD      = 300;
 
   private final ManagedObjectPersistor         managedObjectPersistor;
   private final PersistenceTransactionProvider persistenceTransactionProvider;
@@ -76,9 +76,11 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
     gcInfo.setElapsedTime(elapsedTime);
     gcInfo.setEndObjectCount(managedObjectPersistor.getObjectCount());
     publisher.fireGCCompletedEvent(gcInfo);
-    this.tcOperatorEventLogger.fireOperatorEvent(new DGCTerracottaOperatorEvent(TerracottaOperatorEvent.EVENT_TYPE.INFO
-        .name(), new Date().toString(), "DGC finished - Collected:" + sortedGarbage.size() + " Time Taken: "
-                                           + elapsedTime + "ms."));
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(), "DGC finished - Collected:"
+                                                                                    + sortedGarbage.size()
+                                                                                    + " Time Taken: " + elapsedTime
+                                                                                    + "ms."));
   }
 
   private void removeFromStore(SortedSet<ObjectID> sortedGarbage) {
