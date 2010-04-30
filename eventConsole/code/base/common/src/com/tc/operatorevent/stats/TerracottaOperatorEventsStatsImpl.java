@@ -26,19 +26,19 @@ public class TerracottaOperatorEventsStatsImpl implements TerracottaOperatorEven
     return this.time;
   }
 
-  public String getNodeID() {
+  public String getNodeId() {
     return this.nodeId;
   }
 
-  public String getTCEventType() {
+  public String getEventType() {
     return this.eventType;
   }
 
-  public String getMessage() {
+  public String getEventMessage() {
     return this.eventMessage;
   }
 
-  public String getSystem() {
+  public String getEventSubSystem() {
     return this.eventSystem;
   }
 

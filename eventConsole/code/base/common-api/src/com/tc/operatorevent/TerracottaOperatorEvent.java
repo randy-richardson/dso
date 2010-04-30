@@ -17,14 +17,14 @@ public interface TerracottaOperatorEvent extends Serializable {
     MEMORY_MANAGER, DGC, HA
   }
   
-  Date getEventTime();
-  
-  String getNodeId();
-  
   void setNodeId(String nodeId);
 
-  EventType getEventType();
+  String getNodeId();
 
+  EventType getEventType();
+  
+  Date getEventTime();
+  
   EventSubSystem getEventSubSystem();
   
   String getEventMessage();

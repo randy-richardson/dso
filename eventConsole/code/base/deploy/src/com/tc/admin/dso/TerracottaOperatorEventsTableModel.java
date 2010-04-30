@@ -9,7 +9,7 @@ import com.tc.operatorevent.stats.TerracottaOperatorEventsStatsImpl;
 import com.tc.stats.TerracottaOperatorEventStats;
 
 public class TerracottaOperatorEventsTableModel extends XObjectTableModel {
-  private static final String[] FIELDS  = { "EventTime", "NodeID", "TCEventType", "System", "Message" };
+  private static final String[] FIELDS  = { "EventTime", "NodeId", "EventType", "EventSubSystem", "EventMessage" };
 
   private final String[]        HEADERS = { "cluster.events.timeOfEvent", "cluster.events.node",
       "cluster.events.eventType", "cluster.events.system", "cluster.events.message" };

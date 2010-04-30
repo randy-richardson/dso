@@ -6,14 +6,14 @@ package com.tc.stats;
 
 public interface TerracottaOperatorEventStats {
   
-  String getNodeID();
+  String getNodeId();
 
-  String getTCEventType();
+  String getEventType();
   
   String getEventTime();
   
-  String getSystem();
+  String getEventSubSystem();
   
-  String getMessage();
+  String getEventMessage();
 
 }

@@ -1030,7 +1030,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       Object[] listeners = listenerList.getListenerList();
       for (int i = listeners.length - 2; i >= 0; i -= 2) {
         if (listeners[i] == TerracottaOperatorEventsListener.class) {
-          TerracottaOperatorEventStats tcOperatorEventStats = new TerracottaOperatorEventsStatsImpl(tcOperatorEvent
+           TerracottaOperatorEventStats tcOperatorEventStats = new TerracottaOperatorEventsStatsImpl(tcOperatorEvent
               .getEventTime().toString(), tcOperatorEvent.getEventType().name(), tcOperatorEvent.getEventSubSystem()
               .name(), tcOperatorEvent.getNodeId(), tcOperatorEvent.getEventMessage());
           ((TerracottaOperatorEventsListener) listeners[i + 1]).statusUpdate(tcOperatorEventStats);
