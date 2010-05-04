@@ -1,4 +1,4 @@
-Terracotta 3.2.1-ee-patch-2 - Simple Scale for Enterprise Java
+Terracotta 3.2.1-ee-patch-3 - Simple Scale for Enterprise Java
 ===================================================
 
 Release Notes: http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=ReleaseNotes
@@ -16,6 +16,7 @@ Patch Level 1
 - DEV-3932
 - Changed GroupTickerTokenManager to a setting in the properties file, with a default of 1 second
 l2.objectmanager.dgc.enterpriseMarkStageInterval = 1000 
+------------------------------------------------
 
 Patch Level 2
 - DEV-3972
@@ -23,7 +24,29 @@ Patch Level 2
 
 - DEV-3994
 - allow pin() and unpin() during txn apply
+-------------------------------------------------
 
+Patch Level 3
+- DEV-4081
+- Fix for java.util.ConcurrentModificationException
+
+- DEV-4047
+- Fix to stop Dev console where expanding the object graph while browsing objects during a change 
+in Active Server takeover may cause crash
+
+- DEV-4092
+- Fix to a split-brain scenario with two Active servers in one group, messages could get
+dropped after split-brain resolved.
+
+- CDV-1475, CDV-1472, DEV-3488
+- Updates to resolve conflicts with JDK 6 updates 18, 19 and 20
+
+- DEV-3897
+- Fix for cluster-wide thread dumps that used to take too long to process and cause the server to stall and sometimes 
+disconnect from the client.
+
+- DEV-4049
+- Fix to exception caused re-applying a transaction after an Active Server is restarted as Passive.
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
