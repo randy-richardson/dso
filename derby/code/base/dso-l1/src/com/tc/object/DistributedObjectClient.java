@@ -26,7 +26,6 @@ import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.ClientLockStatManager;
 import com.tc.management.L1Management;
 import com.tc.management.TCClient;
-import com.tc.management.beans.sessions.SessionMonitor;
 import com.tc.management.lock.stats.LockStatisticsMessage;
 import com.tc.management.lock.stats.LockStatisticsResponseMessageImpl;
 import com.tc.management.remote.protocol.terracotta.JmxRemoteTunnelMessage;
@@ -133,7 +132,6 @@ import com.tc.statistics.StatisticsSystemType;
 import com.tc.statistics.retrieval.StatisticsRetrievalRegistry;
 import com.tc.statistics.retrieval.actions.SRACacheObjectsEvictRequest;
 import com.tc.statistics.retrieval.actions.SRACacheObjectsEvicted;
-import com.tc.statistics.retrieval.actions.SRAHttpSessions;
 import com.tc.statistics.retrieval.actions.SRAL1OutstandingBatches;
 import com.tc.statistics.retrieval.actions.SRAL1PendingBatchesSize;
 import com.tc.statistics.retrieval.actions.SRAL1TransactionCount;
@@ -317,7 +315,6 @@ public class DistributedObjectClient extends SEDA implements TCClient {
       registry.registerActionInstance(new SRAL1TransactionsPerBatch(this.transactionsPerBatchCounter));
       registry.registerActionInstance(new SRAL1TransactionSize(this.transactionSizeCounter));
       registry.registerActionInstance(new SRAL1PendingBatchesSize(this.pendingBatchesSize));
-      registry.registerActionInstance(new SRAHttpSessions());
       registry.registerActionInstance(new SRAL1TransactionCount(this.txCounter));
       registry.registerActionInstance(new SRAVmGarbageCollector(SRAVmGarbageCollectorType.L1_VM_GARBAGE_COLLECTOR));
 
@@ -564,7 +561,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     // more likely an AssertionError
     Stage pauseStage = stageManager.createStage(ClientConfigurationContext.CLIENT_COORDINATION_STAGE,
                                                 new ClientCoordinationHandler(), 1, maxSize);
-    
+
     Stage clusterMembershipEventStage = stageManager
         .createStage(ClientConfigurationContext.CLUSTER_MEMBERSHIP_EVENT_STAGE,
                      new ClusterMemberShipEventsHandler(this.dsoCluster), 1, maxSize);
@@ -781,10 +778,6 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
   public ClusterMetaDataManager getClusterMetaDataManager() {
     return this.clusterMetaDataManager;
-  }
-
-  public SessionMonitor getHttpSessionMonitor() {
-    return this.l1Management.getHttpSessionMonitor();
   }
 
   public L1Management getL1Management() {

@@ -5,12 +5,16 @@
 package com.tc.object.tx;
 
 import com.tc.exception.TCRuntimeException;
+import com.tc.lang.TCThreadGroup;
+import com.tc.lang.ThrowableHandler;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.StringLockID;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,7 +74,7 @@ public class LockAccountingTest extends TestCase {
 
     tx4locks.add(lockID4);
     lock4Txs.add(txID4);
-    
+
     la.add(txID1, tx1locks);
     la.add(txID2, tx2locks);
     la.add(txID3, tx3locks);
@@ -243,7 +247,7 @@ public class LockAccountingTest extends TestCase {
     };
     Timer timer = new Timer("timeout thread");
     timer.schedule(task, 5000);
-    
+
     TimerTask rmTask = new TimerTask() {
       public void run() {
         la.acknowledge(txID1);
@@ -257,6 +261,157 @@ public class LockAccountingTest extends TestCase {
     
     la.waitAllCurrentTxnCompleted();
     timer.cancel();
+  }
+  
+  // verify folded txns
+  public void testFoldedTxns() throws Exception {
+    lockID1 = new StringLockID("lock1");
+    lockID2 = new StringLockID("lock2");
+    lockID3 = new StringLockID("lock3");
+    lockID4 = new StringLockID("lock4");
+    txID1 = new TransactionID(1);
+    txID2 = new TransactionID(2);
+    txID3 = new TransactionID(3);
+    txID4 = new TransactionID(4);
+    lock1Txs = new HashSet();
+    lock2Txs = new HashSet();
+    lock3Txs = new HashSet();
+    lock4Txs = new HashSet();
+    Collection tx1locks = new HashSet();
+    Collection tx2locks = new HashSet();
+    Collection tx3locks = new HashSet();
+    Collection tx4locks = new HashSet();
+
+    lock1Txs.add(txID1);
+    lock2Txs.add(txID2);
+
+    tx1locks.add(lockID1);
+    tx2locks.add(lockID2);
+    tx3locks.add(lockID3);
+    tx4locks.add(lockID4);
+
+
+    // folding lock1 and lock2 into txn1
+    la.add(txID1, tx1locks);
+    assertEquals(1, la.sizeOfTransactionMap());
+    assertEquals(1, la.sizeOfLockMap());
+    assertEquals(1, la.sizeOfIDWrapMap());
+    la.add(txID1, tx2locks);
+    assertEquals(1, la.sizeOfTransactionMap());
+    assertEquals(2, la.sizeOfLockMap());
+    assertEquals(1, la.sizeOfIDWrapMap());
+    
+    // folding lock3 and lock4 into txn2
+    la.add(txID2, tx3locks);
+    assertEquals(2, la.sizeOfTransactionMap());
+    assertEquals(3, la.sizeOfLockMap());
+    assertEquals(2, la.sizeOfIDWrapMap());
+    la.add(txID2, tx4locks);
+    assertEquals(2, la.sizeOfTransactionMap());
+    assertEquals(4, la.sizeOfLockMap());
+    assertEquals(2, la.sizeOfIDWrapMap());
+
+    // lock1 and lock2 map to txn1
+    assertEquals(lock1Txs, la.getTransactionsFor(lockID1));
+    assertEquals(lock1Txs, la.getTransactionsFor(lockID2));
+    
+    // lock3 and lock4 map to txn2
+    assertEquals(lock2Txs, la.getTransactionsFor(lockID3));
+    assertEquals(lock2Txs, la.getTransactionsFor(lockID4));
+    
+    // verify lock1 and lock2 folded in same set
+    Set<LockID> locks = new HashSet<LockID>();
+    locks.add(lockID1);
+    locks.add(lockID2);
+    Set completedLockIDs = la.acknowledge(txID1);
+    assertEquals(locks, completedLockIDs);
+    assertEquals(1, la.sizeOfTransactionMap());
+    assertEquals(2, la.sizeOfLockMap());
+    assertEquals(1, la.sizeOfIDWrapMap());
+    
+    // verify lock2 and lock3 folded in same set
+    locks = new HashSet<LockID>();
+    locks.add(lockID3);
+    locks.add(lockID4);
+    completedLockIDs = la.acknowledge(txID2);
+    assertEquals(locks, completedLockIDs);
+    assertEquals(0, la.sizeOfTransactionMap());
+    assertEquals(0, la.sizeOfLockMap());
+    assertEquals(0, la.sizeOfIDWrapMap());
+
+  }
+
+  private class RunToStringThread extends Thread {
+    private boolean success = true;
+
+    public RunToStringThread(ThreadGroup threadGroup) {
+      super(threadGroup, "ToStringThread");
+    }
+
+    public void run() {
+      for (int i = 0; i < 20; ++i) {
+        try {
+          System.out.println(la.toString());
+        } catch (ConcurrentModificationException e) {
+          e.printStackTrace();
+          success = false;
+          interrupt();
+        }
+        ThreadUtil.reallySleep(500);
+      }
+    }
+
+    public boolean isSuccess() {
+      return success;
+    }
+  }
+
+  private class AddTxnThread extends Thread {
+    private boolean success = true;
+
+    public AddTxnThread(ThreadGroup threadGroup) {
+      super(threadGroup, "AddTxnThread");
+    }
+
+    public void run() {
+      for (int i = 0; i < 500; ++i) {
+        LockID lockID = new StringLockID("lock" + i);
+        Collection txlocks = new HashSet();
+        txlocks.add(lockID);
+        TransactionID txID = new TransactionID(i);
+        la.add(txID, txlocks);
+        ThreadUtil.reallySleep(10);
+      }
+      for (int i = 0; i < 500; ++i) {
+        la.acknowledge(new TransactionID(i));
+        ThreadUtil.reallySleep(5);
+      }
+    }
+
+    public boolean isSuccess() {
+      return success;
+    }
+
+  }
+
+  // test for DEV-4081, toString() causing ConcuurentModificationException
+  public void testToStringCME() {
+    TCThreadGroup threadGroup = new TCThreadGroup(new ThrowableHandler(null), "TCLockAccountingTestGroup");
+    RunToStringThread runToStringThread = new RunToStringThread(threadGroup);
+    AddTxnThread addTxnThread = new AddTxnThread(threadGroup);
+
+    addTxnThread.start();
+    runToStringThread.start();
+    try {
+      addTxnThread.join();
+      runToStringThread.join();
+    } catch (InterruptedException e) {
+      fail();
+    }
+
+    assertTrue(runToStringThread.isSuccess());
+    assertTrue(addTxnThread.isSuccess());
+
   }
 
 }

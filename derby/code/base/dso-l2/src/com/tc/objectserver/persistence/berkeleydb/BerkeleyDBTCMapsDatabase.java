@@ -24,7 +24,7 @@ public class BerkeleyDBTCMapsDatabase extends BerkeleyDBTCBytesBytesDatabase imp
   }
 
   public TCDatabaseCursor openCursor(PersistenceTransaction tx, long objectID) {
-    Cursor cursor = this.db.openCursor(pt2nt(tx), CursorConfig.READ_COMMITTED);
+    Cursor cursor = this.db.openCursor(pt2nt(tx), CursorConfig.READ_UNCOMMITTED);
     return new BerkeleyMapsTCDatabaseCursor(cursor, objectID);
   }
 
@@ -38,7 +38,7 @@ public class BerkeleyDBTCMapsDatabase extends BerkeleyDBTCBytesBytesDatabase imp
 
   public int deleteCollection(long objectID, PersistenceTransaction tx) throws TCDatabaseException {
     int written = 0;
-    Cursor c = db.openCursor(pt2nt(tx), CursorConfig.READ_COMMITTED);
+    Cursor c = db.openCursor(pt2nt(tx), CursorConfig.READ_UNCOMMITTED);
     byte idb[] = Conversion.long2Bytes(objectID);
     DatabaseEntry key = new DatabaseEntry();
     key.setData(idb);

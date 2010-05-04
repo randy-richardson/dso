@@ -37,6 +37,7 @@ import com.tc.util.ProductInfo;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.net.ConnectException;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipInputStream;
 
 import javax.management.AttributeChangeNotification;
 import javax.management.InstanceNotFoundException;
@@ -754,27 +756,33 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
   }
 
   public String getProductVersion() {
-    return getProductInfo().version();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.version() : "";
   }
 
   public String getProductPatchLevel() {
-    return getProductInfo().patchLevel();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.patchLevel() : "";
   }
 
   public String getProductPatchVersion() {
-    return getProductInfo().patchVersion();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.patchVersion() : "";
   }
 
   public String getProductBuildID() {
-    return getProductInfo().buildID();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.buildID() : "";
   }
 
   public String getProductLicense() {
-    return getProductInfo().license();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.license() : "";
   }
 
   public String getProductCopyright() {
-    return getProductInfo().copyright();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.copyright() : "";
   }
 
   public String getEnvironment() {
@@ -789,7 +797,6 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
 
   public long getStartTime() {
     TCServerInfoMBean theServerInfoBean = getServerInfoBean();
-
     if (startTime == -1) {
       startTime = theServerInfoBean != null ? theServerInfoBean.getStartTime() : 0;
     }
@@ -798,7 +805,6 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
 
   public long getActivateTime() {
     TCServerInfoMBean theServerInfoBean = getServerInfoBean();
-
     if (activateTime == -1) {
       activateTime = theServerInfoBean != null ? theServerInfoBean.getActivateTime() : 0;
     }
@@ -1296,7 +1302,11 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
 
   public synchronized String takeThreadDump(long moment) {
     TCServerInfoMBean theServerInfoBean = getServerInfoBean();
-    return theServerInfoBean != null ? theServerInfoBean.takeThreadDump(moment) : "not connected";
+    if (theServerInfoBean == null) return "not connected";
+    byte[] zippedByte = theServerInfoBean.takeCompressedThreadDump(moment);
+    if (zippedByte == null) { return MESSAGE_ON_EXCEPTION; }
+    ZipInputStream zIn = new ZipInputStream(new ByteArrayInputStream(zippedByte));
+    return decompress(zIn);
   }
 
   public synchronized void addServerLogListener(ServerLogListener listener) {
@@ -2105,8 +2115,16 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     return Collections.emptyMap();
   }
 
+  public Map<ObjectName, Map<String, Object>> getAttributeMap(Map<ObjectName, Set<String>> attributeMap) {
+    return getAttributeMap(attributeMap, Long.MAX_VALUE, TimeUnit.SECONDS);
+  }
+
   public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation, long timeout, TimeUnit unit) {
     return invoke(onSet, operation, timeout, unit, new Object[0], new String[0]);
+  }
+
+  public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation) {
+    return invoke(onSet, operation, Long.MAX_VALUE, TimeUnit.SECONDS, new Object[0], new String[0]);
   }
 
   public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation, long timeout, TimeUnit unit,
@@ -2114,6 +2132,10 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     DSOMBean theDsoBean = getDSOBean();
     if (theDsoBean != null && isReady()) { return theDsoBean.invoke(onSet, operation, timeout, unit, args, sigs); }
     return Collections.emptyMap();
+  }
+
+  public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation, Object[] args, String[] sigs) {
+    return invoke(onSet, operation, Long.MAX_VALUE, TimeUnit.SECONDS, args, sigs);
   }
 
   public void gc() {
