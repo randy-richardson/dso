@@ -9,6 +9,7 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.mchange.v2.c3p0.DataSources;
 import com.tc.logging.TCLogger;
 import com.tc.objectserver.persistence.DBEnvironment;
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCLongDatabase;
@@ -37,18 +38,19 @@ import java.util.Map;
 import java.util.Properties;
 
 public class DerbyDBEnvironment implements DBEnvironment {
-  public static final String    DRIVER       = "org.apache.derby.jdbc.EmbeddedDriver";
-  public static final String    PROTOCOL     = "jdbc:derby:";
-  public static final String    DB_NAME      = "objectDB";
+  public static final String    DRIVER        = "org.apache.derby.jdbc.EmbeddedDriver";
+  public static final String    PROTOCOL      = "jdbc:derby:";
+  public static final String    DB_NAME       = "objectDB";
+  private static final Object   CONTROL_LOCK  = new Object();
 
-  private final Map             tables       = new HashMap();
+  private final Map             tables        = new HashMap();
   private final Properties      derbyProps;
-  private ComboPooledDataSource cpds;
+  private final QueryProvider   queryProvider = new DerbyQueryProvider();
   private final boolean         isParanoid;
   private final File            envHome;
+  private ComboPooledDataSource cpds;
   private DBEnvironmentStatus   status;
   private DerbyControlDB        controlDB;
-  private static final Object   CONTROL_LOCK = new Object();
 
   public DerbyDBEnvironment(boolean paranoid, File home) throws IOException {
     this(paranoid, home, new Properties());
@@ -86,7 +88,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
 
       // now open control db
       synchronized (CONTROL_LOCK) {
-        controlDB = new DerbyControlDB(CONTROL_DB, createConnection());
+        controlDB = new DerbyControlDB(CONTROL_DB, createConnection(), queryProvider);
         openResult = new DatabaseOpenResult(controlDB.isClean());
         if (!openResult.isClean()) {
           this.status = DBEnvironmentStatus.STATUS_INIT;
@@ -209,42 +211,42 @@ public class DerbyDBEnvironment implements DBEnvironment {
   }
 
   private void newObjectDB(Connection connection) throws TCDatabaseException {
-    TCObjectDatabase db = new DerbyTCObjectDatabase(OBJECT_DB_NAME, connection);
+    TCObjectDatabase db = new DerbyTCObjectDatabase(OBJECT_DB_NAME, connection, queryProvider);
     tables.put(OBJECT_DB_NAME, db);
   }
 
   private void newRootDB(Connection connection) throws TCDatabaseException {
-    TCRootDatabase db = new DerbyTCRootDatabase(ROOT_DB_NAME, connection);
+    TCRootDatabase db = new DerbyTCRootDatabase(ROOT_DB_NAME, connection, queryProvider);
     tables.put(ROOT_DB_NAME, db);
   }
 
   private void newBytesToBlobDB(String tableName, Connection connection) throws TCDatabaseException {
-    TCBytesToBytesDatabase db = new DerbyTCBytesToBlobDB(tableName, connection);
+    TCBytesToBytesDatabase db = new DerbyTCBytesToBlobDB(tableName, connection, queryProvider);
     tables.put(tableName, db);
   }
 
   private void newLongDB(String tableName, Connection connection) throws TCDatabaseException {
-    TCLongDatabase db = new DerbyTCLongDatabase(tableName, connection);
+    TCLongDatabase db = new DerbyTCLongDatabase(tableName, connection, queryProvider);
     tables.put(tableName, db);
   }
 
   private void newIntToBytesDB(String tableName, Connection connection) throws TCDatabaseException {
-    TCIntToBytesDatabase db = new DerbyTCIntToBytesDatabase(tableName, connection);
+    TCIntToBytesDatabase db = new DerbyTCIntToBytesDatabase(tableName, connection, queryProvider);
     tables.put(tableName, db);
   }
 
   private void newLongToStringDB(String tableName, Connection connection) throws TCDatabaseException {
-    TCLongToStringDatabase db = new DerbyTCLongToStringDatabase(tableName, connection);
+    TCLongToStringDatabase db = new DerbyTCLongToStringDatabase(tableName, connection, queryProvider);
     tables.put(tableName, db);
   }
 
   private void newStringToStringDB(String tableName, Connection connection) throws TCDatabaseException {
-    TCStringToStringDatabase db = new DerbyTCStringToStringDatabase(tableName, connection);
+    TCStringToStringDatabase db = new DerbyTCStringToStringDatabase(tableName, connection, queryProvider);
     tables.put(tableName, db);
   }
 
   private void newMapsDatabase(Connection connection) throws TCDatabaseException {
-    TCMapsDatabase db = new DerbyTCMapsDatabase(MAP_DB_NAME, connection);
+    TCMapsDatabase db = new DerbyTCMapsDatabase(MAP_DB_NAME, connection, queryProvider);
     tables.put(MAP_DB_NAME, db);
   }
 

@@ -3,6 +3,7 @@
  */
 package com.tc.objectserver.persistence.derby;
 
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCIntToBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
@@ -19,17 +20,17 @@ import java.util.Map;
 
 public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implements TCIntToBytesDatabase {
 
-  public DerbyTCIntToBytesDatabase(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyTCIntToBytesDatabase(String tableName, Connection connection, QueryProvider queryProvider)
+      throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
   }
 
   @Override
-  protected void createTableIfNotExists(Connection connection) throws SQLException {
+  protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_INT + ", " + VALUE + " "
-                   + DerbyDataTypes.TC_BYTE_ARRAY_VALUE + ", PRIMARY KEY(" + KEY + ") )";
+    String query = queryProvider.createIntToBytesDBTable(tableName, KEY, VALUE);
     statement.execute(query);
     statement.close();
     connection.commit();

@@ -3,6 +3,7 @@
  */
 package com.tc.objectserver.persistence.derby;
 
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.TCStringToStringDatabase;
 import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
@@ -18,17 +19,16 @@ import java.sql.Statement;
 
 public class DerbyTCStringToStringDatabase extends AbstractDerbyTCDatabase implements TCStringToStringDatabase {
 
-  public DerbyTCStringToStringDatabase(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyTCStringToStringDatabase(String tableName, Connection connection, QueryProvider queryProvider) throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
   }
 
   @Override
-  protected void createTableIfNotExists(Connection connection) throws SQLException {
+  protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_STRING + ", " + VALUE + " "
-                   + DerbyDataTypes.TC_STRING + ", PRIMARY KEY(" + KEY + ") )";
+    String query = queryProvider.createStringToStringDBTable(tableName, KEY, VALUE);
     statement.execute(query);
     statement.close();
     connection.commit();

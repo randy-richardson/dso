@@ -3,6 +3,7 @@
  */
 package com.tc.objectserver.persistence.derby;
 
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
@@ -20,18 +21,17 @@ import java.sql.Statement;
 public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMapsDatabase {
   private static final String OBJECT_ID = "objectid";
 
-  public DerbyTCMapsDatabase(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyTCMapsDatabase(String tableName, Connection connection, QueryProvider queryProvider)
+      throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
   }
 
   @Override
-  protected void createTableIfNotExists(Connection connection) throws SQLException {
+  protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + OBJECT_ID + " " + DerbyDataTypes.TC_LONG + ", " + KEY + " "
-                   + DerbyDataTypes.TC_BYTE_ARRAY_KEY + ", " + VALUE + " " + DerbyDataTypes.TC_BYTE_ARRAY_VALUE
-                   + ", PRIMARY KEY(" + KEY + "," + OBJECT_ID + ") )";
+    String query = queryProvider.createMapsDBTable(tableName, OBJECT_ID, KEY, VALUE);
     statement.execute(query);
     statement.close();
     connection.commit();

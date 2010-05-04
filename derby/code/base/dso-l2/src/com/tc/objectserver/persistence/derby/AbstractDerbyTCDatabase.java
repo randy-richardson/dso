@@ -5,6 +5,7 @@ package com.tc.objectserver.persistence.derby;
 
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 
@@ -19,10 +20,10 @@ public abstract class AbstractDerbyTCDatabase {
   protected final String        tableName;
   private static final TCLogger logger = TCLogging.getLogger(AbstractDerbyTCDatabase.class);
 
-  public AbstractDerbyTCDatabase(String tableName, Connection connection) throws TCDatabaseException {
+  public AbstractDerbyTCDatabase(String tableName, Connection connection, QueryProvider queryProvider) throws TCDatabaseException {
     this.tableName = tableName;
     try {
-      createTableIfNotExists(connection);
+      createTableIfNotExists(connection, queryProvider);
     } catch (SQLException e) {
       try {
         connection.rollback();
@@ -47,5 +48,5 @@ public abstract class AbstractDerbyTCDatabase {
     }
   }
 
-  protected abstract void createTableIfNotExists(Connection connection) throws SQLException;
+  protected abstract void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException;
 }

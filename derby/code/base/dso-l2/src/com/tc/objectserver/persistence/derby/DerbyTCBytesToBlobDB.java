@@ -3,6 +3,7 @@
  */
 package com.tc.objectserver.persistence.derby;
 
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
@@ -18,16 +19,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCBytesToBytesDatabase {
-  public DerbyTCBytesToBlobDB(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyTCBytesToBlobDB(String tableName, Connection connection, QueryProvider queryProvider)
+      throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
   }
 
-  protected final void createTableIfNotExists(Connection connection) throws SQLException {
+  protected final void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_BYTE_ARRAY_KEY + ", " + VALUE
-                   + " " + DerbyDataTypes.TC_BYTE_ARRAY_VALUE + ", PRIMARY KEY(" + KEY + ") )";
+    String query = queryProvider.createBytesToBlobDBTable(tableName, KEY, VALUE);
     statement.execute(query);
     statement.close();
     connection.commit();

@@ -3,6 +3,7 @@
  */
 package com.tc.objectserver.persistence.derby;
 
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCLongDatabase;
 import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
@@ -19,17 +20,16 @@ import java.util.Set;
 
 public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLongDatabase {
 
-  public DerbyTCLongDatabase(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyTCLongDatabase(String tableName, Connection connection, QueryProvider queryProvider) throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
   }
 
   @Override
-  protected void createTableIfNotExists(Connection connection) throws SQLException {
+  protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_LONG + ", PRIMARY KEY(" + KEY
-                   + ") )";
+    String query = queryProvider.createLongDBTable(tableName, KEY);
     statement.execute(query);
     statement.close();
     connection.commit();

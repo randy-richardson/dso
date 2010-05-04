@@ -3,6 +3,7 @@
  */
 package com.tc.objectserver.persistence.derby;
 
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.sleepycat.TCDatabaseException;
 
 import java.sql.Connection;
@@ -21,17 +22,17 @@ public class DerbyControlDB extends AbstractDerbyTCDatabase {
 
   private final Connection   connection;
 
-  public DerbyControlDB(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyControlDB(String tableName, Connection connection, QueryProvider queryProvider)
+      throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
     this.connection = connection;
   }
 
-  protected void createTableIfNotExists(Connection conn) throws SQLException {
+  protected void createTableIfNotExists(Connection conn, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(conn, tableName)) { return; }
 
     Statement statement = conn.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " VARCHAR (10), " + VALUE + " SMALLINT, PRIMARY KEY("
-                   + KEY + ") )";
+    String query = queryProvider.createControlDBTable(tableName, KEY, VALUE);
     statement.execute(query);
     statement.close();
     conn.commit();

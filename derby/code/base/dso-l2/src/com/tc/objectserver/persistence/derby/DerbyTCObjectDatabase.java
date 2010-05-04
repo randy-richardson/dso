@@ -6,6 +6,7 @@ package com.tc.objectserver.persistence.derby;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCObjectDatabase;
 import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
@@ -22,16 +23,16 @@ import java.sql.Statement;
 public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TCObjectDatabase {
   private static final TCLogger logger = TCLogging.getLogger(DerbyTCObjectDatabase.class);
 
-  public DerbyTCObjectDatabase(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyTCObjectDatabase(String tableName, Connection connection, QueryProvider queryProvider)
+      throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
   }
 
-  protected final void createTableIfNotExists(Connection connection) throws SQLException {
+  protected final void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_LONG + ", " + VALUE + " "
-                   + DerbyDataTypes.TC_BYTE_ARRAY_VALUE + ", PRIMARY KEY(" + KEY + ") )";
+    String query = queryProvider.createObjectDBTable(tableName, KEY, VALUE);
     statement.execute(query);
     statement.close();
     connection.commit();

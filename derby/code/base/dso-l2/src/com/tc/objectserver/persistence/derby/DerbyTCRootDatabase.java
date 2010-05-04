@@ -4,6 +4,7 @@
 package com.tc.objectserver.persistence.derby;
 
 import com.tc.object.ObjectID;
+import com.tc.objectserver.persistence.QueryProvider;
 import com.tc.objectserver.persistence.TCRootDatabase;
 import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
@@ -23,16 +24,16 @@ import java.util.Map;
 import java.util.Set;
 
 public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRootDatabase {
-  public DerbyTCRootDatabase(String tableName, Connection connection) throws TCDatabaseException {
-    super(tableName, connection);
+  public DerbyTCRootDatabase(String tableName, Connection connection, QueryProvider queryProvider)
+      throws TCDatabaseException {
+    super(tableName, connection, queryProvider);
   }
 
-  protected final void createTableIfNotExists(Connection connection) throws SQLException {
+  protected final void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
     Statement statement = connection.createStatement();
-    String query = "CREATE TABLE " + tableName + "(" + KEY + " " + DerbyDataTypes.TC_BYTE_ARRAY_KEY + ", " + VALUE
-                   + " " + DerbyDataTypes.TC_LONG + ", PRIMARY KEY(" + KEY + ") )";
+    String query = queryProvider.createRootDBTable(tableName, KEY, VALUE);
     statement.execute(query);
     statement.close();
     connection.commit();

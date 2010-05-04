@@ -193,7 +193,6 @@ import com.tc.objectserver.persistence.api.Persistor;
 import com.tc.objectserver.persistence.api.TransactionPersistor;
 import com.tc.objectserver.persistence.api.TransactionStore;
 import com.tc.objectserver.persistence.derby.DerbyDBEnvironment;
-import com.tc.objectserver.persistence.derby.TransactionLessDerbyPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.InMemoryPersistor;
 import com.tc.objectserver.persistence.impl.InMemorySequenceProvider;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
@@ -621,11 +620,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
       gidSequence = new InMemorySequenceProvider();
 
       transactionPersistor = new NullTransactionPersistor();
-      if (!isDerby) {
-        transactionStorePTP = new NullPersistenceTransactionProvider();
-      } else {
-        transactionStorePTP = new TransactionLessDerbyPersistenceTransactionProvider((DerbyDBEnvironment) dbenv);
-      }
+      transactionStorePTP = new NullPersistenceTransactionProvider();
     }
 
     GlobalTransactionIDBatchRequestHandler gidSequenceProvider = new GlobalTransactionIDBatchRequestHandler(gidSequence);
@@ -709,7 +704,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
                                                              managedObjectFlushHandler,
                                                              (persistent ? 1 : this.l2Properties
                                                                  .getInt("seda.flushstage.threads")), -1);
-    long enterpriseMarkStageInterval = objManagerProperties.getPropertiesFor("dgc").getLong("enterpriseMarkStageInterval");
+    long enterpriseMarkStageInterval = objManagerProperties.getPropertiesFor("dgc")
+        .getLong("enterpriseMarkStageInterval");
     TCProperties youngDGCProperties = objManagerProperties.getPropertiesFor("dgc").getPropertiesFor("young");
     boolean enableYoungGenDGC = youngDGCProperties.getBoolean("enabled");
     long youngGenDGCFrequency = youngDGCProperties.getLong("frequencyInMillis");
