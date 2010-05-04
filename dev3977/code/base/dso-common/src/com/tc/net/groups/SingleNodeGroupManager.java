@@ -108,4 +108,8 @@ public class SingleNodeGroupManager implements GroupManager {
   public boolean isServerConnected(String nodeName) {
     throw new UnsupportedOperationException();
   }
+
+  public void closeMember(ServerID serverID) {
+    // NOP
+  }
 }

@@ -1131,4 +1131,13 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     return this.discover.isServerConnected(nodeName);
   }
 
+  public void closeMember(ServerID serverID) {
+    TCGroupMember member = getMember(serverID);
+    if (member != null) {
+      logger.info("Close member " + member);
+      closeMember(member, true);
+    } else {
+      logger.info("Non-exist member " + serverID);
+    }
+  }
 }

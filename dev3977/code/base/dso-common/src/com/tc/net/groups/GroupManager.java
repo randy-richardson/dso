@@ -7,6 +7,7 @@ package com.tc.net.groups;
 import com.tc.async.api.Sink;
 import com.tc.config.NodesStore;
 import com.tc.net.NodeID;
+import com.tc.net.ServerID;
 
 import java.util.Set;
 
@@ -41,4 +42,6 @@ public interface GroupManager {
   public boolean isConnectionToNodeActive(NodeID sid);
 
   public boolean isServerConnected(String nodeName);
+
+  public void closeMember(ServerID serverID);
 }

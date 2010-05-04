@@ -145,7 +145,7 @@
       <dependency>
         <groupId>berkeleydb</groupId>
         <artifactId>je</artifactId>
-        <version>4.0.92</version>
+        <version>4.0.103</version>
       </dependency>
       <dependency>
         <groupId>jline</groupId>
@@ -155,7 +155,7 @@
       <dependency>
         <groupId>jfree</groupId>
         <artifactId>jfreechart</artifactId>
-        <version>1.0.11</version>
+        <version>1.0.13</version>
        <exclusions>
          <exclusion>
            <groupId>gnujaxp</groupId>
@@ -163,17 +163,6 @@
          </exclusion>
        </exclusions>
       </dependency>
-      <dependency>
-        <groupId>jfree</groupId>
-        <artifactId>jfreechart</artifactId>
-        <version>1.0.11-experimental</version>
-       <exclusions>
-         <exclusion>
-           <groupId>gnujaxp</groupId>
-           <artifactId>gnujaxp</artifactId>
-         </exclusion>
-       </exclusions>
-      </dependency>      
       <dependency>
         <groupId>treemap</groupId>
         <artifactId>treemap</artifactId>
@@ -346,6 +335,12 @@
       <releases><enabled>true</enabled></releases>
       <snapshots><enabled>false</enabled></snapshots>
     </repository>
+    <repository>
+      <id>jboss</id>
+      <url>http://repository.jboss.com/maven2</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>    
   </repositories>
   <pluginRepositories>
     <pluginRepository>

@@ -34,6 +34,10 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
     this.serverNamesOfThisGroup = serverNamesOfThisGroup;
   }
 
+  public void closeMember(ServerID serverID) {
+    this.groupManager.closeMember(serverID);
+  }
+
   public NodeID getLocalNodeID() {
     return groupManager.getLocalNodeID();
   }
