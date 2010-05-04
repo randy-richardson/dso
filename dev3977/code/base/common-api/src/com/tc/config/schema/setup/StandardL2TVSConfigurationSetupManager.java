@@ -160,7 +160,10 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     // Check if removed members are still alive
     Set<String> membersRemoved = topologyVerfier.getRemovedMembers();
     for (String member : membersRemoved) {
-      if (serverConnectionValidator.isAlive(member)) { return TopologyReloadStatus.SERVER_STILL_ALIVE; }
+      if (serverConnectionValidator.isAlive(member)) {
+        logger.warn("Reloading servers config failed as " + member + " is still alive.");
+        return TopologyReloadStatus.SERVER_STILL_ALIVE;
+      }
     }
 
     this.configurationCreator.reloadServersConfiguration(serversBeanRepository());

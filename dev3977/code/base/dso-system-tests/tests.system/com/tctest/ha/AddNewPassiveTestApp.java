@@ -17,7 +17,7 @@ import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.management.JMXConnectorProxy;
 import com.tc.management.beans.L2MBeanNames;
 import com.tc.management.beans.TCServerInfoMBean;
-import com.tc.management.beans.l1.L1InfoMBean;
+import com.tc.management.beans.object.EnterpriseTCClientMbean;
 import com.tc.management.beans.object.EnterpriseTCServerMbean;
 import com.tc.objectserver.control.ExtraProcessServerControl;
 import com.tc.stats.DSOClientMBean;
@@ -185,8 +185,8 @@ public class AddNewPassiveTestApp {
     for (int i = 0; i < clients.length; i++) {
       clients[i] = (DSOClientMBean) MBeanServerInvocationHandler.newProxyInstance(mbsc, clientObjectNames[i],
                                                                                   DSOClientMBean.class, false);
-      L1InfoMBean l1InfoMbean = (L1InfoMBean) MBeanServerInvocationHandler.newProxyInstance(mbsc, clients[i]
-          .getL1InfoBeanName(), L1InfoMBean.class, false);
+      EnterpriseTCClientMbean l1InfoMbean = (EnterpriseTCClientMbean) MBeanServerInvocationHandler
+          .newProxyInstance(mbsc, clients[i].getEnterpriseTCClientBeanName(), EnterpriseTCClientMbean.class, false);
       try {
         l1InfoMbean.reloadConfiguration();
       } catch (ConfigurationSetupException e) {

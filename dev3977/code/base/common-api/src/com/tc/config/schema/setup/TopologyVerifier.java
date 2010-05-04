@@ -6,6 +6,8 @@ package com.tc.config.schema.setup;
 import com.tc.config.schema.ActiveServerGroupConfig;
 import com.tc.config.schema.ActiveServerGroupsConfig;
 import com.tc.config.schema.repository.MutableBeanRepository;
+import com.tc.logging.TCLogger;
+import com.tc.logging.TCLogging;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
@@ -23,6 +25,8 @@ public class TopologyVerifier {
   private final Servers                  oldServersBean;
   private final Servers                  newServersBean;
   private final ActiveServerGroupsConfig oldGroupsInfo;
+
+  private static final TCLogger          logger = TCLogging.getLogger(TopologyVerifier.class);
 
   TopologyVerifier(MutableBeanRepository oldServers, MutableBeanRepository newServers,
                    ActiveServerGroupsConfig oldGroupsInfo) {
@@ -77,7 +81,10 @@ public class TopologyVerifier {
       String groupName = newGroupInfo.getGroupName();
       for (String member : newGroupInfo.getMembers().getMemberArray()) {
         String previousGrpName = getPreviousGroupName(member);
-        if (previousGrpName != null && !groupName.equals(previousGrpName)) { return true; }
+        if (previousGrpName != null && !groupName.equals(previousGrpName)) {
+          logger.warn(member + " group was changed. This is not supported currently.");
+          return true;
+        }
       }
     }
 
@@ -105,6 +112,10 @@ public class TopologyVerifier {
     }
 
     boolean areGroupNamesSame = oldGroupNames.equals(newGroupNames);
+    if (!areGroupNamesSame) {
+      logger.warn("The group names have changed. Groups before=" + oldGroupNames + " Groups after=" + newGroupNames);
+    }
+
     return areGroupNamesSame;
   }
 
@@ -151,7 +162,13 @@ public class TopologyVerifier {
    */
   private boolean checkServer(Server oldServer, Server newServer) {
     if ((oldServer.getDsoPort() != newServer.getDsoPort()) || (oldServer.getJmxPort() != newServer.getJmxPort())
-        || (oldServer.getL2GroupPort() != newServer.getL2GroupPort())) { return false; }
+        || (oldServer.getL2GroupPort() != newServer.getL2GroupPort())) {
+      logger.warn("Server port configuration was changed for server " + oldServer.getName()
+                  + ". [dso-port, l2-group-port, jmx-port] [" + oldServer.getDsoPort() + ", "
+                  + oldServer.getL2GroupPort() + ", " + oldServer.getJmxPort() + "] to [" + newServer.getDsoPort()
+                  + ", " + newServer.getL2GroupPort() + ", " + newServer.getJmxPort() + "]");
+      return false;
+    }
 
     if (oldServer.isSetDso() && oldServer.getDso().isSetGarbageCollection()) {
       if (!newServer.isSetDso() || !newServer.getDso().isSetGarbageCollection()) { return false; }
@@ -159,7 +176,10 @@ public class TopologyVerifier {
       if ((oldServer.getDso().getGarbageCollection().getEnabled() != newServer.getDso().getGarbageCollection()
           .getEnabled())
           || oldServer.getDso().getGarbageCollection().getInterval() != newServer.getDso().getGarbageCollection()
-              .getInterval()) { return false; }
+              .getInterval()) {
+        logger.warn("Server Garbage Collection Info changed for server " + oldServer.getName());
+        return false;
+      }
     }
 
     return true;

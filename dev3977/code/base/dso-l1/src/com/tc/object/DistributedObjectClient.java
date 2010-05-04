@@ -26,6 +26,7 @@ import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.ClientLockStatManager;
 import com.tc.management.L1Management;
 import com.tc.management.TCClient;
+import com.tc.management.beans.object.EnterpriseTCClientMbean;
 import com.tc.management.beans.sessions.SessionMonitor;
 import com.tc.management.lock.stats.LockStatisticsMessage;
 import com.tc.management.lock.stats.LockStatisticsResponseMessageImpl;
@@ -218,6 +219,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
   private boolean                                    createDedicatedMBeanServer          = false;
   private CounterManager                             counterManager;
   private ThreadIDManager                            threadIDManager;
+
+  protected EnterpriseTCClientMbean                  enterpriseTCClientMbean;
 
   public DistributedObjectClient(final DSOClientConfigHelper config, final TCThreadGroup threadGroup,
                                  final ClassProvider classProvider,
@@ -511,8 +514,10 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     // Set up the JMX management stuff
     final TunnelingEventHandler teh = this.dsoClientBuilder.createTunnelingEventHandler(this.channel.channel(), config
         .getUUID());
+
     this.l1Management = new L1Management(teh, this.statisticsAgentSubSystem, this.runtimeLogger, this.manager
-        .getInstrumentationLogger(), this.config.rawConfigText(), this, this.config.getMBeanSpecs());
+        .getInstrumentationLogger(), this.config.rawConfigText(), this, this.config.getMBeanSpecs(),
+                                         this.enterpriseTCClientMbean);
     this.l1Management.start(this.createDedicatedMBeanServer);
 
     // Setup the lock manager
