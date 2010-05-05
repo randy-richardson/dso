@@ -760,27 +760,33 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
   }
 
   public String getProductVersion() {
-    return getProductInfo().version();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.version() : "";
   }
 
   public String getProductPatchLevel() {
-    return getProductInfo().patchLevel();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.patchLevel() : "";
   }
 
   public String getProductPatchVersion() {
-    return getProductInfo().patchVersion();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.patchVersion() : "";
   }
 
   public String getProductBuildID() {
-    return getProductInfo().buildID();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.buildID() : "";
   }
 
   public String getProductLicense() {
-    return getProductInfo().license();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.license() : "";
   }
 
   public String getProductCopyright() {
-    return getProductInfo().copyright();
+    IProductVersion pi = getProductInfo();
+    return pi != null ? pi.copyright() : "";
   }
 
   public String getEnvironment() {
@@ -795,7 +801,6 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
 
   public long getStartTime() {
     TCServerInfoMBean theServerInfoBean = getServerInfoBean();
-
     if (startTime == -1) {
       startTime = theServerInfoBean != null ? theServerInfoBean.getStartTime() : 0;
     }
@@ -804,7 +809,6 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
 
   public long getActivateTime() {
     TCServerInfoMBean theServerInfoBean = getServerInfoBean();
-
     if (activateTime == -1) {
       activateTime = theServerInfoBean != null ? theServerInfoBean.getActivateTime() : 0;
     }
@@ -2157,8 +2161,16 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     return Collections.emptyMap();
   }
 
+  public Map<ObjectName, Map<String, Object>> getAttributeMap(Map<ObjectName, Set<String>> attributeMap) {
+    return getAttributeMap(attributeMap, Long.MAX_VALUE, TimeUnit.SECONDS);
+  }
+
   public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation, long timeout, TimeUnit unit) {
     return invoke(onSet, operation, timeout, unit, new Object[0], new String[0]);
+  }
+
+  public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation) {
+    return invoke(onSet, operation, Long.MAX_VALUE, TimeUnit.SECONDS, new Object[0], new String[0]);
   }
 
   public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation, long timeout, TimeUnit unit,
@@ -2166,6 +2178,10 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     DSOMBean theDsoBean = getDSOBean();
     if (theDsoBean != null && isReady()) { return theDsoBean.invoke(onSet, operation, timeout, unit, args, sigs); }
     return Collections.emptyMap();
+  }
+
+  public Map<ObjectName, Object> invoke(Set<ObjectName> onSet, String operation, Object[] args, String[] sigs) {
+    return invoke(onSet, operation, Long.MAX_VALUE, TimeUnit.SECONDS, args, sigs);
   }
 
   public void gc() {
