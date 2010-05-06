@@ -39,10 +39,10 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
     L1TVSConfigurationSetupManager {
   private final ConfigurationCreator configurationCreator;
   private final NewCommonL1Config    commonL1Config;
-  private L2ConfigForL1              l2ConfigForL1;
   private final NewL1DSOConfig       dsoL1Config;
   private final ConfigTCProperties   configTCProperties;
   private final boolean              loadedFromTrustedSource;
+  private volatile L2ConfigForL1     l2ConfigForL1;
 
   public StandardL1TVSConfigurationSetupManager(ConfigurationCreator configurationCreator,
                                                 DefaultValueProvider defaultValueProvider,

@@ -341,7 +341,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
   private ReconnectConfig                        l1ReconnectConfig;
 
-  protected GroupManager                         groupCommManager;
+  private GroupManager                           groupCommManager;
   private Stage                                  hydrateStage;
   private StripeIDStateManager                   stripeIDStateManager;
 
@@ -1451,5 +1451,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
   public ThreadIDMap getThreadIDMap() {
     return new NullThreadIDMapImpl();
+  }
+
+  protected GroupManager getGroupManager() {
+    return this.groupCommManager;
   }
 }

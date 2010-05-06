@@ -30,7 +30,6 @@ import com.tc.config.schema.repository.ChildBeanFetcher;
 import com.tc.config.schema.repository.ChildBeanRepository;
 import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.config.schema.repository.StandardBeanRepository;
-import com.tc.config.schema.setup.TopologyVerifier.TopologyReloadStatus;
 import com.tc.config.schema.utils.XmlObjectComparator;
 import com.tc.license.Capability;
 import com.tc.license.LicenseCheck;
@@ -76,19 +75,19 @@ import java.util.Set;
 public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfigurationSetupManager implements
     L2TVSConfigurationSetupManager {
 
-  private static final TCLogger      logger = TCLogging.getLogger(StandardL2TVSConfigurationSetupManager.class);
+  private static final TCLogger             logger = TCLogging.getLogger(StandardL2TVSConfigurationSetupManager.class);
 
-  private final ConfigurationCreator configurationCreator;
-  private NewSystemConfig            systemConfig;
-  private final Map                  l2ConfigData;
-  private final NewHaConfig          haConfig;
-  private ActiveServerGroupsConfig   activeServerGroupsConfig;
-  private final UpdateCheckConfig    updateCheckConfig;
+  private final ConfigurationCreator        configurationCreator;
+  private final Map                         l2ConfigData;
+  private final NewHaConfig                 haConfig;
+  private final UpdateCheckConfig           updateCheckConfig;
+  private final String                      thisL2Identifier;
+  private final L2ConfigData                myConfigData;
+  private final ConfigTCProperties          configTCProperties;
+  private final Set<InetAddress>            localInetAddresses;
 
-  private String                     thisL2Identifier;
-  private L2ConfigData               myConfigData;
-  private final ConfigTCProperties   configTCProperties;
-  private final Set<InetAddress>     localInetAddresses;
+  private NewSystemConfig                   systemConfig;
+  private volatile ActiveServerGroupsConfig activeServerGroupsConfig;
 
   public StandardL2TVSConfigurationSetupManager(ConfigurationCreator configurationCreator, String thisL2Identifier,
                                                 DefaultValueProvider defaultValueProvider,
@@ -121,7 +120,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     }
 
     try {
-      this.activeServerGroupsConfig = getActiveServerGroupsConfig();
+      this.activeServerGroupsConfig = createActiveServerGroupsConfig();
     } catch (Exception e) {
       throw new ConfigurationSetupException(e);
     }
@@ -148,28 +147,19 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   public TopologyReloadStatus reloadConfiguration(ServerConnectionValidator serverConnectionValidator)
       throws ConfigurationSetupException {
-    MutableBeanRepository changedl2sBeanRepository = new StandardBeanRepository(Servers.class);
+    MutableBeanRepository changedL2sBeanRepository = new StandardBeanRepository(Servers.class);
 
-    this.configurationCreator.reloadServersConfiguration(changedl2sBeanRepository);
+    this.configurationCreator.reloadServersConfiguration(changedL2sBeanRepository);
 
-    TopologyVerifier topologyVerfier = new TopologyVerifier(serversBeanRepository(), changedl2sBeanRepository,
-                                                            this.activeServerGroupsConfig);
-    TopologyReloadStatus status = topologyVerfier.checkAndValidateConfig();
+    TopologyVerifier topologyVerifier = new TopologyVerifier(serversBeanRepository(), changedL2sBeanRepository,
+                                                             this.activeServerGroupsConfig, serverConnectionValidator);
+    TopologyReloadStatus status = topologyVerifier.checkAndValidateConfig();
     if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
-
-    // Check if removed members are still alive
-    Set<String> membersRemoved = topologyVerfier.getRemovedMembers();
-    for (String member : membersRemoved) {
-      if (serverConnectionValidator.isAlive(member)) {
-        logger.warn("Reloading servers config failed as " + member + " is still alive.");
-        return TopologyReloadStatus.SERVER_STILL_ALIVE;
-      }
-    }
 
     this.configurationCreator.reloadServersConfiguration(serversBeanRepository());
 
     try {
-      this.activeServerGroupsConfig = getActiveServerGroupsConfig();
+      this.activeServerGroupsConfig = createActiveServerGroupsConfig();
     } catch (XmlException e) {
       throw new ConfigurationSetupException(e);
     }
@@ -258,7 +248,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   // make sure there is at most one of these
-  private ActiveServerGroupsConfig getActiveServerGroupsConfig() throws ConfigurationSetupException, XmlException {
+  private ActiveServerGroupsConfig createActiveServerGroupsConfig() throws ConfigurationSetupException, XmlException {
 
     final MirrorGroups defaultActiveServerGroups = ActiveServerGroupsConfigObject
         .getDefaultActiveServerGroups(defaultValueProvider, serversBeanRepository(), getCommomOrDefaultHa().getHa());

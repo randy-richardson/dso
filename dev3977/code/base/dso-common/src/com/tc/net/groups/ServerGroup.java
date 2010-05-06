@@ -16,11 +16,10 @@ import com.tc.object.config.schema.NewL2DSOConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerGroup {
 
@@ -33,7 +32,7 @@ public class ServerGroup {
     this.groupId = group.getGroupId();
     this.members = group.getMembers().getMemberArray();
     this.haMode = group.getHa();
-    this.nodes = Collections.synchronizedMap(new HashMap());
+    this.nodes = new ConcurrentHashMap();
   }
 
   public ReloadConfigChangeContext reloadGroup(L2TVSConfigurationSetupManager manager,

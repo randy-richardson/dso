@@ -11,4 +11,5 @@ public interface ClusterInfo {
 
   GroupID getGroupIDFromServerName(String name);
 
+  boolean hasServerInGroup(String serverName);
 }

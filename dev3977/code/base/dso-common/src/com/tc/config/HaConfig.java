@@ -43,9 +43,7 @@ public interface HaConfig {
    */
   ReloadConfigChangeContext reloadConfiguration() throws ConfigurationSetupException;
 
-  ClusterInfo getServerNameToGroupID();
+  ClusterInfo getClusterInfo();
 
-  ServerNamesOfThisGroup getServerNamesOfThisGroup();
-  
   String getNodeName(String member);
 }

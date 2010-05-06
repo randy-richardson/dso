@@ -5,8 +5,8 @@
 package com.tc.net.groups;
 
 import com.tc.async.api.Sink;
+import com.tc.config.ClusterInfo;
 import com.tc.config.NodesStore;
-import com.tc.config.ServerNamesOfThisGroup;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.NodeID;
@@ -26,9 +26,9 @@ public class VirtualTCGroupManagerImpl implements GroupManager, GroupEventsListe
   private final CopyOnWriteArrayList<GroupEventsListener> groupListeners   = new CopyOnWriteArrayList<GroupEventsListener>();
   private final Map<String, GroupMessageListener>         messageListeners = new ConcurrentHashMap<String, GroupMessageListener>();
   private final Set<NodeID>                               groupNodeIDs     = new CopyOnWriteArraySet<NodeID>();
-  private final ServerNamesOfThisGroup                    serverNamesOfThisGroup;
+  private final ClusterInfo                    serverNamesOfThisGroup;
 
-  public VirtualTCGroupManagerImpl(GroupManager groupManager, ServerNamesOfThisGroup serverNamesOfThisGroup) {
+  public VirtualTCGroupManagerImpl(GroupManager groupManager, ClusterInfo serverNamesOfThisGroup) {
     this.groupManager = groupManager;
     groupManager.registerForGroupEvents(this);
     this.serverNamesOfThisGroup = serverNamesOfThisGroup;

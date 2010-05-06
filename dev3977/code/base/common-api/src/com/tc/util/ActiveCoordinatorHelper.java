@@ -56,7 +56,7 @@ public class ActiveCoordinatorHelper {
 
   private static TreeMap<String, ActiveServerGroupConfigObject> generateCandidateGroupNames(
                                                                                             ActiveServerGroupConfigObject[] asgcos) {
-    TreeMap<String, ActiveServerGroupConfigObject> grpNamesToGrp = new TreeMap<String, ActiveServerGroupConfigObject>();
+    TreeMap<String, ActiveServerGroupConfigObject> groupNamesToGroup = new TreeMap<String, ActiveServerGroupConfigObject>();
 
     for (int i = 0; i < asgcos.length; i++) {
       String groupName = null;
@@ -66,13 +66,13 @@ public class ActiveCoordinatorHelper {
         groupName = asgcos[i].getGroupName();
       }
 
-      grpNamesToGrp.put(groupName, asgcos[i]);
+      groupNamesToGroup.put(groupName, asgcos[i]);
     }
-    return grpNamesToGrp;
+    return groupNamesToGroup;
   }
 
   private static TreeMap<String, MirrorGroup> generateCandidateGroupNames(MirrorGroup[] mirrorGroups) {
-    TreeMap<String, MirrorGroup> grpNamesToGrp = new TreeMap<String, MirrorGroup>();
+    TreeMap<String, MirrorGroup> groupNamesToGroup = new TreeMap<String, MirrorGroup>();
 
     for (int i = 0; i < mirrorGroups.length; i++) {
       String groupName = null;
@@ -82,9 +82,9 @@ public class ActiveCoordinatorHelper {
         groupName = mirrorGroups[i].getGroupName();
       }
 
-      grpNamesToGrp.put(groupName, mirrorGroups[i]);
+      groupNamesToGroup.put(groupName, mirrorGroups[i]);
     }
-    return grpNamesToGrp;
+    return groupNamesToGroup;
   }
 
   private static boolean groupNameNotSet(ActiveServerGroupConfigObject asgco) {
@@ -102,11 +102,11 @@ public class ActiveCoordinatorHelper {
     }
     Arrays.sort(temp);
 
-    StringBuffer grpName = new StringBuffer();
+    StringBuffer groupName = new StringBuffer();
     for (int i = 0; i < temp.length; i++) {
-      grpName.append(temp[i]);
+      groupName.append(temp[i]);
     }
-    return grpName.toString();
+    return groupName.toString();
   }
 
   public static class ActiveGroupIDComparator implements Comparator<ActiveServerGroupConfig> {

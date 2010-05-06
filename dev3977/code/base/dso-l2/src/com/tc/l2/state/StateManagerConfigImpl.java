@@ -17,12 +17,11 @@ public class StateManagerConfigImpl implements StateManagerConfig {
   public int getElectionTimeInSecs() {
     int electionTime = -1;
 
-    // TODO: check if this is fine
-    // if (haConfig.isNetworkedActivePassive()) {
-    electionTime = haConfig.electionTime();
-    // } else {
-    // throw new AssertionError("Networked Active Passive is not enabled in config");
-    // }
+    if (haConfig.isNetworkedActivePassive()) {
+      electionTime = haConfig.electionTime();
+    } else {
+      throw new AssertionError("Networked Active Passive is not enabled in config");
+    }
 
     if (electionTime <= 0) { throw new AssertionError("Election time has to be a positive integer, but is set to "
                                                       + electionTime + " secs. in config"); }

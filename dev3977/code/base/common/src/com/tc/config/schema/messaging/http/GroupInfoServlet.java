@@ -37,7 +37,7 @@ public class GroupInfoServlet extends HttpServlet {
     // NO OP
   }
 
-  private synchronized void createDocumentToSend() {
+  private void createDocumentToSend() {
     configSetupManager = (L2TVSConfigurationSetupManager) getServletContext().getAttribute(GROUP_INFO_ATTRIBUTE);
     serverGroupsDocument = ServerGroupsDocument.Factory.newInstance();
     createServerNameToDsoPortAndHostname();

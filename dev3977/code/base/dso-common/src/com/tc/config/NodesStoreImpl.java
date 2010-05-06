@@ -41,7 +41,7 @@ public class NodesStoreImpl implements NodesStore, TopologyChangeListener {
     }
   }
 
-  public void addListener(TopologyChangeListener listener) {
+  public void registerForTopologyChange(TopologyChangeListener listener) {
     listeners.add(listener);
   }
 

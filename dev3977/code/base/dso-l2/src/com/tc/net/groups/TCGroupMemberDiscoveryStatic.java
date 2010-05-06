@@ -597,6 +597,9 @@ public class TCGroupMemberDiscoveryStatic implements TCGroupMemberDiscovery {
   }
 
   public boolean isServerConnected(String nodeName) {
-    return nodeStateMap.get(nodeName).isMemberInGroup();
+    DiscoveryStateMachine dsm = nodeStateMap.get(nodeName);
+    if (dsm == null) { return false; }
+
+    return dsm.isMemberInGroup();
   }
 }

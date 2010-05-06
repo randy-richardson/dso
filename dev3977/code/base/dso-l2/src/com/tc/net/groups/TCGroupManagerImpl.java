@@ -158,7 +158,7 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     Assert.assertNotNull(thisNodeID);
     setDiscover(new TCGroupMemberDiscoveryStatic(this));
 
-    nodesStore.addListener(this);
+    nodesStore.registerForTopologyChange(this);
   }
 
   public boolean isConnectionToNodeActive(NodeID sid) {

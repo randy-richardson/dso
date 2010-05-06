@@ -191,7 +191,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                                                                              .getConsoleLogger();
 
   private final DSOClientBuilder                     dsoClientBuilder;
-  protected final DSOClientConfigHelper              config;
+  private final DSOClientConfigHelper                config;
   private final ClassProvider                        classProvider;
   private final Manager                              manager;
   private final DsoClusterInternal                   dsoCluster;
@@ -839,5 +839,9 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
   public void addServerConfigurationChangedListeners(ClusterTopologyChangedListener listener) {
     throw new UnsupportedOperationException();
+  }
+
+  protected DSOClientConfigHelper getClientConfigHelper() {
+    return config;
   }
 }

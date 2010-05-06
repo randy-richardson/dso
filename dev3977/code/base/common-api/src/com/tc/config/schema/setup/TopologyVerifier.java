@@ -8,6 +8,7 @@ import com.tc.config.schema.ActiveServerGroupsConfig;
 import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.server.ServerConnectionValidator;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
@@ -18,21 +19,19 @@ import java.util.Map;
 import java.util.Set;
 
 public class TopologyVerifier {
-  public static enum TopologyReloadStatus {
-    TOPOLOGY_CHANGE_ACCEPTABLE, TOPOLOGY_CHANGE_UNACCEPTABLE, TOPOLOGY_UNCHANGED, SPECIFY_MIRROR_GROUPS, SERVER_STILL_ALIVE
-  }
+  private final Servers                   oldServersBean;
+  private final Servers                   newServersBean;
+  private final ActiveServerGroupsConfig  oldGroupsInfo;
+  private final ServerConnectionValidator serverConnectionValidator;
 
-  private final Servers                  oldServersBean;
-  private final Servers                  newServersBean;
-  private final ActiveServerGroupsConfig oldGroupsInfo;
-
-  private static final TCLogger          logger = TCLogging.getLogger(TopologyVerifier.class);
+  private static final TCLogger           logger = TCLogging.getLogger(TopologyVerifier.class);
 
   TopologyVerifier(MutableBeanRepository oldServers, MutableBeanRepository newServers,
-                   ActiveServerGroupsConfig oldGroupsInfo) {
+                   ActiveServerGroupsConfig oldGroupsInfo, ServerConnectionValidator serverConnectionValidator) {
     this.oldServersBean = (Servers) oldServers.bean();
     this.newServersBean = (Servers) newServers.bean();
     this.oldGroupsInfo = oldGroupsInfo;
+    this.serverConnectionValidator = serverConnectionValidator;
   }
 
   /**
@@ -45,27 +44,43 @@ public class TopologyVerifier {
     if (topologyStatus != TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE) { return topologyStatus; }
 
     // check if group names consist of the same members as the older ones
-    return checkGroupInfo();
+    topologyStatus = checkGroupInfo();
+    if (topologyStatus != TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE) { return topologyStatus; }
+
+    // Check if removed members are still alive
+    return checkIfServersAlive();
   }
 
-  private TopologyReloadStatus checkGroupInfo() {
-    if (groupSizeEqualsOne()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE; }
-
-    if (!groupNamesSet()) { return TopologyReloadStatus.SPECIFY_MIRROR_GROUPS; }
-
-    if (!groupNamesSame()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_UNACCEPTABLE; }
-
-    if (memberMovedToDifferentGroup()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_UNACCEPTABLE; }
+  private TopologyReloadStatus checkIfServersAlive() {
+    Set<String> membersRemoved = getRemovedMembers();
+    for (String member : membersRemoved) {
+      if (serverConnectionValidator.isAlive(member)) {
+        logger.warn("Reloading servers config failed as " + member + " is still alive.");
+        return TopologyReloadStatus.SERVER_STILL_ALIVE;
+      }
+    }
 
     return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE;
   }
 
-  private boolean groupSizeEqualsOne() {
+  private TopologyReloadStatus checkGroupInfo() {
+    if (isGroupsSizeEqualsOne()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE; }
+
+    if (!isGroupNameSpecified()) { return TopologyReloadStatus.SPECIFY_MIRROR_GROUPS; }
+
+    if (!isGroupNameSame()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_UNACCEPTABLE; }
+
+    if (isMemberMovedToDifferentGroup()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_UNACCEPTABLE; }
+
+    return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE;
+  }
+
+  private boolean isGroupsSizeEqualsOne() {
     return oldGroupsInfo.getActiveServerGroupCount() == 1
            && (!newServersBean.isSetMirrorGroups() || newServersBean.getMirrorGroups().getMirrorGroupArray().length == 1);
   }
 
-  private boolean groupNamesSet() {
+  private boolean isGroupNameSpecified() {
     MirrorGroup[] newGroupsInfo = newServersBean.getMirrorGroups().getMirrorGroupArray();
 
     // check to see the group names for all new servers are set
@@ -75,7 +90,7 @@ public class TopologyVerifier {
     return true;
   }
 
-  private boolean memberMovedToDifferentGroup() {
+  private boolean isMemberMovedToDifferentGroup() {
     MirrorGroup[] newGroupsInfo = newServersBean.getMirrorGroups().getMirrorGroupArray();
     for (MirrorGroup newGroupInfo : newGroupsInfo) {
       String groupName = newGroupInfo.getGroupName();
@@ -98,7 +113,7 @@ public class TopologyVerifier {
     return null;
   }
 
-  private boolean groupNamesSame() {
+  private boolean isGroupNameSame() {
     MirrorGroup[] newGroupsInfo = newServersBean.getMirrorGroups().getMirrorGroupArray();
 
     Set<String> newGroupNames = new HashSet<String>();
@@ -142,7 +157,7 @@ public class TopologyVerifier {
     return TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE;
   }
 
-  public Set<String> getRemovedMembers() {
+  private Set<String> getRemovedMembers() {
     Server[] oldServerArray = oldServersBean.getServerArray();
     HashSet<String> oldServerNames = new HashSet<String>();
     for (Server server : oldServerArray) {

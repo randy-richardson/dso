@@ -6,7 +6,7 @@ package com.tc.server;
 
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
-import com.tc.config.schema.setup.TopologyVerifier.TopologyReloadStatus;
+import com.tc.config.schema.setup.TopologyReloadStatus;
 import com.tc.management.AbstractTerracottaMBean;
 import com.tc.management.beans.TCServerInfoMBean;
 import com.tc.statistics.StatisticData;

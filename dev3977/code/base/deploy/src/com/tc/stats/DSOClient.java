@@ -65,8 +65,8 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
   private final ClientID                       clientID;
   private final ClientStateManager             stateManager;
 
-  private ObjectName                           enterpriseTCClientMbeanName;
-  private EnterpriseTCClientMbean              enterpriseTCClientMbean = null;
+  private ObjectName                           enterpriseMBeanName;
+  private EnterpriseTCClientMbean              enterpriseMBean = null;
   private boolean                              isEnterprisebeanSet     = false;
 
   private static final MBeanNotificationInfo[] NOTIFICATION_INFO;
@@ -95,7 +95,7 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
     this.instrumentationLoggingBeanName = getTunneledBeanName(L1MBeanNames.INSTRUMENTATION_LOGGING_PUBLIC);
     this.runtimeLoggingBeanName = getTunneledBeanName(L1MBeanNames.RUNTIME_LOGGING_PUBLIC);
     this.runtimeOutputOptionsBeanName = getTunneledBeanName(L1MBeanNames.RUNTIME_OUTPUT_OPTIONS_PUBLIC);
-    this.enterpriseTCClientMbeanName = getTunneledBeanName(L1MBeanNames.ENTERPRISE_TC_CLIENT);
+    this.enterpriseMBeanName = getTunneledBeanName(L1MBeanNames.ENTERPRISE_TC_CLIENT);
 
     testSetupTunneledBeans();
   }
@@ -299,8 +299,8 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
   }
 
   private void setupEnterpriseClientMBean() {
-    enterpriseTCClientMbean = (EnterpriseTCClientMbean) MBeanServerInvocationHandler
-        .newProxyInstance(mbeanServer, enterpriseTCClientMbeanName, EnterpriseTCClientMbean.class, false);
+    enterpriseMBean = (EnterpriseTCClientMbean) MBeanServerInvocationHandler
+        .newProxyInstance(mbeanServer, enterpriseMBeanName, EnterpriseTCClientMbean.class, false);
   }
 
   private boolean haveAllTunneledBeans() {
@@ -343,9 +343,9 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
       setupRuntimeOutputOptionsBean();
     }
 
-    if (!isEnterprisebeanSet && enterpriseTCClientMbean == null
-        && matchesClientBeanName(enterpriseTCClientMbeanName, beanName)) {
-      enterpriseTCClientMbeanName = beanName;
+    if (!isEnterprisebeanSet && enterpriseMBean == null
+        && matchesClientBeanName(enterpriseMBeanName, beanName)) {
+      enterpriseMBeanName = beanName;
       setupEnterpriseClientMBean();
       isEnterprisebeanSet = true;
     }
@@ -415,6 +415,6 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
   }
 
   public ObjectName getEnterpriseTCClientBeanName() {
-    return enterpriseTCClientMbeanName;
+    return enterpriseMBeanName;
   }
 }

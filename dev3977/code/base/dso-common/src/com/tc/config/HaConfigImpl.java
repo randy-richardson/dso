@@ -188,11 +188,7 @@ public class HaConfigImpl implements HaConfig {
     return this.thisGroupID.equals(this.activeCoordinatorGroupID);
   }
 
-  public ClusterInfo getServerNameToGroupID() {
-    return nodeStore;
-  }
-
-  public ServerNamesOfThisGroup getServerNamesOfThisGroup() {
+  public ClusterInfo getClusterInfo() {
     return nodeStore;
   }
 

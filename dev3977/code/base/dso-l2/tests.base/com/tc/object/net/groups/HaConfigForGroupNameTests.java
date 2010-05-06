@@ -3,11 +3,10 @@
  */
 package com.tc.object.net.groups;
 
+import com.tc.config.ClusterInfo;
 import com.tc.config.HaConfig;
 import com.tc.config.NodesStore;
 import com.tc.config.ReloadConfigChangeContext;
-import com.tc.config.ClusterInfo;
-import com.tc.config.ServerNamesOfThisGroup;
 import com.tc.exception.ImplementMe;
 import com.tc.net.GroupID;
 import com.tc.net.groups.Node;
@@ -18,10 +17,10 @@ import java.util.Set;
 
 public class HaConfigForGroupNameTests implements HaConfig {
 
-  private final ServerNamesOfThisGroupImpl set;
+  private final ClusterInfo set;
 
   public HaConfigForGroupNameTests(Set<String> tempSet) {
-    this.set = new ServerNamesOfThisGroupImpl(tempSet);
+    this.set = new ClusterInfoImpl(tempSet);
   }
 
   public GroupID getActiveCoordinatorGroupID() {
@@ -44,12 +43,8 @@ public class HaConfigForGroupNameTests implements HaConfig {
     throw new ImplementMe();
   }
 
-  public ServerNamesOfThisGroup getServerNamesOfThisGroup() {
+  public ClusterInfo getClusterInfo() {
     return this.set;
-  }
-
-  public ClusterInfo getServerNameToGroupID() {
-    throw new ImplementMe();
   }
 
   public ServerGroup getThisGroup() {
@@ -88,10 +83,10 @@ public class HaConfigForGroupNameTests implements HaConfig {
     throw new ImplementMe();
   }
 
-  public static class ServerNamesOfThisGroupImpl implements ServerNamesOfThisGroup {
+  public static class ClusterInfoImpl implements ClusterInfo {
     public volatile HashSet<String> serverNamesForThisGroup = new HashSet<String>();
 
-    public ServerNamesOfThisGroupImpl(Set<String> set) {
+    public ClusterInfoImpl(Set<String> set) {
       this.serverNamesForThisGroup.addAll(set);
     }
 
@@ -111,6 +106,14 @@ public class HaConfigForGroupNameTests implements HaConfig {
       }
 
       this.serverNamesForThisGroup = tmp;
+    }
+
+    public GroupID getGroupIDFromServerName(String name) {
+      throw new ImplementMe();
+    }
+
+    public boolean hasServerInCluster(String name) {
+      throw new ImplementMe();
     }
 
   }

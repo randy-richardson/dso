@@ -52,11 +52,11 @@ public class NullTCGroupMemberDiscovery implements TCGroupMemberDiscovery {
   }
 
   public void addNode(Node node) {
-    //
+    throw new UnsupportedOperationException();
   }
 
   public void removeNode(Node node) {
-    //
+    throw new UnsupportedOperationException();
   }
 
   public boolean isServerConnected(String nodeName) {
