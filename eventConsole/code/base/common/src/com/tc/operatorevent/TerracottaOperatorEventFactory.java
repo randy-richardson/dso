@@ -3,23 +3,20 @@
  */
 package com.tc.operatorevent;
 
-import com.tc.operatorevent.TerracottaOperatorEvent.EventSubSystem;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventSubsystem;
 import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
-
-import java.util.Date;
 
 public class TerracottaOperatorEventFactory {
 
-  public static TerracottaOperatorEvent createLongGCOperatorEvent(EventType eventType, Date time, String message) {
-    return new TerracottaOperatorEventImpl(eventType, EventSubSystem.MEMORY_MANAGER, time, message);
+  public static TerracottaOperatorEvent createLongGCOperatorEvent(EventType eventType, String message) {
+    return new TerracottaOperatorEventImpl(eventType, EventSubsystem.MEMORY_MANAGER, message);
   }
 
-  public static TerracottaOperatorEvent createDGCOperatorEvent(EventType eventType, Date time, String message) {
-    return new TerracottaOperatorEventImpl(eventType, EventSubSystem.DGC, time, message);
+  public static TerracottaOperatorEvent createDGCOperatorEvent(EventType eventType, String message) {
+    return new TerracottaOperatorEventImpl(eventType, EventSubsystem.DGC, message);
   }
-  
-  public static TerracottaOperatorEvent createServerNodeJoinedOperatorEvent(EventType eventType, Date time,
-                                                                            String message) {
-    return new TerracottaOperatorEventImpl(eventType, EventSubSystem.HA, time, message);
+
+  public static TerracottaOperatorEvent createServerNodeJoinedOperatorEvent(EventType eventType, String message) {
+    return new TerracottaOperatorEventImpl(eventType, EventSubsystem.HA, message);
   }
 }

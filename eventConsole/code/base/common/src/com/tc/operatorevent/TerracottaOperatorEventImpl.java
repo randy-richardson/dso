@@ -3,19 +3,18 @@
  */
 package com.tc.operatorevent;
 
-import java.util.Date;
 
 public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
-  private final Date           time;
+  private final long           time;
   private final String         eventMessage;
   private final EventType      eventType;
-  private final EventSubSystem subSystem;
-  protected String             nodeId = null;
+  private final EventSubsystem subSystem;
+  private String               nodeId = null;
 
-  public TerracottaOperatorEventImpl(EventType eventType, EventSubSystem subSystem, Date time, String message) {
+  public TerracottaOperatorEventImpl(EventType eventType, EventSubsystem subSystem, String message) {
     this.eventType = eventType;
     this.subSystem = subSystem;
-    this.time = time;
+    this.time = System.currentTimeMillis();
     this.eventMessage = message;
   }
 
@@ -23,7 +22,7 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
     return this.eventMessage;
   }
 
-  public Date getEventTime() {
+  public long getEventTime() {
     return this.time;
   }
 
@@ -35,11 +34,11 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
     return this.nodeId;
   }
 
-  public synchronized void setNodeId(String nodeId) {
+  public void setNodeId(String nodeId) {
     this.nodeId = nodeId;
   }
 
-  public EventSubSystem getEventSubSystem() {
+  public EventSubsystem getEventSubsystem() {
     return this.subSystem;
   }
 

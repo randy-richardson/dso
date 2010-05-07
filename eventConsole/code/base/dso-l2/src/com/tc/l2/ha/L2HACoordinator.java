@@ -66,7 +66,6 @@ import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorListener;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class L2HACoordinator implements L2Coordinator, StateChangeListener, GroupEventsListener,
@@ -254,8 +253,7 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
   public void nodeJoined(NodeID nodeID) {
     log(nodeID + " joined the cluster");
     this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(),
-                                             nodeID + " joined the cluster"));
+        .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, nodeID + " joined the cluster"));
     if (stateManager.isActiveCoordinator()) {
       try {
         stateManager.publishActiveState(nodeID);
@@ -284,10 +282,8 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   public void nodeLeft(NodeID nodeID) {
     warn(nodeID + " left the cluster");
-    this.tcOperatorEventLogger
-        .fireOperatorEvent(TerracottaOperatorEventFactory
-            .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(),
-                                                 nodeID + " left the cluster"));
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, nodeID + " left the cluster"));
     if (stateManager.isActiveCoordinator()) {
       rObjectManager.clear(nodeID);
       rClusterStateMgr.fireNodeLeftEvent(nodeID);

@@ -5,6 +5,7 @@
 package com.tc.stats;
 
 import com.tc.management.TerracottaMBean;
+import com.tc.management.TerracottaOperatorEventsMBean;
 import com.tc.management.beans.l1.L1InfoMBean;
 import com.tc.management.beans.logging.InstrumentationLoggingMBean;
 import com.tc.management.beans.logging.RuntimeLoggingMBean;
@@ -39,6 +40,10 @@ public interface DSOClientMBean extends TerracottaMBean {
   ObjectName getRuntimeOutputOptionsBeanName();
 
   RuntimeOutputOptionsMBean getRuntimeOutputOptionsBean();
+  
+  ObjectName getL1OperatorEventsBeanName();
+
+  TerracottaOperatorEventsMBean getL1OperatorEventsBean();
 
   ChannelID getChannelID();
 

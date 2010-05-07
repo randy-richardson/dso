@@ -9,7 +9,9 @@ import EDU.oswego.cs.dl.util.concurrent.SynchronizedLong;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.AbstractTerracottaMBean;
+import com.tc.management.TerracottaOperatorEventsMBean;
 import com.tc.management.beans.L1MBeanNames;
+import com.tc.management.beans.MBeanNames;
 import com.tc.management.beans.l1.L1InfoMBean;
 import com.tc.management.beans.logging.InstrumentationLoggingMBean;
 import com.tc.management.beans.logging.RuntimeLoggingMBean;
@@ -55,6 +57,8 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
   private RuntimeLoggingMBean                  runtimeLoggingBean;
   private ObjectName                           runtimeOutputOptionsBeanName;
   private RuntimeOutputOptionsMBean            runtimeOutputOptionsBean;
+  private ObjectName                           l1OperatorEventsBeanName;
+  private TerracottaOperatorEventsMBean        l1OperatorEventsBean;
   private final MessageChannel                 channel;
   private final SampledCounter                 txnRate;
   private final SampledCounter                 flushRate;
@@ -90,6 +94,7 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
     this.instrumentationLoggingBeanName = getTunneledBeanName(L1MBeanNames.INSTRUMENTATION_LOGGING_PUBLIC);
     this.runtimeLoggingBeanName = getTunneledBeanName(L1MBeanNames.RUNTIME_LOGGING_PUBLIC);
     this.runtimeOutputOptionsBeanName = getTunneledBeanName(L1MBeanNames.RUNTIME_OUTPUT_OPTIONS_PUBLIC);
+    this.l1OperatorEventsBeanName = getTunneledBeanName(MBeanNames.OPERATOR_EVENTS_PUBLIC);
 
     testSetupTunneledBeans();
   }
@@ -133,6 +138,11 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
     if ((beanName = queryClientBean(runtimeOutputOptionsBeanName)) != null) {
       runtimeOutputOptionsBeanName = beanName;
       setupRuntimeOutputOptionsBean();
+    }
+    
+    if ((beanName = queryClientBean(this.l1OperatorEventsBeanName)) != null) {
+      this.l1OperatorEventsBeanName = beanName;
+      setupL1OperatorEventsBean();
     }
 
     if (haveAllTunneledBeans()) {
@@ -222,6 +232,14 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
     return runtimeOutputOptionsBean;
   }
 
+  public ObjectName getL1OperatorEventsBeanName() {
+    return l1OperatorEventsBeanName;
+  }
+
+  public TerracottaOperatorEventsMBean getL1OperatorEventsBean() {
+    return l1OperatorEventsBean;
+  }
+
   public ChannelID getChannelID() {
     return channel.getChannelID();
   }
@@ -273,6 +291,11 @@ public class DSOClient extends AbstractTerracottaMBean implements DSOClientMBean
   private void setupL1InfoBean() {
     l1InfoBean = (L1InfoMBean) MBeanServerInvocationHandler.newProxyInstance(mbeanServer, l1InfoBeanName,
                                                                              L1InfoMBean.class, false);
+  }
+  
+  private void setupL1OperatorEventsBean() {
+    this.l1OperatorEventsBean = (TerracottaOperatorEventsMBean) MBeanServerInvocationHandler
+        .newProxyInstance(mbeanServer, l1OperatorEventsBeanName, TerracottaOperatorEventsMBean.class, false);
   }
 
   private void setupInstrumentationLoggingBean() {

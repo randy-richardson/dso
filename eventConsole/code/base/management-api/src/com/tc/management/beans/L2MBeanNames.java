@@ -24,7 +24,7 @@ public class L2MBeanNames {
   public static final ObjectName DUMPER;
   public static final ObjectName LOCK_STATISTICS;
   public static final ObjectName SERVER_DB_BACKUP;
-  public static final ObjectName L2_OPERATOR_EVENTS_PUBLIC;
+  // public static final ObjectName L2_OPERATOR_EVENTS_PUBLIC;
 
   static {
     try {
@@ -49,9 +49,9 @@ public class L2MBeanNames {
       SERVER_DB_BACKUP = TerracottaManagement.createObjectName(Type.Server, Subsystem.None, null,
                                                                "Terracotta Server Backup",
                                                                TerracottaManagement.MBeanDomain.INTERNAL);
-      L2_OPERATOR_EVENTS_PUBLIC = TerracottaManagement.createObjectName(Type.TcOperatorEvents, Subsystem.None, null,
-                                                                          "Terracotta Operator Events Bean",
-                                                                          TerracottaManagement.MBeanDomain.PUBLIC);
+      // L2_OPERATOR_EVENTS_PUBLIC = TerracottaManagement.createObjectName(Type.TcOperatorEvents, Subsystem.None, null,
+      // "Terracotta Operator Events Bean",
+      // TerracottaManagement.MBeanDomain.PUBLIC);
     } catch (MalformedObjectNameException mone) {
       throw new RuntimeException(mone);
     } catch (NullPointerException npe) {

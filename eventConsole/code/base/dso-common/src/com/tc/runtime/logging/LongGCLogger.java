@@ -12,8 +12,6 @@ import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.runtime.MemoryEventsListener;
 import com.tc.runtime.MemoryUsage;
 
-import java.util.Date;
-
 public class LongGCLogger implements MemoryEventsListener {
 
   private long                                gcTimeout;
@@ -33,9 +31,9 @@ public class LongGCLogger implements MemoryEventsListener {
     }
     long countDiff = currentUsage.getCollectionCount() - lastMemoryUsage.getCollectionCount();
     long timeDiff = currentUsage.getCollectionTime() - lastMemoryUsage.getCollectionTime();
-    // if (countDiff > 0 && timeDiff > gcTimeout) {
+    if (countDiff > 0 && timeDiff > gcTimeout) {
       fireEvent(LongGCEventType.LONG_GC, countDiff, timeDiff);
-    // }
+    }
     lastMemoryUsage = currentUsage;
   }
 
@@ -43,7 +41,7 @@ public class LongGCLogger implements MemoryEventsListener {
     String message = "Detected Long GC > " + gcTimeout + " ms. Event Type : " + type + " GC Collection Count: "
                      + collectionCountDiff + " GC Collection Time: " + collectionTimeDiff + " ms";
     TerracottaOperatorEvent tcEvent = TerracottaOperatorEventFactory
-        .createLongGCOperatorEvent(TerracottaOperatorEvent.EventType.WARN, new Date(), message);
+        .createLongGCOperatorEvent(TerracottaOperatorEvent.EventType.WARN, message);
     tcEventLogger.fireOperatorEvent(tcEvent);
     logger.warn(message);
   }

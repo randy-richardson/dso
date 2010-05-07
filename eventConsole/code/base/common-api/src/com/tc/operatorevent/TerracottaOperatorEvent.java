@@ -4,7 +4,6 @@
 package com.tc.operatorevent;
 
 import java.io.Serializable;
-import java.util.Date;
 
 
 public interface TerracottaOperatorEvent extends Serializable {
@@ -13,7 +12,7 @@ public interface TerracottaOperatorEvent extends Serializable {
     INFO, WARN, DEBUG, ERROR, CRITICAL
   }
 
-  public static enum EventSubSystem {
+  public static enum EventSubsystem {
     MEMORY_MANAGER, DGC, HA
   }
   
@@ -23,9 +22,9 @@ public interface TerracottaOperatorEvent extends Serializable {
 
   EventType getEventType();
   
-  Date getEventTime();
+  long getEventTime();
   
-  EventSubSystem getEventSubSystem();
+  EventSubsystem getEventSubsystem();
   
   String getEventMessage();
   

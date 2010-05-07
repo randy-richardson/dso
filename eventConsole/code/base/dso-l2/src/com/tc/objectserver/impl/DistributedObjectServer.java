@@ -42,6 +42,7 @@ import com.tc.logging.CustomerLogging;
 import com.tc.logging.DumpHandler;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.logging.ThreadDumpHandler;
 import com.tc.management.L2LockStatsManager;
 import com.tc.management.L2Management;
@@ -407,6 +408,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
     this.threadGroup.addCallbackOnExitDefaultHandler(new ThreadDumpHandler(this));
     this.thisServerNodeID = makeServerNodeID(this.configSetupManager.dsoL2Config());
+    
+    TerracottaOperatorEventLogging.setNodeIdProvider(new ServerIdProvider(this.thisServerNodeID));
     
     L2LockStatsManager lockStatsManager = new L2LockStatisticsManagerImpl();
 
@@ -904,12 +907,12 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler {
 
     final Stage jmxRemoteConnectStage = stageManager
         .createStage(ServerConfigurationContext.JMXREMOTE_CONNECT_STAGE,
-                     new ClientConnectEventHandler(this.statisticsGateway, this.l2Management.findTCOperatorEventMBean()),
+                     new ClientConnectEventHandler(this.statisticsGateway),
                      1, maxStageSize);
 
     final Stage jmxRemoteDisconnectStage = stageManager
         .createStage(ServerConfigurationContext.JMXREMOTE_DISCONNECT_STAGE,
-                     new ClientConnectEventHandler(this.statisticsGateway, this.l2Management.findTCOperatorEventMBean()),
+                     new ClientConnectEventHandler(this.statisticsGateway),
                      1, maxStageSize);
 
     cteh.setStages(jmxRemoteConnectStage.getSink(), jmxRemoteDisconnectStage.getSink());

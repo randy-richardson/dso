@@ -38,7 +38,7 @@ public class TerracottaOperatorEventsStatsImpl implements TerracottaOperatorEven
     return this.eventMessage;
   }
 
-  public String getEventSubSystem() {
+  public String getEventSubsystem() {
     return this.eventSystem;
   }
 

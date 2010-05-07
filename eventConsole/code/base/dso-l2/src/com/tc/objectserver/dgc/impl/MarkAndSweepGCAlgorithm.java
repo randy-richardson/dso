@@ -22,7 +22,6 @@ import com.tc.util.concurrent.LifeCycleState;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -65,7 +64,7 @@ final class MarkAndSweepGCAlgorithm {
     final ObjectIDSet candidateIDs = gcHook.getGCCandidates();
     final Set rootIDs = gcHook.getRootObjectIDs(candidateIDs);
     this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(), "DGC started - Total Objects:"
+        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, "DGC started - Total Objects:"
                                                                                     + candidateIDs.size()));
 
     gcInfo.setBeginObjectCount(candidateIDs.size());
@@ -146,7 +145,7 @@ final class MarkAndSweepGCAlgorithm {
     gcPublisher.fireGCCycleCompletedEvent(gcInfo, new ObjectIDSet());
     gcPublisher.fireGCCompletedEvent(gcInfo);
     this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, new Date(),
+        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO,
                                 "DGC finished - Collected: 0 Time Taken: " + elapsedTime + "ms."));
   }
 

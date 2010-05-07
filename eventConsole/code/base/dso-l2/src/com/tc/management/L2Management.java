@@ -20,10 +20,10 @@ import com.tc.logging.TCLogging;
 import com.tc.management.beans.L2Dumper;
 import com.tc.management.beans.L2MBeanNames;
 import com.tc.management.beans.LockStatisticsMonitorMBean;
+import com.tc.management.beans.MBeanNames;
 import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
-import com.tc.management.beans.TerracottaOperatorEventsMbean;
-import com.tc.management.beans.TerracottaOperatorEventsMbeanImpl;
+import com.tc.management.beans.TerracottaOperatorEventsMBeanImpl;
 import com.tc.management.beans.object.ObjectManagementMonitor;
 import com.tc.management.beans.object.ServerDBBackup;
 import com.tc.net.protocol.tcm.ChannelID;
@@ -84,13 +84,14 @@ public class L2Management extends TerracottaManagement {
   private final InetAddress                    bindAddress;
   private final ServerDBBackup                 serverDbBackupBean;
   private final Sink                           remoteEventsSink;
-  private final TerracottaOperatorEventsMbean  l2OperatorEventsMbean;
+  private final TerracottaOperatorEventsMBean  l2OperatorEventsMbean;
 
   public L2Management(TCServerInfoMBean tcServerInfo, LockStatisticsMonitorMBean lockStatistics,
                       StatisticsAgentSubSystem statisticsAgentSubSystem,
                       StatisticsGatewayMBeanImpl statisticsGateway,
                       L2TVSConfigurationSetupManager configurationSetupManager, TCDumper tcDumper,
-                      InetAddress bindAddr, int port, Sink remoteEventsSink) throws MBeanRegistrationException,
+                      InetAddress bindAddr, int port, Sink remoteEventsSink)
+      throws MBeanRegistrationException,
       NotCompliantMBeanException, InstanceAlreadyExistsException {
     this.tcServerInfo = tcServerInfo;
     this.lockStatistics = lockStatistics;
@@ -103,7 +104,7 @@ public class L2Management extends TerracottaManagement {
     this.remoteEventsSink = remoteEventsSink;
     
     try {
-      this.l2OperatorEventsMbean = new TerracottaOperatorEventsMbeanImpl();
+      this.l2OperatorEventsMbean = new TerracottaOperatorEventsMBeanImpl();
     } catch (NotCompliantMBeanException e) {
       throw new RuntimeException(
                                  "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
@@ -278,7 +279,7 @@ public class L2Management extends TerracottaManagement {
     return serverDbBackupBean;
   }
 
-  public TerracottaOperatorEventsMbean findTCOperatorEventMBean() {
+  public TerracottaOperatorEventsMBean findTCOperatorEventMBean() {
     return this.l2OperatorEventsMbean;
   }
 
@@ -289,7 +290,7 @@ public class L2Management extends TerracottaManagement {
     mBeanServer.registerMBean(objectManagementBean, L2MBeanNames.OBJECT_MANAGEMENT);
     mBeanServer.registerMBean(serverDbBackupBean, L2MBeanNames.SERVER_DB_BACKUP);
     mBeanServer.registerMBean(lockStatistics, L2MBeanNames.LOCK_STATISTICS);
-    mBeanServer.registerMBean(l2OperatorEventsMbean, L2MBeanNames.L2_OPERATOR_EVENTS_PUBLIC);
+    mBeanServer.registerMBean(l2OperatorEventsMbean, MBeanNames.OPERATOR_EVENTS_PUBLIC);
     if (statisticsAgentSubSystem.isActive()) {
       statisticsAgentSubSystem.registerMBeans(mBeanServer);
     }

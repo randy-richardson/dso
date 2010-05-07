@@ -37,7 +37,7 @@ public abstract class TerracottaManagement {
     public static final Type Cluster          = new Type(MANAGEMENT_RESOURCES.getTerracottaClusterType());
     public static final Type Agent            = new Type(MANAGEMENT_RESOURCES.getTerracottaAgentType());
     public static final Type Tim              = new Type(MANAGEMENT_RESOURCES.getTerracottaTimType());
-    public static final Type TcOperatorEvents = new Type(MANAGEMENT_RESOURCES.getTerracottaCriticalEventType());
+    public static final Type TcOperatorEvents = new Type(MANAGEMENT_RESOURCES.getTerracottaOperatorEventType());
 
     private final String     type;
 

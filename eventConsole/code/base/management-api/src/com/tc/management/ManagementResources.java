@@ -90,7 +90,7 @@ class ManagementResources {
     return TerracottaManagement.quoteIfNecessary(resources.getString("subsystem.none"));
   }
 
-  public String getTerracottaCriticalEventType() {
+  public String getTerracottaOperatorEventType() {
     return TerracottaManagement.quoteIfNecessary(resources.getString("type.tc-operator-events"));
   }
 }

@@ -12,7 +12,7 @@ public interface TerracottaOperatorEventStats {
   
   String getEventTime();
   
-  String getEventSubSystem();
+  String getEventSubsystem();
   
   String getEventMessage();
 
