@@ -20,6 +20,7 @@ import com.tctest.TransparentTestBase;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class AddNewPassiveTest extends TransparentTestBase {
@@ -31,6 +32,10 @@ public class AddNewPassiveTest extends TransparentTestBase {
   private static int                       l2GrpPort2;
   private static String                    configFile;
   private static ExtraProcessServerControl serverControl;
+
+  public AddNewPassiveTest() {
+    disableAllUntil(new Date(Long.MAX_VALUE));
+  }
 
   @Override
   protected Class getApplicationClass() {
@@ -46,21 +51,7 @@ public class AddNewPassiveTest extends TransparentTestBase {
       ThreadUtil.reallySleep(1000);
     }
 
-    Runnable r = new Runnable() {
-      public void run() {
-        try {
-          startANewClient();
-        } catch (Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
-        }
-      }
-    };
-
-    Thread t = new Thread(r);
-    t.start();
-
-    t.join();
+    startANewClient();
   }
 
   private void startANewClient() throws Exception {
@@ -74,7 +65,8 @@ public class AddNewPassiveTest extends TransparentTestBase {
     client.start();
     client.mergeSTDERR();
     client.mergeSTDOUT();
-    client.waitFor();
+    int exitStatus = client.waitFor();
+    Assert.assertEquals(0, exitStatus);
   }
 
   public void setUp() throws Exception {
