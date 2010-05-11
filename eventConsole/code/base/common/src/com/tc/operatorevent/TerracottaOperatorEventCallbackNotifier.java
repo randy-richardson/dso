@@ -8,16 +8,16 @@ import com.tc.management.TerracottaOperatorEventsMBean;
 
 public class TerracottaOperatorEventCallbackNotifier implements TerracottaOperatorEventCallback {
 
-  private final TerracottaOperatorEventCallbackLogger tcCallbackcLogger;
+  private final TerracottaOperatorEventCallbackLogger tcCallbackLogger;
   private final TerracottaOperatorEventsMBean         tcOperatorEventsMbean;
 
   public TerracottaOperatorEventCallbackNotifier(TCLogger tcLogger, TerracottaOperatorEventsMBean tcOperatorEventsMbean) {
-    this.tcCallbackcLogger = new TerracottaOperatorEventCallbackLogger(tcLogger);
+    this.tcCallbackLogger = new TerracottaOperatorEventCallbackLogger(tcLogger);
     this.tcOperatorEventsMbean = tcOperatorEventsMbean;
   }
 
   public void fireOperatorEvent(TerracottaOperatorEvent event) {
-    tcCallbackcLogger.logEvent(event);
+    tcCallbackLogger.logEvent(event);
     this.tcOperatorEventsMbean.fireOperatorEvent(event);
   }
 

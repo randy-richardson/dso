@@ -11,7 +11,7 @@ import javax.management.NotificationListener;
 import javax.swing.event.EventListenerList;
 
 public class OperatorEventsListener implements NotificationListener {
-  
+
   private final EventListenerList listenerList;
 
   public OperatorEventsListener(EventListenerList listenerList) {
@@ -37,7 +37,11 @@ public class OperatorEventsListener implements NotificationListener {
                                                                                                       .name(),
                                                                                                   tcOperatorEvent
                                                                                                       .getEventSubsystem()
-            .name(), tcOperatorEvent.getNodeId(), tcOperatorEvent.getEventMessage());
+                                                                                                      .name(),
+                                                                                                  tcOperatorEvent
+                                                                                                      .getNodeId(),
+                                                                                                  tcOperatorEvent
+                                                                                                      .getEventMessage());
         ((TerracottaOperatorEventsListener) listeners[i + 1]).statusUpdate(tcOperatorEventStats);
       }
     }
