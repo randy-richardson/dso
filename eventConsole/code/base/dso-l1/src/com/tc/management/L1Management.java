@@ -11,7 +11,6 @@ import com.tc.logging.TCLogging;
 import com.tc.management.beans.L1Dumper;
 import com.tc.management.beans.L1MBeanNames;
 import com.tc.management.beans.MBeanNames;
-import com.tc.management.beans.TerracottaOperatorEventsMBeanImpl;
 import com.tc.management.beans.l1.L1InfoMBean;
 import com.tc.management.beans.logging.InstrumentationLogging;
 import com.tc.management.beans.logging.InstrumentationLoggingMBean;
@@ -55,7 +54,6 @@ public class L1Management extends TerracottaManagement {
 
   private final TerracottaCluster             clusterBean;
   private final L1Info                        l1InfoBean;
-  private final TerracottaOperatorEventsMBean l1OperatorEventsBean;
   private final InstrumentationLogging        instrumentationLoggingBean;
   private final RuntimeOutputOptions          runtimeOutputOptionsBean;
   private final RuntimeLogging                runtimeLoggingBean;
@@ -84,7 +82,6 @@ public class L1Management extends TerracottaManagement {
       instrumentationLoggingBean = new InstrumentationLogging(instrumentationLogger);
       runtimeOutputOptionsBean = new RuntimeOutputOptions(runtimeLogger);
       runtimeLoggingBean = new RuntimeLogging(runtimeLogger);
-      l1OperatorEventsBean = new TerracottaOperatorEventsMBeanImpl();
     } catch (NotCompliantMBeanException ncmbe) {
       throw new TCRuntimeException(
                                    "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
@@ -161,10 +158,6 @@ public class L1Management extends TerracottaManagement {
     return l1InfoBean;
   }
 
-  public TerracottaOperatorEventsMBean findTCOperatorEventMBean() {
-    return this.l1OperatorEventsBean;
-  }
-
   public InstrumentationLoggingMBean findInstrumentationLoggingMBean() {
     return instrumentationLoggingBean;
   }
@@ -208,7 +201,6 @@ public class L1Management extends TerracottaManagement {
     registerMBean(instrumentationLoggingBean, L1MBeanNames.INSTRUMENTATION_LOGGING_PUBLIC);
     registerMBean(runtimeOutputOptionsBean, L1MBeanNames.RUNTIME_OUTPUT_OPTIONS_PUBLIC);
     registerMBean(runtimeLoggingBean, L1MBeanNames.RUNTIME_LOGGING_PUBLIC);
-    registerMBean(l1OperatorEventsBean, MBeanNames.OPERATOR_EVENTS_PUBLIC);
     if (mbeanSpecs != null) {
       for (MBeanSpec spec : mbeanSpecs) {
         for (Map.Entry<ObjectName, Object> bean : spec.getMBeans().entrySet()) {

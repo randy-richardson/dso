@@ -20,10 +20,8 @@ import com.tc.logging.TCLogging;
 import com.tc.management.beans.L2Dumper;
 import com.tc.management.beans.L2MBeanNames;
 import com.tc.management.beans.LockStatisticsMonitorMBean;
-import com.tc.management.beans.MBeanNames;
 import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
-import com.tc.management.beans.TerracottaOperatorEventsMBeanImpl;
 import com.tc.management.beans.object.ObjectManagementMonitor;
 import com.tc.net.protocol.tcm.ChannelID;
 import com.tc.statistics.StatisticsAgentSubSystem;
@@ -68,7 +66,6 @@ public class L2Management extends TerracottaManagement {
   protected final int                            jmxPort;
   protected final InetAddress                    bindAddress;
   private final Sink                             remoteEventsSink;
-  private final TerracottaOperatorEventsMBean    l2OperatorEventsMbean;
 
   public L2Management(TCServerInfoMBean tcServerInfo, LockStatisticsMonitorMBean lockStatistics,
                       StatisticsAgentSubSystem statisticsAgentSubSystem,
@@ -87,14 +84,6 @@ public class L2Management extends TerracottaManagement {
     this.jmxPort = port;
     this.remoteEventsSink = remoteEventsSink;
     
-    try {
-      this.l2OperatorEventsMbean = new TerracottaOperatorEventsMBeanImpl();
-    } catch (NotCompliantMBeanException e) {
-      throw new RuntimeException(
-                                 "Unable to construct one of the L1 MBeans: this is a programming error in one of those beans",
-                                 e);
-    }
-
     try {
       this.objectManagementBean = new ObjectManagementMonitor();
     } catch (NotCompliantMBeanException ncmbe) {
@@ -183,17 +172,12 @@ public class L2Management extends TerracottaManagement {
     return objectManagementBean;
   }
 
-  public TerracottaOperatorEventsMBean findTCOperatorEventMBean() {
-    return this.l2OperatorEventsMbean;
-  }
-
   protected void registerMBeans() throws MBeanRegistrationException, NotCompliantMBeanException,
       InstanceAlreadyExistsException {
     mBeanServer.registerMBean(tcServerInfo, L2MBeanNames.TC_SERVER_INFO);
     mBeanServer.registerMBean(JMXLogging.getJMXAppender().getMBean(), L2MBeanNames.LOGGER);
     mBeanServer.registerMBean(objectManagementBean, L2MBeanNames.OBJECT_MANAGEMENT);
     mBeanServer.registerMBean(lockStatistics, L2MBeanNames.LOCK_STATISTICS);
-    mBeanServer.registerMBean(l2OperatorEventsMbean, MBeanNames.OPERATOR_EVENTS_PUBLIC);
     if (statisticsAgentSubSystem.isActive()) {
       statisticsAgentSubSystem.registerMBeans(mBeanServer);
     }
