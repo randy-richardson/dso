@@ -42,6 +42,8 @@ public interface DSOClientMBean extends TerracottaMBean {
   RuntimeOutputOptionsMBean getRuntimeOutputOptionsBean();
   
   ObjectName getL1OperatorEventsBeanName();
+  
+  ObjectName getEnterpriseTCClientBeanName();
 
   TerracottaOperatorEventsMBean getL1OperatorEventsBean();
 

@@ -45,7 +45,7 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
-public final class L1Management extends TerracottaManagement {
+public class L1Management extends TerracottaManagement {
   private static final TCLogger               logger = TCLogging.getLogger(L1Management.class);
 
   private final SetOnceFlag                   started;
@@ -193,11 +193,17 @@ public final class L1Management extends TerracottaManagement {
       }
     }
 
+    registerMBeans();
+  }
+
+  protected void registerMBeans() throws InstanceAlreadyExistsException, MBeanRegistrationException,
+      NotCompliantMBeanException, MalformedObjectNameException {
     registerMBean(l1DumpBean, MBeanNames.L1DUMPER_INTERNAL);
     registerMBean(clusterBean, L1MBeanNames.CLUSTER_BEAN_PUBLIC);
     if (statisticsAgentSubSystem.isActive()) {
       statisticsAgentSubSystem.registerMBeans(mBeanServer, tunnelingHandler.getUUID());
     }
+
     registerMBean(l1InfoBean, L1MBeanNames.L1INFO_PUBLIC);
     registerMBean(instrumentationLoggingBean, L1MBeanNames.INSTRUMENTATION_LOGGING_PUBLIC);
     registerMBean(runtimeOutputOptionsBean, L1MBeanNames.RUNTIME_OUTPUT_OPTIONS_PUBLIC);
@@ -212,7 +218,7 @@ public final class L1Management extends TerracottaManagement {
     }
   }
 
-  private void registerMBean(Object bean, ObjectName name) throws InstanceAlreadyExistsException,
+  protected void registerMBean(Object bean, ObjectName name) throws InstanceAlreadyExistsException,
       MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
     ObjectName modifiedName = TerracottaManagement.addNodeInfo(name, tunnelingHandler.getUUID());
     mBeanServer.registerMBean(bean, modifiedName);
