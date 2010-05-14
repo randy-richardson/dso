@@ -467,9 +467,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                    + " MBean; this is a programming error. Please go fix that class.", e);
     }
 
-    // register the terracotta operator event logger
-    registerForOperatorEvents();
-
     NIOWorkarounds.solaris10Workaround();
 
     this.configSetupManager.commonl2Config().changesInItemIgnored(this.configSetupManager.commonl2Config().dataPath());
@@ -558,6 +555,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       // persistor = new MemoryStorePersistor(TCLogging.getLogger(MemoryStorePersistor.class));
       // }
 
+      // register the terracotta operator event logger
+      registerForOperatorEvents();
+      
       String cachePolicy = this.l2Properties.getProperty("objectmanager.cachePolicy").toUpperCase();
       if (cachePolicy.equals("LRU")) {
         swapCache = new LRUEvictionPolicy(-1);
