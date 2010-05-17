@@ -3,12 +3,12 @@
  */
 package com.tc.admin.model;
 
-import com.tc.stats.TerracottaOperatorEventStats;
+import com.tc.operatorevent.TerracottaOperatorEvent;
 
 import java.util.EventListener;
 
 public interface TerracottaOperatorEventsListener extends EventListener {
 
-  void statusUpdate(TerracottaOperatorEventStats tcOperatorEventStats);
+  void statusUpdate(TerracottaOperatorEvent tcOperatorEvent);
 
 }

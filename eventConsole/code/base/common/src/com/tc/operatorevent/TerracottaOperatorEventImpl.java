@@ -3,6 +3,8 @@
  */
 package com.tc.operatorevent;
 
+import java.util.Date;
+
 
 public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
   private final long           time;
@@ -22,12 +24,16 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
     return this.eventMessage;
   }
 
-  public long getEventTime() {
-    return this.time;
+  public Date getEventTime() {
+    return new Date(this.time);
   }
 
   public EventType getEventType() {
     return this.eventType;
+  }
+  
+  public String getEventTypeString() {
+    return this.eventType.name();
   }
 
   public String getNodeId() {
@@ -40,6 +46,10 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
 
   public EventSubsystem getEventSubsystem() {
     return this.subSystem;
+  }
+
+  public String getEventSubsystemString() {
+    return this.subSystem.name();
   }
 
 }

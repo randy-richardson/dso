@@ -41,6 +41,7 @@ import com.tc.lang.TCThreadGroup;
 import com.tc.logging.CallbackOnExitHandler;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.DumpHandler;
+import com.tc.logging.L1OperatorEventsLogger;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.logging.TerracottaOperatorEventLogging;
@@ -410,9 +411,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     this.threadGroup.addCallbackOnExitDefaultHandler(new ThreadDumpHandler(this));
     this.thisServerNodeID = makeServerNodeID(this.configSetupManager.dsoL2Config());
-    
+
     TerracottaOperatorEventLogging.setNodeIdProvider(new ServerIdProvider(this.thisServerNodeID));
-    
+
     L2LockStatsManager lockStatsManager = new L2LockStatisticsManagerImpl();
 
     List<PostInit> toInit = new ArrayList<PostInit>();
@@ -557,7 +558,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
       // register the terracotta operator event logger
       registerForOperatorEvents();
-      
+
       String cachePolicy = this.l2Properties.getProperty("objectmanager.cachePolicy").toUpperCase();
       if (cachePolicy.equals("LRU")) {
         swapCache = new LRUEvictionPolicy(-1);
@@ -904,15 +905,15 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     Stage jmxEventsStage = stageManager.createStage(ServerConfigurationContext.JMX_EVENTS_STAGE,
                                                     new JMXEventsHandler(appEvents), 1, maxStageSize);
 
-    final Stage jmxRemoteConnectStage = stageManager
-        .createStage(ServerConfigurationContext.JMXREMOTE_CONNECT_STAGE,
-                     new ClientConnectEventHandler(this.statisticsGateway),
-                     1, maxStageSize);
+    L1OperatorEventsLogger l1OperatorEventsLogger = new L1OperatorEventsLogger(logger);
+    final Stage jmxRemoteConnectStage = stageManager.createStage(ServerConfigurationContext.JMXREMOTE_CONNECT_STAGE,
+                                                                 new ClientConnectEventHandler(this.statisticsGateway,
+                                                                                               l1OperatorEventsLogger),
+                                                                 1, maxStageSize);
 
     final Stage jmxRemoteDisconnectStage = stageManager
         .createStage(ServerConfigurationContext.JMXREMOTE_DISCONNECT_STAGE,
-                     new ClientConnectEventHandler(this.statisticsGateway),
-                     1, maxStageSize);
+                     new ClientConnectEventHandler(this.statisticsGateway, l1OperatorEventsLogger), 1, maxStageSize);
 
     cteh.setStages(jmxRemoteConnectStage.getSink(), jmxRemoteDisconnectStage.getSink());
     final Stage jmxRemoteTunnelStage = stageManager.createStage(ServerConfigurationContext.JMXREMOTE_TUNNEL_STAGE,

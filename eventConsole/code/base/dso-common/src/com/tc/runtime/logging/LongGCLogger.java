@@ -31,9 +31,9 @@ public class LongGCLogger implements MemoryEventsListener {
     }
     long countDiff = currentUsage.getCollectionCount() - lastMemoryUsage.getCollectionCount();
     long timeDiff = currentUsage.getCollectionTime() - lastMemoryUsage.getCollectionTime();
-    if (countDiff > 0 && timeDiff > gcTimeout) {
+    // if (countDiff > 0 && timeDiff > gcTimeout) {
       fireEvent(LongGCEventType.LONG_GC, countDiff, timeDiff);
-    }
+    // }
     lastMemoryUsage = currentUsage;
   }
 
