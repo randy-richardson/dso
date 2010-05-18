@@ -160,10 +160,7 @@ public abstract class TerracottaManagement {
       sb.append(COMMA).append(NODE_PREFIX);
     }
     addNodeInfo(sb, addr);
-    ObjectName newObjName = new ObjectName(sb.toString());
-    Hashtable kpl = objName.getKeyPropertyList();
-    kpl.put(MBeanKeys.MBEAN_NODE, addr.getAddress().getCanonicalHostName());
-    return newObjName;
+    return new ObjectName(sb.toString());
   }
 
   private static void addNodeInfo(final StringBuffer objName, final UUID id) {

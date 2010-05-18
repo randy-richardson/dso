@@ -43,7 +43,7 @@ public class ClusteredHeapNode extends ComponentNode implements HyperlinkListene
     return new ClassesNode(adminClientContext, getClusterModel());
   }
 
-  protected synchronized IClusterModel getClusterModel() {
+  synchronized IClusterModel getClusterModel() {
     return clusterModel;
   }
 
