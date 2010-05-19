@@ -11,11 +11,11 @@ import com.tc.util.Assert;
 import javax.management.Notification;
 import javax.management.NotificationListener;
 
-public class L1OperatorEventsLogger implements NotificationListener {
+public class OperatorEventsLogger implements NotificationListener {
 
   private final TerracottaOperatorEventCallbackLogger callbackLogger;
 
-  public L1OperatorEventsLogger(TCLogger logger) {
+  public OperatorEventsLogger(TCLogger logger) {
     this.callbackLogger = new TerracottaOperatorEventCallbackLogger(logger);
   }
 

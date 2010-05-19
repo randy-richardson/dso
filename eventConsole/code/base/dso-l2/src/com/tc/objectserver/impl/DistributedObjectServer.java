@@ -42,7 +42,7 @@ import com.tc.lang.TCThreadGroup;
 import com.tc.logging.CallbackOnExitHandler;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.DumpHandlerStore;
-import com.tc.logging.L1OperatorEventsLogger;
+import com.tc.logging.OperatorEventsLogger;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.logging.TerracottaOperatorEventLogging;
@@ -906,7 +906,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     Stage jmxEventsStage = stageManager.createStage(ServerConfigurationContext.JMX_EVENTS_STAGE,
                                                     new JMXEventsHandler(appEvents), 1, maxStageSize);
 
-    L1OperatorEventsLogger l1OperatorEventsLogger = new L1OperatorEventsLogger(logger);
+    OperatorEventsLogger l1OperatorEventsLogger = new OperatorEventsLogger(logger);
     final Stage jmxRemoteConnectStage = stageManager.createStage(ServerConfigurationContext.JMXREMOTE_CONNECT_STAGE,
                                                                  new ClientConnectEventHandler(this.statisticsGateway,
                                                                                                l1OperatorEventsLogger),
