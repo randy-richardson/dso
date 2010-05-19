@@ -153,6 +153,7 @@ import com.tc.statistics.LazilyInitializedSRA;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.StatisticDataCSVParser;
 import com.tc.statistics.StatisticRetrievalAction;
+import com.tc.statistics.StatisticType;
 import com.tc.text.Banner;
 import com.tc.util.AbstractIdentifier;
 import com.tc.util.Assert;
@@ -575,6 +576,7 @@ public class BootJarTool {
 
       addClusterEventsAndMetaDataClasses();
       loadTerracottaClass(StatisticRetrievalAction.class.getName());
+      loadTerracottaClass(StatisticType.class.getName());
       loadTerracottaClass(StatisticData.class.getName());
       loadTerracottaClass(StatisticDataCSVParser.class.getName());
       loadTerracottaClass(LazilyInitializedSRA.class.getName());
@@ -2148,7 +2150,9 @@ public class BootJarTool {
       }
 
       StandardTVSConfigurationSetupManagerFactory factory;
-      factory = new StandardTVSConfigurationSetupManagerFactory(cmdLine, false,
+      factory = new StandardTVSConfigurationSetupManagerFactory(
+                                                                cmdLine,
+                                                                StandardTVSConfigurationSetupManagerFactory.ConfigMode.CUSTOM_L1,
                                                                 new FatalIllegalConfigurationChangeHandler());
       boolean verbose = cmdLine.hasOption("v");
       TCLogger logger = verbose ? CustomerLogging.getConsoleLogger() : new NullTCLogger();
