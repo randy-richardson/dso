@@ -303,7 +303,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   private final Sink                             httpSink;
   protected final HaConfig                       haConfig;
 
-  protected static final TCLogger                logger           = CustomerLogging.getDSOGenericLogger();
+  private static final TCLogger                  logger           = CustomerLogging.getDSOGenericLogger();
   private static final TCLogger                  consoleLogger    = CustomerLogging.getConsoleLogger();
 
   private ServerID                               thisServerNodeID = ServerID.NULL_ID;
@@ -545,7 +545,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       // }
 
       // register the terracotta operator event logger
-      registerForOperatorEvents();
+      this.serverBuilder.registerForOperatorEvents(this.l2Management);
 
       String cachePolicy = this.l2Properties.getProperty("objectmanager.cachePolicy").toUpperCase();
       if (cachePolicy.equals("LRU")) {
@@ -1054,10 +1054,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       startActiveMode();
     }
     setLoggerOnExit();
-  }
-
-  protected void registerForOperatorEvents() {
-    // this is an enterprise only feature
   }
 
   public void startGroupManagers() {

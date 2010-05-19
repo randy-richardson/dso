@@ -129,4 +129,6 @@ public interface DSOClientBuilder {
                                   RuntimeLogger runtimeLogger, InstrumentationLogger instrumentationLogger,
                                   String rawConfigText, DistributedObjectClient distributedObjectClient,
                                   MBeanSpec[] mBeanSpecs);
+
+  void registerForOperatorEvents(TCLogger dsoLogger, L1Management management);
 }

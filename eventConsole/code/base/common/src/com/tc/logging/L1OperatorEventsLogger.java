@@ -23,7 +23,7 @@ public class L1OperatorEventsLogger implements NotificationListener {
     Assert.assertTrue(TerracottaOperatorEventsMBean.TERRACOTTA_OPERATOR_EVENT.equals(notification.getType()));
 
     TerracottaOperatorEvent operatorEvent = (TerracottaOperatorEvent) notification.getSource();
-    callbackLogger.logEvent(operatorEvent);
+    callbackLogger.logOperatorEvent(operatorEvent);
   }
 
 }

@@ -5,5 +5,5 @@ package com.tc.operatorevent;
 
 
 public interface TerracottaOperatorEventCallback {
-  void fireOperatorEvent(TerracottaOperatorEvent event);
+  void logOperatorEvent(TerracottaOperatorEvent event);
 }

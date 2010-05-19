@@ -1,9 +1,8 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc;
+package com.tc.net;
 
-import com.tc.net.NodeID;
 
 public interface NodeIdProvider {
   NodeID getNodeId();

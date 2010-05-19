@@ -3,7 +3,7 @@
  */
 package com.tc.logging;
 
-import com.tc.NodeIdProvider;
+import com.tc.net.NodeIdProvider;
 import com.tc.util.Assert;
 
 public class TerracottaOperatorEventLogging {

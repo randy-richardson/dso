@@ -3,8 +3,8 @@
  */
 package com.tc.objectserver.impl;
 
-import com.tc.NodeIdProvider;
 import com.tc.net.NodeID;
+import com.tc.net.NodeIdProvider;
 
 public class ServerIdProvider implements NodeIdProvider {
   private final NodeID nodeId;

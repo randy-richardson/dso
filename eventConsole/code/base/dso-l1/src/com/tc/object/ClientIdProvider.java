@@ -3,8 +3,8 @@
  */
 package com.tc.object;
 
-import com.tc.NodeIdProvider;
 import com.tc.net.NodeID;
+import com.tc.net.NodeIdProvider;
 import com.tc.object.net.DSOClientMessageChannel;
 
 public class ClientIdProvider implements NodeIdProvider {

@@ -112,4 +112,6 @@ public interface DSOServerBuilder extends TCDumper, PostInit {
                                   DistributedObjectServer distributedObjectServer, InetAddress bind, int jmxPort,
                                   Sink remoteEventsSink, ServerConnectionValidator serverConnectionValidator)
       throws Exception;
+
+  void registerForOperatorEvents(L2Management l2Management);
 }

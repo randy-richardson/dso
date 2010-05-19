@@ -12,7 +12,6 @@ import javax.management.NotificationFilter;
 
 class OperatorEventsFilter implements NotificationFilter, Serializable {
   public boolean isNotificationEnabled(Notification notification) {
-    if (notification.getType().equals(TerracottaOperatorEventsMBean.TERRACOTTA_OPERATOR_EVENT)) return true;
-    return false;
+    return notification.getType().equals(TerracottaOperatorEventsMBean.TERRACOTTA_OPERATOR_EVENT);
   }
 }

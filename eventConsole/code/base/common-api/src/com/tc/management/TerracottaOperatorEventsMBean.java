@@ -4,8 +4,9 @@
 package com.tc.management;
 
 import com.tc.operatorevent.TerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEventCallback;
 
-public interface TerracottaOperatorEventsMBean extends TerracottaMBean {
+public interface TerracottaOperatorEventsMBean extends TerracottaMBean, TerracottaOperatorEventCallback {
   public static final String TERRACOTTA_OPERATOR_EVENT = "terracotta operator event";
   
   void fireOperatorEvent(TerracottaOperatorEvent tcEvent);

@@ -63,9 +63,9 @@ import java.net.InetAddress;
 import java.util.List;
 
 public class StandardDSOServerBuilder implements DSOServerBuilder {
-  private final HaConfig haConfig;
-  private final GroupID  thisGroupID;
-  private final TCLogger logger;
+  private final HaConfig   haConfig;
+  private final GroupID    thisGroupID;
+  protected final TCLogger logger;
 
   public StandardDSOServerBuilder(HaConfig haConfig, TCLogger logger) {
     this.logger = logger;
@@ -187,5 +187,9 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                          ServerConnectionValidator serverConnectionValidator) throws Exception {
     return new L2Management(tcServerInfoMBean, lockStatisticsMBean, statisticsAgentSubSystem, statisticsGateway,
                             configSetupManager, distributedObjectServer, bind, jmxPort, remoteEventsSink);
+  }
+
+  public void registerForOperatorEvents(L2Management l2Management) {
+    // NOP
   }
 }

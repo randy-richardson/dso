@@ -64,7 +64,7 @@ final class MarkAndSweepGCAlgorithm {
     final ObjectIDSet candidateIDs = gcHook.getGCCandidates();
     final Set rootIDs = gcHook.getRootObjectIDs(candidateIDs);
     this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, "DGC started - Total Objects:"
+        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, "DGC started - Total Objects: "
                                                                                     + candidateIDs.size()));
 
     gcInfo.setBeginObjectCount(candidateIDs.size());
@@ -146,7 +146,8 @@ final class MarkAndSweepGCAlgorithm {
     gcPublisher.fireGCCompletedEvent(gcInfo);
     this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
         .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO,
-                                "DGC finished - Collected: 0 Time Taken: " + elapsedTime + "ms."));
+                                "DGC finished - Collected: 0 Time Taken: "
+                                                                        + elapsedTime + " ms."));
   }
 
   public ObjectIDSet collect(Filter filter, Collection rootIds, ObjectIDSet managedObjectIds,

@@ -527,7 +527,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.l1Management.start(this.createDedicatedMBeanServer);
 
     // register the terracotta operator event logger
-    registerForOperatorEvents();
+    this.dsoClientBuilder.registerForOperatorEvents(DSO_LOGGER, this.l1Management);
     
     // Setup the lock manager
     ClientLockStatManager lockStatManager = this.dsoClientBuilder.createLockStatsManager();
@@ -751,10 +751,6 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     }
 
     setLoggerOnExit();
-  }
-
-  protected void registerForOperatorEvents() {
-    // this is enterprise only feature
   }
 
   private void setLoggerOnExit() {

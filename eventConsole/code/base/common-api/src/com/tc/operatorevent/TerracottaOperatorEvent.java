@@ -3,6 +3,8 @@
  */
 package com.tc.operatorevent;
 
+import com.tc.net.NodeID;
+
 import java.io.Serializable;
 import java.util.Date;
 
@@ -17,13 +19,11 @@ public interface TerracottaOperatorEvent extends Serializable {
     MEMORY_MANAGER, DGC, HA
   }
   
-  void setNodeId(String nodeId);
+  void setNodeId(NodeID nodeId);
 
-  String getNodeId();
+  NodeID getNodeId();
 
   EventType getEventType();
-  
-  String getEventTypeString();
   
   Date getEventTime();
   
@@ -31,6 +31,14 @@ public interface TerracottaOperatorEvent extends Serializable {
   
   String getEventMessage();
   
-  String getEventSubsystemString();
+  /**
+   * These methods are there because devconsole does not take enum as the return type while updating the panel Should be
+   * dealt with in future
+   */
+  String getEventTypeAsString();
+
+  String getEventSubsystemAsString();
+  
+  String getNodeIdAsString();
   
 }

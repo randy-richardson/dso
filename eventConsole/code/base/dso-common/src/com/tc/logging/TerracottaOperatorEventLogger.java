@@ -3,7 +3,7 @@
  */
 package com.tc.logging;
 
-import com.tc.NodeIdProvider;
+import com.tc.net.NodeIdProvider;
 import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEventCallback;
 
@@ -23,9 +23,9 @@ public class TerracottaOperatorEventLogger {
   }
 
   public void fireOperatorEvent(TerracottaOperatorEvent event) {
-    event.setNodeId(this.nodeIdProvider.getNodeId().toString());
+    event.setNodeId(this.nodeIdProvider.getNodeId());
     for (TerracottaOperatorEventCallback callback : callbacks) {
-      callback.fireOperatorEvent(event);
+      callback.logOperatorEvent(event);
     }
   }
 }

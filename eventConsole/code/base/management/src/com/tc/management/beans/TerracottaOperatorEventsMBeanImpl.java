@@ -23,5 +23,9 @@ public class TerracottaOperatorEventsMBeanImpl extends AbstractNotifyingMBean im
     //
   }
 
+  public void logOperatorEvent(TerracottaOperatorEvent event) {
+    fireOperatorEvent(event);
+  }
+
 
 }
