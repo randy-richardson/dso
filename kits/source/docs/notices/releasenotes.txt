@@ -47,6 +47,14 @@ disconnect from the client.
 
 - DEV-4049
 - Fix to exception caused re-applying a transaction after an Active Server is restarted as Passive.
+
+-----------------------------------------------------
+
+Patch Level 4
+- DEV-4183
+- Change StandardClassProvider to prefer a non-system loader 
+
+
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
