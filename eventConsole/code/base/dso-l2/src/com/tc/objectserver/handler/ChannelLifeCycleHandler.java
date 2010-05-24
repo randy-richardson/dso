@@ -11,6 +11,8 @@ import com.tc.async.api.Sink;
 import com.tc.async.impl.InBandMoveToNextSink;
 import com.tc.config.HaConfig;
 import com.tc.logging.TCLogger;
+import com.tc.logging.TerracottaOperatorEventLogger;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
 import com.tc.net.protocol.tcm.CommunicationsManager;
@@ -22,17 +24,19 @@ import com.tc.object.net.DSOChannelManagerEventListener;
 import com.tc.objectserver.context.NodeStateEventContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.tx.TransactionBatchManager;
+import com.tc.operatorevent.TerracottaOperatorEventFactory;
 
 public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSOChannelManagerEventListener {
-  private final TransactionBatchManager transactionBatchManager;
-  private final CommunicationsManager   commsManager;
-  private final DSOChannelManager       channelMgr;
-  private final HaConfig                haConfig;
+  private final TransactionBatchManager       transactionBatchManager;
+  private final CommunicationsManager         commsManager;
+  private final DSOChannelManager             channelMgr;
+  private final HaConfig                      haConfig;
 
-  private TCLogger                      logger;
-  private Sink                          channelSink;
-  private Sink                          hydrateSink;
-  private Sink                          processTransactionSink;
+  private TCLogger                            logger;
+  private Sink                                channelSink;
+  private Sink                                hydrateSink;
+  private Sink                                processTransactionSink;
+  private final TerracottaOperatorEventLogger operatorEventLogger = TerracottaOperatorEventLogging.getEventLogger();
 
   public ChannelLifeCycleHandler(final CommunicationsManager commsManager,
                                  final TransactionBatchManager transactionBatchManager,
@@ -72,6 +76,7 @@ public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSO
       logger.info("Ignoring transport disconnect for " + nodeID + " while shutting down.");
     } else {
       logger.info(": Received transport disconnect.  Shutting down client " + nodeID);
+      operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeDisconnectedEvent(nodeID));
       transactionBatchManager.shutdownNode(nodeID);
     }
   }
@@ -79,6 +84,7 @@ public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSO
   private void nodeConnected(final NodeID nodeID) {
     broadcastClusterMembershipMessage(ClusterMembershipMessage.EventType.NODE_CONNECTED, nodeID);
     transactionBatchManager.nodeConnected(nodeID);
+    operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeConnectedEvent(nodeID));
   }
 
   private void broadcastClusterMembershipMessage(final int eventType, final NodeID nodeID) {
@@ -114,10 +120,11 @@ public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSO
   public void channelRemoved(final MessageChannel channel) {
     // We want all the messages in the system from this client to reach its destinations before processing this request.
     // esp. hydrate stage and process transaction stage. This goo is for that.
-    final NodeStateEventContext disconnectEvent = new NodeStateEventContext(NodeStateEventContext.REMOVE,
-                                                                            channel.getRemoteNodeID());
+    final NodeStateEventContext disconnectEvent = new NodeStateEventContext(NodeStateEventContext.REMOVE, channel
+        .getRemoteNodeID());
     InBandMoveToNextSink context1 = new InBandMoveToNextSink(disconnectEvent, channelSink, channel.getRemoteNodeID());
-    InBandMoveToNextSink context2 = new InBandMoveToNextSink(context1, processTransactionSink, channel.getRemoteNodeID());
+    InBandMoveToNextSink context2 = new InBandMoveToNextSink(context1, processTransactionSink, channel
+        .getRemoteNodeID());
     hydrateSink.add(context2);
   }
 

@@ -14,10 +14,12 @@ import com.tc.runtime.MemoryUsage;
 
 public class LongGCLogger implements MemoryEventsListener {
 
-  private long                                gcTimeout;
+  private final long                          gcTimeout;
   private MemoryUsage                         lastMemoryUsage;
-  private TCLogger                            logger;
-  private final TerracottaOperatorEventLogger tcEventLogger = TerracottaOperatorEventLogging.getEventLogger();
+  private final TCLogger                      logger;
+  private final TerracottaOperatorEventLogger tcEventLogger                = TerracottaOperatorEventLogging
+                                                                               .getEventLogger();
+  private final static int                    HIGH_MEMORY_USAGE_PERCENTAGE = 80;
 
   public LongGCLogger(TCLogger logger, long gcTimeOut) {
     this.logger = logger;
@@ -31,17 +33,22 @@ public class LongGCLogger implements MemoryEventsListener {
     }
     long countDiff = currentUsage.getCollectionCount() - lastMemoryUsage.getCollectionCount();
     long timeDiff = currentUsage.getCollectionTime() - lastMemoryUsage.getCollectionTime();
-    // if (countDiff > 0 && timeDiff > gcTimeout) {
+    if (countDiff > 0 && timeDiff > gcTimeout) {
       fireEvent(LongGCEventType.LONG_GC, countDiff, timeDiff);
-    // }
+    }
+    if (lastMemoryUsage.getUsedPercentage() < HIGH_MEMORY_USAGE_PERCENTAGE
+        && currentUsage.getUsedPercentage() >= HIGH_MEMORY_USAGE_PERCENTAGE) {
+      Object[] arguments = { currentUsage.getUsedPercentage() };
+      tcEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createHighMemoryUsageEvent(arguments));
+    }
     lastMemoryUsage = currentUsage;
   }
 
   private void fireEvent(LongGCEventType type, long collectionCountDiff, long collectionTimeDiff) {
     String message = "Detected Long GC > " + gcTimeout + " ms. Event Type : " + type + " GC Collection Count: "
                      + collectionCountDiff + " GC Collection Time: " + collectionTimeDiff + " ms";
-    TerracottaOperatorEvent tcEvent = TerracottaOperatorEventFactory
-        .createLongGCOperatorEvent(TerracottaOperatorEvent.EventType.WARN, message);
+    Object[] arguments = { gcTimeout, collectionCountDiff, collectionTimeDiff };
+    TerracottaOperatorEvent tcEvent = TerracottaOperatorEventFactory.createLongGCOperatorEvent(arguments);
     tcEventLogger.fireOperatorEvent(tcEvent);
     logger.warn(message);
   }

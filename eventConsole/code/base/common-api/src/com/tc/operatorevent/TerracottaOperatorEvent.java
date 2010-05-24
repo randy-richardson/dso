@@ -16,7 +16,7 @@ public interface TerracottaOperatorEvent extends Serializable {
   }
 
   public static enum EventSubsystem {
-    MEMORY_MANAGER, DGC, HA
+    MEMORY_MANAGER, DGC, HA, LOCK_MANAGER
   }
   
   void setNodeId(NodeID nodeId);

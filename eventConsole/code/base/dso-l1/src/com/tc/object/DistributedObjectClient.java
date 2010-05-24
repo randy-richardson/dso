@@ -212,7 +212,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
   private ClientHandshakeManager                     clientHandshakeManager;
   private ClusterMetaDataManager                     clusterMetaDataManager;
   private CacheManager                               cacheManager;
-  protected L1Management                             l1Management;
+  private L1Management                               l1Management;
   private TCProperties                               l1Properties;
   private DmiManager                                 dmiManager;
   private boolean                                    createDedicatedMBeanServer          = false;

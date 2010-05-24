@@ -325,7 +325,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   private CacheManager                           cacheManager;
 
-  protected L2Management                         l2Management;
+  private L2Management                           l2Management;
   private L2Coordinator                          l2Coordinator;
 
   private TCProperties                           l2Properties;
@@ -456,7 +456,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     }
 
     NIOWorkarounds.solaris10Workaround();
-    
+
     // start the JMX server
     try {
       startJMXServer(bind, this.configSetupManager.commonl2Config().jmxPort().getInt(), new RemoteJMXProcessor());
@@ -466,7 +466,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       logger.error(msg, e);
       System.exit(-1);
     }
-    
+
     this.configSetupManager.commonl2Config().changesInItemIgnored(this.configSetupManager.commonl2Config().dataPath());
     l2DSOConfig.changesInItemIgnored(l2DSOConfig.persistenceMode());
     PersistenceMode persistenceMode = (PersistenceMode) l2DSOConfig.persistenceMode().getObject();
@@ -530,9 +530,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                               serializationAdapterFactory, this.configSetupManager.commonl2Config()
                                                   .dataPath().getFile(), this.objectStatsRecorder);
       sraBdb = new SRABerkeleyDB((SleepycatPersistor) this.persistor);
-      
+
       l2Management.init(dbenv);
-      
+
       // DONT DELETE ::This commented code is for replacing SleepyCat with MemoryDataStore as an in-memory DB for
       // testing purpose. You need to include MemoryDataStore in tc.jar and enable with tc.properties
       // l2.memorystore.enabled=true.
@@ -1423,8 +1423,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     return this.gcStatsEventPublisher;
   }
 
-  private void startJMXServer(final InetAddress bind, int jmxPort, final Sink remoteEventsSink)
-      throws Exception {
+  private void startJMXServer(final InetAddress bind, int jmxPort, final Sink remoteEventsSink) throws Exception {
     if (jmxPort == 0) {
       jmxPort = new PortChooser().chooseRandomPort();
     }

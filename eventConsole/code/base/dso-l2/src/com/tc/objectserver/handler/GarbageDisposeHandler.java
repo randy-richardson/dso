@@ -17,7 +17,6 @@ import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
-import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEventFactory;
 
 import java.util.Iterator;
@@ -75,11 +74,8 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
     gcInfo.setElapsedTime(elapsedTime);
     gcInfo.setEndObjectCount(managedObjectPersistor.getObjectCount());
     publisher.fireGCCompletedEvent(gcInfo);
-    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, "DGC finished - Collected:"
-                                                                                    + sortedGarbage.size()
-                                                                                    + " Time Taken: " + elapsedTime
-                                                                                    + "ms."));
+    Object[] arguments = { sortedGarbage.size(), elapsedTime };
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createDGCFinishedEvent(arguments));
   }
 
   private void removeFromStore(SortedSet<ObjectID> sortedGarbage) {

@@ -13,7 +13,6 @@ import com.tc.objectserver.core.impl.GarbageCollectionID;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.dgc.api.GarbageCollector;
-import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.TCCollections;
@@ -63,9 +62,8 @@ final class MarkAndSweepGCAlgorithm {
 
     final ObjectIDSet candidateIDs = gcHook.getGCCandidates();
     final Set rootIDs = gcHook.getRootObjectIDs(candidateIDs);
-    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO, "DGC started - Total Objects: "
-                                                                                    + candidateIDs.size()));
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createDGCStartedEvent(candidateIDs
+        .size()));
 
     gcInfo.setBeginObjectCount(candidateIDs.size());
     gcPublisher.fireGCMarkEvent(gcInfo);
@@ -144,10 +142,8 @@ final class MarkAndSweepGCAlgorithm {
     gcInfo.setElapsedTime(elapsedTime);
     gcPublisher.fireGCCycleCompletedEvent(gcInfo, new ObjectIDSet());
     gcPublisher.fireGCCompletedEvent(gcInfo);
-    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createDGCOperatorEvent(TerracottaOperatorEvent.EventType.INFO,
-                                "DGC finished - Collected: 0 Time Taken: "
-                                                                        + elapsedTime + " ms."));
+    Object[] arguments = { 0, elapsedTime };
+    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createDGCFinishedEvent(arguments));
   }
 
   public ObjectIDSet collect(Filter filter, Collection rootIds, ObjectIDSet managedObjectIds,

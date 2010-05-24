@@ -42,8 +42,6 @@ import com.tc.l2.state.StateManagerConfigImpl;
 import com.tc.l2.state.StateManagerImpl;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.logging.TerracottaOperatorEventLogger;
-import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.net.groups.GroupEventsListener;
@@ -57,8 +55,6 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.impl.DistributedObjectServer;
 import com.tc.objectserver.tx.ServerTransactionManager;
-import com.tc.operatorevent.TerracottaOperatorEvent;
-import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.sequence.SequenceGenerator;
@@ -91,8 +87,6 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   private final NewHaConfig                               haConfig;
   private final CopyOnWriteArrayList<StateChangeListener> listeners             = new CopyOnWriteArrayList<StateChangeListener>();
-  private final TerracottaOperatorEventLogger             tcOperatorEventLogger = TerracottaOperatorEventLogging
-                                                                                    .getEventLogger();
 
   public L2HACoordinator(TCLogger consoleLogger, DistributedObjectServer server, StageManager stageManager,
                          GroupManager groupCommsManager, PersistentMapStore persistentStateStore,
@@ -253,8 +247,6 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   public void nodeJoined(NodeID nodeID) {
     log(nodeID + " joined the cluster");
-    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, nodeID + " joined the cluster"));
     if (stateManager.isActiveCoordinator()) {
       try {
         stateManager.publishActiveState(nodeID);
@@ -283,8 +275,6 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   public void nodeLeft(NodeID nodeID) {
     warn(nodeID + " left the cluster");
-    this.tcOperatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-        .createServerNodeJoinedOperatorEvent(TerracottaOperatorEvent.EventType.INFO, nodeID + " left the cluster"));
     if (stateManager.isActiveCoordinator()) {
       rObjectManager.clear(nodeID);
       rClusterStateMgr.fireNodeLeftEvent(nodeID);
