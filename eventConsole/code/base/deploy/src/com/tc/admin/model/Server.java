@@ -26,6 +26,7 @@ import com.tc.objectserver.api.NoSuchObjectException;
 import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.mgmt.MapEntryFacade;
+import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.beans.StatisticsLocalGathererMBean;
 import com.tc.statistics.beans.StatisticsMBeanNames;
@@ -1509,6 +1510,11 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
   public synchronized GCStats[] getGCStats() {
     DSOMBean theDsoBean = getDSOBean();
     return theDsoBean != null ? theDsoBean.getGarbageCollectorStats() : EMPTY_GCSTATS_ARRAY;
+  }
+  
+  public synchronized List<TerracottaOperatorEvent> getOperatorEvents() {
+    DSOMBean theDsoBean = getDSOBean();
+    return theDsoBean != null ? theDsoBean.getOperatorEvents() : new ArrayList<TerracottaOperatorEvent>();
   }
 
   public void addDGCListener(DGCListener listener) {

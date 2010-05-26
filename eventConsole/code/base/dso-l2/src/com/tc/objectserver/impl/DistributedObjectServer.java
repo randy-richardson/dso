@@ -219,6 +219,8 @@ import com.tc.objectserver.tx.TransactionBatchManagerImpl;
 import com.tc.objectserver.tx.TransactionFilter;
 import com.tc.objectserver.tx.TransactionalObjectManagerImpl;
 import com.tc.objectserver.tx.TransactionalStagesCoordinatorImpl;
+import com.tc.operatorevent.DsoOperatorEventHistoryProvider;
+import com.tc.operatorevent.TerracottaOperatorEventHistoryProvider;
 import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
@@ -316,6 +318,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   private ServerID                               thisServerNodeID = ServerID.NULL_ID;
   protected NetworkListener                      l1Listener;
   protected GCStatsEventPublisher                gcStatsEventPublisher;
+  private TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider;
   private CommunicationsManager                  communicationsManager;
   private ServerConfigurationContext             context;
   private ObjectManagerImpl                      objectManager;
@@ -553,7 +556,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       // }
 
       // register the terracotta operator event logger
-      this.serverBuilder.registerForOperatorEvents(this.l2Management);
+      this.operatorEventHistoryProvider = new DsoOperatorEventHistoryProvider();
+      this.serverBuilder.registerForOperatorEvents(this.l2Management, this.operatorEventHistoryProvider);
 
       final String cachePolicy = this.l2Properties.getProperty("objectmanager.cachePolicy").toUpperCase();
       if (cachePolicy.equals("LRU")) {
@@ -1477,6 +1481,10 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   public GCStatsEventPublisher getGcStatsEventPublisher() {
     return this.gcStatsEventPublisher;
+  }
+  
+  public TerracottaOperatorEventHistoryProvider getOperatorEventsHistoryProvider() {
+    return this.operatorEventHistoryProvider;
   }
 
   private void startJMXServer(final InetAddress bind, int jmxPort, final Sink remoteEventsSink) throws Exception {

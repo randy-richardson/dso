@@ -44,6 +44,7 @@ import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManagerImpl;
 import com.tc.objectserver.tx.TransactionFilter;
 import com.tc.objectserver.tx.TransactionalObjectManager;
+import com.tc.operatorevent.TerracottaOperatorEventHistoryProvider;
 import com.tc.server.ServerConnectionValidator;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
@@ -118,5 +119,6 @@ public interface DSOServerBuilder extends TCDumper, PostInit {
                                   Sink remoteEventsSink, ServerConnectionValidator serverConnectionValidator)
       throws Exception;
 
-  void registerForOperatorEvents(L2Management l2Management);
+  void registerForOperatorEvents(L2Management l2Management,
+                                 TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider);
 }

@@ -7,7 +7,7 @@ import com.tc.util.Assert;
 
 import java.util.Date;
 
-public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
+public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Comparable<TerracottaOperatorEventImpl> {
   private final long           time;
   private final String         eventMessage;
   private final EventType      eventType;
@@ -52,6 +52,16 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
 
   public String getEventSubsystemAsString() {
     return this.subSystem.name();
+  }
+
+  public int compareTo(TerracottaOperatorEventImpl o) {
+    if (this.time > o.time) {
+      return 1;
+    } else if (this.time == o.time) {
+      return 0;
+    } else {
+      return -1;
+    }
   }
 
 }
