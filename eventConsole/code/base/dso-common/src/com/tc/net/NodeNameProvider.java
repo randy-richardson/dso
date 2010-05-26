@@ -4,6 +4,6 @@
 package com.tc.net;
 
 
-public interface NodeIdProvider {
-  NodeID getNodeId();
+public interface NodeNameProvider {
+  String getNodeName();
 }

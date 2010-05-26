@@ -18,20 +18,20 @@ public class TerracottaOperatorEventCallbackLogger implements TerracottaOperator
     EventType eventType = event.getEventType();
     switch (eventType) {
       case INFO:
-        this.logger.info("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeId() + " Subsystem: "
+        this.logger.info("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeName() + " Subsystem: "
                          + event.getEventSubsystem() + " Message: " + event.getEventMessage());
         break;
       case WARN:
-        this.logger.warn("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeId() + " Subsystem: "
+        this.logger.warn("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeName() + " Subsystem: "
                          + event.getEventSubsystem() + " Message: " + event.getEventMessage());
         break;
       case DEBUG:
-        this.logger.debug("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeId() + " Subsystem: "
-                          + event.getEventSubsystem() + " Message: " + event.getEventMessage());
+        this.logger.debug("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeName()
+                          + " Subsystem: " + event.getEventSubsystem() + " Message: " + event.getEventMessage());
         break;
       case ERROR:
-        this.logger.error("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeId() + " Subsystem: "
-                          + event.getEventSubsystem() + " Message: " + event.getEventMessage());
+        this.logger.error("Operator Event: TYPE: " + eventType + " NODE : " + event.getNodeName()
+                          + " Subsystem: " + event.getEventSubsystem() + " Message: " + event.getEventMessage());
         break;
       default:
         throw new RuntimeException("Invalid Event Type: " + eventType);

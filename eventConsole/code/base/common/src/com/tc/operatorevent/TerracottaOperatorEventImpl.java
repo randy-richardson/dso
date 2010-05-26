@@ -3,7 +3,6 @@
  */
 package com.tc.operatorevent;
 
-import com.tc.net.NodeID;
 import com.tc.util.Assert;
 
 import java.util.Date;
@@ -13,7 +12,7 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
   private final String         eventMessage;
   private final EventType      eventType;
   private final EventSubsystem subSystem;
-  private NodeID               nodeId = null;
+  private String               nodeId = null;
 
   public TerracottaOperatorEventImpl(EventType eventType, EventSubsystem subSystem, String message) {
     this.eventType = eventType;
@@ -38,15 +37,11 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent {
     return this.eventType.name();
   }
 
-  public NodeID getNodeId() {
+  public String getNodeName() {
     return this.nodeId;
   }
-  
-  public String getNodeIdAsString() {
-    return this.nodeId.toString();
-  }
 
-  public void setNodeId(NodeID nodeId) {
+  public void setNodeName(String nodeId) {
     Assert.assertNull(this.nodeId);
     this.nodeId = nodeId;
   }

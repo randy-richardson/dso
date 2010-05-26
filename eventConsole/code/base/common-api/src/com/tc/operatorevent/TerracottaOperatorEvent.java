@@ -3,8 +3,6 @@
  */
 package com.tc.operatorevent;
 
-import com.tc.net.NodeID;
-
 import java.io.Serializable;
 import java.util.Date;
 
@@ -19,11 +17,11 @@ public interface TerracottaOperatorEvent extends Serializable {
     MEMORY_MANAGER, DGC, HA, LOCK_MANAGER
   }
   
-  void setNodeId(NodeID nodeId);
-
-  NodeID getNodeId();
+  void setNodeName(String nodeId);
 
   EventType getEventType();
+  
+  String getNodeName();
   
   Date getEventTime();
   
@@ -38,7 +36,5 @@ public interface TerracottaOperatorEvent extends Serializable {
   String getEventTypeAsString();
 
   String getEventSubsystemAsString();
-  
-  String getNodeIdAsString();
   
 }

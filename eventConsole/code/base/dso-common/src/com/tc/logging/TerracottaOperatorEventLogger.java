@@ -3,7 +3,7 @@
  */
 package com.tc.logging;
 
-import com.tc.net.NodeIdProvider;
+import com.tc.net.NodeNameProvider;
 import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEventCallback;
 
@@ -12,10 +12,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class TerracottaOperatorEventLogger {
 
   private final CopyOnWriteArrayList<TerracottaOperatorEventCallback> callbacks = new CopyOnWriteArrayList<TerracottaOperatorEventCallback>();
-  private NodeIdProvider                                              nodeIdProvider;
+  private final NodeNameProvider                                      nodeNameProvider;
 
-  public TerracottaOperatorEventLogger(NodeIdProvider nodeIdProvider) {
-    this.nodeIdProvider = nodeIdProvider;
+  public TerracottaOperatorEventLogger(NodeNameProvider nodeIdProvider) {
+    this.nodeNameProvider = nodeIdProvider;
   }
 
   public void registerEventCallback(TerracottaOperatorEventCallback callback) {
@@ -23,7 +23,7 @@ public class TerracottaOperatorEventLogger {
   }
 
   public void fireOperatorEvent(TerracottaOperatorEvent event) {
-    event.setNodeId(this.nodeIdProvider.getNodeId());
+    event.setNodeName(this.nodeNameProvider.getNodeName());
     for (TerracottaOperatorEventCallback callback : callbacks) {
       callback.logOperatorEvent(event);
     }

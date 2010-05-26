@@ -407,7 +407,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.threadGroup.addCallbackOnExitDefaultHandler(new ThreadDumpHandler(this));
     this.thisServerNodeID = makeServerNodeID(this.configSetupManager.dsoL2Config());
 
-    TerracottaOperatorEventLogging.setNodeIdProvider(new ServerIdProvider(this.thisServerNodeID));
+    TerracottaOperatorEventLogging.setNodeIdProvider(new ServerNameProvider(this.configSetupManager.dsoL2Config()
+        .serverName().getString()));
 
     final L2LockStatsManager lockStatsManager = new L2LockStatisticsManagerImpl();
 
@@ -538,7 +539,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                               serializationAdapterFactory, this.configSetupManager.commonl2Config()
                                                   .dataPath().getFile(), this.objectStatsRecorder);
       sraBdb = new SRABerkeleyDB((SleepycatPersistor) this.persistor);
-
 
       l2Management.init(dbenv);
       // DONT DELETE ::This commented code is for replacing SleepyCat with MemoryDataStore as an in-memory DB for

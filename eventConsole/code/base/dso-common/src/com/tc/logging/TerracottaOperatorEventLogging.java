@@ -3,18 +3,18 @@
  */
 package com.tc.logging;
 
-import com.tc.net.NodeIdProvider;
+import com.tc.net.NodeNameProvider;
 import com.tc.util.Assert;
 
 public class TerracottaOperatorEventLogging {
-  private static volatile NodeIdProvider nodeIdProvider;
+  private static volatile NodeNameProvider nodeIdProvider;
 
   public static TerracottaOperatorEventLogger getEventLogger() {
     Assert.assertNotNull(nodeIdProvider);
     return TerracottaOperatorEventLoggerHolder.instance;
   }
 
-  public static void setNodeIdProvider(NodeIdProvider nodeIDProvider) {
+  public static void setNodeIdProvider(NodeNameProvider nodeIDProvider) {
     if (nodeIdProvider == null) {
       nodeIdProvider = nodeIDProvider;
     }
