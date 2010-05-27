@@ -32,15 +32,15 @@ public class TerracottaOperatorEventFactory {
   }
 
   public static TerracottaOperatorEvent createNodeConnectedEvent(NodeID nodeID) {
-    Object[] arguments = { nodeID.toString(), "joined" };
     return new TerracottaOperatorEventImpl(EventType.INFO, EventSubsystem.HA, MessageFormat
-        .format(TerracottaOperatorEventResources.getNodeAvailabiltyMessage(), arguments));
+        .format(TerracottaOperatorEventResources.getNodeAvailabiltyMessage(), new Object[] { nodeID.toString(),
+            "joined" }));
   }
   
   public static TerracottaOperatorEvent createNodeDisconnectedEvent(NodeID nodeID) {
-    Object[] arguments = { nodeID.toString(), "left" };
     return new TerracottaOperatorEventImpl(EventType.INFO, EventSubsystem.HA, MessageFormat
-        .format(TerracottaOperatorEventResources.getNodeAvailabiltyMessage(), arguments));
+        .format(TerracottaOperatorEventResources.getNodeAvailabiltyMessage(), new Object[] { nodeID.toString(),
+            "joined" }));
   }
 
   public static TerracottaOperatorEvent createLockGCEvent(Object[] arguments) {

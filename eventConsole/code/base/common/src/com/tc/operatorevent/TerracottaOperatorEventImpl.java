@@ -64,4 +64,14 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
     }
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof TerracottaOperatorEventImpl)) return false;
+    TerracottaOperatorEventImpl event = (TerracottaOperatorEventImpl) o;
+    if (this.eventType != event.eventType) return false;
+    if (this.subSystem != event.subSystem) return false;
+    if (!this.eventMessage.equals(event.eventMessage)) return false;
+    return true;
+  }
+
 }

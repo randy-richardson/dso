@@ -38,8 +38,8 @@ public class LongGCLogger implements MemoryEventsListener {
     }
     if (lastMemoryUsage.getUsedPercentage() < HIGH_MEMORY_USAGE_PERCENTAGE
         && currentUsage.getUsedPercentage() >= HIGH_MEMORY_USAGE_PERCENTAGE) {
-      Object[] arguments = { currentUsage.getUsedPercentage() };
-      tcEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createHighMemoryUsageEvent(arguments));
+      tcEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+          .createHighMemoryUsageEvent(new Object[] { currentUsage.getUsedPercentage() }));
     }
     lastMemoryUsage = currentUsage;
   }
@@ -47,8 +47,8 @@ public class LongGCLogger implements MemoryEventsListener {
   private void fireEvent(LongGCEventType type, long collectionCountDiff, long collectionTimeDiff) {
     String message = "Detected Long GC > " + gcTimeout + " ms. Event Type : " + type + " GC Collection Count: "
                      + collectionCountDiff + " GC Collection Time: " + collectionTimeDiff + " ms";
-    Object[] arguments = { gcTimeout, collectionCountDiff, collectionTimeDiff };
-    TerracottaOperatorEvent tcEvent = TerracottaOperatorEventFactory.createLongGCOperatorEvent(arguments);
+    TerracottaOperatorEvent tcEvent = TerracottaOperatorEventFactory.createLongGCOperatorEvent(new Object[] {
+        gcTimeout, collectionCountDiff, collectionTimeDiff });
     tcEventLogger.fireOperatorEvent(tcEvent);
     logger.warn(message);
   }

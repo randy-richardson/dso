@@ -774,8 +774,8 @@ public class ClientLockManagerImpl implements ClientLockManager, ClientLockManag
       }
 
       if (gcCount > 1000) {
-        Object[] arguments = { gcCount };
-        operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createLockGCEvent(arguments));
+        operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+            .createLockGCEvent(new Object[] { gcCount }));
       }
     }
   }
