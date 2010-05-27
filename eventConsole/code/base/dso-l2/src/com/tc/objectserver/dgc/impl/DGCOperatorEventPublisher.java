@@ -24,6 +24,6 @@ public class DGCOperatorEventPublisher extends GarbageCollectorEventListenerAdap
 
   @Override
   public void garbageCollectorCanceled(GarbageCollectionInfo info) {
-    this.operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createDGCCanceldEvent());
+    this.operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createDGCCanceledEvent());
   }
 }

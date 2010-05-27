@@ -26,7 +26,7 @@ public class TerracottaOperatorEventFactory {
         .format(TerracottaOperatorEventResources.getDGCFinishedMessage(), arguments));
   }
 
-  public static TerracottaOperatorEvent createDGCCanceldEvent() {
+  public static TerracottaOperatorEvent createDGCCanceledEvent() {
     return new TerracottaOperatorEventImpl(EventType.INFO, EventSubsystem.DGC, TerracottaOperatorEventResources
         .getDGCCanceledMessage());
   }
