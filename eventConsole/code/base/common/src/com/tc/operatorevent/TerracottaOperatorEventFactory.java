@@ -16,10 +16,9 @@ public class TerracottaOperatorEventFactory {
         .format(TerracottaOperatorEventResources.getLongGCMessage(), arguments));
   }
 
-  public static TerracottaOperatorEvent createDGCStartedEvent(long beginCount) {
-    Object[] arguments = { beginCount };
-    return new TerracottaOperatorEventImpl(EventType.INFO, EventSubsystem.DGC, MessageFormat
-        .format(TerracottaOperatorEventResources.getDGCStartedMessage(), arguments));
+  public static TerracottaOperatorEvent createDGCStartedEvent() {
+    return new TerracottaOperatorEventImpl(EventType.INFO, EventSubsystem.DGC, TerracottaOperatorEventResources
+        .getDGCStartedMessage());
   }
 
   public static TerracottaOperatorEvent createDGCFinishedEvent(Object[] arguments) {
