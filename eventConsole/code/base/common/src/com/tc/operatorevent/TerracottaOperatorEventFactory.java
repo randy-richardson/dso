@@ -40,7 +40,7 @@ public class TerracottaOperatorEventFactory {
   public static TerracottaOperatorEvent createNodeDisconnectedEvent(NodeID nodeID) {
     return new TerracottaOperatorEventImpl(EventType.INFO, EventSubsystem.HA, MessageFormat
         .format(TerracottaOperatorEventResources.getNodeAvailabiltyMessage(), new Object[] { nodeID.toString(),
-            "joined" }));
+            "left" }));
   }
 
   public static TerracottaOperatorEvent createLockGCEvent(Object[] arguments) {

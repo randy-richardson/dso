@@ -3,8 +3,6 @@
  */
 package com.tc.operatorevent;
 
-import com.tc.util.Assert;
-
 import java.util.Date;
 
 public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Comparable<TerracottaOperatorEventImpl> {
@@ -12,7 +10,7 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
   private final String         eventMessage;
   private final EventType      eventType;
   private final EventSubsystem subSystem;
-  private String               nodeId = null;
+  private String               nodeName = null;
 
   public TerracottaOperatorEventImpl(EventType eventType, EventSubsystem subSystem, String message) {
     this.eventType = eventType;
@@ -38,12 +36,11 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
   }
 
   public String getNodeName() {
-    return this.nodeId;
+    return this.nodeName;
   }
 
   public void setNodeName(String nodeId) {
-    Assert.assertNull(this.nodeId);
-    this.nodeId = nodeId;
+    this.nodeName = nodeId;
   }
 
   public EventSubsystem getEventSubsystem() {
@@ -67,11 +64,12 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof TerracottaOperatorEventImpl)) return false;
+    if (this.subSystem == EventSubsystem.DGC) return false;
     TerracottaOperatorEventImpl event = (TerracottaOperatorEventImpl) o;
     if (this.eventType != event.eventType) return false;
     if (this.subSystem != event.subSystem) return false;
     if (!this.eventMessage.equals(event.eventMessage)) return false;
     return true;
   }
-
+  
 }
