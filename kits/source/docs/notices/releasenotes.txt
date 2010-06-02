@@ -54,7 +54,14 @@ Patch Level 4
 - DEV-4183
 - Change StandardClassProvider to prefer a non-system loader 
 
+-----------------------------------------------------
 
+Patch Level 5
+- DEV-4244
+- Throw RejectedExecutionException back to the calling JMX client if seen on Server
+
+- DEV-3901
+- If Zapped node connects, resend Zap request to force restart other node
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
