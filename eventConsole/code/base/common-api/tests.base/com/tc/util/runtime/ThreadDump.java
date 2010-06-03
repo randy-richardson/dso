@@ -75,6 +75,8 @@ public class ThreadDump {
 
     for (int i = 0; i < iterations; i++) {
       for (PID pid : pids) {
+        System.err.println("Requesting dump for PID " + pid.getPid());
+
         if (Os.isWindows()) {
           doWindowsDump(pid);
         } else {
@@ -134,7 +136,7 @@ public class ThreadDump {
       cmd[0] = program.getAbsolutePath();
       System.arraycopy(args, 0, cmd, 1, args.length);
 
-      cmd[cmd.length - 1] = pid.toString();
+      cmd[cmd.length - 1] = String.valueOf(pid.getPid());
 
       Process p = Runtime.getRuntime().exec(cmd);
       p.getOutputStream().close();

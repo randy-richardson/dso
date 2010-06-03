@@ -66,4 +66,12 @@ public interface DSOClientMBean extends TerracottaMBean {
   boolean isResident(ObjectID oid);
 
   void killClient();
+  
+  long getServerMapGetSizeRequestsCount();
+
+  long getServerMapGetValueRequestsCount();
+
+  long getServerMapGetSizeRequestsRate();
+
+  long getServerMapGetValueRequestsRate();
 }

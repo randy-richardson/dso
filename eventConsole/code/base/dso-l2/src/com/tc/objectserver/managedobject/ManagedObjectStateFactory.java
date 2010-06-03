@@ -74,7 +74,7 @@ public class ManagedObjectStateFactory {
     classNameToStateMap.put(java.util.concurrent.ConcurrentHashMap.class.getName(),
                             new Byte(ManagedObjectState.CONCURRENT_HASHMAP_TYPE));
     // XXX: hack to support CDM in tim-concurrent-collections.
-    classNameToStateMap.put("org.terracotta.collections.ConcurrentDistributedMapDso", Byte
+    classNameToStateMap.put("com.terracotta.toolkit.collections.ConcurrentDistributedMapDso", Byte
         .valueOf(ManagedObjectState.CONCURRENT_DISTRIBUTED_MAP_TYPE));
     // XXX: hack to support CDMServerMap in tim-concurrent-collections.
     classNameToStateMap.put("org.terracotta.collections.ConcurrentDistributedServerMapDso", Byte
@@ -86,10 +86,10 @@ public class ManagedObjectStateFactory {
                             new Byte(ManagedObjectState.TDC_CUSTOM_LIFESPAN_SERIALIZED_ENTRY));
     classNameToStateMap.put(java.util.concurrent.CopyOnWriteArrayList.class.getName(),
                             new Byte(ManagedObjectState.LIST_TYPE));
-    // XXX: Hack for async toolkit
+    // XXX: Hack for terracotta toolkit
     classNameToStateMap.put("org.terracotta.async.ProcessingBucketItems", new Byte(ManagedObjectState.LIST_TYPE));
     classNameToStateMap.put("org.terracotta.collections.ConcurrentBlockingQueue", new Byte(ManagedObjectState.QUEUE_TYPE));
-
+    classNameToStateMap.put("org.terracotta.collections.TerracottaList", new Byte(ManagedObjectState.LIST_TYPE));
   }
 
   private ManagedObjectStateFactory(final ManagedObjectChangeListenerProvider listenerProvider,
