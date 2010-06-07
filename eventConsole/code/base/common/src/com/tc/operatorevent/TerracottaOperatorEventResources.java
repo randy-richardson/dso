@@ -47,5 +47,13 @@ class TerracottaOperatorEventResources {
   public static String getHighMemoryUsageMessage() {
     return instance.resources.getString("high.memory.usage");
   }
+
+  public static String getOOODisconnectMessage() {
+    return instance.resources.getString("ooo.disconnect");
+  }
+
+  public static String getOOOConnectMessage() {
+    return instance.resources.getString("ooo.connect");
+  }
 }
 
