@@ -5,12 +5,15 @@
 package com.tc.admin.model;
 
 import com.tc.admin.ConnectionContext;
+import com.tc.admin.common.ExceptionHelper;
 import com.tc.admin.common.MBeanServerInvocationProxy;
 import com.tc.admin.model.IClusterModel.PollScope;
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.management.beans.l1.L1InfoMBean;
 import com.tc.management.beans.logging.InstrumentationLoggingMBean;
 import com.tc.management.beans.logging.RuntimeLoggingMBean;
 import com.tc.management.beans.logging.RuntimeOutputOptionsMBean;
+import com.tc.management.beans.object.EnterpriseTCClientMbean;
 import com.tc.net.ClientID;
 import com.tc.object.ObjectID;
 import com.tc.statistics.StatisticData;
@@ -25,6 +28,7 @@ import java.util.zip.ZipInputStream;
 import javax.management.Attribute;
 import javax.management.AttributeChangeNotification;
 import javax.management.AttributeList;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
@@ -46,6 +50,7 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
   private boolean                      ready;
   private boolean                      isListeningForTunneledBeans;
   private L1InfoMBean                  l1InfoBean;
+  private EnterpriseTCClientMbean      enterpriseClientMbean;
   private InstrumentationLoggingMBean  instrumentationLoggingBean;
   private RuntimeLoggingMBean          runtimeLoggingBean;
   private RuntimeOutputOptionsMBean    runtimeOutputOptionsBean;
@@ -88,6 +93,9 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
                                                                              L1InfoMBean.class, true);
     addMBeanNotificationListener(delegate.getL1InfoBeanName(), this, "L1InfoMBean");
 
+    enterpriseClientMbean = (EnterpriseTCClientMbean) MBeanServerInvocationHandler.newProxyInstance(cc.mbsc, delegate
+        .getEnterpriseTCClientBeanName(), EnterpriseTCClientMbean.class, true);
+
     instrumentationLoggingBean = (InstrumentationLoggingMBean) MBeanServerInvocationHandler
         .newProxyInstance(cc.mbsc, delegate.getInstrumentationLoggingBeanName(), InstrumentationLoggingMBean.class,
                           true);
@@ -101,8 +109,15 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
         .newProxyInstance(cc.mbsc, delegate.getRuntimeOutputOptionsBeanName(), RuntimeOutputOptionsMBean.class, true);
     addMBeanNotificationListener(delegate.getRuntimeOutputOptionsBeanName(), this, "RuntimeOutputOptionsMBean");
 
-    addMBeanNotificationListener(delegate.getL1OperatorEventsBeanName(), this.operatorEventsListener,
-                                 "L1OperatorEventsMbean");
+    try {
+      addMBeanNotificationListener(delegate.getL1OperatorEventsBeanName(), this.operatorEventsListener,
+                                   "L1OperatorEventsMbean");
+    } catch (Exception e) {
+      Throwable cause = ExceptionHelper.getRootCause(e);
+      if (!(cause instanceof InstanceNotFoundException)) {
+        cause.printStackTrace();
+      }
+    }
 
     fireTunneledBeansRegistered();
   }
@@ -468,5 +483,11 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
 
   public void setVerboseGC(boolean verboseGC) {
     getL1InfoBean().setVerboseGC(verboseGC);
+  }
+
+  public void reloadConfiguration() throws ConfigurationSetupException {
+    if (enterpriseClientMbean != null) {
+      enterpriseClientMbean.reloadConfiguration();
+    }
   }
 }
