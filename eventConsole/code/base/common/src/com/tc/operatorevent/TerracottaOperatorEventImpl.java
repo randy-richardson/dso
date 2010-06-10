@@ -80,4 +80,10 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
     this.isRead = true;
   }
   
+  @Override
+  public String toString() {
+    return getEventType() + " " + getEventTime() + " " + getNodeName() + " " + getEventSubsystemAsString() + " "
+           + getEventMessage();
+  }
+  
 }
