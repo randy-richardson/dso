@@ -11,8 +11,6 @@ import com.tc.async.api.Sink;
 import com.tc.async.impl.InBandMoveToNextSink;
 import com.tc.config.HaConfig;
 import com.tc.logging.TCLogger;
-import com.tc.logging.TerracottaOperatorEventLogger;
-import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
 import com.tc.net.protocol.tcm.CommunicationsManager;
@@ -24,7 +22,6 @@ import com.tc.object.net.DSOChannelManagerEventListener;
 import com.tc.objectserver.context.NodeStateEventContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.tx.TransactionBatchManager;
-import com.tc.operatorevent.TerracottaOperatorEventFactory;
 
 public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSOChannelManagerEventListener {
   private final TransactionBatchManager       transactionBatchManager;
@@ -36,7 +33,6 @@ public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSO
   private Sink                                channelSink;
   private Sink                                hydrateSink;
   private Sink                                processTransactionSink;
-  private final TerracottaOperatorEventLogger operatorEventLogger = TerracottaOperatorEventLogging.getEventLogger();
 
   public ChannelLifeCycleHandler(final CommunicationsManager commsManager,
                                  final TransactionBatchManager transactionBatchManager,
@@ -76,7 +72,6 @@ public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSO
       logger.info("Ignoring transport disconnect for " + nodeID + " while shutting down.");
     } else {
       logger.info(": Received transport disconnect.  Shutting down client " + nodeID);
-      operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeDisconnectedEvent(nodeID));
       transactionBatchManager.shutdownNode(nodeID);
     }
   }
@@ -84,11 +79,9 @@ public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSO
   private void nodeConnected(final NodeID nodeID) {
     broadcastClusterMembershipMessage(ClusterMembershipMessage.EventType.NODE_CONNECTED, nodeID);
     transactionBatchManager.nodeConnected(nodeID);
-    operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeConnectedEvent(nodeID));
   }
 
   private void broadcastClusterMembershipMessage(final int eventType, final NodeID nodeID) {
-    // only broadcast cluster membership messages for L1 nodes when the current server is the active coordinator
     if (haConfig.isActiveCoordinatorGroup() && NodeID.CLIENT_NODE_TYPE == nodeID.getNodeType()) {
       MessageChannel[] channels = channelMgr.getActiveChannels();
       for (MessageChannel channel : channels) {
@@ -127,5 +120,4 @@ public class ChannelLifeCycleHandler extends AbstractEventHandler implements DSO
         .getRemoteNodeID());
     hydrateSink.add(context2);
   }
-
 }

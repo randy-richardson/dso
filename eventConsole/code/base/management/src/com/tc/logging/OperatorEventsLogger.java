@@ -3,7 +3,8 @@
  */
 package com.tc.logging;
 
-import com.tc.management.TerracottaOperatorEventsMBean;
+import com.tc.logging.TCLogger;
+import com.tc.management.beans.TerracottaOperatorEventsMBean;
 import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEventCallbackLogger;
 import com.tc.util.Assert;

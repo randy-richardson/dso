@@ -54,7 +54,6 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     this.stateManager = stateManager;
     this.gcPublisher = gcPublisher;
     addListener(new GCLoggerEventPublisher(new GCLogger(logger, objectManagerConfig.verboseGC())));
-    addListener(new DGCOperatorEventPublisher());
   }
 
   public void doGC(GCType type) {

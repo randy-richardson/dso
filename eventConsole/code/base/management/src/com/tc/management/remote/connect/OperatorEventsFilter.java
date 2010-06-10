@@ -3,7 +3,7 @@
  */
 package com.tc.management.remote.connect;
 
-import com.tc.management.TerracottaOperatorEventsMBean;
+import com.tc.management.beans.TerracottaOperatorEventsMBean;
 
 import java.io.Serializable;
 

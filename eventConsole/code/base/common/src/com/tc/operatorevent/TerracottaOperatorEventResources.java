@@ -40,10 +40,6 @@ class TerracottaOperatorEventResources {
     return instance.resources.getString("lock.gc");
   }
 
-  public static String getMoveToPassiveStandByMessage() {
-    return instance.resources.getString("passive.standby");
-  }
-
   public static String getHighMemoryUsageMessage() {
     return instance.resources.getString("high.memory.usage");
   }
@@ -54,6 +50,18 @@ class TerracottaOperatorEventResources {
 
   public static String getOOOConnectMessage() {
     return instance.resources.getString("ooo.connect");
+  }
+
+  public static String getClusterNodeStateChangedMessage() {
+    return instance.resources.getString("node.state");
+  }
+
+  public static String getZapRequestReceivedMessage() {
+    return instance.resources.getString("zap.received");
+  }
+  
+  public static String getZapRequestAcceptedMessage() {
+    return instance.resources.getString("zap.accepted");
   }
 }
 

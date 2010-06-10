@@ -14,6 +14,7 @@ import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.msg.LockRequestMessageFactory;
 import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionManager;
+import com.tc.operatorevent.LockGCEventListener;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.runtime.ThreadIDManager;
 
@@ -209,5 +210,11 @@ public class ClientLockManagerGroupImpl implements ClientLockManager {
       out.indent().visit(clm).flush();
     }
     return out;
+  }
+  
+  public void addLockGCEventLister(LockGCEventListener lockGCEventListener) {
+    for (ClientLockManager lockManager : this.lockManagers.values()) {
+      lockManager.addLockGCEventLister(lockGCEventListener);
+    }
   }
 }

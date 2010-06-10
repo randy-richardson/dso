@@ -61,12 +61,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author teck
  */
 public class CommunicationsManagerImpl implements CommunicationsManager {
-  private static final TCLogger                  logger               = TCLogging
-                                                                          .getLogger(CommunicationsManager.class);
+  private static final TCLogger                  logger                    = TCLogging
+                                                                               .getLogger(CommunicationsManager.class);
 
-  private final SetOnceFlag                      shutdown             = new SetOnceFlag();
-  private final Set                              listeners            = new HashSet();
-  private final ReentrantLock                    licenseLock          = new ReentrantLock();
+  private final SetOnceFlag                      shutdown                  = new SetOnceFlag();
+  private final Set                              listeners                 = new HashSet();
+  private final ReentrantLock                    licenseLock               = new ReentrantLock();
   private final TCConnectionManager              connectionManager;
   private final boolean                          privateConnMgr;
   private final NetworkStackHarnessFactory       stackHarnessFactory;
@@ -75,9 +75,9 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
   private final HealthCheckerConfig              healthCheckerConfig;
   private final ConnectionPolicy                 connectionPolicy;
   private ConnectionHealthChecker                connectionHealthChecker;
-  private ServerID                               serverID             = ServerID.NULL_ID;
-  private int                                    callbackPort         = TransportHandshakeMessage.NO_CALLBACK_PORT;
-  private NetworkListener                        callbackportListener = null;
+  private ServerID                               serverID                  = ServerID.NULL_ID;
+  private int                                    callbackPort              = TransportHandshakeMessage.NO_CALLBACK_PORT;
+  private NetworkListener                        callbackportListener      = null;
   private final TransportHandshakeErrorHandler   handshakeErrHandler;
 
   /**
@@ -304,14 +304,15 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
         return rv;
       }
     };
+    
     ServerStackProvider stackProvider = new ServerStackProvider(TCLogging.getLogger(ServerStackProvider.class),
                                                                 initialConnectionIDs, stackHarnessFactory,
                                                                 channelFactory, transportFactory,
                                                                 this.transportMessageFactory, connectionIdFactory,
                                                                 this.connectionPolicy,
                                                                 new WireProtocolAdaptorFactoryImpl(httpSink),
-
                                                                 wireProtocolMessageSink, licenseLock);
+
     return connectionManager.createListener(addr, stackProvider, Constants.DEFAULT_ACCEPT_QUEUE_DEPTH, resueAddr);
   }
 

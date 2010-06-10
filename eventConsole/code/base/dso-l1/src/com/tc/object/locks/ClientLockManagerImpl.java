@@ -4,15 +4,13 @@
 package com.tc.object.locks;
 
 import com.tc.logging.TCLogger;
-import com.tc.logging.TerracottaOperatorEventLogger;
-import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.management.ClientLockStatManager;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
 import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionManager;
-import com.tc.operatorevent.TerracottaOperatorEventFactory;
+import com.tc.operatorevent.LockGCEventListener;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.Util;
@@ -20,11 +18,13 @@ import com.tc.util.runtime.ThreadIDManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -49,7 +49,7 @@ public class ClientLockManagerImpl implements ClientLockManager, ClientLockManag
   private final TCLogger                          logger;
 
   private final ConcurrentMap<ThreadID, Object>   inFlightLockQueries = new ConcurrentHashMap<ThreadID, Object>();
-  private final TerracottaOperatorEventLogger     operatorEventLogger = TerracottaOperatorEventLogging.getEventLogger();
+  private final List<LockGCEventListener>         lockGcEventListeres = new CopyOnWriteArrayList<LockGCEventListener>();
 
   @Deprecated
   private final ClientLockStatManager             statManager;
@@ -774,8 +774,9 @@ public class ClientLockManagerImpl implements ClientLockManager, ClientLockManag
       }
 
       if (gcCount > 1000) {
-        operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-            .createLockGCEvent(new Object[] { gcCount }));
+        for (LockGCEventListener lockGCEventListener : lockGcEventListeres) {
+          lockGCEventListener.fireLockGCEvent(gcCount);
+        }
       }
     }
   }
@@ -813,5 +814,9 @@ public class ClientLockManagerImpl implements ClientLockManager, ClientLockManag
     if (statManager.isEnabled()) {
       statManager.recordLockRejected(lock, threadManager.getThreadID());
     }
+  }
+
+  public void addLockGCEventLister(LockGCEventListener lockGCEventListener) {
+    this.lockGcEventListeres.add(lockGCEventListener);
   }
 }

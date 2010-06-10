@@ -29,7 +29,7 @@ import java.util.Iterator;
 
 public class StateManagerImpl implements StateManager {
 
-  private static final TCLogger        logger             = TCLogging.getLogger(StateManagerImpl.class);
+  private static final TCLogger        logger              = TCLogging.getLogger(StateManagerImpl.class);
 
   private final TCLogger               consoleLogger;
   private final GroupManager           groupManager;
@@ -37,12 +37,12 @@ public class StateManagerImpl implements StateManager {
   private final Sink                   stateChangeSink;
   private final WeightGeneratorFactory weightsFactory;
 
-  private final CopyOnWriteArrayList   listeners          = new CopyOnWriteArrayList();
-  private final Object                 electionLock       = new Object();
+  private final CopyOnWriteArrayList   listeners           = new CopyOnWriteArrayList();
+  private final Object                 electionLock        = new Object();
 
-  private NodeID                       activeNode         = ServerID.NULL_ID;
-  private volatile State               state              = START_STATE;
-  private boolean                      electionInProgress = false;
+  private NodeID                       activeNode          = ServerID.NULL_ID;
+  private volatile State               state               = START_STATE;
+  private boolean                      electionInProgress  = false;
   TerracottaOperatorEventLogger        operatorEventLogger = TerracottaOperatorEventLogging.getEventLogger();
 
   public StateManagerImpl(TCLogger consoleLogger, GroupManager groupManager, Sink stateChangeSink,
@@ -139,6 +139,7 @@ public class StateManagerImpl implements StateManager {
     if (state == START_STATE) {
       state = winningEnrollment.isANewCandidate() ? PASSIVE_STANDBY : PASSIVE_UNINTIALIZED;
       info("Moved to " + state, true);
+      fireStateChangedOperatorEvent();
       stateChangeSink.add(new StateChangedEvent(START_STATE, state));
     } else if (state == ACTIVE_COORDINATOR) {
       // TODO:: Support this later
@@ -155,7 +156,7 @@ public class StateManagerImpl implements StateManager {
       stateChangeSink.add(new StateChangedEvent(state, PASSIVE_STANDBY));
       state = PASSIVE_STANDBY;
       info("Moved to " + state, true);
-      operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createMoveToPassiveStandByEvent());
+      fireStateChangedOperatorEvent();
     } else {
       info("Already in " + state);
     }
@@ -168,6 +169,7 @@ public class StateManagerImpl implements StateManager {
       state = ACTIVE_COORDINATOR;
       setActiveNodeID(getLocalNodeID());
       info("Becoming " + state, true);
+      fireStateChangedOperatorEvent();
       electionMgr.declareWinner(this.activeNode);
       stateChangeSink.add(event);
     } else {
@@ -385,9 +387,15 @@ public class StateManagerImpl implements StateManager {
       consoleLogger.warn(message);
     }
   }
-  
+
   @Override
   public String toString() {
     return StateManagerImpl.class.getSimpleName() + ":" + this.state.toString();
   }
+  
+  private void fireStateChangedOperatorEvent() {
+    operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createClusterNodeStateChangedEvent(new Object[] { state.getName() }));
+  }
+
 }

@@ -27,6 +27,7 @@ import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 import com.tc.object.tx.ClientTransactionManager;
 import com.tc.object.util.ToggleableStrongReference;
+import com.tc.operatorevent.LockGCEventListener;
 import com.tc.text.PrettyPrinter;
 
 import java.lang.ref.WeakReference;
@@ -184,6 +185,11 @@ public class ManagerImplTest extends BaseDSOTestCase {
 
     public PrettyPrinter prettyPrint(PrettyPrinter out) {
       throw new ImplementMe();
+    }
+
+    public void addLockGCEventLister(LockGCEventListener lockGCEventListener) {
+      throw new ImplementMe();
+
     }
   }
 

@@ -4,9 +4,12 @@
  */
 package com.tc.net.protocol.delivery;
 
+import com.tc.logging.TerracottaOperatorEventLogger;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.net.protocol.transport.MessageTransport;
 import com.tc.net.protocol.transport.MessageTransportListener;
 import com.tc.net.protocol.transport.RestoreConnectionCallback;
+import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.util.Assert;
 import com.tc.util.DebugUtil;
 
@@ -14,11 +17,13 @@ import java.util.TimerTask;
 
 public class OOOReconnectionTimeout implements MessageTransportListener, RestoreConnectionCallback {
 
-  private static final boolean                      debug            = false;
+  private static final boolean                      debug               = false;
 
   private final OnceAndOnlyOnceProtocolNetworkLayer oooLayer;
   private final long                                timeoutMillis;
-  private TimeoutTimerTask                          timeoutTimerTask = null;
+  private TimeoutTimerTask                          timeoutTimerTask    = null;
+  private final TerracottaOperatorEventLogger       operatorEventLogger = TerracottaOperatorEventLogging
+                                                                            .getEventLogger();
 
   public OOOReconnectionTimeout(final OnceAndOnlyOnceProtocolNetworkLayer oooLayer, final long timeoutMillis) {
     this.oooLayer = oooLayer;
@@ -36,6 +41,8 @@ public class OOOReconnectionTimeout implements MessageTransportListener, Restore
 
   public synchronized void notifyTransportDisconnected(MessageTransport transport, final boolean forcedDisconnect) {
     Assert.assertNull(this.timeoutTimerTask);
+    operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createOOODisconnectEvent(new Object[] { transport.getRemoteAddress().getCanonicalStringForm() }));
     if (oooLayer.isClosed()) { return; }
     if (forcedDisconnect) {
       log(transport, "Transport FORCE Disconnected, skipping opening reconnect window");
@@ -56,6 +63,8 @@ public class OOOReconnectionTimeout implements MessageTransportListener, Restore
       cancelTimerTask();
     }
     oooLayer.notifyTransportConnected(transport);
+    operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
+        .createOOOConnectedEvent(new Object[] { transport.getRemoteAddress().getCanonicalStringForm() }));
   }
 
   private void cancelTimerTask() {
@@ -81,6 +90,7 @@ public class OOOReconnectionTimeout implements MessageTransportListener, Restore
       this.rcc = rcc;
     }
 
+    @Override
     public void run() {
       rcc.restoreConnectionFailed(transport);
     }

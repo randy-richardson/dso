@@ -16,8 +16,8 @@ import com.tc.bytes.TCByteBuffer;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.handler.CallbackDumpAdapter;
-import com.tc.io.TCByteBufferOutputStream;
 import com.tc.handler.CallbackDumpHandler;
+import com.tc.io.TCByteBufferOutputStream;
 import com.tc.lang.TCThreadGroup;
 import com.tc.license.LicenseCheck;
 import com.tc.logging.ClientIDLogger;
@@ -133,6 +133,7 @@ import com.tc.object.tx.ClientTransactionManagerImpl;
 import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.TransactionIDGenerator;
 import com.tc.object.tx.TransactionBatchWriter.FoldingConfig;
+import com.tc.operatorevent.LockGCOperatorEventListener;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
@@ -554,6 +555,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     CallbackDumpAdapter lockDumpAdapter = new CallbackDumpAdapter(this.lockManager);
     this.threadGroup.addCallbackOnExitDefaultHandler(lockDumpAdapter);
     this.dumpHandler.registerForDump(lockDumpAdapter);
+    this.lockManager.addLockGCEventLister(new LockGCOperatorEventListener());
 
     // Setup the transaction manager
     this.txManager = new ClientTransactionManagerImpl(this.channel.getClientIDProvider(), this.objectManager,

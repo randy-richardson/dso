@@ -143,7 +143,7 @@ public class AdminClientBundle extends ListResourceBundle {
         { "dso.gcstats.overview.enabled", "DGC is configured to run: every {0} seconds ({1} minutes)." },
         { "dso.gcstats.overview.disabled", "DGC is disabled in this server array instance's configuration." },
         { "dso.gcstats.overview.not-ready", "Cluster is not yet ready." },
-        { "operator.events", "Cluster Events" },
+        { "operator.events", "Operator Events" },
         { "operator.events.timeOfEvent", "Time of Event" },
         { "operator.events.node", "Node" },
         { "operator.events.eventType", "Event Type" },

@@ -74,4 +74,5 @@ public interface CommunicationsManager {
   public NetworkListener createListener(SessionProvider sessionProvider, TCSocketAddress address,
                                         boolean transportDisconnectRemovesChannel,
                                         ConnectionIDFactory connectionIDFactory, Sink httpSink);
+
 }
