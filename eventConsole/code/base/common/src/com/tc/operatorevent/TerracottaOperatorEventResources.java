@@ -6,14 +6,11 @@ package com.tc.operatorevent;
 import java.util.ResourceBundle;
 
 class TerracottaOperatorEventResources {
-  private static final TerracottaOperatorEventResources instance;
+  private static final TerracottaOperatorEventResources instance = new TerracottaOperatorEventResources();
   private final ResourceBundle resources;
-  static {
-    instance = new TerracottaOperatorEventResources();
-  }
 
   private TerracottaOperatorEventResources() {
-    this.resources = ResourceBundle.getBundle(getClass().getPackage().getName() + ".operatorevents");
+    this.resources = ResourceBundle.getBundle(getClass().getPackage().getName() + ".messages");
   }
   
   static String getLongGCMessage() {
@@ -36,31 +33,31 @@ class TerracottaOperatorEventResources {
     return instance.resources.getString("node.availability");
   }
 
-  public static String getLockGCMessage() {
+  static String getLockGCMessage() {
     return instance.resources.getString("lock.gc");
   }
 
-  public static String getHighMemoryUsageMessage() {
+  static String getHighMemoryUsageMessage() {
     return instance.resources.getString("high.memory.usage");
   }
 
-  public static String getOOODisconnectMessage() {
+  static String getOOODisconnectMessage() {
     return instance.resources.getString("ooo.disconnect");
   }
 
-  public static String getOOOConnectMessage() {
+  static String getOOOConnectMessage() {
     return instance.resources.getString("ooo.connect");
   }
 
-  public static String getClusterNodeStateChangedMessage() {
+  static String getClusterNodeStateChangedMessage() {
     return instance.resources.getString("node.state");
   }
 
-  public static String getZapRequestReceivedMessage() {
+  static String getZapRequestReceivedMessage() {
     return instance.resources.getString("zap.received");
   }
   
-  public static String getZapRequestAcceptedMessage() {
+  static String getZapRequestAcceptedMessage() {
     return instance.resources.getString("zap.accepted");
   }
 }

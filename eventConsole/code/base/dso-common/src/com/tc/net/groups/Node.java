@@ -82,7 +82,7 @@ public class Node {
 
   @Override
   public String toString() {
-    return "Node{host=" + host + ":" + port + "}";
+    return "Node{host=" + host + ":" + port + " server name=" + nodeName + "}";
   }
 
   public String getServerNodeName() {

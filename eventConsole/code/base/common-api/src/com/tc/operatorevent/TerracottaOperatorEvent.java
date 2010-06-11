@@ -45,4 +45,9 @@ public interface TerracottaOperatorEvent extends Serializable {
 
   boolean isRead();
   
+  /**
+   * This method is used to get the event in String format.
+   */
+  String getExtractText();
+  
 }

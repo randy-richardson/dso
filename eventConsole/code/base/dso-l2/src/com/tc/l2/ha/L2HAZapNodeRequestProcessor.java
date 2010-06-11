@@ -17,6 +17,7 @@ import com.tc.net.ServerID;
 import com.tc.net.groups.GroupManager;
 import com.tc.net.groups.ZapNodeRequestProcessor;
 import com.tc.operatorevent.TerracottaOperatorEventFactory;
+import com.tc.util.Assert;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -126,12 +127,13 @@ public class L2HAZapNodeRequestProcessor implements ZapNodeRequestProcessor {
   }
 
   private void handleSplitBrainScenario(NodeID nodeID, int zapNodeType, String reason, long[] weights) {
+    Assert.assertTrue(nodeID instanceof ServerID);
+    Assert.assertTrue(this.groupManager.getLocalNodeID() instanceof ServerID);
     long myWeights[] = factory.generateWeightSequence();
     logger.warn("A Terracotta server tried to join the mirror group as a second ACTIVE : My weights = "
                 + toString(myWeights) + " Other servers weights = " + toString(weights));
-    String messageFrom = (nodeID instanceof ServerID) ? ((ServerID) nodeID).getServerName() : nodeID.toString();
-    String localNode = (this.groupManager.getLocalNodeID() instanceof ServerID) ? ((ServerID) this.groupManager
-        .getLocalNodeID()).getServerName() : nodeID.toString();
+    String messageFrom = ((ServerID) nodeID).getServerName();
+    String localNode = ((ServerID) this.groupManager.getLocalNodeID()).getServerName();
     operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createZapRequestReceivedEvent(new Object[] {
         localNode, messageFrom }));
     Enrollment mine = new Enrollment(groupManager.getLocalNodeID(), false, myWeights);
@@ -142,7 +144,7 @@ public class L2HAZapNodeRequestProcessor implements ZapNodeRequestProcessor {
       String message = "Found that " + nodeID
                        + " is active and has more clients connected to it than this server. Exiting ... !!";
       operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
-          .getZapRequestAcceptedEvent(new Object[] { messageFrom }));
+          .createZapRequestAcceptedEvent(new Object[] { messageFrom }));
       throw new ZapServerNodeException(message);
     } else {
       logger.warn("Not quiting since the other servers weight = " + toString(weights)

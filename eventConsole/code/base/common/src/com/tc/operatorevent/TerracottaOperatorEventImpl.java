@@ -53,13 +53,7 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
   }
 
   public int compareTo(TerracottaOperatorEventImpl o) {
-    if (this.time > o.time) {
-      return 1;
-    } else if (this.time == o.time) {
-      return 0;
-    } else {
-      return -1;
-    }
+    return (int) (this.time - o.time);
   }
 
   @Override
@@ -84,6 +78,10 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
   public String toString() {
     return getEventType() + " " + getEventTime() + " " + getNodeName() + " " + getEventSubsystemAsString() + " "
            + getEventMessage();
+  }
+
+  public String getExtractText() {
+    return toString();
   }
   
 }

@@ -68,16 +68,17 @@ public interface DSOClientBuilder {
                                                     final ConnectionPolicy connectionPolicy, int workerCommThreads,
                                                     final HealthCheckerConfig hcConfig);
 
-  TunnelingEventHandler createTunnelingEventHandler(final ClientMessageChannel ch, UUID id);
+  TunnelingEventHandler createTunnelingEventHandler(final ClientMessageChannel ch, final UUID id, final String[] tunneledDomains);
 
-  ClientGlobalTransactionManager createClientGlobalTransactionManager(final RemoteTransactionManager remoteTxnMgr, 
+  ClientGlobalTransactionManager createClientGlobalTransactionManager(
+                                                                      final RemoteTransactionManager remoteTxnMgr,
                                                                       final RemoteServerMapManager remoteServerMapManager);
 
   RemoteObjectManager createRemoteObjectManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
                                                 final int faultCount, final SessionManager sessionManager);
 
   RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
-                                                      final SessionManager sessionManager);
+                                                      final SessionManager sessionManager, Sink lockRecallSink);
 
   ClusterMetaDataManager createClusterMetaDataManager(final DSOClientMessageChannel dsoChannel,
                                                       final DNAEncoding encoding,
@@ -136,7 +137,8 @@ public interface DSOClientBuilder {
                                   MBeanSpec[] mBeanSpecs);
 
   void registerForOperatorEvents(TCLogger dsoLogger, L1Management management);
-  
-  TCClassFactory createTCClassFactory(final DSOClientConfigHelper config,
-                            final ClassProvider classProvider, final DNAEncoding dnaEncoding,final Manager manager, final RemoteServerMapManager remoteServerMapManager);
+
+  TCClassFactory createTCClassFactory(final DSOClientConfigHelper config, final ClassProvider classProvider,
+                                      final DNAEncoding dnaEncoding, final Manager manager,
+                                      final RemoteServerMapManager remoteServerMapManager);
 }

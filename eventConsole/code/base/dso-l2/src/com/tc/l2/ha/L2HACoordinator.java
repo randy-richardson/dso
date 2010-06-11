@@ -61,6 +61,7 @@ import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
+import com.tc.util.Assert;
 import com.tc.util.sequence.SequenceGenerator;
 import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorException;
 import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorListener;
@@ -328,20 +329,21 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
     out.indent().print("ReplicatedClusterStateMgr").visit(this.rClusterStateMgr).flush();
     return out;
   }
-  
+
+  /**
+   * these events would should only be fired for ServerID
+   */
   private void fireNodeJoinedOperatorEvent(NodeID nodeID) {
-    if (nodeID instanceof ServerID) {
-      ServerID serverID = (ServerID) nodeID;
-      operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeConnectedEvent(serverID
-          .getServerName()));
-    }
+    Assert.assertTrue(nodeID instanceof ServerID);
+    ServerID serverID = (ServerID) nodeID;
+    operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeConnectedEvent(serverID
+        .getServerName()));
   }
 
   private void fireNodeLeftOperatorEvent(NodeID nodeID) {
-    if (nodeID instanceof ServerID) {
-      ServerID serverID = (ServerID) nodeID;
-      operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeDisconnectedEvent(serverID
-          .getServerName()));
-    }
+    Assert.assertTrue(nodeID instanceof ServerID);
+    ServerID serverID = (ServerID) nodeID;
+    operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createNodeDisconnectedEvent(serverID
+        .getServerName()));
   }
 }
