@@ -242,6 +242,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       theReadySet.add(L2MBeanNames.LOCK_STATISTICS);
       // theReadySet.add(MBeanNames.OPERATOR_EVENTS_PUBLIC);
       theReadySet.add(StatisticsMBeanNames.STATISTICS_GATHERER);
+      theReadySet.add(MBeanNames.OPERATOR_EVENTS_PUBLIC);
     }
   }
 
