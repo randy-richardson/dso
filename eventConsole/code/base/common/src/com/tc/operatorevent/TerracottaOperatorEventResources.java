@@ -75,5 +75,9 @@ class TerracottaOperatorEventResources {
   static String getZapRequestAcceptedMessage() {
     return instance.resources.getString("zap.accepted");
   }
+  
+  static String getDirtyDBMessage() {
+    return instance.resources.getString("dirty.db");
+  }
 }
 

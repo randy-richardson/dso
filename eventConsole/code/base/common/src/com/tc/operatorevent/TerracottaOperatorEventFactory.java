@@ -58,15 +58,15 @@ public class TerracottaOperatorEventFactory {
     return new TerracottaOperatorEventImpl(EventType.INFO, EventSubsystem.HA, MessageFormat
         .format(TerracottaOperatorEventResources.getClusterNodeStateChangedMessage(), arguments));
   }
-  
+
   /**
    * Lock manager events
    */
   public static TerracottaOperatorEvent createLockGCEvent(Object[] arguments) {
     return new TerracottaOperatorEventImpl(EventType.WARN, EventSubsystem.LOCK_MANAGER, MessageFormat
-                                           .format(TerracottaOperatorEventResources.getLockGCMessage(), arguments));
+        .format(TerracottaOperatorEventResources.getLockGCMessage(), arguments));
   }
-  
+
   /**
    * zap events
    */
@@ -78,5 +78,10 @@ public class TerracottaOperatorEventFactory {
   public static TerracottaOperatorEvent createZapRequestAcceptedEvent(Object[] arguments) {
     return new TerracottaOperatorEventImpl(EventType.CRITICAL, EventSubsystem.HA, MessageFormat
         .format(TerracottaOperatorEventResources.getZapRequestAcceptedMessage(), arguments));
+  }
+
+  public static TerracottaOperatorEvent createDirtyDBEvent(boolean isRestartEnabled) {
+    return new TerracottaOperatorEventImpl(EventType.ERROR, EventSubsystem.HA, MessageFormat
+        .format(TerracottaOperatorEventResources.getDirtyDBMessage(), new Object[] { isRestartEnabled }));
   }
 }
