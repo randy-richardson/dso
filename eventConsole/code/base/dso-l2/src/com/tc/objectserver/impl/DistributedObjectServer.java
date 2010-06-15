@@ -249,6 +249,10 @@ import com.tc.statistics.retrieval.actions.SRAL2ChangesPerBroadcast;
 import com.tc.statistics.retrieval.actions.SRAL2FaultsFromDisk;
 import com.tc.statistics.retrieval.actions.SRAL2GlobalLockCount;
 import com.tc.statistics.retrieval.actions.SRAL2PendingTransactions;
+import com.tc.statistics.retrieval.actions.SRAL2ServerMapGetSizeRequestsCount;
+import com.tc.statistics.retrieval.actions.SRAL2ServerMapGetSizeRequestsRate;
+import com.tc.statistics.retrieval.actions.SRAL2ServerMapGetValueRequestsCount;
+import com.tc.statistics.retrieval.actions.SRAL2ServerMapGetValueRequestsRate;
 import com.tc.statistics.retrieval.actions.SRAL2ToL1FaultRate;
 import com.tc.statistics.retrieval.actions.SRAL2TransactionCount;
 import com.tc.statistics.retrieval.actions.SRAMemoryUsage;
@@ -413,7 +417,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.threadGroup.addCallbackOnExitDefaultHandler(new ThreadDumpHandler(this));
     this.thisServerNodeID = makeServerNodeID(this.configSetupManager.dsoL2Config());
 
-    TerracottaOperatorEventLogging.setNodeIdProvider(new ServerNameProvider(this.configSetupManager.dsoL2Config()
+    TerracottaOperatorEventLogging.setNodeNameProvider(new ServerNameProvider(this.configSetupManager.dsoL2Config()
         .serverName().getString()));
 
     final L2LockStatsManager lockStatsManager = new L2LockStatisticsManagerImpl();
@@ -575,11 +579,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       final Sink gcDisposerSink = stageManager.createStage(
                                                            ServerConfigurationContext.GC_DELETE_FROM_DISK_STAGE,
                                                            new GarbageDisposeHandler(gcPublisher, this.persistor
-                                                               .getManagedObjectPersistor(), this.persistor
-                                                               .getPersistenceTransactionProvider(),
-                                                                                     objManagerProperties
-                                                                                         .getInt("deleteBatchSize")),
-                                                           gcDeleteThreads, maxStageSize).getSink();
+                                                               .getManagedObjectPersistor()), gcDeleteThreads,
+                                                           maxStageSize).getSink();
 
       this.objectStore = new PersistentManagedObjectStore(this.persistor.getManagedObjectPersistor(), gcDisposerSink);
     } else {
@@ -1291,6 +1292,10 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       registry.registerActionInstance(new SRAL1ReferenceCount(this.clientStateManager));
       registry.registerActionInstance(new SRAGlobalLockRecallCount(serverStats));
       registry.registerActionInstance(new SRAL2GlobalLockCount(serverStats));
+      registry.registerActionInstance(new SRAL2ServerMapGetSizeRequestsCount(serverStats));
+      registry.registerActionInstance(new SRAL2ServerMapGetSizeRequestsRate(serverStats));
+      registry.registerActionInstance(new SRAL2ServerMapGetValueRequestsCount(serverStats));
+      registry.registerActionInstance(new SRAL2ServerMapGetValueRequestsRate(serverStats));
       if (sraBdb != null) {
         registry.registerActionInstance(sraBdb);
       }

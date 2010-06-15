@@ -4,6 +4,7 @@
 package com.tc.objectserver.managedobject;
 
 import com.tc.object.ObjectID;
+import com.tc.object.SerializationUtil;
 import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.DNA.DNAType;
@@ -46,8 +47,21 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
   @Override
   public void apply(final ObjectID objectID, final DNACursor cursor, final BackReferences includeIDs)
       throws IOException {
-    super.apply(objectID, cursor, includeIDs);
     includeIDs.ignoreBroadcastFor(objectID);
+    super.apply(objectID, cursor, includeIDs);
+  }
+
+  @Override
+  protected void applyMethod(final ObjectID objectID, final BackReferences includeIDs, final int method,
+                             final Object[] params) {
+    if (method != SerializationUtil.CLEAR_LOCAL_CACHE) {
+      // ignore CLEAR_LOCAL_CACHE, nothing to do, but broadcast
+      super.applyMethod(objectID, includeIDs, method, params);
+    }
+    if (method == SerializationUtil.CLEAR || method == SerializationUtil.CLEAR_LOCAL_CACHE) {
+      // clear needs to be broadcasted so local caches can be cleared elsewhere
+      includeIDs.forceBroadcastFor(objectID);
+    }
   }
 
   public Object getValueForKey(final Object portableKey) {
