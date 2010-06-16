@@ -59,13 +59,6 @@ class TerracottaOperatorEventResources {
   }
 
   /**
-   * Lock Manager Messages
-   */
-  static String getLockGCMessage() {
-    return instance.resources.getString("lock.gc");
-  }
-
-  /**
    * Zap Messagse
    */
   static String getZapRequestReceivedMessage() {

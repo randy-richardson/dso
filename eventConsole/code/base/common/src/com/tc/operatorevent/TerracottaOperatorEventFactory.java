@@ -60,14 +60,6 @@ public class TerracottaOperatorEventFactory {
   }
 
   /**
-   * Lock manager events
-   */
-  public static TerracottaOperatorEvent createLockGCEvent(Object[] arguments) {
-    return new TerracottaOperatorEventImpl(EventType.WARN, EventSubsystem.LOCK_MANAGER, MessageFormat
-        .format(TerracottaOperatorEventResources.getLockGCMessage(), arguments));
-  }
-
-  /**
    * zap events
    */
   public static TerracottaOperatorEvent createZapRequestReceivedEvent(Object[] arguments) {

@@ -51,11 +51,6 @@ public class TerracottaOperatorEventResourcesTest extends TCTestCase {
         .equals(this.resources.getObject("node.state")));
 
     /**
-     * Lock Manager Messages
-     */
-    Assert.assertTrue(TerracottaOperatorEventResources.getLockGCMessage().equals(this.resources.getObject("lock.gc")));
-
-    /**
      * Zap Messagse
      */
     Assert.assertTrue(TerracottaOperatorEventResources.getZapRequestReceivedMessage()
