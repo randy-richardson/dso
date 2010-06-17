@@ -18,7 +18,7 @@ public class OperatorEventsLogger implements NotificationListener {
   public void handleNotification(Notification notification, Object handback) {
     Assert.assertTrue(TerracottaOperatorEventsMBean.TERRACOTTA_OPERATOR_EVENT.equals(notification.getType()));
 
-    TerracottaOperatorEvent operatorEvent = (TerracottaOperatorEvent) notification.getSource();
+    TerracottaOperatorEvent operatorEvent = (TerracottaOperatorEvent) notification.getUserData();
     callbackLogger.logOperatorEvent(operatorEvent);
   }
 
