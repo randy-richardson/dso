@@ -36,7 +36,7 @@ import com.tc.l2.objectserver.ReplicatedObjectManager;
 import com.tc.l2.objectserver.ReplicatedObjectManagerImpl;
 import com.tc.l2.objectserver.ReplicatedTransactionManager;
 import com.tc.l2.objectserver.ReplicatedTransactionManagerImpl;
-import com.tc.l2.operatorevent.ZapOperatorEventListener;
+import com.tc.l2.operatorevent.OperatorEventsZapRequestListener;
 import com.tc.l2.state.StateChangeListener;
 import com.tc.l2.state.StateManager;
 import com.tc.l2.state.StateManagerConfigImpl;
@@ -127,7 +127,7 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
     L2HAZapNodeRequestProcessor zapProcessor = new L2HAZapNodeRequestProcessor(consoleLogger, stateManager,
                                                                                groupManager, weightGeneratorFactory);
-    zapProcessor.addZapEventListener(new ZapOperatorEventListener(this.configSetupManager));
+    zapProcessor.addZapEventListener(new OperatorEventsZapRequestListener(this.configSetupManager));
     this.groupManager.setZapNodeRequestProcessor(zapProcessor);
 
     final Sink objectsSyncRequestSink = stageManager
