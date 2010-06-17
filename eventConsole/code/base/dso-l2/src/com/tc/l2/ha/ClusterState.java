@@ -21,8 +21,6 @@ import com.tc.net.protocol.transport.ConnectionIDFactory;
 import com.tc.object.persistence.api.PersistentMapStore;
 import com.tc.objectserver.gtx.GlobalTransactionIDSequenceProvider;
 import com.tc.operatorevent.TerracottaOperatorEventFactory;
-import com.tc.properties.TCPropertiesConsts;
-import com.tc.properties.TCPropertiesImpl;
 import com.tc.text.Banner;
 import com.tc.util.Assert;
 import com.tc.util.State;
@@ -89,8 +87,7 @@ public class ClusterState {
                         + StateManager.ACTIVE_COORDINATOR.getName()
                         + " is up and running before starting this server else you might end up losing data", "ERROR");
         logger.error(errorMessage, new Throwable());
-        operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createDirtyDBEvent(TCPropertiesImpl
-            .getProperties().getBoolean(TCPropertiesConsts.L2_NHA_DIRTYDB_AUTODELETE)));
+        operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory.createDirtyDBEvent());
         throw new CleanDirtyDatabaseException(errorMessage);
       }
     }

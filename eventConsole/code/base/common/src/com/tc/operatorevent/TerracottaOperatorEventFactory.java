@@ -5,6 +5,8 @@ package com.tc.operatorevent;
 
 import com.tc.operatorevent.TerracottaOperatorEvent.EventSubsystem;
 import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
+import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 
 import java.text.MessageFormat;
 
@@ -72,8 +74,14 @@ public class TerracottaOperatorEventFactory {
         .format(TerracottaOperatorEventResources.getZapRequestAcceptedMessage(), arguments));
   }
 
-  public static TerracottaOperatorEvent createDirtyDBEvent(boolean isRestartEnabled) {
+  public static TerracottaOperatorEvent createDirtyDBEvent() {
+    String restart;
+    if (TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_NHA_DIRTYDB_AUTODELETE)) {
+      restart = "enabled";
+    } else {
+      restart = "disabled";
+    }
     return new TerracottaOperatorEventImpl(EventType.ERROR, EventSubsystem.HA, MessageFormat
-        .format(TerracottaOperatorEventResources.getDirtyDBMessage(), new Object[] { isRestartEnabled }));
+        .format(TerracottaOperatorEventResources.getDirtyDBMessage(), new Object[] { restart }));
   }
 }
