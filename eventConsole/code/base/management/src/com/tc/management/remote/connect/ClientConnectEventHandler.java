@@ -6,7 +6,6 @@ package com.tc.management.remote.connect;
 
 import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.EventContext;
-import com.tc.logging.OperatorEventsLogger;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.remote.protocol.ProtocolProvider;
