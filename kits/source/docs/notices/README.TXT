@@ -1,4 +1,4 @@
-Terracotta 3.2.1 - Simple Scale for Enterprise Java
+Terracotta Trunk- Simple Scale for Enterprise Java
 ===================================================
 
 Terracotta offers powerful solutions for scaling Java applications and 
@@ -15,10 +15,10 @@ Getting Started
 ---------------
 
 For more information on getting started with Terracotta, begin with the 
-Terracotta website at http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=GettingStarted
+Terracotta website at http://www.terracotta.org/kit/reflector?kitID=default&pageID=GettingStarted
 
 To locate Terracotta documentation, see 
-http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=Documentation
+http://www.terracotta.org/kit/reflector?kitID=default&pageID=Documentation
 
 
 Join the Terracotta Community
@@ -30,7 +30,7 @@ Enjoy the following benefits by signing up for a Terracotta account:
    -> Submit JIRA reports
    -> Vote on bugs to be fixed, or features for the next release 
 
-Sign up at http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=Register
+Sign up at http://www.terracotta.org/kit/reflector?kitID=default&pageID=register
 
 
 Resources
@@ -60,12 +60,10 @@ examples and information:
  
 Help and additional information is available on the web at the following URLs:
 
- - Product Documentation: 
-    http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=ProductDocumentation 
  - Forums:        http://forums.terracotta.org
  - Mailing Lists: http://lists.terracotta.org
  - Services:      
-    http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=SupportServices
+    http://www.terracotta.org/kit/reflector?kitID=default&pageID=SupportServices
 
 
 Java Virtual Machine
