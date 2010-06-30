@@ -29,6 +29,8 @@ import com.tc.objectserver.locks.LockManagerMBean;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.tx.ServerTransactionManagerEventListener;
 import com.tc.objectserver.tx.ServerTransactionManagerMBean;
+import com.tc.operatorevent.TerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEventHistoryProvider;
 import com.tc.statistics.StatisticData;
 
 import java.util.ArrayList;
@@ -60,26 +62,28 @@ import javax.management.ObjectName;
  */
 public class DSO extends AbstractNotifyingMBean implements DSOMBean {
 
-  private final static TCLogger               logger                 = TCLogging.getLogger(DSO.class);
-  private final static String                 DSO_OBJECT_NAME_PREFIX = L2MBeanNames.DSO.getCanonicalName() + ",";
+  private final static TCLogger                        logger                 = TCLogging.getLogger(DSO.class);
+  private final static String                          DSO_OBJECT_NAME_PREFIX = L2MBeanNames.DSO.getCanonicalName()
+                                                                                + ",";
 
-  private final DSOStatsImpl                  dsoStats;
-  private final GCStatsEventPublisher         gcStatsPublisher;
-  private final ObjectManagerMBean            objMgr;
-  private final MBeanServer                   mbeanServer;
-  private final ArrayList                     rootObjectNames        = new ArrayList();
-  private final Set                           clientObjectNames      = new ListOrderedSet();
-  private final Map<ObjectName, DSOClient>    clientMap              = new HashMap<ObjectName, DSOClient>();
-  private final DSOChannelManagerMBean        channelMgr;
-  private final ServerTransactionManagerMBean txnMgr;
-  private final LockManagerMBean              lockMgr;
-  private final ChannelStats                  channelStats;
-  private final ObjectInstanceMonitorMBean    instanceMonitor;
-  private final ClientStateManager            clientStateManager;
+  private final DSOStatsImpl                           dsoStats;
+  private final GCStatsEventPublisher                  gcStatsPublisher;
+  private final ObjectManagerMBean                     objMgr;
+  private final MBeanServer                            mbeanServer;
+  private final ArrayList                              rootObjectNames        = new ArrayList();
+  private final Set                                    clientObjectNames      = new ListOrderedSet();
+  private final Map<ObjectName, DSOClient>             clientMap              = new HashMap<ObjectName, DSOClient>();
+  private final DSOChannelManagerMBean                 channelMgr;
+  private final ServerTransactionManagerMBean          txnMgr;
+  private final LockManagerMBean                       lockMgr;
+  private final ChannelStats                           channelStats;
+  private final ObjectInstanceMonitorMBean             instanceMonitor;
+  private final ClientStateManager                     clientStateManager;
+  private final TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider;
 
   public DSO(final ServerManagementContext managementContext, final ServerConfigurationContext configContext,
-             final MBeanServer mbeanServer, final GCStatsEventPublisher gcStatsPublisher)
-      throws NotCompliantMBeanException {
+             final MBeanServer mbeanServer, final GCStatsEventPublisher gcStatsPublisher,
+             TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider) throws NotCompliantMBeanException {
     super(DSOMBean.class);
     try {
       // TraceImplementation.init(TraceTags.LEVEL_TRACE);
@@ -95,6 +99,7 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
     this.channelStats = managementContext.getChannelStats();
     this.instanceMonitor = managementContext.getInstanceMonitor();
     this.clientStateManager = configContext.getClientStateManager();
+    this.operatorEventHistoryProvider = operatorEventHistoryProvider;
 
     // add various listeners (do this before the setupXXX() methods below so we don't ever miss anything)
     txnMgr.addRootListener(new TransactionManagerListener());
@@ -155,6 +160,10 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
 
   public GCStats[] getGarbageCollectorStats() {
     return gcStatsPublisher.getGarbageCollectorStats();
+  }
+  
+  public List<TerracottaOperatorEvent> getOperatorEvents() {
+    return this.operatorEventHistoryProvider.getOperatorEvents();
   }
 
   public ObjectName[] getRoots() {
@@ -441,6 +450,70 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
       while (iter.hasNext()) {
         ObjectName clientBeanName = iter.next();
         result.put(clientBeanName, clientMap.get(clientBeanName).getLiveObjectCount());
+      }
+    }
+    return result;
+  }
+
+  public long getGlobalServerMapGetSizeRequestsCount() {
+    return getStats().getGlobalServerMapGetSizeRequestsCount();
+  }
+
+  public long getGlobalServerMapGetSizeRequestsRate() {
+    return getStats().getGlobalServerMapGetSizeRequestsRate();
+  }
+
+  public long getGlobalServerMapGetValueRequestsCount() {
+    return getStats().getGlobalServerMapGetValueRequestsCount();
+  }
+
+  public long getGlobalServerMapGetValueRequestsRate() {
+    return getStats().getGlobalServerMapGetValueRequestsRate();
+  }
+
+  public Map<ObjectName, Long> getServerMapGetSizeRequestsCount() {
+    Map<ObjectName, Long> result = new HashMap<ObjectName, Long>();
+    synchronized (clientObjectNames) {
+      Iterator<ObjectName> iter = clientObjectNames.iterator();
+      while (iter.hasNext()) {
+        ObjectName clientBeanName = iter.next();
+        result.put(clientBeanName, clientMap.get(clientBeanName).getServerMapGetSizeRequestsCount());
+      }
+    }
+    return result;
+  }
+
+  public Map<ObjectName, Long> getServerMapGetSizeRequestsRate() {
+    Map<ObjectName, Long> result = new HashMap<ObjectName, Long>();
+    synchronized (clientObjectNames) {
+      Iterator<ObjectName> iter = clientObjectNames.iterator();
+      while (iter.hasNext()) {
+        ObjectName clientBeanName = iter.next();
+        result.put(clientBeanName, clientMap.get(clientBeanName).getServerMapGetSizeRequestsRate());
+      }
+    }
+    return result;
+  }
+
+  public Map<ObjectName, Long> getServerMapGetValueRequestsCount() {
+    Map<ObjectName, Long> result = new HashMap<ObjectName, Long>();
+    synchronized (clientObjectNames) {
+      Iterator<ObjectName> iter = clientObjectNames.iterator();
+      while (iter.hasNext()) {
+        ObjectName clientBeanName = iter.next();
+        result.put(clientBeanName, clientMap.get(clientBeanName).getServerMapGetValueRequestsCount());
+      }
+    }
+    return result;
+  }
+
+  public Map<ObjectName, Long> getServerMapGetValueRequestsRate() {
+    Map<ObjectName, Long> result = new HashMap<ObjectName, Long>();
+    synchronized (clientObjectNames) {
+      Iterator<ObjectName> iter = clientObjectNames.iterator();
+      while (iter.hasNext()) {
+        ObjectName clientBeanName = iter.next();
+        result.put(clientBeanName, clientMap.get(clientBeanName).getServerMapGetValueRequestsRate());
       }
     }
     return result;

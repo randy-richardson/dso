@@ -269,13 +269,8 @@ public class ActivePassiveServerManager extends MultipleServerManager {
       }
     }
     while (true) {
-      int newPort = portChooser.chooseRandomPort();
-      if (newPort == PortChooser.MAX) {
-        continue;
-      }
-      if (portChooser.isPortUsed(newPort + 1)) {
-        continue;
-      }
+      final int numOfPorts = 4;
+      int newPort = portChooser.chooseRandomPorts(numOfPorts);
       if (isUnusedPort(newPort) && isUnusedPort(newPort + 1) && isUnusedPort(newPort + 2) && isUnusedPort(newPort + 3)) {
         dsoPorts[serverIndex] = newPort;
         l2GroupPorts[serverIndex] = newPort + 1;
@@ -285,7 +280,19 @@ public class ActivePassiveServerManager extends MultipleServerManager {
       }
     }
   }
+  
+  public int getDsoPort() {
+    return dsoPorts[0];
+  }
+  
+  public int getJMXPort() {
+    return jmxPorts[0];
+  }
 
+  public int getL2GroupPort() {
+    return l2GroupPorts[0];
+  }
+  
   private boolean isUnusedPort(int port) {
     boolean unused = true;
     for (int i = 0; i < dsoPorts.length; i++) {

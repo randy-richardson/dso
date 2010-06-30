@@ -6,6 +6,7 @@ package com.tc.object;
 
 import com.tc.exception.ImplementMe;
 import com.tc.exception.TCNonPortableObjectError;
+import com.tc.net.GroupID;
 import com.tc.object.appevent.ApplicationEvent;
 import com.tc.object.appevent.ApplicationEventContext;
 import com.tc.object.bytecode.Manageable;
@@ -74,8 +75,12 @@ public class TestClientObjectManager implements ClientObjectManager {
     return rv;
   }
 
+  public synchronized TCObject lookupOrCreate(final Object obj, GroupID gid) {
+    return lookupOrCreate(obj);
+  }
+
   private synchronized TCObject lookup(final Object obj) {
-    TCObject rv = (TCObject) this.object2TCObject.get(obj);
+    final TCObject rv = (TCObject) this.object2TCObject.get(obj);
     return rv;
   }
 
@@ -209,7 +214,7 @@ public class TestClientObjectManager implements ClientObjectManager {
     throw new ImplementMe();
   }
 
-  public void preFetchObject(ObjectID id) {
+  public void preFetchObject(final ObjectID id) {
     throw new ImplementMe();
   }
 }

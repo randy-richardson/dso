@@ -33,6 +33,7 @@ public class ServerID implements NodeID, Serializable {
     this.uid = uid;
   }
 
+  @Override
   public int hashCode() {
     if (hash != 0) return hash;
     int lhash = 27;
@@ -44,6 +45,7 @@ public class ServerID implements NodeID, Serializable {
     return lhash;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o instanceof ServerID) {
       ServerID that = (ServerID) o;
@@ -61,6 +63,7 @@ public class ServerID implements NodeID, Serializable {
     return name;
   }
 
+  @Override
   public String toString() {
     return "NodeID[" + getName() + "]";
   }

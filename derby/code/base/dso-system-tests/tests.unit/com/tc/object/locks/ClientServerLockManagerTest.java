@@ -16,7 +16,13 @@ import com.tc.objectserver.locks.LockManagerImpl;
 import com.tc.objectserver.locks.NullChannelManager;
 import com.tc.objectserver.locks.ServerLockContextBean;
 import com.tc.objectserver.locks.factory.NonGreedyLockPolicyFactory;
+import com.tc.text.PrettyPrinterImpl;
 import com.tc.util.Assert;
+import com.tc.util.concurrent.ThreadUtil;
+import com.tc.util.runtime.ThreadDumpUtil;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import junit.framework.TestCase;
 
@@ -36,7 +42,8 @@ public class ClientServerLockManagerTest extends TestCase {
     glue = new ClientServerLockManagerGlue(sessionManager, sink, new NonGreedyLockPolicyFactory());
     threadManager = new ManualThreadIDManager();
     clientLockManager = new ClientLockManagerImpl(new NullTCLogger(), sessionManager, glue, threadManager,
-                                                  new NullClientLockManagerConfig(), ClientLockStatManager.NULL_CLIENT_LOCK_STAT_MANAGER);
+                                                  new NullClientLockManagerConfig(),
+                                                  ClientLockStatManager.NULL_CLIENT_LOCK_STAT_MANAGER);
 
     serverLockManager = new LockManagerImpl(sink, new NullChannelManager(), new NonGreedyLockPolicyFactory());
     glue.set(clientLockManager, serverLockManager);
@@ -254,7 +261,9 @@ public class ClientServerLockManagerTest extends TestCase {
       public void run() {
         try {
           threadManager.setThreadID(tx1);
+          System.out.println("1st thread going to wait on lock id = " + lockID1 + " thread = " + tx1);
           clientLockManager.wait(lockID1, null);
+          System.out.println("1st thread Wait over for lock id = " + lockID1 + " thread = " + tx1);
         } catch (InterruptedException ie) {
           handleExceptionForTest(ie);
         }
@@ -263,26 +272,53 @@ public class ClientServerLockManagerTest extends TestCase {
     waitCallThread.start();
 
     threadManager.setThreadID(tx2);
+    System.out.println("2nd thread trying to acquire lock = " + lockID1 + " thread = " + tx2);
     clientLockManager.lock(lockID1, LockLevel.WRITE);
+
     /*
      * Since this call is no longer in Lock manager, forced to call the server lock manager directly
      * clientLockManager.notify(lockID1,tx2, true);
      */
+
+    System.out.println("2nd thread got the lock and trying to notify = " + lockID1 + " thread = " + tx2);
+
     glue.notify(lockID1, tx2, true);
+
+    System.out.println("2nd thread unlocking = " + lockID1 + " thread = " + tx2);
+
     clientLockManager.unlock(lockID1, LockLevel.WRITE);
 
-    waitCallThread.join();
-    
-    threadManager.setThreadID(tx1);
+    System.out.println("2nd thread unlocked = " + lockID1 + " thread = " + tx2);
 
+    ThreadUtil.reallySleep(3000);
+    dumpClientState();
     LockMBean[] lockBeans2 = serverLockManager.getAllLocks();
     for (LockMBean lockBean : lockBeans2) {
       System.out.println("Lock on the server " + lockBean);
     }
 
+    waitCallThread.join();
+
+    threadManager.setThreadID(tx1);
+
     Assert.assertTrue(clientLockManager.isLockedByCurrentThread(lockID1, LockLevel.WRITE));
     Assert.assertTrue(clientLockManager.isLockedByCurrentThread(lockID1, LockLevel.READ));
     if (!equals(lockBeans1, lockBeans2)) { throw new AssertionError("The locks are not the same"); }
+  }
+
+  private void dumpClientState() {
+    StringWriter writer = new StringWriter();
+    PrintWriter pw = new PrintWriter(writer);
+    PrettyPrinterImpl prettyPrinter = new PrettyPrinterImpl(pw);
+    prettyPrinter.autoflush(false);
+    prettyPrinter.visit(clientLockManager);
+    writer.flush();
+
+    StringBuffer buffer = writer.getBuffer();
+    System.out.println(buffer);
+    
+    System.out.println("Thread dump ------- ");
+    System.out.println(ThreadDumpUtil.getThreadDump());
   }
 
   public void testPendingWaitNotifiedRWClientServer() {

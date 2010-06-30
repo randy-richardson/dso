@@ -12,6 +12,7 @@ import com.tc.net.ClientID;
 import com.tc.net.NodeID;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.object.ObjectID;
+import com.tc.object.ServerMapRequestType;
 import com.tc.object.dmi.DmiDescriptor;
 import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.gtx.GlobalTransactionIDAlreadySetException;
@@ -28,7 +29,7 @@ import com.tc.objectserver.impl.ObjectInstanceMonitorImpl;
 import com.tc.objectserver.impl.TestObjectManager;
 import com.tc.objectserver.l1.api.TestClientStateManager;
 import com.tc.objectserver.l1.impl.TransactionAcknowledgeAction;
-import com.tc.objectserver.managedobject.BackReferences;
+import com.tc.objectserver.managedobject.ApplyTransactionInfo;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.TestTransactionStore;
@@ -524,7 +525,7 @@ public class ServerTransactionManagerImplTest extends TestCase {
       ServerTransaction tx = (ServerTransaction) iter.next();
 
       // apply stage
-      this.transactionManager.apply(tx, Collections.EMPTY_MAP, new BackReferences(), this.imo);
+      this.transactionManager.apply(tx, Collections.EMPTY_MAP, new ApplyTransactionInfo(), this.imo);
 
       // commit stage
       Set committedIDs = new HashSet();
@@ -574,6 +575,10 @@ public class ServerTransactionManagerImplTest extends TestCase {
     }
 
     public void notifyTransactionBroadcastedTo(NodeID nodeID) {
+      // NOP
+    }
+
+    public void notifyServerMapRequest(ServerMapRequestType type, MessageChannel channel, int numRequests) {
       // NOP
     }
 

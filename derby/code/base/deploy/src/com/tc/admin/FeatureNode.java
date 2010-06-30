@@ -11,6 +11,7 @@ import com.tc.admin.model.IClusterModel;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.event.EventListenerList;
 
@@ -35,6 +36,7 @@ public class FeatureNode extends ComponentNode implements PropertyChangeListener
     this.featurePanel.addPropertyChangeListener(this);
 
     setComponent(this.featurePanel);
+    setName(feature.getDisplayName());
   }
 
   public boolean isPresentationReady() {
@@ -80,8 +82,12 @@ public class FeatureNode extends ComponentNode implements PropertyChangeListener
     return featurePanel.getPresentation();
   }
 
+  private final AtomicBoolean tornDown = new AtomicBoolean(false);
+
   @Override
   public void tearDown() {
+    if (!tornDown.compareAndSet(false, true)) { return; }
+
     if (featurePanel != null) {
       featurePanel.tearDown();
     }

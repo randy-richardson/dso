@@ -25,6 +25,7 @@ import com.tc.object.bytecode.ManagerImpl;
 import com.tc.object.bytecode.hook.ClassLoaderPreProcessorImpl;
 import com.tc.object.bytecode.hook.DSOContext;
 import com.tc.object.config.DSOClientConfigHelper;
+import com.tc.object.config.StandardDSOClientConfigHelper;
 import com.tc.object.config.StandardDSOClientConfigHelperImpl;
 import com.tc.object.config.UnverifiedBootJarException;
 import com.tc.object.loaders.ClassProvider;
@@ -71,11 +72,11 @@ public class DSOContextImpl implements DSOContext {
                                                                              + "existing Terracotta boot JAR file. Recreate the boot JAR file using the\n"
                                                                              + "following command from the Terracotta home directory:\n"
                                                                              + "\n"
-                                                                             + "bin/make-boot-jar.sh -f <path/to/Terracotta/configuration/file>\n"
+                                                                             + "platform/bin/make-boot-jar.sh -f <path/to/Terracotta/configuration/file>\n"
                                                                              + "\n"
                                                                              + "or\n"
                                                                              + "\n"
-                                                                             + "bin\\make-boot-jar.bat -f <path\\to\\Terracotta\\configuration\\file>\n"
+                                                                             + "platform/bin\\make-boot-jar.bat -f <path\\to\\Terracotta\\configuration\\file>\n"
                                                                              + "\n"
                                                                              + "Enter the make-boot-jar command with the -h switch for help.\n"
                                                                              + "********************************************************************************\n";
@@ -109,12 +110,14 @@ public class DSOContextImpl implements DSOContext {
 
     DSOClientConfigHelper configHelper = new StandardDSOClientConfigHelperImpl(config);
     Manager manager = new ManagerImpl(configHelper, l2Connection);
+    DSOContext context = createContext(configHelper, manager);
     manager.init();
-    return createContext(configHelper, manager);
+    return context;
   }
 
   public static DSOContext createStandaloneContext(String configSpec, ClassLoader loader,
-                                                   Map<String, URL> virtualTimJars) throws ConfigurationSetupException {
+                                                   Map<String, URL> virtualTimJars, Collection<URL> additionalModules)
+      throws ConfigurationSetupException {
     // XXX: refactor this to not duplicate createContext() so much
     StandardTVSConfigurationSetupManagerFactory factory = new StandardTVSConfigurationSetupManagerFactory(
                                                                                                           (String[]) null,
@@ -144,6 +147,13 @@ public class DSOContextImpl implements DSOContext {
     Collection<Repository> repos = new ArrayList<Repository>();
     repos.add(new VirtualTimRepository(virtualTimJars));
     DSOContext context = createContext(configHelper, manager, repos);
+    if (additionalModules != null && !additionalModules.isEmpty()) {
+      try {
+        context.addModules(additionalModules.toArray(new URL[0]));
+      } catch (Exception e) {
+        throw new ConfigurationSetupException(e.getLocalizedMessage(), e);
+      }
+    }
     manager.init();
     return context;
   }
@@ -175,7 +185,8 @@ public class DSOContextImpl implements DSOContext {
     validateTimApiVersion();
 
     try {
-      osgiRuntime = ModulesLoader.initModules(configHelper, classProvider, false, repos, configHelper.getUUID());
+      osgiRuntime = ModulesLoader.initModules(configHelper, classProvider, manager.getTunneledDomainUpdater(), false,
+                                              repos);
       configHelper.validateSessionConfig();
       validateBootJar();
     } catch (Exception e) {
@@ -184,6 +195,17 @@ public class DSOContextImpl implements DSOContext {
       System.exit(1);
       throw new AssertionError("Will not run");
     }
+
+    // do a pre-emptive class load since this path gets nested inside other classloads...
+    if (configHelper instanceof StandardDSOClientConfigHelper) {
+      try {
+        ((StandardDSOClientConfigHelper) configHelper).addClassResource("non.existent.Class",
+                                                                        new URL("file:///not/a/real/file"), false);
+      } catch (MalformedURLException e) {
+        e.printStackTrace();
+      }
+    }
+    getClassResource("non.existent.Class", getClass().getClassLoader(), true);
   }
 
   /**
@@ -345,7 +367,12 @@ public class DSOContextImpl implements DSOContext {
   }
 
   public void addModules(URL[] modules) throws Exception {
-    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(), false, configHelper
-        .getUUID(), modules);
+    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(), manager
+        .getTunneledDomainUpdater(), false, modules);
+  }
+
+  public void shutdown() {
+    osgiRuntime.shutdown();
+    manager.stop();
   }
 }

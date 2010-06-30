@@ -28,7 +28,7 @@ public class SampledCounterImpl extends CounterImpl implements SampledCounter {
         recordSample();
       }
     };
-
+    
     recordSample();
   }
 

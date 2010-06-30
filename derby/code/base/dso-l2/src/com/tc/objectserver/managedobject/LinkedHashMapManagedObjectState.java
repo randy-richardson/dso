@@ -9,6 +9,7 @@ import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
 import com.tc.object.dna.api.PhysicalAction;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.util.Assert;
 
@@ -36,7 +37,7 @@ public class LinkedHashMapManagedObjectState extends PartialMapManagedObjectStat
   }
 
   @Override
-  public void apply(ObjectID objectID, DNACursor cursor, BackReferences includeIDs) throws IOException {
+  public void apply(ObjectID objectID, DNACursor cursor, ApplyTransactionInfo includeIDs) throws IOException {
     if (!cursor.next()) { return; }
     Object action = cursor.getAction();
     if (action instanceof PhysicalAction) {
@@ -59,7 +60,7 @@ public class LinkedHashMapManagedObjectState extends PartialMapManagedObjectStat
   }
 
   @Override
-  protected void applyMethod(ObjectID objectID, BackReferences includeIDS, int method, Object[] params) {
+  protected void applyMethod(ObjectID objectID, ApplyTransactionInfo includeIDS, int method, Object[] params) {
     switch (method) {
       case SerializationUtil.GET:
         ((LinkedHashMap) references).get(params[0]);
@@ -80,9 +81,9 @@ public class LinkedHashMapManagedObjectState extends PartialMapManagedObjectStat
   }
 
   @Override
-  public void dehydrate(ObjectID objectID, DNAWriter writer) {
+  public void dehydrate(ObjectID objectID, DNAWriter writer, DNAType type) {
     writer.addPhysicalAction(ACCESS_ORDER_FIELDNAME, Boolean.valueOf(accessOrder));
-    super.dehydrate(objectID, writer);
+    super.dehydrate(objectID, writer, type);
   }
 
   // TODO: The Facade does not include the access order.

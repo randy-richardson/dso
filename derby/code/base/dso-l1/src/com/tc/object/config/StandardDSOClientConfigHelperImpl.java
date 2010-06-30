@@ -184,11 +184,13 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
 
   private int                                                faultCount                         = -1;
 
-  private ModuleSpec[]                                       moduleSpecs                        = null;
+  private Collection<ModuleSpec>                             moduleSpecs                        = Collections.synchronizedList(new ArrayList<ModuleSpec>());
 
   private MBeanSpec[]                                        mbeanSpecs                         = null;
 
   private SRASpec[]                                          sraSpecs                           = null;
+
+  private Set<String>                                        tunneledMBeanDomains               = Collections.synchronizedSet(new HashSet<String>());
 
   private final ModulesContext                               modulesContext                     = new ModulesContext();
 
@@ -322,6 +324,13 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     if (oldStyleCallConstructorOnLoad) {
       onLoad.setToCallConstructorOnLoad(true);
     }
+    addInstrumentationDescriptor(new IncludedInstrumentedClass(expression, honorTransient, honorVolatile, onLoad));
+
+    clearAdaptableCache();
+  }
+  
+  public void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad, boolean honorVolatile) {
+    IncludeOnLoad onLoad = new IncludeOnLoad(IncludeOnLoad.METHOD, methodToCallOnLoad);
     addInstrumentationDescriptor(new IncludedInstrumentedClass(expression, honorTransient, honorVolatile, onLoad));
 
     clearAdaptableCache();
@@ -1374,7 +1383,10 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
   public Class getTCPeerClass(Class clazz) {
     if (moduleSpecs != null) {
       for (ModuleSpec moduleSpec : moduleSpecs) {
-        clazz = moduleSpec.getPeerClass(clazz);
+        Class klass = moduleSpec.getPeerClass(clazz);
+        if (klass != null) {
+           return klass;
+        }
       }
     }
     return clazz;
@@ -1513,8 +1525,10 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     if (applicatorSpec == null) {
       if (moduleSpecs != null) {
         for (ModuleSpec moduleSpec : moduleSpecs) {
-          Class applicatorClass = moduleSpec.getChangeApplicatorSpec().getChangeApplicator(clazz);
-          if (applicatorClass != null) { return applicatorClass; }
+          if (moduleSpec.getChangeApplicatorSpec() != null) {
+            Class applicatorClass = moduleSpec.getChangeApplicatorSpec().getChangeApplicator(clazz);
+            if (applicatorClass != null) { return applicatorClass; }
+          }
         }
       }
       return null;
@@ -1536,8 +1550,8 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     return false;
   }
 
-  public void setModuleSpecs(final ModuleSpec[] moduleSpecs) {
-    this.moduleSpecs = moduleSpecs;
+  public void addModuleSpec(final ModuleSpec moduleSpec) {
+    this.moduleSpecs.add(moduleSpec);
   }
 
   public void setMBeanSpecs(final MBeanSpec[] mbeanSpecs) {
@@ -1555,6 +1569,11 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
   public SRASpec[] getSRASpecs() {
     return this.sraSpecs;
   }
+  
+  public void addTunneledMBeanDomain(final String tunneledMBeanDomain) {
+    this.tunneledMBeanDomains.add(tunneledMBeanDomain);
+  }
+  
 
   /*
    * public String getChangeApplicatorClassNameFor(String className) { TransparencyClassSpec spec = getSpec(className);
@@ -2088,6 +2107,14 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
 
   public UUID getUUID() {
     return id;
+  }
+  
+  public String[] getTunneledDomains() {
+    synchronized (tunneledMBeanDomains) {
+      String[] result = new String[tunneledMBeanDomains.size()];
+      tunneledMBeanDomains.toArray(result);
+      return result;
+    }
   }
 
   private static class Resource {

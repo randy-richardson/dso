@@ -5,12 +5,15 @@
 package com.tc.admin.model;
 
 import com.tc.admin.ConnectionContext;
+import com.tc.admin.common.ExceptionHelper;
 import com.tc.admin.common.MBeanServerInvocationProxy;
 import com.tc.admin.model.IClusterModel.PollScope;
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.management.beans.l1.L1InfoMBean;
 import com.tc.management.beans.logging.InstrumentationLoggingMBean;
 import com.tc.management.beans.logging.RuntimeLoggingMBean;
 import com.tc.management.beans.logging.RuntimeOutputOptionsMBean;
+import com.tc.management.beans.object.EnterpriseTCClientMbean;
 import com.tc.net.ClientID;
 import com.tc.object.ObjectID;
 import com.tc.statistics.StatisticData;
@@ -19,12 +22,14 @@ import com.tc.util.ProductInfo;
 
 import java.beans.PropertyChangeEvent;
 import java.io.ByteArrayInputStream;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.zip.ZipInputStream;
 
 import javax.management.Attribute;
 import javax.management.AttributeChangeNotification;
 import javax.management.AttributeList;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
@@ -32,25 +37,28 @@ import javax.management.NotificationListener;
 import javax.management.ObjectName;
 
 public class DSOClient extends BaseClusterNode implements IClient, NotificationListener {
-  private final ConnectionContext     cc;
-  private final ObjectName            beanName;
-  private final ClientID              clientId;
-  private final IClusterModel         clusterModel;
-  private final DSOClientMBean        delegate;
-  private final long                  channelId;
-  private final String                remoteAddress;
-  private String                      host;
-  private Integer                     port;
-  protected ProductVersion            productInfo;
+  private final ConnectionContext      cc;
+  private final ObjectName             beanName;
+  private final ClientID               clientId;
+  private final IClusterModel          clusterModel;
+  private final DSOClientMBean         delegate;
+  private final long                   channelId;
+  private final String                 remoteAddress;
+  private String                       host;
+  private Integer                      port;
+  protected ProductVersion             productInfo;
 
-  private boolean                     ready;
-  private boolean                     isListeningForTunneledBeans;
-  private L1InfoMBean                 l1InfoBean;
-  private InstrumentationLoggingMBean instrumentationLoggingBean;
-  private RuntimeLoggingMBean         runtimeLoggingBean;
-  private RuntimeOutputOptionsMBean   runtimeOutputOptionsBean;
+  private boolean                      ready;
+  private boolean                      isListeningForTunneledBeans;
+  private L1InfoMBean                  l1InfoBean;
+  private EnterpriseTCClientMbean      enterpriseClientMbean;
+  private InstrumentationLoggingMBean  instrumentationLoggingBean;
+  private RuntimeLoggingMBean          runtimeLoggingBean;
+  private RuntimeOutputOptionsMBean    runtimeOutputOptionsBean;
+  private final OperatorEventsListener operatorEventsListener;
 
-  public DSOClient(ConnectionContext cc, ObjectName beanName, IClusterModel clusterModel) {
+  public DSOClient(ConnectionContext cc, ObjectName beanName, IClusterModel clusterModel,
+                   OperatorEventsListener operatorEventsListener) {
     this.cc = cc;
     this.beanName = beanName;
     this.clusterModel = clusterModel;
@@ -58,6 +66,7 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
     channelId = delegate.getChannelID().toLong();
     clientId = delegate.getClientID();
     remoteAddress = delegate.getRemoteAddress();
+    this.operatorEventsListener = operatorEventsListener;
 
     initPolledAttributes();
     testSetupTunneledBeans();
@@ -73,8 +82,10 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
 
   public ObjectName getTunneledBeanName(ObjectName on) {
     try {
-      String name = on.getCanonicalName() + ",clients=Clients,node=" + getRemoteAddress().replace(':', '/');
-      return new ObjectName(name);
+      Hashtable keyPropertyList = new Hashtable(on.getKeyPropertyList());
+      keyPropertyList.put("clients", "Clients");
+      keyPropertyList.put("node", getRemoteAddress().replace(':', '/'));
+      return new ObjectName(on.getDomain(), keyPropertyList);
     } catch (MalformedObjectNameException mone) {
       throw new RuntimeException("Creating ObjectName", mone);
     }
@@ -84,6 +95,9 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
     l1InfoBean = (L1InfoMBean) MBeanServerInvocationHandler.newProxyInstance(cc.mbsc, delegate.getL1InfoBeanName(),
                                                                              L1InfoMBean.class, true);
     addMBeanNotificationListener(delegate.getL1InfoBeanName(), this, "L1InfoMBean");
+
+    enterpriseClientMbean = (EnterpriseTCClientMbean) MBeanServerInvocationHandler.newProxyInstance(cc.mbsc, delegate
+        .getEnterpriseTCClientBeanName(), EnterpriseTCClientMbean.class, true);
 
     instrumentationLoggingBean = (InstrumentationLoggingMBean) MBeanServerInvocationHandler
         .newProxyInstance(cc.mbsc, delegate.getInstrumentationLoggingBeanName(), InstrumentationLoggingMBean.class,
@@ -97,6 +111,16 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
     runtimeOutputOptionsBean = (RuntimeOutputOptionsMBean) MBeanServerInvocationHandler
         .newProxyInstance(cc.mbsc, delegate.getRuntimeOutputOptionsBeanName(), RuntimeOutputOptionsMBean.class, true);
     addMBeanNotificationListener(delegate.getRuntimeOutputOptionsBeanName(), this, "RuntimeOutputOptionsMBean");
+
+    try {
+      addMBeanNotificationListener(delegate.getL1OperatorEventsBeanName(), this.operatorEventsListener,
+                                   "L1OperatorEventsMbean");
+    } catch (Exception e) {
+      Throwable cause = ExceptionHelper.getRootCause(e);
+      if (!(cause instanceof InstanceNotFoundException)) {
+        cause.printStackTrace();
+      }
+    }
 
     fireTunneledBeansRegistered();
   }
@@ -155,8 +179,8 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
       propertyChangeSupport.firePropertyChange(pce);
     } else if ("jmx.attribute.change".equals(type)) {
       AttributeChangeNotification acn = (AttributeChangeNotification) notification;
-      PropertyChangeEvent pce = new PropertyChangeEvent(this, acn.getAttributeName(), acn.getOldValue(), acn
-          .getNewValue());
+      PropertyChangeEvent pce = new PropertyChangeEvent(this, acn.getAttributeName(), acn.getOldValue(),
+                                                        acn.getNewValue());
       propertyChangeSupport.firePropertyChange(pce);
     }
   }
@@ -462,5 +486,11 @@ public class DSOClient extends BaseClusterNode implements IClient, NotificationL
 
   public void setVerboseGC(boolean verboseGC) {
     getL1InfoBean().setVerboseGC(verboseGC);
+  }
+
+  public void reloadConfiguration() throws ConfigurationSetupException {
+    if (enterpriseClientMbean != null) {
+      enterpriseClientMbean.reloadConfiguration();
+    }
   }
 }

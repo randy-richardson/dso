@@ -13,6 +13,7 @@ import com.tc.config.TopologyChangeListener;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.exception.TCRuntimeException;
 import com.tc.l2.ha.L2HAZapNodeRequestProcessor;
+import com.tc.l2.operatorevent.OperatorEventsNodeConnectionListener;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.CommStackMismatchException;
@@ -22,7 +23,6 @@ import com.tc.net.ServerID;
 import com.tc.net.TCSocketAddress;
 import com.tc.net.core.ConnectionAddressProvider;
 import com.tc.net.core.ConnectionInfo;
-import com.tc.net.core.TCConnection;
 import com.tc.net.protocol.NetworkStackHarnessFactory;
 import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.L2ReconnectConfigImpl;
@@ -144,7 +144,7 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     NewL2DSOConfig l2DSOConfig = configSetupManager.dsoL2Config();
 
     l2DSOConfig.changesInItemIgnored(l2DSOConfig.l2GroupPort());
-    this.groupPort = l2DSOConfig.l2GroupPort().getInt();
+    this.groupPort = l2DSOConfig.l2GroupPort().getBindPort();
 
     TCSocketAddress socketAddress;
     try {
@@ -155,7 +155,7 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
       groupConnectPort = TCPropertiesImpl.getProperties()
           .getInt(TCPropertiesConsts.L2_NHA_TCGROUPCOMM_RECONNECT_L2PROXY_TO_PORT, groupPort);
 
-      socketAddress = new TCSocketAddress(l2DSOConfig.bind().getString(), groupConnectPort);
+      socketAddress = new TCSocketAddress(l2DSOConfig.l2GroupPort().getBindAddress(), groupConnectPort);
     } catch (UnknownHostException e) {
       throw new TCRuntimeException(e);
     }
@@ -164,18 +164,12 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     setDiscover(new TCGroupMemberDiscoveryStatic(this));
 
     nodesStore.registerForTopologyChange(this);
+    registerForGroupEvents(new OperatorEventsNodeConnectionListener(nodesStore));
   }
 
-  public boolean isConnectionToNodeActive(NodeID sid) {
+  public boolean isNodeConnected(NodeID sid) {
     TCGroupMember m = members.get(sid);
-    if (m != null) {
-      TCSocketAddress remoteAddr = m.getChannel().getRemoteAddress();
-      TCConnection[] conns = communicationsManager.getConnectionManager().getAllActiveConnections();
-      for (int i = 0; i < conns.length; ++i) {
-        if (conns[i].isConnected() && conns[i].getRemoteAddress().equals(remoteAddr)) { return true; }
-      }
-    }
-    return false;
+    return (m != null) && m.getChannel().isOpen();
   }
 
   /*
@@ -857,6 +851,7 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
   private static class TCGroupHandshakeStateMachine {
     private final HandshakeState     STATE_NODEID         = new NodeIDState();
     private final HandshakeState     STATE_TRY_ADD_MEMBER = new TryAddMemberState();
+    private final HandshakeState     STATE_ACK_OK         = new AckOkState();
     private final HandshakeState     STATE_SUCCESS        = new SuccessState();
     private final HandshakeState     STATE_FAILURE        = new FailureState();
 
@@ -1075,7 +1070,7 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
           }
           signalToJoin(isOkToJoin);
         }
-        if (isOkToJoin) switchToState(STATE_SUCCESS);
+        if (isOkToJoin) switchToState(STATE_ACK_OK);
         else switchToState(STATE_FAILURE);
       }
 
@@ -1102,6 +1097,37 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     }
 
     /*
+     * AckOkState -- Ack ok message
+     */
+    private class AckOkState extends HandshakeState {
+      public AckOkState() {
+        super("Ack-Ok");
+      }
+
+      @Override
+      public void enter() {
+        member.setReady(true);
+        member.notifyMemberAdded();
+        ackOk();
+      }
+
+      @Override
+      public void execute(TCGroupHandshakeMessage msg) {
+        if (msg.isAckMessage()) switchToState(STATE_SUCCESS);
+        else switchToState(STATE_FAILURE);
+      }
+
+      private void ackOk() {
+        TCGroupHandshakeMessage msg = (TCGroupHandshakeMessage) channel
+            .createMessage(TCMessageType.GROUP_HANDSHAKE_MESSAGE);
+        if (logger.isDebugEnabled()) logger.debug("Send ack message to " + member);
+        msg.initializeAck();
+        msg.send();
+      }
+
+    }
+
+    /*
      * SucessState -- Both added to group. Fire nodeJoined event.
      */
     private class SuccessState extends HandshakeState {
@@ -1112,8 +1138,6 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
       @Override
       public void enter() {
         cancelTimerTask();
-        member.setReady(true);
-        member.notifyMemberAdded();
         manager.fireNodeEvent(member, true);
         member.setJoinedEventFired(true);
 

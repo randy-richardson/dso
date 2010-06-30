@@ -5,10 +5,11 @@
 package com.tc.objectserver.core.api;
 
 import com.tc.object.ObjectID;
+import com.tc.object.TestDNACursor;
 import com.tc.object.tx.TransactionID;
 import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.impl.ObjectInstanceMonitorImpl;
-import com.tc.objectserver.managedobject.BackReferences;
+import com.tc.objectserver.managedobject.ApplyTransactionInfo;
 import com.tc.objectserver.managedobject.ManagedObjectImpl;
 import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.objectserver.managedobject.NullManagedObjectChangeListenerProvider;
@@ -20,25 +21,25 @@ import java.util.Map;
 public class ManagedObjectTest extends TCTestCase {
 
   public void testBasics() throws Exception {
-    ObjectInstanceMonitor instanceMonitor = new ObjectInstanceMonitorImpl();
-    ObjectID objectID = new ObjectID(1);
+    final ObjectInstanceMonitor instanceMonitor = new ObjectInstanceMonitorImpl();
+    final ObjectID objectID = new ObjectID(1);
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(new NullManagedObjectChangeListenerProvider(), new InMemoryPersistor());
 
-    ManagedObjectImpl mo = new ManagedObjectImpl(objectID);
+    final ManagedObjectImpl mo = new ManagedObjectImpl(objectID);
 
     assertTrue(mo.isDirty());
     assertTrue(mo.isNew());
 
-    TestDNACursor cursor = new TestDNACursor();
-    cursor.addPhysicalAction("field1", new ObjectID(1));
-    cursor.addPhysicalAction("field2", new Boolean(true));
-    cursor.addPhysicalAction("field3", new Character('c'));
-    TestDNA dna = new TestDNA(cursor);
+    final TestDNACursor cursor = new TestDNACursor();
+    cursor.addPhysicalAction("field1", new ObjectID(1), true);
+    cursor.addPhysicalAction("field2", new Boolean(true), true);
+    cursor.addPhysicalAction("field3", new Character('c'), true);
+    final TestDNA dna = new TestDNA(cursor);
 
     Map instances = instanceMonitor.getInstanceCounts();
     assertEquals(0, instances.size());
-    mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, false);
+    mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, false);
 
     instances = instanceMonitor.getInstanceCounts();
     assertEquals(1, instances.size());
@@ -50,26 +51,26 @@ public class ManagedObjectTest extends TCTestCase {
   }
 
   public void testApplyDNASameOrLowerVersion() throws Exception {
-    ObjectInstanceMonitor instanceMonitor = new ObjectInstanceMonitorImpl();
-    ObjectID objectID = new ObjectID(1);
+    final ObjectInstanceMonitor instanceMonitor = new ObjectInstanceMonitorImpl();
+    final ObjectID objectID = new ObjectID(1);
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(new NullManagedObjectChangeListenerProvider(), new InMemoryPersistor());
 
-    ManagedObjectImpl mo = new ManagedObjectImpl(objectID);
+    final ManagedObjectImpl mo = new ManagedObjectImpl(objectID);
 
-    TestDNACursor cursor = new TestDNACursor();
-    cursor.addPhysicalAction("field1", new ObjectID(1));
+    final TestDNACursor cursor = new TestDNACursor();
+    cursor.addPhysicalAction("field1", new ObjectID(1), true);
     TestDNA dna = new TestDNA(cursor);
     dna.version = 10;
 
-    mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, false);
+    mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, false);
 
     // Now reapply and see if it fails.
     boolean failed = false;
     try {
-      mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, false);
+      mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, false);
       failed = true;
-    } catch (AssertionError ae) {
+    } catch (final AssertionError ae) {
       // expected.
     }
     if (failed) { throw new AssertionError("Failed to fail !!!"); }
@@ -79,9 +80,9 @@ public class ManagedObjectTest extends TCTestCase {
       dna = new TestDNA(cursor);
       dna.version = 5;
       dna.isDelta = true;
-      mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, false);
+      mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, false);
       failed = true;
-    } catch (AssertionError ae) {
+    } catch (final AssertionError ae) {
       // expected.
     }
     if (failed) { throw new AssertionError("Failed to fail !!!"); }
@@ -90,30 +91,30 @@ public class ManagedObjectTest extends TCTestCase {
     dna = new TestDNA(cursor);
     dna.version = 15;
     dna.isDelta = true;
-    mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, false);
-    
-    long version = mo.getVersion();
+    mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, false);
+
+    final long version = mo.getVersion();
 
     // Apply in passive, ignore as true.
     dna = new TestDNA(cursor);
     dna.version = 5;
     dna.isDelta = true;
-    mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, true);
-    
+    mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, true);
+
     assertTrue(version == mo.getVersion());
-    
+
     dna = new TestDNA(cursor);
     dna.version = 15;
     dna.isDelta = true;
-    mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, true);
-    
+    mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, true);
+
     assertTrue(version == mo.getVersion());
-    
+
     dna = new TestDNA(cursor);
     dna.version = 17;
     dna.isDelta = true;
-    mo.apply(dna, new TransactionID(1), new BackReferences(), instanceMonitor, true);
-    
+    mo.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), instanceMonitor, true);
+
     assertTrue(version < mo.getVersion());
   }
 

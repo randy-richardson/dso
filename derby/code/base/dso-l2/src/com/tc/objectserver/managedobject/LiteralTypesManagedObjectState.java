@@ -10,6 +10,7 @@ import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LiteralAction;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.object.dna.impl.ClassInstance;
 import com.tc.object.dna.impl.ClassLoaderInstance;
 import com.tc.object.dna.impl.EnumInstance;
@@ -44,7 +45,7 @@ public class LiteralTypesManagedObjectState extends AbstractManagedObjectState i
     throw new TCRuntimeException("Don't hash me!");
   }
 
-  public void apply(ObjectID objectID, DNACursor cursor, BackReferences includeIDs) throws IOException {
+  public void apply(ObjectID objectID, DNACursor cursor, ApplyTransactionInfo includeIDs) throws IOException {
     while (cursor.next()) {
       LiteralAction a = (LiteralAction) cursor.getAction();
       // PhysicalAction a = cursor.getPhysicalAction();
@@ -53,7 +54,7 @@ public class LiteralTypesManagedObjectState extends AbstractManagedObjectState i
     }
   }
 
-  public void dehydrate(ObjectID objectID, DNAWriter writer) {
+  public void dehydrate(ObjectID objectID, DNAWriter writer, DNAType type) {
     writer.addLiteralValue(this.reference);
   }
 

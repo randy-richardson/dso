@@ -31,8 +31,8 @@ import com.tc.config.schema.repository.ChildBeanRepository;
 import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.config.schema.repository.StandardBeanRepository;
 import com.tc.config.schema.utils.XmlObjectComparator;
-import com.tc.license.Capability;
 import com.tc.license.LicenseCheck;
+import com.tc.license.util.LicenseConstants;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.config.schema.NewL2DSOConfig;
@@ -145,20 +145,21 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     validateGroups();
     validateDSOClusterPersistenceMode();
     validateLicenseCapabilities();
+    validateHaConfiguration();
   }
 
   public TopologyReloadStatus reloadConfiguration(ServerConnectionValidator serverConnectionValidator)
       throws ConfigurationSetupException {
     MutableBeanRepository changedL2sBeanRepository = new StandardBeanRepository(Servers.class);
 
-    this.configurationCreator.reloadServersConfiguration(changedL2sBeanRepository);
+    this.configurationCreator.reloadServersConfiguration(changedL2sBeanRepository, false);
 
     TopologyVerifier topologyVerifier = new TopologyVerifier(serversBeanRepository(), changedL2sBeanRepository,
                                                              this.activeServerGroupsConfig, serverConnectionValidator);
     TopologyReloadStatus status = topologyVerifier.checkAndValidateConfig();
     if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
 
-    this.configurationCreator.reloadServersConfiguration(serversBeanRepository());
+    this.configurationCreator.reloadServersConfiguration(serversBeanRepository(), true);
 
     try {
       this.activeServerGroupsConfig = createActiveServerGroupsConfig();
@@ -193,7 +194,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       }
     }
 
-    if ((servers.length > 1) && !found) { throw new ConfigurationSetupException(
+    if ((servers.length > 0) && !found) { throw new ConfigurationSetupException(
                                                                                 "You have specified server name '"
                                                                                     + l2Identifier
                                                                                     + "' which does not "
@@ -205,9 +206,9 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   private void verifyServerPortUsed(Set<String> serverPorts, Server server) throws ConfigurationSetupException {
     String hostname = server.getHost();
-    verifyPortUsed(serverPorts, hostname, server.getDsoPort());
-    verifyPortUsed(serverPorts, hostname, server.getJmxPort());
-    verifyPortUsed(serverPorts, hostname, server.getL2GroupPort());
+    verifyPortUsed(serverPorts, hostname, server.getDsoPort().getIntValue());
+    verifyPortUsed(serverPorts, hostname, server.getJmxPort().getIntValue());
+    verifyPortUsed(serverPorts, hostname, server.getL2GroupPort().getIntValue());
   }
 
   private void validateGroups() throws ConfigurationSetupException {
@@ -280,7 +281,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     if (this.activeServerGroupsConfig.getActiveServerGroupCount() != 0) {
       ActiveServerGroupConfig groupConfig = getActiveServerGroupForThisL2();
       if (groupConfig != null) {
-        newHaConfig = groupConfig.getHa();
+        newHaConfig = groupConfig.getHaHolder();
       }
     }
     return newHaConfig;
@@ -528,7 +529,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     Map<String, Boolean> serversToMode = new HashMap<String, Boolean>();
     for (ActiveServerGroupConfig element : groupArray) {
-      boolean isNwAP = element.getHa().isNetworkedActivePassive();
+      boolean isNwAP = element.getHaHolder().isNetworkedActivePassive();
       String[] members = element.getMembers().getMemberArray();
       for (String member : members) {
         serversToMode.put(member, isNwAP);
@@ -575,8 +576,27 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   public void validateLicenseCapabilities() {
     if (activeServerGroupsConfig.getActiveServerGroupCount() > 1) {
-      LicenseCheck.checkCapability(Capability.SERVER_STRIPING);
+      LicenseCheck.checkCapability(LicenseConstants.SERVER_STRIPING);
     }
+  }
+
+  public void validateHaConfiguration() throws ConfigurationSetupException {
+    int networkedHa = 0;
+    int diskbasedHa = 0;
+    ActiveServerGroupConfig[] asgcArray = activeServerGroupsConfig.getActiveServerGroupArray();
+    for (ActiveServerGroupConfig asgc : asgcArray) {
+      if (asgc.getHaHolder().isNetworkedActivePassive()) {
+        ++networkedHa;
+      } else {
+        ++diskbasedHa;
+      }
+    }
+    if (networkedHa > 0 && diskbasedHa > 0) { throw new ConfigurationSetupException(
+                                                                                    "All mirror-groups must be set to the same High Availability mode. Your tc-config.xml has "
+                                                                                        + networkedHa
+                                                                                        + " group(s) set to networked HA and "
+                                                                                        + diskbasedHa
+                                                                                        + " group(s) set to disk-based HA."); }
   }
 
   public NewCommonL2Config commonL2ConfigFor(String name) throws ConfigurationSetupException {

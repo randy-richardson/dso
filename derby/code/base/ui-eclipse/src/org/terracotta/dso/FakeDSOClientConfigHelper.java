@@ -99,7 +99,11 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
                                 final boolean oldStyleCallConstructorOnLoad, final boolean honorVolatile) {
     /**/
   }
-
+  
+  public void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad, boolean honorVolatile) {
+    /**/
+  }
+  
   public void addLock(final String methodPattern, final LockDefinition lockDefinition) {
     /**/
   }
@@ -350,7 +354,7 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
     /**/
   }
 
-  public void setModuleSpecs(final ModuleSpec[] moduleSpecs) {
+  public void addModuleSpec(final ModuleSpec moduleSpec) {
     /**/
   }
 
@@ -367,6 +371,10 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
   }
 
   public void setSRASpecs(final SRASpec[] sraSpecs) {
+    throw new ImplementMe();
+  }
+
+  public void addTunneledMBeanDomain(String tunneledMBeanDomain) {
     throw new ImplementMe();
   }
 
@@ -488,6 +496,10 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
     return null;
   }
 
+  public String[] getTunneledDomains() {
+    return null;
+  }
+
   public SessionConfiguration getSessionConfiguration(final String appName) {
     return null;
   }
@@ -499,5 +511,4 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
   public L1TVSConfigurationSetupManager reloadServersConfiguration() {
     return null;
   }
-
 }

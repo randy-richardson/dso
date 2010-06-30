@@ -177,4 +177,5 @@ public class TestLockManager implements ClientLockManager {
   public boolean isLockedByCurrentThread(LockLevel level) {
     throw new ImplementMe();
   }
+
 }

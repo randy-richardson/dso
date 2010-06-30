@@ -9,6 +9,7 @@ import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
 import com.tc.object.dna.api.PhysicalAction;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.util.Assert;
 
@@ -33,7 +34,7 @@ public class TreeSetManagedObjectState extends SetManagedObjectState {
     super(in);
   }
 
-  public void apply(ObjectID objectID, DNACursor cursor, BackReferences includeIDs) throws IOException {
+  public void apply(ObjectID objectID, DNACursor cursor, ApplyTransactionInfo includeIDs) throws IOException {
     if (!cursor.next()) { return; }
 
     Object action = cursor.getAction();
@@ -58,11 +59,11 @@ public class TreeSetManagedObjectState extends SetManagedObjectState {
     }
   }
 
-  public void dehydrate(ObjectID objectID, DNAWriter writer) {
+  public void dehydrate(ObjectID objectID, DNAWriter writer, DNAType type) {
     if (comparator != null) {
       writer.addPhysicalAction(COMPARATOR_FIELDNAME, comparator);
     }
-    super.dehydrate(objectID, writer);
+    super.dehydrate(objectID, writer, type);
   }
 
   protected void addAllObjectReferencesTo(Set refs) {

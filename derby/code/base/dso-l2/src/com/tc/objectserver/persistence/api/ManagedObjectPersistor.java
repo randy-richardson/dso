@@ -7,7 +7,6 @@ package com.tc.objectserver.persistence.api;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.util.ObjectIDSet;
-import com.tc.util.SyncObjectIdSet;
 
 import java.util.Collection;
 import java.util.Map;
@@ -27,36 +26,29 @@ public interface ManagedObjectPersistor {
   public ManagedObject loadObjectByID(ObjectID id);
 
   public long nextObjectIDBatch(int batchSize);
-  
+
   public long currentObjectIDValue();
 
   public void setNextAvailableObjectID(long startID);
-
-  public SyncObjectIdSet getAllObjectIDs();
-
-  public SyncObjectIdSet getAllMapsObjectIDs();
 
   public void saveObject(PersistenceTransaction tx, ManagedObject managedObject);
 
   public void saveAllObjects(PersistenceTransaction tx, Collection managed);
 
-  public void deleteAllObjectsByID(PersistenceTransaction tx, SortedSet<ObjectID> ids);
+  public void deleteAllObjects(SortedSet<ObjectID> ids);
 
   public Map loadRootNamesToIDs();
 
   public int getObjectCount();
 
-  public boolean addNewObject(ObjectID id);
+  public boolean addNewObject(ManagedObject managed);
 
   boolean containsObject(ObjectID id);
 
-  public void removeAllObjectsByID(SortedSet<ObjectID> ids);
+  public void removeAllObjectIDs(SortedSet<ObjectID> ids);
 
-  public ObjectIDSet snapshotObjects();
+  public ObjectIDSet snapshotObjectIDs();
 
-  public boolean containsMapType(ObjectID id);
+  public ObjectIDSet snapshotEvictableObjectIDs();
 
-  public boolean addMapTypeObject(ObjectID id);
-
-  public void removeAllMapTypeObject(Collection ids);
 }

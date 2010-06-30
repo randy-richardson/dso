@@ -9,6 +9,7 @@ import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.server.ServerConnectionValidator;
+import com.terracottatech.config.Ha;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
@@ -69,6 +70,8 @@ public class TopologyVerifier {
     if (!isGroupNameSpecified()) { return TopologyReloadStatus.SPECIFY_MIRROR_GROUPS; }
 
     if (!isGroupNameSame()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_UNACCEPTABLE; }
+
+    if (!isHaModeSame()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_UNACCEPTABLE; }
 
     if (isMemberMovedToDifferentGroup()) { return TopologyReloadStatus.TOPOLOGY_CHANGE_UNACCEPTABLE; }
 
@@ -132,6 +135,26 @@ public class TopologyVerifier {
     }
 
     return areGroupNamesSame;
+  }
+
+  private boolean isHaModeSame() {
+    MirrorGroup[] newGroupsInfo = newServersBean.getMirrorGroups().getMirrorGroupArray();
+    for (MirrorGroup newGroupInfo : newGroupsInfo) {
+      String groupName = newGroupInfo.getGroupName();
+      for (String member : newGroupInfo.getMembers().getMemberArray()) {
+        ActiveServerGroupConfig oldAsgc = this.oldGroupsInfo.getActiveServerGroupForL2(member);
+        if (oldAsgc != null) {
+          Ha newHa = newGroupInfo.getHa();
+          Ha oldHa = oldAsgc.getHaHolder().getHa();
+          if (!oldHa.getMode().equals(newHa.getMode())) {
+            logger.warn("The mirror group " + groupName + " High Availability mode has changed.");
+            return false;
+          }
+          break;
+        }
+      }
+    }
+    return true;
   }
 
   private TopologyReloadStatus checkExistingServerConfigIsSame() {

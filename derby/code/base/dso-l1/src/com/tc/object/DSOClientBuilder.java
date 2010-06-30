@@ -9,6 +9,7 @@ import com.tc.logging.TCLogger;
 import com.tc.management.ClientLockStatManager;
 import com.tc.management.L1Management;
 import com.tc.management.TCClient;
+import com.tc.management.remote.protocol.terracotta.TunneledDomainManager;
 import com.tc.management.remote.protocol.terracotta.TunnelingEventHandler;
 import com.tc.net.protocol.NetworkStackHarnessFactory;
 import com.tc.net.protocol.tcm.ClientMessageChannel;
@@ -16,9 +17,11 @@ import com.tc.net.protocol.tcm.CommunicationsManager;
 import com.tc.net.protocol.tcm.MessageMonitor;
 import com.tc.net.protocol.transport.ConnectionPolicy;
 import com.tc.net.protocol.transport.HealthCheckerConfig;
+import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.object.cache.ClockEvictionPolicy;
 import com.tc.object.config.DSOClientConfigHelper;
+import com.tc.object.config.DSOMBeanConfig;
 import com.tc.object.config.MBeanSpec;
 import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.gtx.ClientGlobalTransactionManager;
@@ -47,7 +50,6 @@ import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.stats.counter.Counter;
 import com.tc.stats.counter.sampled.derived.SampledRateCounter;
 import com.tc.util.ToggleableReferenceManager;
-import com.tc.util.UUID;
 import com.tc.util.runtime.ThreadIDManager;
 import com.tc.util.sequence.BatchSequence;
 import com.tc.util.sequence.BatchSequenceReceiver;
@@ -67,12 +69,20 @@ public interface DSOClientBuilder {
                                                     final ConnectionPolicy connectionPolicy, int workerCommThreads,
                                                     final HealthCheckerConfig hcConfig);
 
-  TunnelingEventHandler createTunnelingEventHandler(final ClientMessageChannel ch, UUID id);
+  TunnelingEventHandler createTunnelingEventHandler(final ClientMessageChannel ch, final DSOMBeanConfig config);
 
-  ClientGlobalTransactionManager createClientGlobalTransactionManager(final RemoteTransactionManager remoteTxnMgr);
+  TunneledDomainManager createTunneledDomainManager(final ClientMessageChannel ch, final DSOMBeanConfig config, final TunnelingEventHandler teh);
+
+  ClientGlobalTransactionManager createClientGlobalTransactionManager(
+                                                                      final RemoteTransactionManager remoteTxnMgr,
+                                                                      final RemoteServerMapManager remoteServerMapManager);
 
   RemoteObjectManager createRemoteObjectManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
                                                 final int faultCount, final SessionManager sessionManager);
+
+  RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
+                                                      final SessionManager sessionManager, Sink lockRecallSink,
+                                                      Sink capacityEvictionSink, Sink ttiTTLEvitionSink);
 
   ClusterMetaDataManager createClusterMetaDataManager(final DSOClientMessageChannel dsoChannel,
                                                       final DNAEncoding encoding,
@@ -129,4 +139,10 @@ public interface DSOClientBuilder {
                                   RuntimeLogger runtimeLogger, InstrumentationLogger instrumentationLogger,
                                   String rawConfigText, DistributedObjectClient distributedObjectClient,
                                   MBeanSpec[] mBeanSpecs);
+
+  void registerForOperatorEvents(L1Management management);
+
+  TCClassFactory createTCClassFactory(final DSOClientConfigHelper config, final ClassProvider classProvider,
+                                      final DNAEncoding dnaEncoding, final Manager manager,
+                                      final RemoteServerMapManager remoteServerMapManager);
 }

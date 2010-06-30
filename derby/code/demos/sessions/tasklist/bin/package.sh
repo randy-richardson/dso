@@ -10,6 +10,7 @@ if [ "$JAVA_HOME" = "" ]; then
   exit 1
 fi
 
+unset CDPATH
 root=`dirname $0`/..
 root=`cd $root && pwd`
 cd $root
@@ -27,10 +28,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-#packaging terracotta-express-runtime
-cp $tc_install_dir/common/terracotta-express-runtime*.jar target/WEB-INF/lib
+#packaging terracotta-toolkit-runtime
+cp $tc_install_dir/common/terracotta-toolkit-*-runtime*.jar target/WEB-INF/lib
 if [ $? -ne 0 ]; then
-  echo "Couldn't package terracotta-express-runtime. Do you have a complete kit?"
+  echo "Couldn't package terracotta-toolkit-runtime. Do you have a complete kit?"
   exit 1
 fi
 

@@ -9,6 +9,7 @@ import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
 import com.tc.object.dna.api.PhysicalAction;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.util.Assert;
 
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class ConcurrentHashMapManagedObjectState extends PartialMapManagedObject
     super(classID, map);
   }
 
-  public void apply(ObjectID objectID, DNACursor cursor, BackReferences includeIDs) throws IOException {
+  public void apply(ObjectID objectID, DNACursor cursor, ApplyTransactionInfo includeIDs) throws IOException {
     while (cursor.next()) {
       Object action = cursor.getAction();
       if (action instanceof LogicalAction) {
@@ -61,7 +62,7 @@ public class ConcurrentHashMapManagedObjectState extends PartialMapManagedObject
     }
   }
 
-  private void initalizeSegments(ObjectID objectID, Object[] array, BackReferences includeIDs) {
+  private void initalizeSegments(ObjectID objectID, Object[] array, ApplyTransactionInfo includeIDs) {
     Assert.assertNull(segments);
     segments = new ObjectID[array.length];
     for (int i = 0; i < array.length; i++) {
@@ -80,9 +81,9 @@ public class ConcurrentHashMapManagedObjectState extends PartialMapManagedObject
     }
   }
 
-  public void dehydrate(ObjectID objectID, DNAWriter writer) {
+  public void dehydrate(ObjectID objectID, DNAWriter writer, DNAType type) {
     dehydrateFields(objectID, writer);
-    super.dehydrate(objectID, writer);
+    super.dehydrate(objectID, writer, type);
   }
 
   private void dehydrateFields(ObjectID objectID, DNAWriter writer) {

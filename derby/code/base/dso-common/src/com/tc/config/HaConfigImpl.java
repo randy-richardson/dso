@@ -49,7 +49,8 @@ public class HaConfigImpl implements HaConfig {
     ServerGroup thisGroup = getThisGroupFrom(this.groups, this.configSetupManager.getActiveServerGroupForThisL2());
     this.thisGroupID = thisGroup.getGroupId();
 
-    this.nodeStore = new NodesStoreImpl(nodes, getNodeNamesForThisGroup(thisGroup), buildServerGroupIDMap());
+    this.nodeStore = new NodesStoreImpl(nodes, getNodeNamesForThisGroup(thisGroup), buildServerGroupIDMap(),
+                                        configSetupManager);
   }
 
   private HashMap<String, GroupID> buildServerGroupIDMap() {
@@ -180,7 +181,7 @@ public class HaConfigImpl implements HaConfig {
   }
 
   public static Node makeNode(NewL2DSOConfig l2) {
-    return new Node(l2.host().getString(), l2.listenPort().getInt(), l2.l2GroupPort().getInt(),
+    return new Node(l2.host().getString(), l2.dsoPort().getBindPort(), l2.l2GroupPort().getBindPort(),
                     TCSocketAddress.WILDCARD_IP);
   }
 
@@ -198,9 +199,7 @@ public class HaConfigImpl implements HaConfig {
 
   public String getNodeName(String member) {
     for (ServerGroup group : this.groups) {
-      if (group.hasMember(member)) {
-        return group.getNode(member).getServerNodeName();
-      }
+      if (group.hasMember(member)) { return group.getNode(member).getServerNodeName(); }
     }
     return null;
   }

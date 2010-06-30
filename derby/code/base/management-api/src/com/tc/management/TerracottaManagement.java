@@ -30,13 +30,14 @@ public abstract class TerracottaManagement {
 
   public static class Type {
 
-    private static final Map typesByName = Collections.synchronizedMap(new HashMap());
-    public static final Type DsoClient   = new Type(MANAGEMENT_RESOURCES.getDsoClientType());
-    public static final Type Sessions    = new Type(MANAGEMENT_RESOURCES.getSessionsType());
-    public static final Type Server      = new Type(MANAGEMENT_RESOURCES.getTerracottaServerType());
-    public static final Type Cluster     = new Type(MANAGEMENT_RESOURCES.getTerracottaClusterType());
-    public static final Type Agent       = new Type(MANAGEMENT_RESOURCES.getTerracottaAgentType());
-    public static final Type Tim         = new Type(MANAGEMENT_RESOURCES.getTerracottaTimType());
+    private static final Map typesByName      = Collections.synchronizedMap(new HashMap());
+    public static final Type DsoClient        = new Type(MANAGEMENT_RESOURCES.getDsoClientType());
+    public static final Type Sessions         = new Type(MANAGEMENT_RESOURCES.getSessionsType());
+    public static final Type Server           = new Type(MANAGEMENT_RESOURCES.getTerracottaServerType());
+    public static final Type Cluster          = new Type(MANAGEMENT_RESOURCES.getTerracottaClusterType());
+    public static final Type Agent            = new Type(MANAGEMENT_RESOURCES.getTerracottaAgentType());
+    public static final Type Tim              = new Type(MANAGEMENT_RESOURCES.getTerracottaTimType());
+    public static final Type TcOperatorEvents = new Type(MANAGEMENT_RESOURCES.getTerracottaOperatorEventType());
 
     private final String     type;
 
@@ -92,8 +93,7 @@ public abstract class TerracottaManagement {
 
   public enum MBeanDomain {
     PUBLIC(MANAGEMENT_RESOURCES.getPublicMBeanDomain()), INTERNAL(MANAGEMENT_RESOURCES.getInternalMBeanDomain()), TIM(
-        MANAGEMENT_RESOURCES.getTimMBeanDomain()), EHCACHE(MANAGEMENT_RESOURCES.getEhCacheMBeanDomain()), EHCACHE_HIBERNATE(
-        MANAGEMENT_RESOURCES.getEhCacheHibernateMBeanDomain()), QUARTZ(MANAGEMENT_RESOURCES.getQuartzMBeanDomain());
+        MANAGEMENT_RESOURCES.getTimMBeanDomain());
 
     private final String value;
 
@@ -191,13 +191,16 @@ public abstract class TerracottaManagement {
     return null;
   }
 
-  public static final QueryExp matchAllTerracottaMBeans(UUID id) {
+  public static final QueryExp matchAllTerracottaMBeans(UUID id, String[] tunneledDomains) {
     try {
-      return Query.or(Query.or(Query.or(new ObjectName(MBeanDomain.PUBLIC + ":*,node=" + id),
-                                        new ObjectName(MBeanDomain.INTERNAL + ":*,node=" + id)), Query
-          .or(new ObjectName(MBeanDomain.EHCACHE + ":*,node=" + id), new ObjectName(MBeanDomain.EHCACHE_HIBERNATE
-                                                                                    + ":*,node=" + id))),
-                      new ObjectName(MBeanDomain.QUARTZ + ":*,node=" + id));
+      QueryExp query = Query.or(new ObjectName(MBeanDomain.PUBLIC + ":*,node=" + id),
+                                new ObjectName(MBeanDomain.INTERNAL + ":*,node=" + id));
+      if (tunneledDomains != null) {
+        for (String tunneledDomain : tunneledDomains) {
+          query = Query.or(query, new ObjectName(tunneledDomain + ":*,node=" + id));
+        }
+      }
+      return query;
     } catch (MalformedObjectNameException e) {
       throw new RuntimeException(e);
     }

@@ -46,7 +46,8 @@ public class Node {
   public String getBind() {
     return bind;
   }
-
+  
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof Node) {
       Node that = (Node) obj;
@@ -55,6 +56,7 @@ public class Node {
     return false;
   }
 
+  @Override
   public int hashCode() {
     return hashCode;
   }
@@ -64,6 +66,7 @@ public class Node {
     if (port < 0) { throw new IllegalArgumentException("Invalid port number: " + port); }
   }
 
+  @Override
   public String toString() {
     return "Node{host=" + host + ":" + port + "}";
   }

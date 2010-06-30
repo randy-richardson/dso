@@ -10,16 +10,16 @@ import com.tc.runtime.TCMemoryManager;
 
 public class CacheMemoryManagerEventGenerator implements MemoryEventsListener {
 
-  private CacheMemoryEventsListener listener;
-  private CacheMemoryEventType      currentState;
-  private MemoryUsage               lastReported;
-  private int                       threshold;
-  private int                       criticalThreshold;
-  private int                       leastCount;
-  private boolean                   isOldGen;
+  private final CacheMemoryEventsListener listener;
+  private CacheMemoryEventType            currentState;
+  private MemoryUsage                     lastReported;
+  private final int                       threshold;
+  private final int                       criticalThreshold;
+  private final int                       leastCount;
+  private final boolean                   isOldGen;
 
-  public CacheMemoryManagerEventGenerator(int threshold, int criticalThreshold, int leastCount, TCMemoryManager manager,
-                                CacheMemoryEventsListener listener) {
+  public CacheMemoryManagerEventGenerator(int threshold, int criticalThreshold, int leastCount,
+                                          TCMemoryManager manager, CacheMemoryEventsListener listener) {
     verifyInput(threshold, criticalThreshold, leastCount);
     this.listener = listener;
     this.threshold = threshold;

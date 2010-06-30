@@ -13,9 +13,13 @@ import com.tc.admin.common.ExceptionHelper;
 import com.tc.admin.common.MBeanServerInvocationProxy;
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
+import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.config.schema.setup.TopologyReloadStatus;
 import com.tc.management.beans.L2MBeanNames;
 import com.tc.management.beans.LockStatisticsMonitorMBean;
+import com.tc.management.beans.MBeanNames;
 import com.tc.management.beans.TCServerInfoMBean;
+import com.tc.management.beans.object.EnterpriseTCServerMbean;
 import com.tc.management.beans.object.ObjectManagementMonitorMBean;
 import com.tc.management.beans.object.ServerDBBackupMBean;
 import com.tc.management.lock.stats.LockSpec;
@@ -25,6 +29,7 @@ import com.tc.objectserver.api.NoSuchObjectException;
 import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.mgmt.MapEntryFacade;
+import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.beans.StatisticsLocalGathererMBean;
 import com.tc.statistics.beans.StatisticsMBeanNames;
@@ -83,9 +88,11 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
   protected Map<ObjectName, DSOClient>    clientMap;
   private ClientChangeListener            clientChangeListener;
   protected EventListenerList             listenerList;
+  protected OperatorEventsListener        operatorEventsListener;
   protected List<DSOClient>               pendingClients;
   protected Exception                     connectException;
   protected TCServerInfoMBean             serverInfoBean;
+  protected EnterpriseTCServerMbean       enterpriseServerBean;
   protected DSOMBean                      dsoBean;
   protected ObjectManagementMonitorMBean  objectManagementMonitorBean;
   protected boolean                       serverDBBackupSupported;
@@ -206,6 +213,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     startTime = activateTime = -1;
     displayLabel = connectManager.toString();
     listenerList = new EventListenerList();
+    operatorEventsListener = new OperatorEventsListener(listenerList);
     logListener = new LogListener();
     pendingClients = new ArrayList<DSOClient>();
     clients = new ArrayList<DSOClient>();
@@ -233,6 +241,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       theReadySet.add(L2MBeanNames.LOGGER);
       theReadySet.add(L2MBeanNames.LOCK_STATISTICS);
       theReadySet.add(StatisticsMBeanNames.STATISTICS_GATHERER);
+      // theReadySet.add(MBeanNames.OPERATOR_EVENTS_PUBLIC);
     }
   }
 
@@ -680,6 +689,18 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     return serverInfoBean;
   }
 
+  protected synchronized EnterpriseTCServerMbean getEnterpriseServerInfoBean() {
+    if (enterpriseServerBean == null) {
+      ConnectionContext cc = getConnectionContext();
+      if (cc != null) {
+        if (cc.mbsc == null) { return null; }
+        enterpriseServerBean = MBeanServerInvocationProxy.newMBeanProxy(cc.mbsc, L2MBeanNames.ENTERPRISE_TC_SERVER,
+                                                                        EnterpriseTCServerMbean.class, false);
+      }
+    }
+    return enterpriseServerBean;
+  }
+
   protected synchronized DSOMBean getDSOBean() {
     if (dsoBean == null) {
       ConnectionContext cc = getConnectionContext();
@@ -958,6 +979,16 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
   }
 
   private void testInitRegisteredBean(Set<ObjectName> theReadySet, ObjectName beanName) {
+    /**
+     * This is lame as the registration of these EE beans will not be tied to the Server being ready. There should be EE
+     * versions of the cluster model types.
+     */
+    if (beanName.equals(MBeanNames.OPERATOR_EVENTS_PUBLIC)) {
+      initOperatorEventsBean();
+    } else if (beanName.equals(L2MBeanNames.SERVER_DB_BACKUP)) {
+      initServerDBBackupBean();
+    }
+
     if (theReadySet.contains(beanName)) {
       if (beanName.equals(L2MBeanNames.DSO)) {
         try {
@@ -967,8 +998,6 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
         }
       } else if (beanName.equals(StatisticsMBeanNames.STATISTICS_GATHERER)) {
         initClusterStatsBean();
-      } else if (beanName.equals(L2MBeanNames.SERVER_DB_BACKUP)) {
-        initServerDBBackupBean();
       } else if (beanName.equals(L2MBeanNames.LOCK_STATISTICS)) {
         initLockProfilerBean();
       } else if (beanName.equals(L2MBeanNames.TC_SERVER_INFO)) {
@@ -987,6 +1016,17 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     if (cc != null) {
       try {
         cc.addNotificationListener(L2MBeanNames.TC_SERVER_INFO, this);
+      } catch (Exception e) {
+        /**/
+      }
+    }
+  }
+
+  private void initOperatorEventsBean() {
+    ConnectionContext cc = getConnectionContext();
+    if (cc != null) {
+      try {
+        cc.addNotificationListener(MBeanNames.OPERATOR_EVENTS_PUBLIC, this.operatorEventsListener);
       } catch (Exception e) {
         /**/
       }
@@ -1031,7 +1071,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
   private synchronized DSOClient addClient(ObjectName clientBeanName) {
     assertGroupLeader();
 
-    DSOClient client = new DSOClient(getConnectionContext(), clientBeanName, clusterModel);
+    DSOClient client = new DSOClient(getConnectionContext(), clientBeanName, clusterModel, operatorEventsListener);
     client.addPropertyChangeListener(clientChangeListener);
     clients.add(client);
     // Don't notify the client's existence until it's ready
@@ -1494,12 +1534,25 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     return theDsoBean != null ? theDsoBean.getGarbageCollectorStats() : EMPTY_GCSTATS_ARRAY;
   }
 
+  public synchronized List<TerracottaOperatorEvent> getOperatorEvents() {
+    DSOMBean theDsoBean = getDSOBean();
+    return theDsoBean != null ? theDsoBean.getOperatorEvents() : new ArrayList<TerracottaOperatorEvent>();
+  }
+
   public void addDGCListener(DGCListener listener) {
     listenerList.add(DGCListener.class, listener);
   }
 
+  public void addTerracottaOperatorEventsListener(TerracottaOperatorEventsListener listener) {
+    listenerList.add(TerracottaOperatorEventsListener.class, listener);
+  }
+
   public void removeDGCListener(DGCListener listener) {
     listenerList.remove(DGCListener.class, listener);
+  }
+
+  public void removeTerracottaOperatorEventsListener(TerracottaOperatorEventsListener listener) {
+    listenerList.remove(TerracottaOperatorEventsListener.class, listener);
   }
 
   private void fireStatusUpdated(GCStats gcStats) {
@@ -2148,5 +2201,16 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
 
   public void setVerboseGC(boolean verboseGC) {
     getServerInfoBean().setVerboseGC(verboseGC);
+  }
+
+  public TopologyReloadStatus reloadConfiguration() throws ConfigurationSetupException {
+    EnterpriseTCServerMbean enterpriseMbean = getEnterpriseServerInfoBean();
+
+    TopologyReloadStatus status = null;
+    if (enterpriseMbean != null) {
+      status = enterpriseMbean.reloadConfiguration();
+    }
+
+    return status;
   }
 }

@@ -19,9 +19,6 @@ import java.util.SortedSet;
 
 public interface ManagedObjectStore extends ManagedObjectProvider, ObjectIDSequence, PrettyPrintable {
 
-  /**
-   * synchronous
-   */
   public int getObjectCount();
 
   public void addNewObject(ManagedObject managed);
@@ -33,12 +30,14 @@ public interface ManagedObjectStore extends ManagedObjectProvider, ObjectIDSeque
   /**
    * synchronous
    */
-  public void removeAllObjectsByIDNow(PersistenceTransaction tx, SortedSet<ObjectID> objectIds);
+  public void removeAllObjectsByIDNow(SortedSet<ObjectID> objectIds);
 
   /**
-   * Returns the set of object ids.
+   * Returns a copy of the set of all object ids, hence a relatively costly operation
    */
   public ObjectIDSet getAllObjectIDs();
+
+  public ObjectIDSet getAllEvictableObjectIDs();
 
   public boolean containsObject(ObjectID id);
 

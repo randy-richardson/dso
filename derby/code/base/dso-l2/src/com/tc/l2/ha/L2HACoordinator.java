@@ -9,7 +9,7 @@ import static com.tc.l2.ha.ClusterStateDBKeyNames.DATABASE_CREATION_TIMESTAMP_KE
 import com.tc.async.api.Sink;
 import com.tc.async.api.StageManager;
 import com.tc.async.impl.OrderedSink;
-import com.tc.config.schema.NewHaConfig;
+import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.l2.api.L2Coordinator;
 import com.tc.l2.api.ReplicatedClusterStateManager;
 import com.tc.l2.context.StateChangedEvent;
@@ -36,6 +36,7 @@ import com.tc.l2.objectserver.ReplicatedObjectManager;
 import com.tc.l2.objectserver.ReplicatedObjectManagerImpl;
 import com.tc.l2.objectserver.ReplicatedTransactionManager;
 import com.tc.l2.objectserver.ReplicatedTransactionManagerImpl;
+import com.tc.l2.operatorevent.OperatorEventsZapRequestListener;
 import com.tc.l2.state.StateChangeListener;
 import com.tc.l2.state.StateManager;
 import com.tc.l2.state.StateManagerConfigImpl;
@@ -84,20 +85,20 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
   private SequenceGenerator                               sequenceGenerator;
 
-  private final NewHaConfig                               haConfig;
+  private final L2TVSConfigurationSetupManager            configSetupManager;
   private final CopyOnWriteArrayList<StateChangeListener> listeners = new CopyOnWriteArrayList<StateChangeListener>();
 
   public L2HACoordinator(TCLogger consoleLogger, DistributedObjectServer server, StageManager stageManager,
                          GroupManager groupCommsManager, PersistentMapStore persistentStateStore,
                          ObjectManager objectManager, ServerTransactionManager transactionManager,
                          ServerGlobalTransactionManager gtxm, WeightGeneratorFactory weightGeneratorFactory,
-                         NewHaConfig haConfig, MessageRecycler recycler, GroupID thisGroupID,
-                         StripeIDStateManager stripeIDStateManager) {
+                         L2TVSConfigurationSetupManager configurationSetupManager, MessageRecycler recycler,
+                         GroupID thisGroupID, StripeIDStateManager stripeIDStateManager) {
     this.consoleLogger = consoleLogger;
     this.server = server;
     this.groupManager = groupCommsManager;
     this.thisGroupID = thisGroupID;
-    this.haConfig = haConfig;
+    this.configSetupManager = configurationSetupManager;
 
     init(stageManager, persistentStateStore, objectManager, transactionManager, gtxm, weightGeneratorFactory, recycler,
          stripeIDStateManager);
@@ -117,7 +118,7 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
     new L2StateChangeHandler(), 1, Integer.MAX_VALUE).getSink();
 
     this.stateManager = new StateManagerImpl(consoleLogger, groupManager, stateChangeSink,
-                                             new StateManagerConfigImpl(haConfig),
+                                             new StateManagerConfigImpl(this.configSetupManager.haConfig()),
                                              createWeightGeneratorFactoryForStateManager(gtxm));
     this.stateManager.registerForStateChangeEvents(this);
 
@@ -126,6 +127,7 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
 
     L2HAZapNodeRequestProcessor zapProcessor = new L2HAZapNodeRequestProcessor(consoleLogger, stateManager,
                                                                                groupManager, weightGeneratorFactory);
+    zapProcessor.addZapEventListener(new OperatorEventsZapRequestListener(this.configSetupManager));
     this.groupManager.setZapNodeRequestProcessor(zapProcessor);
 
     final Sink objectsSyncRequestSink = stageManager
@@ -222,7 +224,8 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
     if (sce.movedToActive()) {
       rClusterStateMgr.goActiveAndSyncState();
       rObjectManager.sync();
-      startActiveMode(sce);
+      server.startActiveMode();
+      startL1Listener();
     }
   }
 
@@ -236,9 +239,9 @@ public class L2HACoordinator implements L2Coordinator, StateChangeListener, Grou
     listeners.add(listener);
   }
 
-  protected void startActiveMode(StateChangedEvent sce) {
+  protected void startL1Listener() {
     try {
-      server.startActiveMode();
+      server.startL1Listener();
     } catch (IOException e) {
       throw new AssertionError(e);
     }

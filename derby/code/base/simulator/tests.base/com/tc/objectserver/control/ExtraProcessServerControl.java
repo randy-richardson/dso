@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -152,7 +153,6 @@ public class ExtraProcessServerControl extends ServerControlBase {
   protected void addProductKeyIfExists(List args) {
     String propertyKey = TCPropertiesImpl.SYSTEM_PROP_PREFIX + TCPropertiesConsts.PRODUCTKEY_PATH;
     String productKeyPath = System.getProperty(propertyKey);
-    System.out.println("XXX expected product key path: " + productKeyPath);
     if (productKeyPath != null) {
       args.add("-D" + propertyKey + "=" + productKeyPath);
       System.out.println("XXX ading to server process: " + "-D" + propertyKey + "=" + productKeyPath);
@@ -222,12 +222,12 @@ public class ExtraProcessServerControl extends ServerControlBase {
     this.javaHome = javaHome;
   }
 
-  protected String[] getMainClassArguments() {
+  protected List<String> getMainClassArguments() {
     if (serverName != null && !serverName.equals("")) {
-      return new String[] { StandardTVSConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc,
-          StandardTVSConfigurationSetupManagerFactory.SERVER_NAME_ARGUMENT_WORD, serverName };
+      return Arrays.asList(StandardTVSConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc,
+          StandardTVSConfigurationSetupManagerFactory.SERVER_NAME_ARGUMENT_WORD, serverName);
     } else {
-      return new String[] { StandardTVSConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc };
+      return Arrays.asList(StandardTVSConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc);
     }
   }
 
@@ -251,7 +251,6 @@ public class ExtraProcessServerControl extends ServerControlBase {
     System.err.println("Starting " + this.name + ", main=" + getMainClassName() + ", main args="
                        + ArrayUtils.toString(getMainClassArguments()) + ", jvm=[" + getJavaHome() + "]");
     process = createLinkedJavaProcess();
-    process.setJavaArguments((String[]) jvmArgs.toArray(new String[jvmArgs.size()]));
     process.start();
     if (mergeOutput) {
       mergeSTDOUT();
@@ -264,8 +263,8 @@ public class ExtraProcessServerControl extends ServerControlBase {
     }
   }
 
-  protected LinkedJavaProcess createLinkedJavaProcess(String mainClassName, String[] arguments) {
-    LinkedJavaProcess result = new LinkedJavaProcess(mainClassName, arguments);
+  protected LinkedJavaProcess createLinkedJavaProcess(String mainClassName, List<String> args, List<String> jvmargs) {
+    LinkedJavaProcess result = new LinkedJavaProcess(mainClassName, args, jvmargs);
     result.setMaxRuntime(TestConfigObject.getInstance().getJunitTimeoutInSeconds() + 180);
     result.setDirectory(this.runningDirectory);
     File processJavaHome = getJavaHome();
@@ -276,7 +275,7 @@ public class ExtraProcessServerControl extends ServerControlBase {
   }
 
   protected LinkedJavaProcess createLinkedJavaProcess() {
-    return createLinkedJavaProcess(getMainClassName(), getMainClassArguments());
+    return createLinkedJavaProcess(getMainClassName(), getMainClassArguments(), jvmArgs);
   }
 
   public void crash() throws Exception {
@@ -290,9 +289,7 @@ public class ExtraProcessServerControl extends ServerControlBase {
 
   public void attemptShutdown() throws Exception {
     System.out.println("Shutting down server " + this.name + "...");
-    String[] args = getMainClassArguments();
-    LinkedJavaProcess stopper = createLinkedJavaProcess("com.tc.admin.TCStop", args);
-    stopper.setJavaArguments((String[]) jvmArgs.toArray(new String[jvmArgs.size()]));
+    LinkedJavaProcess stopper = createLinkedJavaProcess("com.tc.admin.TCStop", getMainClassArguments(), jvmArgs);
     stopper.start();
 
     ByteArrayOutputStream stopperLog = null;

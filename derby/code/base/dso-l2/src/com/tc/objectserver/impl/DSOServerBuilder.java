@@ -6,7 +6,6 @@ package com.tc.objectserver.impl;
 import com.tc.async.api.PostInit;
 import com.tc.async.api.Sink;
 import com.tc.async.api.StageManager;
-import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.l2.api.L2Coordinator;
 import com.tc.l2.ha.WeightGeneratorFactory;
@@ -27,6 +26,7 @@ import com.tc.object.net.DSOChannelManager;
 import com.tc.object.persistence.api.PersistentMapStore;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectRequestManager;
+import com.tc.objectserver.api.ServerMapRequestManager;
 import com.tc.objectserver.clustermetadata.ServerClusterMetaDataManager;
 import com.tc.objectserver.core.api.DSOGlobalServerStats;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
@@ -43,6 +43,7 @@ import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManagerImpl;
 import com.tc.objectserver.tx.TransactionFilter;
 import com.tc.objectserver.tx.TransactionalObjectManager;
+import com.tc.operatorevent.TerracottaOperatorEventHistoryProvider;
 import com.tc.server.ServerConnectionValidator;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
@@ -52,9 +53,14 @@ import com.tc.statistics.retrieval.StatisticsRetrievalRegistry;
 import java.net.InetAddress;
 import java.util.List;
 
+import javax.management.MBeanServer;
+
 public interface DSOServerBuilder extends TCDumper, PostInit {
 
   TransactionFilter getTransactionFilter(List<PostInit> toInit, StageManager stageManager, int maxStageSize);
+
+  ServerMapRequestManager createServerMapRequestManager(ObjectManager objectMgr, DSOChannelManager channelManager,
+                                                        Sink respondToServerTCMapSink, Sink managedObjectRequestSink);
 
   ObjectRequestManager createObjectRequestManager(ObjectManager objectMgr, DSOChannelManager channelManager,
                                                   ClientStateManager clientStateMgr,
@@ -78,6 +84,7 @@ public interface DSOServerBuilder extends TCDumper, PostInit {
 
   ServerConfigurationContext createServerConfigurationContext(StageManager stageManager, ObjectManager objMgr,
                                                               ObjectRequestManager objRequestMgr,
+                                                              ServerMapRequestManager serverTCMapRequestManager,
                                                               ManagedObjectStore objStore, LockManager lockMgr,
                                                               DSOChannelManager channelManager,
                                                               ClientStateManager clientStateMgr,
@@ -102,7 +109,8 @@ public interface DSOServerBuilder extends TCDumper, PostInit {
                                       StageManager stageManager, GroupManager groupCommsManager,
                                       PersistentMapStore persistentMapStore, ObjectManager objectManager,
                                       ServerTransactionManager transactionManager, ServerGlobalTransactionManager gtxm,
-                                      WeightGeneratorFactory weightGeneratorFactory, NewHaConfig haConfig,
+                                      WeightGeneratorFactory weightGeneratorFactory,
+                                      L2TVSConfigurationSetupManager configurationSetupManager,
                                       MessageRecycler recycler, StripeIDStateManager stripeStateManager);
 
   L2Management createL2Management(TCServerInfoMBean tcServerInfoMBean, LockStatisticsMonitor lockStatisticsMBean,
@@ -112,4 +120,8 @@ public interface DSOServerBuilder extends TCDumper, PostInit {
                                   DistributedObjectServer distributedObjectServer, InetAddress bind, int jmxPort,
                                   Sink remoteEventsSink, ServerConnectionValidator serverConnectionValidator)
       throws Exception;
+
+  void registerForOperatorEvents(L2Management l2Management,
+                                 TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider,
+                                 MBeanServer l2MbeanServer);
 }

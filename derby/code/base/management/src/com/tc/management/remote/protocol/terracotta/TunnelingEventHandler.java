@@ -14,6 +14,7 @@ import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.ChannelEventType;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TCMessageType;
+import com.tc.object.config.DSOMBeanConfig;
 import com.tc.object.handshakemanager.ClientHandshakeCallback;
 import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.util.UUID;
@@ -27,13 +28,13 @@ import javax.management.remote.message.Message;
 public class TunnelingEventHandler extends AbstractEventHandler implements ChannelEventListener,
     ClientHandshakeCallback {
 
-  private static final TCLogger      logger = TCLogging.getLogger(TunnelingEventHandler.class);
+  private static final TCLogger      logger     = TCLogging.getLogger(TunnelingEventHandler.class);
 
   private final MessageChannel       channel;
 
-  private TunnelingMessageConnection messageConnection;
+  private final DSOMBeanConfig       config;
 
-  private final UUID                 uuid;
+  private TunnelingMessageConnection messageConnection;
 
   private boolean                    acceptOk;
 
@@ -45,10 +46,12 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
 
   private boolean                    sentReadyMessage;
 
-  public TunnelingEventHandler(final MessageChannel channel, final UUID uuid) {
+  private boolean                    stopAccept = false;
+
+  public TunnelingEventHandler(final MessageChannel channel, final DSOMBeanConfig config) {
     this.channel = channel;
     this.channel.addListener(this);
-    this.uuid = uuid;
+    this.config = config;
     acceptOk = false;
     jmxReadyLock = new Object();
     localJmxServerReady = new SetOnceFlag();
@@ -61,7 +64,7 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
   }
 
   public UUID getUUID() {
-    return uuid;
+    return config.getUUID();
   }
 
   @Override
@@ -95,7 +98,7 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
   }
 
   protected synchronized MessageConnection accept() throws IOException {
-    while (!acceptOk) {
+    while (!acceptOk && !stopAccept) {
       try {
         wait();
       } catch (InterruptedException ie) {
@@ -105,6 +108,11 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
     }
     acceptOk = false;
     return messageConnection;
+  }
+
+  protected synchronized void stopAccept() {
+    stopAccept = true;
+    notifyAll();
   }
 
   private synchronized void reset() {
@@ -141,6 +149,12 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
     sendJmxReadyMessageIfNecessary();
   }
 
+  public boolean isTunnelingReady() {
+    synchronized (jmxReadyLock) {
+      return localJmxServerReady.isSet() && transportConnected;
+    }
+  }
+
   /**
    * Once the local JMX server has successfully started (this happens in a background thread as DSO is so early in the
    * startup process that the system JMX server in 1.5+ can't be created inline with other initialization) we send a
@@ -150,7 +164,7 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
   private void sendJmxReadyMessageIfNecessary() {
     final boolean send;
     synchronized (jmxReadyLock) {
-      send = localJmxServerReady.isSet() && transportConnected && !sentReadyMessage;
+      send = isTunnelingReady() && !sentReadyMessage;
       if (send) {
         sentReadyMessage = true;
       }
@@ -161,7 +175,7 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
     if (send) {
       logger.info("Client JMX server ready; sending notification to L2 server");
       L1JmxReady readyMessage = (L1JmxReady) channel.createMessage(TCMessageType.CLIENT_JMX_READY_MESSAGE);
-      readyMessage.initialize(uuid);
+      readyMessage.initialize(config.getUUID(), config.getTunneledDomains());
       readyMessage.send();
     }
 
@@ -184,4 +198,5 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
   public void shutdown() {
     // Ignore
   }
+
 }

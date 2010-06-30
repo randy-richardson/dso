@@ -17,11 +17,12 @@ if [ "$jetty_instance" = "" ]; then
   exit 1
 fi
 
+unset CDPATH
 root=`dirname $0`/..
 root=`cd $root && pwd`
 
 jetty_work_dir=$root/jetty6.1/$jetty_instance
-jetty_home=$root/../../../vendors/jetty-6.1.15
+jetty_home=$root/../../../third-party/jetty-6.1.15
 start_jar=$jetty_home/start.jar
 stop_port=$((jetty_instance + 2))
 

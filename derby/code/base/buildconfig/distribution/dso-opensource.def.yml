@@ -20,22 +20,22 @@ bundled_demos:
         - townsend
 bundled_vendors:
    - jetty-6.1.15:
-       install_directory: vendors/jetty-6.1.15
+       install_directory: third-party/jetty-6.1.15
 bundled_components:
   - base:
       documentations:
         notices:
           - README
-          - releasenotes
-          - thirdpartylicenses
-          - disclaimer
-          - license
+          - RELEASE-NOTES
+          - THIRD-PARTY-LICENSES
+          - DISCLAIMER
+          - LICENSE
           - INSTALL
         guides:
-          - TerracottaQuickStart
+          - QUICK-START
   - express-base:
       documentations:
-        install_directory: docs
+        install_directory: config-samples
         references:
           - tc-config-express-reference
   - shared-base:
@@ -51,20 +51,11 @@ bundled_components:
             add_dependencies: true
             modules:
               - dso-l1
-        - terracotta-jmx-api:
-            install_directory: lib
-            modules:
-              - common-api
-              - deploy-api
-              - dso-l1-api
-              - dso-l2-common
-              - dso-statistics-api
-              - management-api      
         - test-api:
             # install in 'api-jars' folder so it can be deleted later
             install_directory: api-jars
             source: tests.base
-            filter: "**/*TestApp.class"
+            filter: "**/*TestApp*.class"
             modules:
               - common-api
               - common
@@ -145,9 +136,19 @@ postscripts:
       args:
         - platform/samples/pojo
         - sessions/samples
+  - package-sources:
+      args:
+        - artifact: terracotta-sources
+          includes: **/src*/**
+          excludes: **/build.eclipse/**, **/build/**
+          dest: build/sources
+        - artifact: test-api-sources
+          includes: **/tests*/**
+          excludes: **/build.eclipse/**, **/build/**, **/*TestApp.java, **/*Test.java
+          dest: build/sources
   - maven-deploy:
       args:
-        - artifact_count: 10
+        - artifact_count: 11
         - groupId: org.terracotta
           artifact: parent
           srcfile: pom.xml
@@ -159,7 +160,12 @@ postscripts:
         - groupId: org.terracotta
           artifact: terracotta-l1-parent
           srcfile: poms/terracotta-l1-parent-pom.xml
-          pom: poms/terracotta-l1-parent-pom.xml        
+          pom: poms/terracotta-l1-parent-pom.xml       
+        - groupId: org.terracotta
+          artifact: terracotta
+          classifier: sources
+          srcfile: build/sources/terracotta-sources.jar
+          pom: poms/terracotta-pom.xml
         - groupId: org.terracotta
           artifact: terracotta
           file: lib/tc.jar
@@ -185,12 +191,11 @@ postscripts:
           artifact: tcstats
           file: lib/tcstats-xmlbeans-generated.jar
           pom: poms/tcstats-pom.xml
-        - groupId: org.terracotta
-          artifact: terracotta-jmx-api
-          file: lib/terracotta-jmx-api.jar
-          pom: poms/terracotta-jmx-api-pom.xml
-          inject: 
-            - lib/resources/build-data.txt
+        - groupId: org.terracotta.api
+          artifact: test-api
+          classifier: sources
+          srcfile: build/sources/test-api-sources.jar
+          pom: poms/terracotta-test-api-pom.xml
         - groupId: org.terracotta.api
           artifact: test-api
           file: api-jars/test-api.jar

@@ -10,6 +10,20 @@ default_repos:
 artifacts:
   - maven_artifact: true
     groupId: org.terracotta
-    artifactId: terracotta-express-runtime
+    artifactId: terracotta-toolkit-1.0-runtime
     version: 1.0.0-SNAPSHOT
     destination: common
+    
+  - maven_artifact: true
+    groupId: org.terracotta
+    artifactId: terracotta-toolkit-1.0-runtime
+    version: 1.0.0-SNAPSHOT
+    classifier: javadoc
+    destination: common/docs/javadoc
+    explode: true
+
+  - maven_artifact: true
+    groupId: net.sf.ehcache
+    artifactId: ehcache-terracotta
+    version: 2.2.0-SNAPSHOT
+    destination: ehcache

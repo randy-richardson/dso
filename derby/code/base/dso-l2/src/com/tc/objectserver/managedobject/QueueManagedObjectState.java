@@ -10,6 +10,7 @@ import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
 import com.tc.object.dna.api.PhysicalAction;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.util.Assert;
@@ -45,7 +46,7 @@ public class QueueManagedObjectState extends LogicalManagedObjectState {
     references = new LinkedList();
   }
 
-  public void apply(ObjectID objectID, DNACursor cursor, BackReferences includeIDs) throws IOException {
+  public void apply(ObjectID objectID, DNACursor cursor, ApplyTransactionInfo includeIDs) throws IOException {
     while (cursor.next()) {
       Object action = cursor.getAction();
       if (action instanceof LogicalAction) {
@@ -60,7 +61,7 @@ public class QueueManagedObjectState extends LogicalManagedObjectState {
     }
   }
 
-  private void updateReference(ObjectID objectID, String fieldName, Object value, BackReferences includeIDs) {
+  private void updateReference(ObjectID objectID, String fieldName, Object value, ApplyTransactionInfo includeIDs) {
     if (TAKE_LOCK_FIELD_NAME.equals(fieldName)) {
       takeLockField = (ObjectID) value;
       getListener().changed(objectID, null, takeLockField);
@@ -74,7 +75,7 @@ public class QueueManagedObjectState extends LogicalManagedObjectState {
     }
   }
 
-  public void applyMethod(ObjectID objectID, BackReferences includeIDs, int method, Object[] params) {
+  public void applyMethod(ObjectID objectID, ApplyTransactionInfo includeIDs, int method, Object[] params) {
     switch (method) {
       case SerializationUtil.PUT:
         addChangeToCollector(objectID, params[0], includeIDs);
@@ -103,7 +104,7 @@ public class QueueManagedObjectState extends LogicalManagedObjectState {
   }
 
   // Since LinkedBlockingQueue supports partial collection, we are not adding it to back references
-  private void addChangeToCollector(ObjectID objectID, Object newValue, BackReferences includeIDs) {
+  private void addChangeToCollector(ObjectID objectID, Object newValue, ApplyTransactionInfo includeIDs) {
     if (newValue instanceof ObjectID) {
       getListener().changed(objectID, null, (ObjectID) newValue);
     }
@@ -123,7 +124,7 @@ public class QueueManagedObjectState extends LogicalManagedObjectState {
     }
   }
 
-  public void dehydrate(ObjectID objectID, DNAWriter writer) {
+  public void dehydrate(ObjectID objectID, DNAWriter writer, DNAType type) {
     dehydrateFields(objectID, writer);
     dehydrateMembers(objectID, writer);
   }

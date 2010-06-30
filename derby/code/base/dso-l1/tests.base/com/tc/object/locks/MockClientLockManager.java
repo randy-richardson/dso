@@ -189,4 +189,5 @@ public class MockClientLockManager implements ClientLockManager {
   public PrettyPrinter prettyPrint(PrettyPrinter out) {
     throw new ImplementMe();
   }
+
 }

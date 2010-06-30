@@ -12,29 +12,30 @@ import com.tc.util.Assert;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Collections;
 import java.util.List;
 
 public class ExtraL1ProcessControl extends ExtraProcessServerControl {
 
-  private final Class    mainClass;
-  private final String[] mainArgs;
-  private final File     directory;
+  private final Class        mainClass;
+  private final List<String> mainArgs;
+  private final File         directory;
 
-  public ExtraL1ProcessControl(String l2Host, int dsoPort, Class mainClass, String configFileLoc, String[] mainArgs,
-                               File directory, List extraJvmArgs) {
+  public ExtraL1ProcessControl(String l2Host, int dsoPort, Class mainClass, String configFileLoc,
+                               List<String> mainArgs, File directory, List extraJvmArgs) {
     super(new DebugParams(), l2Host, dsoPort, 0, configFileLoc, true, extraJvmArgs);
     this.mainClass = mainClass;
-    this.mainArgs = mainArgs;
+    this.mainArgs = mainArgs == null ? Collections.EMPTY_LIST : mainArgs;
     this.directory = directory;
 
     setJVMArgs();
   }
 
-  public ExtraL1ProcessControl(String l2Host, int dsoPort, Class mainClass, String configFileLoc, String[] mainArgs,
-                               File directory, List extraJvmArgs, boolean mergeOutput) {
+  public ExtraL1ProcessControl(String l2Host, int dsoPort, Class mainClass, String configFileLoc,
+                               List<String> mainArgs, File directory, List extraJvmArgs, boolean mergeOutput) {
     super(new DebugParams(), l2Host, dsoPort, 0, configFileLoc, mergeOutput, extraJvmArgs);
     this.mainClass = mainClass;
-    this.mainArgs = mainArgs;
+    this.mainArgs = mainArgs == null ? Collections.EMPTY_LIST : mainArgs;
     this.directory = directory;
 
     setJVMArgs();
@@ -84,7 +85,7 @@ public class ExtraL1ProcessControl extends ExtraProcessServerControl {
   }
 
   @Override
-  protected String[] getMainClassArguments() {
+  protected List<String> getMainClassArguments() {
     return mainArgs;
   }
 

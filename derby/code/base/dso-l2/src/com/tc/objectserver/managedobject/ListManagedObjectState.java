@@ -9,6 +9,7 @@ import com.tc.object.SerializationUtil;
 import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 
@@ -37,7 +38,7 @@ public class ListManagedObjectState extends LogicalManagedObjectState {
     references = new ArrayList(1);
   }
 
-  public void apply(ObjectID objectID, DNACursor cursor, BackReferences includeIDs) throws IOException {
+  public void apply(ObjectID objectID, DNACursor cursor, ApplyTransactionInfo includeIDs) throws IOException {
     while (cursor.next()) {
       LogicalAction action = cursor.getLogicalAction();
       int method = action.getMethod();
@@ -46,7 +47,7 @@ public class ListManagedObjectState extends LogicalManagedObjectState {
     }
   }
 
-  protected void applyOperation(int method, ObjectID objectID, BackReferences includeIDs, Object[] params)
+  protected void applyOperation(int method, ObjectID objectID, ApplyTransactionInfo includeIDs, Object[] params)
       throws AssertionError {
     switch (method) {
       case SerializationUtil.ADD:
@@ -138,7 +139,7 @@ public class ListManagedObjectState extends LogicalManagedObjectState {
     }
   }
 
-  protected void addChangeToCollector(ObjectID objectID, Object newValue, BackReferences includeIDs) {
+  protected void addChangeToCollector(ObjectID objectID, Object newValue, ApplyTransactionInfo includeIDs) {
     if (newValue instanceof ObjectID) {
       getListener().changed(objectID, null, (ObjectID) newValue);
       includeIDs.addBackReference((ObjectID) newValue, objectID);
@@ -149,7 +150,7 @@ public class ListManagedObjectState extends LogicalManagedObjectState {
     addAllObjectReferencesFromIteratorTo(references.iterator(), refs);
   }
 
-  public void dehydrate(ObjectID objectID, DNAWriter writer) {
+  public void dehydrate(ObjectID objectID, DNAWriter writer, DNAType type) {
     for (Iterator i = references.iterator(); i.hasNext();) {
       Object value = i.next();
       writer.addLogicalAction(SerializationUtil.ADD, new Object[] { value });

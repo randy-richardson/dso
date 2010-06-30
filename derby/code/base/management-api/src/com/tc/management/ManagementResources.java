@@ -26,18 +26,6 @@ class ManagementResources {
     return resources.getString("domain.tim");
   }
 
-  String getEhCacheMBeanDomain() {
-    return resources.getString("domain.ehcache");
-  }
-
-  String getEhCacheHibernateMBeanDomain() {
-    return resources.getString("domain.ehcache.hibernate");
-  }
-
-  String getQuartzMBeanDomain() {
-    return resources.getString("domain.quartz");
-  }
-
   String getNodeNameSystemProperty() {
     return resources.getString("system-property.node-name");
   }
@@ -88,5 +76,9 @@ class ManagementResources {
 
   String getNoneSubsystem() {
     return TerracottaManagement.quoteIfNecessary(resources.getString("subsystem.none"));
+  }
+
+  public String getTerracottaOperatorEventType() {
+    return TerracottaManagement.quoteIfNecessary(resources.getString("type.tc-operator-events"));
   }
 }

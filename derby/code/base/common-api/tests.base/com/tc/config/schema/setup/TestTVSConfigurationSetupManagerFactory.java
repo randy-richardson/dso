@@ -238,13 +238,12 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     //
     // // Make servers use dynamic ports, by default.
     // ((SettableConfigItem) l2DSOConfig().listenPort()).setValue(0);
-    ((SettableConfigItem) l2CommonConfig().jmxPort()).setValue(0);
+//    ((SettableConfigItem) l2CommonConfig().jmxPort()).setValue(0);
 
     // We also set the data and log directories to strings that shouldn't be valid on any platform: you need to set
     // these yourself before you use this config. If you don't, you'll write all over the place as we create 'data' and
     // 'logs' directories willy-nilly. Don't do that.
     ((SettableConfigItem) l1CommonConfig().logsPath()).setValue(BOGUS_FILENAME);
-    ((SettableConfigItem) l1CommonConfig().statisticsPath()).setValue(BOGUS_FILENAME);
     ((SettableConfigItem) l2CommonConfig().dataPath()).setValue(BOGUS_FILENAME);
     ((SettableConfigItem) l2CommonConfig().logsPath()).setValue(BOGUS_FILENAME);
     ((SettableConfigItem) l2CommonConfig().statisticsPath()).setValue(BOGUS_FILENAME);
@@ -377,6 +376,18 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
     isConfigDone = true;
   }
+  
+  // This is needed for add-new-stripe test. 
+  // Allowing a new stripe be added to existing L1 config. Refer DEV-3989.
+  public void appendNewServersAndGroupToL1Config(int gn, String groupName, String[] name, int[] dsoPorts, int[] jmxPorts) {
+
+    for (int i = 0; i < name.length; i++) {
+      addServerToL1Config(name[i], dsoPorts[i], jmxPorts[i], false);
+    }
+
+    addServerGroupToL1Config(gn, groupName, name);
+  }
+
 
   private void assertIfCalledBefore() throws AssertionError {
     if (isConfigDone) throw new AssertionError("Config factory not used properly. Servers were added more than once.");
@@ -409,10 +420,12 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     newL2.setName(name);
     newL2.setHost(TestConfigBeanSet.DEFAULT_HOST);
 
-    newL2.setDsoPort(dsoPort);
+    newL2.addNewDsoPort();
+    newL2.getDsoPort().setIntValue(dsoPort);
 
     if (jmxPort >= 0) {
-      newL2.setJmxPort(jmxPort);
+      newL2.addNewJmxPort();
+      newL2.getJmxPort().setIntValue(jmxPort);
     }
 
     newL2.setData(BOGUS_FILENAME);

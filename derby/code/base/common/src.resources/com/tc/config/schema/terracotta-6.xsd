@@ -646,7 +646,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="dso-port" type="port" minOccurs="0"
+      <xs:element name="dso-port" type="bind-port" minOccurs="0" maxOccurs="1"
         default="9510">
         <xs:annotation>
           <xs:documentation>
@@ -660,7 +660,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="jmx-port" type="port" minOccurs="0">
+      <xs:element name="jmx-port" type="bind-port" minOccurs="0" maxOccurs="1">
         <xs:annotation>
           <xs:documentation>
             On what port should the server listen for
@@ -674,7 +674,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="l2-group-port" type="port" minOccurs="0">
+      <xs:element name="l2-group-port" type="bind-port" minOccurs="0" maxOccurs="1">
         <xs:annotation>
           <xs:documentation>
             Port for server to server communication which must
@@ -794,38 +794,6 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="statistics" type="path" minOccurs="0"
-        default="statistics-%i">
-        <xs:annotation>
-          <xs:documentation>
-            Where should the client store statistics
-            data that is being buffered?
-
-            This value undergoes parameter substitution
-            before being used; thus, a value like
-            'statistics-data-%h' would expand to
-            'statistics-data-banana' if running on host
-            'banana'.
-
-            If this is a relative path, then it is
-            interpreted relative to the current working
-            directory of the client (that is, the directory
-            you were in when you started the program that
-            uses Terracotta services). It is thus
-            recommended that you specify an absolute path
-            here.
-
-            Default: 'statistics-%i';
-
-            this places the logs in a directory relative to
-            the directory you were in when you invoked the
-            program that uses Terracotta services (your
-            client), and calls that directory, for example,
-            'statistics-10.0.0.57' if the machine that the client
-            is on has assigned IP address 10.0.0.57.
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
       <xs:element name="dso" type="dso-client-data"
         minOccurs="0">
         <xs:annotation>
@@ -898,6 +866,21 @@
     </xs:sequence>
   </xs:complexType>
 
+  <xs:complexType name="bind-port">
+  	<xs:simpleContent>
+      <xs:extension base="port">
+        <xs:attribute name="bind" type="non-blank-token" use="optional">
+      	  <xs:annotation>
+            <xs:documentation>
+              The address this server should bind its network listeners to. By default network listeners
+              will be available on all local addresses (ie. 0.0.0.0)
+            </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  
   <xs:complexType name="mirror-groups">
     <xs:annotation>
         <xs:documentation>

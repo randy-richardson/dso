@@ -27,9 +27,9 @@ public class ManagedObjectReportTest extends AbstractDBUtilsTestBase {
     // wait for checkpoint to flush log to oid store
     ThreadUtil.reallySleep(TCPropertiesImpl.getProperties()
         .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_LOADOBJECTID_CHECKPOINT_MAXSLEEP) + 100);
-
+    
     managedObjectReport.report();
-    assertEquals(managedObjectReport.totalCounter.get(), 202);
+    assertEquals(managedObjectReport.totalCounter.get(), 101);
     assertEquals(managedObjectReport.doesNotExistInSet.size(), 101);
     assertEquals(managedObjectReport.objectIDIsNullCounter.get(), 0);
     assertEquals(managedObjectReport.nullObjectIDSet.size(), 0);
