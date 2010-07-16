@@ -42,46 +42,20 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-<<<<<<< .working
-    env = newDBEnvironment();
-    SleepycatSerializationAdapterFactory sleepycatSerializationAdapterFactory = new SleepycatSerializationAdapterFactory(
-                                                                                                                         env);
-=======
     this.env = newDBEnvironment();
-    final SleepycatSerializationAdapterFactory sleepycatSerializationAdapterFactory = new SleepycatSerializationAdapterFactory();
->>>>>>> .merge-right.r15747
-
+    final SleepycatSerializationAdapterFactory sleepycatSerializationAdapterFactory = new SleepycatSerializationAdapterFactory(
+                                                                                                                               env);
     final SleepycatPersistor persistor = new SleepycatPersistor(this.logger, this.env,
                                                                 sleepycatSerializationAdapterFactory);
 
-<<<<<<< .working
-    ptp = new TestPersistenceTransactionProvider();
-    SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
-    SleepycatCollectionsPersistor sleepycatCollectionsPersistor = new SleepycatCollectionsPersistor(logger, env
-        .getMapsDatabase(), sleepycatCollectionFactory);
-=======
     this.ptp = new TestPersistenceTransactionProvider();
-    final CursorConfig rootDBCursorConfig = new CursorConfig();
     final SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
-    final SleepycatCollectionsPersistor sleepycatCollectionsPersistor = new SleepycatCollectionsPersistor(
-                                                                                                          this.logger,
-                                                                                                          this.env
-                                                                                                              .getMapsDatabase(),
-                                                                                                          sleepycatCollectionFactory);
->>>>>>> .merge-right.r15747
-
-<<<<<<< .working
-    managedObjectPersistor = new ManagedObjectPersistorImpl(logger, sleepycatSerializationAdapterFactory, env,
-                                                            new TestMutableSequence(), env.getRootDatabase(), ptp,
-                                                            sleepycatCollectionsPersistor, env.isParanoidMode(),
-                                                            new ObjectStatsRecorder());
-=======
-    this.managedObjectPersistor = new ManagedObjectPersistorImpl(this.logger, this.env.getClassCatalogWrapper()
-        .getClassCatalog(), sleepycatSerializationAdapterFactory, this.env, new TestMutableSequence(), this.env
-        .getRootDatabase(), rootDBCursorConfig, this.ptp, sleepycatCollectionsPersistor, this.env.isParanoidMode(),
+    final SleepycatCollectionsPersistor sleepycatCollectionsPersistor = new SleepycatCollectionsPersistor(logger, env
+        .getMapsDatabase(), sleepycatCollectionFactory);
+    this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger, sleepycatSerializationAdapterFactory, env,
+                                                                 new TestMutableSequence(), env.getRootDatabase(), ptp,
+                                                                 sleepycatCollectionsPersistor, env.isParanoidMode(),
                                                                  new ObjectStatsRecorder());
->>>>>>> .merge-right.r15747
-
     final NullManagedObjectChangeListenerProvider listenerProvider = new NullManagedObjectChangeListenerProvider();
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(listenerProvider, persistor);

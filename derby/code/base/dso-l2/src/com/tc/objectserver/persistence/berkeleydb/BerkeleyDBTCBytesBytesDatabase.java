@@ -55,7 +55,7 @@ public class BerkeleyDBTCBytesBytesDatabase extends AbstractBerkeleyDatabase imp
     entryKey.setData(key);
     DatabaseEntry entryValue = new DatabaseEntry();
     entryValue.setData(value);
-    OperationStatus status = this.db.putNoOverwrite(pt2nt(tx), entryValue, entryKey);
+    OperationStatus status = this.db.putNoOverwrite(pt2nt(tx), entryKey, entryValue);
     return status.equals(OperationStatus.SUCCESS) ? Status.SUCCESS : Status.NOT_SUCCESS;
   }
 

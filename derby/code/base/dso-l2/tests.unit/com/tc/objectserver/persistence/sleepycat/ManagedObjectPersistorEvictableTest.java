@@ -4,8 +4,6 @@
  */
 package com.tc.objectserver.persistence.sleepycat;
 
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
 import com.tc.async.impl.MockSink;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -22,6 +20,7 @@ import com.tc.objectserver.managedobject.ApplyTransactionInfo;
 import com.tc.objectserver.managedobject.ManagedObjectTraverser;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
+import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.TestMutableSequence;
@@ -50,7 +49,7 @@ public class ManagedObjectPersistorEvictableTest extends TCTestCase {
   private PersistentManagedObjectStore      objectStore;
   private PersistenceTransactionProvider    persistenceTransactionProvider;
   private TestSleepycatCollectionsPersistor testSleepycatCollectionsPersistor;
-  private DBEnvironment                     env;
+  private BerkeleyDBEnvironment             env;
   private FastObjectIDManagerImpl           oidManager;
 
   // Passing across tests
@@ -68,13 +67,14 @@ public class ManagedObjectPersistorEvictableTest extends TCTestCase {
     this.env = newDBEnvironment(paranoid);
     this.env.open();
     this.persistenceTransactionProvider = new SleepycatPersistenceTransactionProvider(this.env.getEnvironment());
-    final CursorConfig rootDBCursorConfig = new CursorConfig();
     final SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
     this.testSleepycatCollectionsPersistor = new TestSleepycatCollectionsPersistor(logger, this.env.getMapsDatabase(),
                                                                                    sleepycatCollectionFactory);
-    this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger, this.env.getClassCatalogWrapper()
-        .getClassCatalog(), new SleepycatSerializationAdapterFactory(), this.env, new TestMutableSequence(), this.env
-        .getRootDatabase(), rootDBCursorConfig, this.persistenceTransactionProvider,
+    this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger,
+                                                                 new SleepycatSerializationAdapterFactory(this.env),
+                                                                 this.env, new TestMutableSequence(), this.env
+                                                                     .getRootDatabase(),
+                                                                 this.persistenceTransactionProvider,
                                                                  this.testSleepycatCollectionsPersistor, this.env
                                                                      .isParanoidMode(), new ObjectStatsRecorder());
     this.objectStore = new PersistentManagedObjectStore(this.managedObjectPersistor, new MockSink());
@@ -93,13 +93,13 @@ public class ManagedObjectPersistorEvictableTest extends TCTestCase {
     return false;
   }
 
-  private DBEnvironment newDBEnvironment(final boolean paranoid) throws Exception {
+  private BerkeleyDBEnvironment newDBEnvironment(final boolean paranoid) throws Exception {
     File dbHome = new File(getTempDirectory(), getClass().getName() + "db");
     dbHome.mkdir();
     assertTrue(dbHome.exists());
     assertTrue(dbHome.isDirectory());
     System.out.println("DB Home: " + dbHome);
-    return new DBEnvironment(paranoid, dbHome);
+    return new BerkeleyDBEnvironment(paranoid, dbHome);
   }
 
   private HashSet<ManagedObject> createPhyscalObjects(final int num) {
@@ -337,14 +337,14 @@ public class ManagedObjectPersistorEvictableTest extends TCTestCase {
   private class TestSleepycatCollectionsPersistor extends SleepycatCollectionsPersistor {
     private int counter;
 
-    public TestSleepycatCollectionsPersistor(final TCLogger logger, final Database mapsDatabase,
+    public TestSleepycatCollectionsPersistor(final TCLogger logger, final TCMapsDatabase mapsDatabase,
                                              final SleepycatCollectionFactory sleepycatCollectionFactory) {
       super(logger, mapsDatabase, sleepycatCollectionFactory);
     }
 
     @Override
     public long deleteAllCollections(PersistenceTransactionProvider ptp, SortedSet<ObjectID> mapIds,
-                                    SortedSet<ObjectID> mapObjectIds) {
+                                     SortedSet<ObjectID> mapObjectIds) {
       this.counter += mapIds.size();
       return counter;
     }

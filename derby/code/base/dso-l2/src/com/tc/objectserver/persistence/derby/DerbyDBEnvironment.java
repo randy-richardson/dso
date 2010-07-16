@@ -184,6 +184,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     newBytesToBlobDB(OBJECT_OID_STORE_DB_NAME, connection);
     newBytesToBlobDB(MAPS_OID_STORE_DB_NAME, connection);
     newBytesToBlobDB(OID_STORE_LOG_DB_NAME, connection);
+    newBytesToBlobDB(EVICTABLE_OID_STORE_DB_NAME, connection);
     newLongDB(CLIENT_STATE_DB_NAME, connection);
     newBytesToBlobDB(TRANSACTION_DB_NAME, connection);
     newIntToBytesDB(CLASS_DB_NAME, connection);
@@ -297,6 +298,11 @@ public class DerbyDBEnvironment implements DBEnvironment {
   public synchronized TCBytesToBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCBytesToBlobDB) tables.get(OID_STORE_LOG_DB_NAME);
+  }
+
+  public synchronized TCBytesToBytesDatabase getEvictableOidStoreDatabase() throws TCDatabaseException {
+    assertOpen();
+    return (DerbyTCBytesToBlobDB) tables.get(EVICTABLE_OID_STORE_DB_NAME);
   }
 
   public synchronized TCRootDatabase getRootDatabase() throws TCDatabaseException {

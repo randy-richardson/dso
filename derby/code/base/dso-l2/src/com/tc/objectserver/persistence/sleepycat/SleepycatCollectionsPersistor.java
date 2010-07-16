@@ -12,6 +12,8 @@ import com.tc.logging.TCLogger;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObjectState;
 import com.tc.objectserver.managedobject.PersistableObjectState;
+import com.tc.objectserver.persistence.TCDatabaseCursor;
+import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.TCMapsDatabase;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
@@ -20,6 +22,7 @@ import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor.SleepycatPer
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
+import com.tc.util.Conversion;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,28 +32,19 @@ import java.util.SortedSet;
 
 public class SleepycatCollectionsPersistor extends SleepycatPersistorBase {
 
-<<<<<<< .working
   private final TCMapsDatabase             database;
-=======
   private static final int                 DELETE_BATCH_SIZE = TCPropertiesImpl
                                                                  .getProperties()
                                                                  .getInt(
                                                                          TCPropertiesConsts.L2_OBJECTMANAGER_DELETEBATCHSIZE,
                                                                          5000);
-  private final Database                   database;
->>>>>>> .merge-right.r15747
   private final BasicSerializer            serializer;
   private final ByteArrayOutputStream      bao;
   private final SleepycatCollectionFactory collectionFactory;
   private final TCObjectOutputStream       oo;
 
-<<<<<<< .working
-  public SleepycatCollectionsPersistor(TCLogger logger, TCMapsDatabase mapsDatabase,
-                                       SleepycatCollectionFactory sleepycatCollectionFactory) {
-=======
-  public SleepycatCollectionsPersistor(final TCLogger logger, final Database mapsDatabase,
+  public SleepycatCollectionsPersistor(final TCLogger logger, final TCMapsDatabase mapsDatabase,
                                        final SleepycatCollectionFactory sleepycatCollectionFactory) {
->>>>>>> .merge-right.r15747
     this.database = mapsDatabase;
     this.collectionFactory = sleepycatCollectionFactory;
     final DSOSerializerPolicy policy = new DSOSerializerPolicy();
@@ -116,14 +110,6 @@ public class SleepycatCollectionsPersistor extends SleepycatPersistorBase {
    * @param extantMapTypeOidSet - a copy of the map OIDs
    * @throws TCDatabaseException
    */
-<<<<<<< .working
-  public boolean deleteCollection(PersistenceTransaction tx, ObjectID id) throws TCDatabaseException {
-    // XXX:: Since we read in one direction and since we have to read the first record of the next map to break out, we
-    // need this to avoid deadlocks between commit thread and DGC thread. Hence READ_COMMITTED
-    int written = database.deleteCollection(id.toLong(), tx);
-    if (written > 0) { return true; }
-    return false;
-=======
   public long deleteAllCollections(final PersistenceTransactionProvider ptp, final SortedSet<ObjectID> oids,
                                    final SortedSet<ObjectID> extantMapTypeOidSet) throws TCDatabaseException {
 
@@ -153,11 +139,8 @@ public class SleepycatCollectionsPersistor extends SleepycatPersistorBase {
       // probably a good idea to commit irrespective of mapEntriesDeleted
       tx.commit();
     }
->>>>>>> .merge-right.r15747
     return totalEntriesDeleted;
   }
-<<<<<<< .working
-=======
 
   /**
    * <p>
@@ -175,42 +158,21 @@ public class SleepycatCollectionsPersistor extends SleepycatPersistorBase {
    * @return number of entries in Maps database deleted, if less than DELETE_BATCH_SIZE, then there could be more
    *         entries for the same map ID.
    */
-  private int markForDeletion(final ObjectID id, final PersistenceTransaction tx) throws TCDatabaseException {
+  private int markForDeletion(final ObjectID id, final PersistenceTransaction tx) {
     int mapEntriesDeleted = 0;
     final byte idb[] = Conversion.long2Bytes(id.toLong());
-    final DatabaseEntry key = new DatabaseEntry();
-    key.setData(idb);
-    final DatabaseEntry value = new DatabaseEntry();
-    value.setPartial(0, 0, true);
-    final Cursor c = this.database.openCursor(pt2nt(tx), CursorConfig.READ_UNCOMMITTED);
-    if (c.getSearchKeyRange(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-      try {
-        do {
-          if (partialMatch(idb, key.getData())) {
-            c.delete();
-            mapEntriesDeleted++;
-          } else {
-            break;
-          }
-        } while (mapEntriesDeleted < DELETE_BATCH_SIZE
-                 && c.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS);
-      } catch (final Exception t) {
-        throw new TCDatabaseException(t.getMessage());
-      } finally {
-        c.close();
+    final TCDatabaseEntry entry = new TCDatabaseEntry();
+    entry.setKey(idb);
+    final TCDatabaseCursor<byte[], byte[]> cursor = this.database.openCursor(tx, id.toLong());
+    try {
+      while (mapEntriesDeleted <= DELETE_BATCH_SIZE && cursor.getNext(entry)) {
+        cursor.delete();
+        mapEntriesDeleted++;
       }
+    } finally {
+      cursor.close();
     }
 
     return mapEntriesDeleted;
   }
-
-  private boolean partialMatch(final byte[] idbytes, final byte[] key) {
-    if (key.length < idbytes.length) { return false; }
-    for (int i = 0; i < idbytes.length; i++) {
-      if (idbytes[i] != key[i]) { return false; }
-    }
-    return true;
-  }
-
->>>>>>> .merge-right.r15747
 }

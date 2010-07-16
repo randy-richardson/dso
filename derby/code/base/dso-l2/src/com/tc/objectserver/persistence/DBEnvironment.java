@@ -13,20 +13,21 @@ import java.io.File;
 
 // This should be the class which should be used by Derby Db environment and Berkeley db env
 public interface DBEnvironment {
-  static final String GLOBAL_SEQUENCE_DATABASE = "global_sequence_db";
-  static final String ROOT_DB_NAME             = "roots";
-  static final String OBJECT_DB_NAME           = "objects";
-  static final String OBJECT_OID_STORE_DB_NAME = "objects_oid_store";
-  static final String MAPS_OID_STORE_DB_NAME   = "mapsdatabase_oid_store";
-  static final String OID_STORE_LOG_DB_NAME    = "oid_store_log";
+  static final String GLOBAL_SEQUENCE_DATABASE    = "global_sequence_db";
+  static final String ROOT_DB_NAME                = "roots";
+  static final String OBJECT_DB_NAME              = "objects";
+  static final String OBJECT_OID_STORE_DB_NAME    = "objects_oid_store";
+  static final String MAPS_OID_STORE_DB_NAME      = "mapsdatabase_oid_store";
+  static final String OID_STORE_LOG_DB_NAME       = "oid_store_log";
+  static final String EVICTABLE_OID_STORE_DB_NAME = "evictable_oid_store";
 
-  static final String CLIENT_STATE_DB_NAME     = "clientstates";
-  static final String TRANSACTION_DB_NAME      = "transactions";
-  static final String STRING_INDEX_DB_NAME     = "stringindex";
-  static final String CLASS_DB_NAME            = "classdefinitions";
-  static final String MAP_DB_NAME              = "mapsdatabase";
-  static final String CLUSTER_STATE_STORE      = "clusterstatestore";
-  static final String CONTROL_DB               = "controldb";
+  static final String CLIENT_STATE_DB_NAME        = "clientstates";
+  static final String TRANSACTION_DB_NAME         = "transactions";
+  static final String STRING_INDEX_DB_NAME        = "stringindex";
+  static final String CLASS_DB_NAME               = "classdefinitions";
+  static final String MAP_DB_NAME                 = "mapsdatabase";
+  static final String CLUSTER_STATE_STORE         = "clusterstatestore";
+  static final String CONTROL_DB                  = "controldb";
 
   enum DBEnvironmentStatus {
     STATUS_INIT, STATUS_ERROR, STATUS_OPENING, STATUS_OPEN, STATUS_CLOSING, STATUS_CLOSED
@@ -51,6 +52,8 @@ public interface DBEnvironment {
   public abstract TCBytesToBytesDatabase getMapsOidStoreDatabase() throws TCDatabaseException;
 
   public abstract TCBytesToBytesDatabase getOidStoreLogDatabase() throws TCDatabaseException;
+
+  public abstract TCBytesToBytesDatabase getEvictableOidStoreDatabase() throws TCDatabaseException;
 
   public abstract TCRootDatabase getRootDatabase() throws TCDatabaseException;
 

@@ -43,8 +43,8 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
   private SleepycatPersistor    customSerializerPersistor;
 
   private boolean               paranoid;
-  private BerkeleyDBEnvironment         sleepycatSerializerEnvironment;
-  private BerkeleyDBEnvironment         customSerializerEnvironment;
+  private BerkeleyDBEnvironment sleepycatSerializerEnvironment;
+  private BerkeleyDBEnvironment customSerializerEnvironment;
   private final Set             environments  = new HashSet();
   private ObjectInstanceMonitor imo;
 
@@ -57,19 +57,10 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
     // ManagedObjectChangeListenerProvider listenerProvider = new NullManagedObjectChangeListenerProvider();
 
     // set up sleepycat serializer persistor
-<<<<<<< .working
     sleepycatSerializerEnvironment = newEnvironment();
-    SerializationAdapterFactory saf = new SleepycatSerializationAdapterFactory(sleepycatSerializerEnvironment);
+    final SerializationAdapterFactory saf = new SleepycatSerializationAdapterFactory(sleepycatSerializerEnvironment);
     sleepycatSerializerPersistor = new SleepycatPersistor(new NullTCLogger(), sleepycatSerializerEnvironment, saf);
     classCatalog = (StoredClassCatalog) sleepycatSerializerEnvironment.getClassCatalogWrapper().getClassCatalog();
-=======
-    this.sleepycatSerializerEnvironment = newEnvironment();
-    final SerializationAdapterFactory saf = new SleepycatSerializationAdapterFactory();
-    this.sleepycatSerializerPersistor = new SleepycatPersistor(new NullTCLogger(), this.sleepycatSerializerEnvironment,
-                                                               saf);
-    this.classCatalog = (StoredClassCatalog) this.sleepycatSerializerEnvironment.getClassCatalogWrapper()
-        .getClassCatalog();
->>>>>>> .merge-right.r15747
 
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(new NullManagedObjectChangeListenerProvider(),
@@ -255,13 +246,8 @@ public class ManagedObjectSerializationPerformanceTest extends TCTestCase {
     envHome.mkdir();
     assertTrue(envHome.exists());
     assertTrue(envHome.isDirectory());
-<<<<<<< .working
-    BerkeleyDBEnvironment rv = new BerkeleyDBEnvironment(paranoid, envHome);
+    final BerkeleyDBEnvironment rv = new BerkeleyDBEnvironment(paranoid, envHome);
     environments.add(rv);
-=======
-    final DBEnvironment rv = new DBEnvironment(this.paranoid, envHome);
-    this.environments.add(rv);
->>>>>>> .merge-right.r15747
     return rv;
   }
 

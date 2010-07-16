@@ -92,15 +92,9 @@ public class ObjectRequestManagerTest extends TestCase {
     super.setUp();
 
     ManagedObjectStateFactory.disableSingleton(true);
-<<<<<<< .working
-    SleepycatPersistor persistor = new SleepycatPersistor(TCLogging.getLogger(ObjectRequestManagerTest.class),
-                                                          new BerkeleyDBEnvironment(true, new File(".")),
-                                                          new CustomSerializationAdapterFactory());
-=======
     final SleepycatPersistor persistor = new SleepycatPersistor(TCLogging.getLogger(ObjectRequestManagerTest.class),
-                                                                new DBEnvironment(true, new File(".")),
+                                                                new BerkeleyDBEnvironment(true, new File(".")),
                                                                 new CustomSerializationAdapterFactory());
->>>>>>> .merge-right.r15747
 
     final ManagedObjectChangeListenerProviderImpl moclp = new ManagedObjectChangeListenerProviderImpl();
     moclp.setListener(new ManagedObjectChangeListener() {

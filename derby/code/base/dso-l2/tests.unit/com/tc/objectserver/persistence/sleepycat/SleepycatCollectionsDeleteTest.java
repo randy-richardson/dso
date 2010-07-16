@@ -10,6 +10,7 @@ import com.tc.object.TestDNACursor;
 import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.objectserver.managedobject.MapManagedObjectState;
 import com.tc.objectserver.managedobject.NullManagedObjectChangeListenerProvider;
+import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.test.TCTestCase;
@@ -40,7 +41,7 @@ public class SleepycatCollectionsDeleteTest extends TCTestCase {
     final File dbHome = newDBHome();
     final TCLogger logger = TCLogging.getLogger(getClass());
     final CustomSerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
-    this.env = new DBEnvironment(true, dbHome);
+    this.env = new BerkeleyDBEnvironment(true, dbHome);
     this.persistor = new SleepycatPersistor(logger, this.env, saf);
     this.ptp = this.persistor.getPersistenceTransactionProvider();
     this.collectionsPersistor = this.persistor.getCollectionsPersistor();
@@ -74,10 +75,10 @@ public class SleepycatCollectionsDeleteTest extends TCTestCase {
     Random rand = new Random();
     SortedSet<ObjectID> deleteIds = new TreeSet<ObjectID>();
     int totalEntries = 0;
-    for(int i = 0; i < 10; i++){
+    for (int i = 0; i < 10; i++) {
       final ObjectID id = new ObjectID(i);
       final MapManagedObjectState state = (MapManagedObjectState) ManagedObjectStateFactory.getInstance()
-      .createState(id, ObjectID.NULL_ID, "java.util.HashMap", "System.loader", new TestDNACursor());
+          .createState(id, ObjectID.NULL_ID, "java.util.HashMap", "System.loader", new TestDNACursor());
       final SleepycatPersistableMap sMap = (SleepycatPersistableMap) state.getPersistentCollection();
       int entries = rand.nextInt(200000);
       System.out.println("XXX added entries:" + entries);

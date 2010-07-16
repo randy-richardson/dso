@@ -137,4 +137,8 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
     }
     return Status.SUCCESS;
   }
+
+  public long count() {
+    throw new UnsupportedOperationException();
+  }
 }

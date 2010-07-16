@@ -8,15 +8,11 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.core.api.ManagedObject;
-<<<<<<< .working
 import com.tc.objectserver.persistence.DBEnvironment;
 import com.tc.objectserver.persistence.TCBytesToBytesDatabase;
 import com.tc.objectserver.persistence.TCDatabaseCursor;
 import com.tc.objectserver.persistence.TCDatabaseEntry;
 import com.tc.objectserver.persistence.TCDatabaseConstants.Status;
-import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
-=======
->>>>>>> .merge-right.r15747
 import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.api.PersistentCollectionsUtil;
@@ -52,16 +48,10 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   private final Object                         checkpointLock             = new Object();
   private final Object                         objectIDUpdateLock         = new Object();
 
-<<<<<<< .working
   private final TCBytesToBytesDatabase         objectOidStoreDB;
   private final TCBytesToBytesDatabase         mapsOidStoreDB;
   private final TCBytesToBytesDatabase         oidStoreLogDB;
-=======
-  private final Database                       objectOidStoreDB;
-  private final Database                       mapsOidStoreDB;
-  private final Database                       evictableOidStoreDB;
-  private final Database                       oidStoreLogDB;
->>>>>>> .merge-right.r15747
+  private final TCBytesToBytesDatabase         evictableOidStoreDB;
   private final PersistenceTransactionProvider ptp;
   private final CheckpointRunner               checkpointThread;
   private final MutableSequence                sequence;
@@ -177,18 +167,9 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
   /*
    * Log the change of an ObjectID, added or deleted. Later, flush to BitsArray OidDB by checkpoint thread.
    */
-<<<<<<< .working
-  private boolean logObjectID(PersistenceTransaction tx, byte[] oids, boolean isAdd) throws TCDatabaseException {
-    boolean rtn;
-=======
-  private OperationStatus logObjectID(final PersistenceTransaction tx, final byte[] oids, final boolean isAdd)
+  private boolean logObjectID(final PersistenceTransaction tx, final byte[] oids, final boolean isAdd)
       throws TCDatabaseException {
-    final DatabaseEntry key = new DatabaseEntry();
-    key.setData(makeLogKey(isAdd));
-    final DatabaseEntry value = new DatabaseEntry();
-    value.setData(oids);
-    OperationStatus rtn;
->>>>>>> .merge-right.r15747
+    boolean rtn;
     try {
       rtn = this.oidStoreLogDB.putNoOverwrite(tx, makeLogKey(isAdd), oids) == Status.SUCCESS;
     } catch (final Exception t) {
@@ -197,15 +178,8 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     return rtn;
   }
 
-<<<<<<< .working
-  private boolean logAddObjectID(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException {
+  private boolean logAddObjectID(final PersistenceTransaction tx, final ManagedObject mo) throws TCDatabaseException {
     return logObjectID(tx, makeLogValue(mo), true);
-=======
-  private OperationStatus logAddObjectID(final PersistenceTransaction tx, final ManagedObject mo)
-      throws TCDatabaseException {
-    final OperationStatus status = logObjectID(tx, makeLogValue(mo), true);
-    return (status);
->>>>>>> .merge-right.r15747
   }
 
   /*
@@ -213,37 +187,21 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
    */
   boolean flushToCompressedStorage(final StoppedFlag stoppedFlag, final int maxProcessLimit) {
     boolean isAllFlushed = true;
-<<<<<<< .working
     synchronized (objectIDUpdateLock) {
       if (stoppedFlag.isStopped()) return isAllFlushed;
-      OidBitsArrayMapDiskStoreImpl oidStoreMap = new OidBitsArrayMapDiskStoreImpl(longsPerDiskEntry,
-                                                                                  this.objectOidStoreDB, ptp);
-      OidBitsArrayMapDiskStoreImpl mapOidStoreMap = new OidBitsArrayMapDiskStoreImpl(longsPerStateEntry,
-                                                                                     this.mapsOidStoreDB, ptp);
-=======
-    synchronized (this.objectIDUpdateLock) {
-      if (stoppedFlag.isStopped()) { return isAllFlushed; }
       final OidBitsArrayMapDiskStoreImpl oidStoreMap = new OidBitsArrayMapDiskStoreImpl(this.longsPerDiskEntry,
                                                                                         this.objectOidStoreDB);
       final OidBitsArrayMapDiskStoreImpl mapOidStoreMap = new OidBitsArrayMapDiskStoreImpl(this.longsPerStateEntry,
                                                                                            this.mapsOidStoreDB);
+
       final OidBitsArrayMapDiskStoreImpl evictableOidStoreMap = new OidBitsArrayMapDiskStoreImpl(
                                                                                                  this.longsPerStateEntry,
                                                                                                  this.evictableOidStoreDB);
-
->>>>>>> .merge-right.r15747
       PersistenceTransaction tx = null;
       try {
-<<<<<<< .working
         tx = ptp.newTransaction();
         TCDatabaseCursor<byte[], byte[]> cursor = oidStoreLogDB.openCursorUpdatable(tx);
         TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
-=======
-        tx = this.ptp.newTransaction();
-        Cursor cursor = this.oidStoreLogDB.openCursor(pt2nt(tx), CursorConfig.READ_COMMITTED);
-        final DatabaseEntry key = new DatabaseEntry();
-        final DatabaseEntry value = new DatabaseEntry();
->>>>>>> .merge-right.r15747
         int changes = 0;
         try {
           while (cursor.getNext(entry)) {
@@ -255,13 +213,9 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
               return isAllFlushed;
             }
 
-<<<<<<< .working
-            boolean isAddOper = isAddOper(entry.getKey());
-            byte[] oids = entry.getValue();
-=======
-            final boolean isAddOper = isAddOper(key.getData());
-            final byte[] oids = value.getData();
->>>>>>> .merge-right.r15747
+            final boolean isAddOper = isAddOper(entry.getKey());
+            final byte[] oids = entry.getValue();
+            
             int offset = 0;
             while (offset < oids.length) {
               final ObjectID objectID = new ObjectID(Conversion.bytes2Long(oids, offset));
@@ -306,7 +260,7 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
         }
         oidStoreMap.flushToDisk(tx);
         mapOidStoreMap.flushToDisk(tx);
-        evictableOidStoreMap.flushToDisk(pt2nt(tx));
+        evictableOidStoreMap.flushToDisk(tx);
 
         tx.commit();
         logger.debug("Checkpoint updated " + changes + " objectIDs");
@@ -402,11 +356,7 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     private final TCBytesToBytesDatabase oidDB;
     private final SyncObjectIdSet        syncObjectIDSet;
 
-<<<<<<< .working
-    public OidObjectIdReader(TCBytesToBytesDatabase oidDB, SyncObjectIdSet syncObjectIDSet) {
-=======
-    public OidObjectIdReader(final Database oidDB, final SyncObjectIdSet syncObjectIDSet) {
->>>>>>> .merge-right.r15747
+    public OidObjectIdReader(final TCBytesToBytesDatabase oidDB, final SyncObjectIdSet syncObjectIDSet) {
       this.oidDB = oidDB;
       this.syncObjectIDSet = syncObjectIDSet;
     }
@@ -420,20 +370,10 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
       final PersistenceTransaction tx = FastObjectIDManagerImpl.this.ptp.newTransaction();
       TCDatabaseCursor<byte[], byte[]> cursor = null;
       try {
-<<<<<<< .working
         cursor = oidDB.openCursor(tx);
         TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
         while (cursor.getNext(entry)) {
           OidLongArray bitsArray = new OidLongArray(entry.getKey(), entry.getValue());
-=======
-        final CursorConfig oidDBCursorConfig = new CursorConfig();
-        oidDBCursorConfig.setReadCommitted(true);
-        cursor = this.oidDB.openCursor(pt2nt(tx), oidDBCursorConfig);
-        final DatabaseEntry key = new DatabaseEntry();
-        final DatabaseEntry value = new DatabaseEntry();
-        while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-          final OidLongArray bitsArray = new OidLongArray(key.getData(), value.getData());
->>>>>>> .merge-right.r15747
           makeObjectIDFromBitsArray(bitsArray, tmp);
         }
         cursor.close();
@@ -482,13 +422,8 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
       }
     }
 
-<<<<<<< .working
     protected void safeClose(TCDatabaseCursor c) {
       if (c == null) return;
-=======
-    protected void safeClose(final Cursor c) {
-      if (c == null) { return; }
->>>>>>> .merge-right.r15747
 
       try {
         c.close();
@@ -498,34 +433,16 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     }
   }
 
-<<<<<<< .working
   public boolean put(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException {
-=======
-  public OperationStatus put(final PersistenceTransaction tx, final ManagedObject mo) throws TCDatabaseException {
->>>>>>> .merge-right.r15747
     return (logAddObjectID(tx, mo));
   }
 
-<<<<<<< .working
-  public void prePutAll(Set<ObjectID> oidSet, ManagedObject mo) {
-    oidSet.add(mo.getID());
-  }
-
-  private boolean doAll(PersistenceTransaction tx, Set<ObjectID> oidSet, boolean isAdd) throws TCDatabaseException {
+  public boolean deleteAll(final PersistenceTransaction tx, final SortedSet<ObjectID> oidsToDelete,
+                           final SyncObjectIdSet extantMapTypeOidSet, final SyncObjectIdSet extantEvictableOidSet)
+      throws TCDatabaseException {
     boolean status = true;
-=======
-  public OperationStatus deleteAll(final PersistenceTransaction tx, final SortedSet<ObjectID> oidsToDelete,
-                                   final SyncObjectIdSet extantMapTypeOidSet,
-                                   final SyncObjectIdSet extantEvictableOidSet) throws TCDatabaseException {
-    OperationStatus status = OperationStatus.SUCCESS;
->>>>>>> .merge-right.r15747
-<<<<<<< .working
-    int size = oidSet.size();
-    if (size == 0) return status;
-=======
     final int size = oidsToDelete.size();
     if (size == 0) { return (status); }
->>>>>>> .merge-right.r15747
 
     final byte[] oids = new byte[size * (OidLongArray.BYTES_PER_LONG + 1)];
     int offset = 0;
@@ -540,25 +457,15 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
     } catch (final Exception de) {
       throw new TCDatabaseException(de.getMessage());
     }
-    return status;
+    return (status);
   }
 
-<<<<<<< .working
-  public boolean putAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
-    return doAll(tx, oidSet, true);
-  }
-=======
-  public OperationStatus putAll(final PersistenceTransaction tx, final SortedSet<ManagedObject> newManagedObjects)
+  public boolean putAll(final PersistenceTransaction tx, final SortedSet<ManagedObject> newManagedObjects)
       throws TCDatabaseException {
-    OperationStatus status = OperationStatus.SUCCESS;
+    boolean status = true;
     final int size = newManagedObjects.size();
     if (size == 0) { return (status); }
->>>>>>> .merge-right.r15747
 
-<<<<<<< .working
-  public boolean deleteAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException {
-    return doAll(tx, oidSet, false);
-=======
     final byte[] oids = new byte[size * (OidLongArray.BYTES_PER_LONG + 1)];
     int offset = 0;
     for (final ManagedObject mo : newManagedObjects) {
@@ -572,7 +479,6 @@ public final class FastObjectIDManagerImpl extends SleepycatPersistorBase implem
       throw new TCDatabaseException(de.getMessage());
     }
     return (status);
->>>>>>> .merge-right.r15747
   }
 
 }

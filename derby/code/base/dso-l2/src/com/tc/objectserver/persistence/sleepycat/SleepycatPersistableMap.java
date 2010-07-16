@@ -192,7 +192,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
       written += value.length;
       written += key.length;
       try {
-        boolean status = db.put(id, value, key, tx) == Status.SUCCESS;
+        boolean status = db.put(id, key, value, tx) == Status.SUCCESS;
         if (!status) { throw new DBException("Unable to update Map table : " + id + " status : " + status); }
       } catch (Exception t) {
         throw new TCDatabaseException(t.getMessage());
@@ -215,33 +215,7 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
     // During our testing we found that READ_UNCOMMITTED does not raise any problem and gives a performance enhancement
     // over READ_COMMITTED. Since we never read the map which has been marked for deletion by the DGC the deadlocks are
     // avoided
-<<<<<<< .working
     return db.deleteCollection(id, tx);
-=======
-    int written = 0;
-    Cursor c = db.openCursor(persistor.pt2nt(tx), CursorConfig.READ_UNCOMMITTED);
-    byte idb[] = Conversion.long2Bytes(id);
-    DatabaseEntry key = new DatabaseEntry();
-    key.setData(idb);
-    DatabaseEntry value = new DatabaseEntry();
-    value.setPartial(0, 0, true);
-    try {
-      if (c.getSearchKeyRange(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-        do {
-          if (partialMatch(idb, key.getData())) {
-            written += key.getSize();
-            c.delete();
-          } else {
-            break;
-          }
-        } while (c.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS);
-      }
-      c.close();
-    } catch (Exception t) {
-      throw new TCDatabaseException(t.getMessage());
-    }
-    return written;
->>>>>>> .merge-right.r15747
   }
 
   // long lastlog;
@@ -290,24 +264,10 @@ public class SleepycatPersistableMap implements Map, PersistableCollection {
     TCDatabaseEntry<byte[], byte[]> entry = new TCDatabaseEntry<byte[], byte[]>();
     entry.setKey(idb);
     try {
-<<<<<<< .working
       while (c.getNext(entry)) {
         Object mkey = persistor.deserialize(idb.length, entry.getKey());
         Object mvalue = persistor.deserialize(entry.getValue());
         map.put(mkey, mvalue);
-=======
-      if (c.getSearchKeyRange(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-        do {
-          if (false) System.err.println("MapDB " + toString(key) + " , " + toString(value));
-          if (partialMatch(idb, key.getData())) {
-            Object mkey = persistor.deserialize(idb.length, key.getData());
-            Object mvalue = persistor.deserialize(value.getData());
-            map.put(mkey, mvalue);
-          } else {
-            break;
-          }
-        } while (c.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS);
->>>>>>> .merge-right.r15747
       }
       c.close();
     } catch (Exception t) {

@@ -32,7 +32,7 @@ public class SleepycatCollectionsTest extends TCTestCase {
 
   private SleepycatPersistor             persistor;
   private PersistenceTransactionProvider ptp;
-  private BerkeleyDBEnvironment                  env;
+  private BerkeleyDBEnvironment          env;
   private PersistentCollectionFactory    collectionsFactory;
   private SleepycatCollectionsPersistor  collectionsPersistor;
   private static int                     dbHomeCounter = 0;
@@ -40,30 +40,17 @@ public class SleepycatCollectionsTest extends TCTestCase {
 
   @Override
   public void setUp() throws Exception {
-
-<<<<<<< .working
-    if (env != null) env.close();
-    File dbHome = newDBHome();
-    TCLogger logger = TCLogging.getLogger(getClass());
-    CustomSerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
+    if (env != null) {
+      env.close();
+    }
+    final File dbHome = newDBHome();
+    final TCLogger logger = TCLogging.getLogger(getClass());
+    final CustomSerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
     env = new BerkeleyDBEnvironment(true, dbHome);
     persistor = new SleepycatPersistor(logger, env, saf);
     ptp = persistor.getPersistenceTransactionProvider();
     collectionsFactory = persistor.getPersistentCollectionFactory();
     collectionsPersistor = persistor.getCollectionsPersistor();
-=======
-    if (this.env != null) {
-      this.env.close();
-    }
-    final File dbHome = newDBHome();
-    final TCLogger logger = TCLogging.getLogger(getClass());
-    final CustomSerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
-    this.env = new DBEnvironment(true, dbHome);
-    this.persistor = new SleepycatPersistor(logger, this.env, saf);
-    this.ptp = this.persistor.getPersistenceTransactionProvider();
-    this.collectionsFactory = this.persistor.getPersistentCollectionFactory();
-    this.collectionsPersistor = this.persistor.getCollectionsPersistor();
->>>>>>> .merge-right.r15747
   }
 
   // XXX:: Check SleepycatSerializationTest if you want know why its done like this or ask Orion.

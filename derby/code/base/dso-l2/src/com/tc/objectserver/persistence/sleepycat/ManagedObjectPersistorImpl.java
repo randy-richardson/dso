@@ -92,21 +92,12 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
 
   private final ThreadLocal<SerializationAdapter> threadlocalAdapter;
 
-<<<<<<< .working
-  public ManagedObjectPersistorImpl(TCLogger logger, SerializationAdapterFactory serializationAdapterFactory,
-                                    DBEnvironment env, MutableSequence objectIDSequence, TCRootDatabase rootDB,
-                                    PersistenceTransactionProvider ptp,
-                                    SleepycatCollectionsPersistor collectionsPersistor, boolean paranoid,
-                                    ObjectStatsRecorder objectStatsRecorder) throws TCDatabaseException {
-=======
-  public ManagedObjectPersistorImpl(final TCLogger logger, final ClassCatalog classCatalog,
+  public ManagedObjectPersistorImpl(final TCLogger logger,
                                     final SerializationAdapterFactory serializationAdapterFactory,
                                     final DBEnvironment env, final MutableSequence objectIDSequence,
-                                    final Database rootDB, final CursorConfig rootDBCursorConfig,
-                                    final PersistenceTransactionProvider ptp,
+                                    final TCRootDatabase rootDB, final PersistenceTransactionProvider ptp,
                                     final SleepycatCollectionsPersistor collectionsPersistor, final boolean paranoid,
                                     final ObjectStatsRecorder objectStatsRecorder) throws TCDatabaseException {
->>>>>>> .merge-right.r15747
     this.logger = logger;
     this.saf = serializationAdapterFactory;
     this.objectDB = env.getObjectDatabase();
@@ -121,19 +112,9 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
       this.objectIDManager = new NullObjectIDManager();
     } else {
       // read objectIDs from compressed DB
-<<<<<<< .working
-      MutableSequence sequence = env.getSequence(this.ptp, logger,
-                                                 SleepycatSequenceKeys.OID_STORE_LOG_SEQUENCE_DB_NAME, 1000);
-      this.objectIDManager = new FastObjectIDManagerImpl(env, ptp, sequence, this);
-    } else {
-      // read objectIDs from object DB
-      this.objectIDManager = new PlainObjectIDManagerImpl(this.objectDB, ptp);
-=======
-      final MutableSequence sequence = new SleepycatSequence(this.ptp, logger,
-                                                             SleepycatSequenceKeys.OID_STORE_LOG_SEQUENCE_DB_NAME,
-                                                             1000, env.getGlobalSequenceDatabase());
+      final MutableSequence sequence = env.getSequence(this.ptp, logger,
+                                                       SleepycatSequenceKeys.OID_STORE_LOG_SEQUENCE_DB_NAME, 1000);
       this.objectIDManager = new FastObjectIDManagerImpl(env, ptp, sequence);
->>>>>>> .merge-right.r15747
     }
 
     this.extantObjectIDs = loadAllObjectIDs();
@@ -216,15 +197,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     validateID(id);
     boolean status = false;
     try {
-<<<<<<< .working
       byte[] rootNameInBytes = setStringData(name);
-=======
-      final DatabaseEntry key = new DatabaseEntry();
-      final DatabaseEntry value = new DatabaseEntry();
-      setStringData(key, name);
-      setObjectIDData(value, id);
->>>>>>> .merge-right.r15747
-
       status = this.rootDB.put(rootNameInBytes, id.toLong(), tx) == Status.SUCCESS;
     } catch (final Throwable t) {
       throw new DBException(t);
@@ -235,52 +208,20 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
   public ObjectID loadRootID(final String name) {
     if (name == null) { throw new AssertionError("Attempt to retrieve a null root name"); }
     try {
-<<<<<<< .working
       byte[] rootNameInByte = setStringData(name);
-=======
-      final DatabaseEntry key = new DatabaseEntry();
-      final DatabaseEntry value = new DatabaseEntry();
-      setStringData(key, name);
->>>>>>> .merge-right.r15747
       final PersistenceTransaction tx = this.ptp.newTransaction();
-<<<<<<< .working
 
-      return new ObjectID(this.rootDB.get(rootNameInByte, tx));
-=======
-      status = this.rootDB.get(pt2nt(tx), key, value, LockMode.DEFAULT);
+      ObjectID oid = new ObjectID(this.rootDB.get(rootNameInByte, tx));
       tx.commit();
-      if (OperationStatus.SUCCESS.equals(status)) {
-        final ObjectID rv = getObjectIDData(value);
-        return rv;
-      }
->>>>>>> .merge-right.r15747
+      return oid;
     } catch (final Throwable t) {
       throw new DBException(t);
     }
   }
 
   public Set loadRoots() {
-<<<<<<< .working
     PersistenceTransaction tx = this.ptp.newTransaction();
     return rootDB.getRootIds(tx);
-=======
-    final Set rv = new HashSet();
-    Cursor cursor = null;
-    try {
-      final DatabaseEntry key = new DatabaseEntry();
-      final DatabaseEntry value = new DatabaseEntry();
-      final PersistenceTransaction tx = this.ptp.newTransaction();
-      cursor = this.rootDB.openCursor(pt2nt(tx), this.rootDBCursorConfig);
-      while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-        rv.add(getObjectIDData(value));
-      }
-      cursor.close();
-      tx.commit();
-    } catch (final Throwable t) {
-      throw new DBException(t);
-    }
-    return rv;
->>>>>>> .merge-right.r15747
   }
 
   private SyncObjectIdSet loadAllObjectIDs() {
@@ -316,17 +257,8 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
 
     List<byte[]> rootNamesInBytes = rootDB.getRootNames(tx);
     try {
-<<<<<<< .working
       for (byte[] rootNameInBytes : rootNamesInBytes) {
         rv.add(getStringData(rootNameInBytes));
-=======
-      final PersistenceTransaction tx = this.ptp.newTransaction();
-      final DatabaseEntry key = new DatabaseEntry();
-      final DatabaseEntry value = new DatabaseEntry();
-      cursor = this.rootDB.openCursor(pt2nt(tx), this.rootDBCursorConfig);
-      while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-        rv.add(getStringData(key));
->>>>>>> .merge-right.r15747
       }
     } catch (final Throwable t) {
       throw new DBException(t);
@@ -338,7 +270,6 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
   public Map loadRootNamesToIDs() {
     final Map rv = new HashMap();
     try {
-<<<<<<< .working
       PersistenceTransaction tx = this.ptp.newTransaction();
       Map<byte[], Long> mapFromDB = rootDB.getRootNamesToId(tx);
 
@@ -346,14 +277,6 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
         String rootName = getStringData(entry.getKey());
         ObjectID oid = new ObjectID(entry.getValue());
         rv.put(rootName, oid);
-=======
-      final PersistenceTransaction tx = this.ptp.newTransaction();
-      final DatabaseEntry key = new DatabaseEntry();
-      final DatabaseEntry value = new DatabaseEntry();
-      cursor = this.rootDB.openCursor(pt2nt(tx), this.rootDBCursorConfig);
-      while (OperationStatus.SUCCESS.equals(cursor.getNext(key, value, LockMode.DEFAULT))) {
-        rv.put(getStringData(key), getObjectIDData(value));
->>>>>>> .merge-right.r15747
       }
     } catch (final Throwable t) {
       throw new DBException(t);
@@ -365,17 +288,8 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     validateID(id);
     final PersistenceTransaction tx = this.ptp.newTransaction();
     try {
-<<<<<<< .working
-      byte[] value = null;
-      value = this.objectDB.get(id.toLong(), tx);
+      byte[] value = this.objectDB.get(id.toLong(), tx);
       if (value != null) {
-=======
-      final DatabaseEntry key = new DatabaseEntry();
-      final DatabaseEntry value = new DatabaseEntry();
-      setObjectIDData(key, id);
-      status = this.objectDB.get(pt2nt(tx), key, value, LockMode.DEFAULT);
-      if (OperationStatus.SUCCESS.equals(status)) {
->>>>>>> .merge-right.r15747
         final ManagedObject mo = getManagedObjectData(value);
         loadCollection(tx, mo);
         tx.commit();
@@ -418,7 +332,6 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     if (!status) { throw new DBException("Unable to write ManagedObject: " + managedObject + "; status: " + status); }
   }
 
-<<<<<<< .working
   private boolean basicSaveObject(PersistenceTransaction tx, ManagedObject managedObject) throws TCDatabaseException,
       IOException {
     if (!managedObject.isDirty()) { return true; }
@@ -426,18 +339,7 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     byte[] value = setManagedObjectData(managedObject);
     int length = value.length;
     length += 8;
-=======
-  private OperationStatus basicSaveObject(final PersistenceTransaction tx, final ManagedObject managedObject)
-      throws TCDatabaseException, IOException {
-    if (!managedObject.isDirty()) { return OperationStatus.SUCCESS; }
-    OperationStatus status;
-    final DatabaseEntry key = new DatabaseEntry();
-    final DatabaseEntry value = new DatabaseEntry();
-    setObjectIDData(key, managedObject.getID());
-    setManagedObjectData(value, managedObject);
-    int length = value.getSize();
-    length += key.getSize();
->>>>>>> .merge-right.r15747
+
     try {
       if (managedObject.isNew()) {
         status = this.objectDB.insert(managedObject.getID().toLong(), value, tx);
@@ -503,35 +405,15 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
         final ManagedObject managedObject = (ManagedObject) i.next();
 
         final boolean status = basicSaveObject(persistenceTransaction, managedObject);
-
-<<<<<<< .working
-        if (!status) {
-          failureContext = new Object() {
-            @Override
-            public String toString() {
-              return "Unable to save ManagedObject: " + managedObject + "; status: " + status;
-            }
-          };
-          break;
-        }
-=======
-        if (!OperationStatus.SUCCESS.equals(status)) { throw new DBException("Unable to save ManagedObject: "
-                                                                             + managedObject + "; status: " + status); }
->>>>>>> .merge-right.r15747
+        if (!status) { throw new DBException("Unable to save ManagedObject: " + managedObject + "; status: " + status); }
 
         if (!managedObject.isNew()) {
           // Not interested anymore
           i.remove();
         }
       }
-<<<<<<< .working
-      if (!this.objectIDManager.putAll(persistenceTransaction, oidSet)) {
-=======
-      if (!OperationStatus.SUCCESS.equals(this.objectIDManager.putAll(persistenceTransaction, sortedManagedObjects))) {
->>>>>>> .merge-right.r15747
-        //
-        throw new DBException("Failed to save Object-IDs");
-      }
+      if (!this.objectIDManager.putAll(persistenceTransaction, sortedManagedObjects)) { throw new DBException(
+                                                                                                              "Failed to save Object-IDs"); }
     } catch (final DBException dbe) {
       throw dbe;
     } catch (final Throwable t) {
@@ -557,39 +439,11 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
 
   private void deleteObjectByID(final PersistenceTransaction tx, final ObjectID id) {
     validateID(id);
-<<<<<<< .working
-    try {
-      Status status = this.objectDB.delete(id.toLong(), tx);
-      if (status != Status.SUCCESS) {
-        // make the formatter happy
-        throw new DBException("Unable to remove ManagedObject for object id: " + id + ", status: " + status);
-      } else {
-        long startTime = 0;
-        boolean isMapType = false;
-        if (MEASURE_PERF) {
-          startTime = System.nanoTime();
-        }
-        if (containsMapType(id)) {
-          isMapType = true;
-          // may return false if ManagedObject persistent state empty
-          this.collectionsPersistor.deleteCollection(tx, id);
-        }
-        if (MEASURE_PERF) {
-          this.perfMeasureStats.updateStats("Managed Objects deleted ", new long[] { 1, (isMapType ? 1 : 0),
-              (System.nanoTime() - startTime) });
-        }
-      }
-    } catch (TCDatabaseException t) {
-      throw new DBException(t);
-=======
-    final DatabaseEntry key = new DatabaseEntry();
-    setObjectIDData(key, id);
-    final OperationStatus status = this.objectDB.delete(pt2nt(tx), key);
-    if (!(OperationStatus.NOTFOUND.equals(status) || OperationStatus.SUCCESS.equals(status))) {
-      // make the formatter happy
-      throw new DBException("Unable to remove ManagedObject for object id: " + id + ", status: " + status);
->>>>>>> .merge-right.r15747
-    }
+    Status status = this.objectDB.delete(id.toLong(), tx);
+    if (!(status == Status.SUCCESS || status == Status.NOT_FOUND)) { throw new DBException(
+                                                                                           "Unable to remove ManagedObject for object id: "
+                                                                                               + id + ", status: "
+                                                                                               + status); }
   }
 
   private void deleteAllMaps(final SortedSet<ObjectID> sortedOids) throws TCDatabaseException {
@@ -667,45 +521,19 @@ public final class ManagedObjectPersistorImpl extends SleepycatPersistorBase imp
     if (id == null || ObjectID.NULL_ID.equals(id)) { throw new AssertionError("Not a valid ObjectID : " + id); }
   }
 
-<<<<<<< .working
   private byte[] setStringData(String string) throws IOException {
     return getSerializationAdapter().serializeString(string);
-=======
-  private void setObjectIDData(final DatabaseEntry entry, final ObjectID objectID) {
-    entry.setData(Conversion.long2Bytes(objectID.toLong()));
->>>>>>> .merge-right.r15747
   }
 
-<<<<<<< .working
   private byte[] setManagedObjectData(ManagedObject mo) throws IOException {
     return getSerializationAdapter().serializeManagedObject(mo);
-=======
-  private void setStringData(final DatabaseEntry entry, final String string) throws IOException {
-    getSerializationAdapter().serializeString(entry, string);
->>>>>>> .merge-right.r15747
   }
 
-<<<<<<< .working
   private String getStringData(byte[] entry) throws IOException, ClassNotFoundException {
-=======
-  private void setManagedObjectData(final DatabaseEntry entry, final ManagedObject mo) throws IOException {
-    getSerializationAdapter().serializeManagedObject(entry, mo);
-  }
-
-  private ObjectID getObjectIDData(final DatabaseEntry entry) {
-    return new ObjectID(Conversion.bytes2Long(entry.getData()));
-  }
-
-  private String getStringData(final DatabaseEntry entry) throws IOException, ClassNotFoundException {
->>>>>>> .merge-right.r15747
     return getSerializationAdapter().deserializeString(entry);
   }
 
-<<<<<<< .working
   private ManagedObject getManagedObjectData(byte[] entry) throws IOException, ClassNotFoundException {
-=======
-  private ManagedObject getManagedObjectData(final DatabaseEntry entry) throws IOException, ClassNotFoundException {
->>>>>>> .merge-right.r15747
     return getSerializationAdapter().deserializeManagedObject(entry);
   }
 

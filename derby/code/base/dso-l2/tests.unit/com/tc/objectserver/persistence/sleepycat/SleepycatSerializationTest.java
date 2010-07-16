@@ -43,7 +43,7 @@ import java.util.TreeSet;
  */
 public class SleepycatSerializationTest extends TCTestCase {
   private static enum SERIALIZATION_TYPE {
-    CUSTOM, SLEEPCAT
+    CUSTOM, SLEEPY_CAT
   }
 
   private SleepycatPersistor             persistor;
@@ -95,31 +95,12 @@ public class SleepycatSerializationTest extends TCTestCase {
     this.mos = null;
   }
 
-  public void testSleepycatSerializer() throws Exception {
-<<<<<<< .working
-    doTest(SERIALIZATION_TYPE.SLEEPCAT);
-=======
-    final SerializationAdapterFactory saf = new SleepycatSerializationAdapterFactory();
-    doTest(saf);
->>>>>>> .merge-right.r15747
-  }
-
   public void testCustomSerializer() throws Exception {
-<<<<<<< .working
     doTest(SERIALIZATION_TYPE.CUSTOM);
-=======
-    final SerializationAdapterFactory saf = new CustomSerializationAdapterFactory();
-    doTest(saf);
->>>>>>> .merge-right.r15747
   }
 
-<<<<<<< .working
   public void doTest(SERIALIZATION_TYPE serializationType) throws Exception {
     File dbHome = newDBHome();
-=======
-  public void doTest(final SerializationAdapterFactory saf) throws Exception {
-    final File dbHome = newDBHome();
->>>>>>> .merge-right.r15747
     initDB(dbHome, serializationType);
 
     final PersistenceTransaction ptx = this.ptp.newTransaction();
@@ -177,40 +158,40 @@ public class SleepycatSerializationTest extends TCTestCase {
           break;
         case ManagedObjectState.MAP_TYPE:
         case ManagedObjectState.PARTIAL_MAP_TYPE:
-          loaded.apply(newLogicalMapDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
-                       this.imo, false);
+          loaded.apply(newLogicalMapDNA(true), new TransactionID(++this.transactionSequence),
+                       new ApplyTransactionInfo(), this.imo, false);
           break;
         case ManagedObjectState.LIST_TYPE:
-          loaded.apply(newLogicalListDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
-                       this.imo, false);
+          loaded.apply(newLogicalListDNA(true), new TransactionID(++this.transactionSequence),
+                       new ApplyTransactionInfo(), this.imo, false);
           break;
         case ManagedObjectState.SET_TYPE:
-          loaded.apply(newLogicalSetDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
-                       this.imo, false);
+          loaded.apply(newLogicalSetDNA(true), new TransactionID(++this.transactionSequence),
+                       new ApplyTransactionInfo(), this.imo, false);
           break;
         case ManagedObjectState.ARRAY_TYPE:
-          loaded.apply(newLogicalArrayDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
-                       this.imo, false);
+          loaded.apply(newLogicalArrayDNA(true), new TransactionID(++this.transactionSequence),
+                       new ApplyTransactionInfo(), this.imo, false);
           break;
         case ManagedObjectState.LINKED_HASHMAP_TYPE:
           loaded.apply(newLogicalLinkedHashMapDNA(true), new TransactionID(++this.transactionSequence),
                        new ApplyTransactionInfo(), this.imo, false);
           break;
         case ManagedObjectState.DATE_TYPE:
-          loaded.apply(newLogicalDateDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
-                       this.imo, false);
+          loaded.apply(newLogicalDateDNA(true), new TransactionID(++this.transactionSequence),
+                       new ApplyTransactionInfo(), this.imo, false);
           break;
         case ManagedObjectState.LITERAL_TYPE:
           loaded.apply(newLiteralDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
                        this.imo, false);
           break;
         case ManagedObjectState.TREE_MAP_TYPE:
-          loaded.apply(newLogicalTreeMapDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
-                       this.imo, false);
+          loaded.apply(newLogicalTreeMapDNA(true), new TransactionID(++this.transactionSequence),
+                       new ApplyTransactionInfo(), this.imo, false);
           break;
         case ManagedObjectState.TREE_SET_TYPE:
-          loaded.apply(newLogicalTreeSetDNA(true), new TransactionID(++this.transactionSequence), new ApplyTransactionInfo(),
-                       this.imo, false);
+          loaded.apply(newLogicalTreeSetDNA(true), new TransactionID(++this.transactionSequence),
+                       new ApplyTransactionInfo(), this.imo, false);
           break;
       }
 
@@ -433,7 +414,6 @@ public class SleepycatSerializationTest extends TCTestCase {
     return file;
   }
 
-<<<<<<< .working
   private void initDB(File dbHome, SERIALIZATION_TYPE type) throws IOException, TCDatabaseException {
     if (env != null) env.close();
     env = new BerkeleyDBEnvironment(true, dbHome);
@@ -442,7 +422,7 @@ public class SleepycatSerializationTest extends TCTestCase {
       case CUSTOM:
         saf = new CustomSerializationAdapterFactory();
         break;
-      case SLEEPCAT:
+      case SLEEPY_CAT:
         saf = new SleepycatSerializationAdapterFactory(env);
         break;
     }
@@ -450,17 +430,6 @@ public class SleepycatSerializationTest extends TCTestCase {
     ptp = persistor.getPersistenceTransactionProvider();
     mop = persistor.getManagedObjectPersistor();
     stringIndex = persistor.getStringIndex();
-=======
-  private void initDB(final File dbHome, final SerializationAdapterFactory saf) throws IOException, TCDatabaseException {
-    if (this.env != null) {
-      this.env.close();
-    }
-    this.env = new DBEnvironment(true, dbHome);
-    this.persistor = new SleepycatPersistor(this.logger, this.env, saf);
-    this.ptp = this.persistor.getPersistenceTransactionProvider();
-    this.mop = this.persistor.getManagedObjectPersistor();
-    this.stringIndex = this.persistor.getStringIndex();
->>>>>>> .merge-right.r15747
 
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(new NullManagedObjectChangeListenerProvider(), this.persistor);

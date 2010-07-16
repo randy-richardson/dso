@@ -18,4 +18,6 @@ public interface TCMapsDatabase {
   public int deleteCollection(long id, PersistenceTransaction tx) throws TCDatabaseException;
 
   public TCDatabaseCursor<byte[], byte[]> openCursor(PersistenceTransaction tx, long objectID);
+  
+  public long count();
 }

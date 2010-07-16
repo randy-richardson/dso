@@ -157,6 +157,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
       newBytesBytesDB(env, OBJECT_OID_STORE_DB_NAME);
       newBytesBytesDB(env, MAPS_OID_STORE_DB_NAME);
       newBytesBytesDB(env, OID_STORE_LOG_DB_NAME);
+      newBytesBytesDB(env, EVICTABLE_OID_STORE_DB_NAME);
       newRootDB(env, ROOT_DB_NAME);
 
       newLongDB(env, CLIENT_STATE_DB_NAME);
@@ -301,6 +302,11 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return (BerkeleyDBTCBytesBytesDatabase) databasesByName.get(OID_STORE_LOG_DB_NAME);
   }
 
+  public TCBytesToBytesDatabase getEvictableOidStoreDatabase() throws TCDatabaseException {
+    assertOpen();
+    return (BerkeleyDBTCBytesBytesDatabase) databasesByName.get(EVICTABLE_OID_STORE_DB_NAME);
+  }
+  
   public synchronized ClassCatalogWrapper getClassCatalogWrapper() throws TCDatabaseException {
     assertOpen();
     return catalog;

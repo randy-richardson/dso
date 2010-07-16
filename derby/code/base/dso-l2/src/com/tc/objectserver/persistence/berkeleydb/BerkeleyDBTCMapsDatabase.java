@@ -110,4 +110,8 @@ public class BerkeleyDBTCMapsDatabase extends BerkeleyDBTCBytesBytesDatabase imp
       return status.equals(OperationStatus.SUCCESS);
     }
   }
+
+  public long count() {
+    return this.db.count();
+  }
 }

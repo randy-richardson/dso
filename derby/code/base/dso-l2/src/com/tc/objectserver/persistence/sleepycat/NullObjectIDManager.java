@@ -32,36 +32,20 @@ public class NullObjectIDManager implements ObjectIDManager {
     return returnDummy(rv);
   }
 
-<<<<<<< .working
-  public boolean deleteAll(PersistenceTransaction tx, Set<ObjectID> oidSet) {
-    return true;
-=======
   public Runnable getEvictableObjectIDReader(final SyncObjectIdSet rv) {
     return returnDummy(rv);
->>>>>>> .merge-right.r15747
   }
 
-<<<<<<< .working
-  public boolean put(PersistenceTransaction tx, ManagedObject mo) {
+  public boolean deleteAll(final PersistenceTransaction tx, final SortedSet<ObjectID> oidsToDelete,
+                           final SyncObjectIdSet extantMapTypeOidSet, final SyncObjectIdSet extantEvictableOidSet) {
     return true;
-=======
-  public OperationStatus deleteAll(final PersistenceTransaction tx, final SortedSet<ObjectID> oidsToDelete,
-                                   final SyncObjectIdSet extantMapTypeOidSet,
-                                   final SyncObjectIdSet extantEvictableOidSet) {
-    return OperationStatus.SUCCESS;
->>>>>>> .merge-right.r15747
   }
 
-  public OperationStatus put(final PersistenceTransaction tx, final ManagedObject mo) {
-    return OperationStatus.SUCCESS;
-  }
-
-<<<<<<< .working
-  public boolean putAll(PersistenceTransaction tx, Set<ObjectID> oidSet) {
+  public boolean put(final PersistenceTransaction tx, final ManagedObject mo) {
     return true;
-=======
-  public OperationStatus putAll(final PersistenceTransaction tx, final SortedSet<ManagedObject> managedObjects) {
-    return OperationStatus.SUCCESS;
->>>>>>> .merge-right.r15747
+  }
+
+  public boolean putAll(final PersistenceTransaction tx, final SortedSet<ManagedObject> managedObjects) {
+    return true;
   }
 }

@@ -15,22 +15,14 @@ public interface ObjectIDManager {
 
   public boolean put(PersistenceTransaction tx, ManagedObject mo) throws TCDatabaseException;
 
-  public OperationStatus putAll(PersistenceTransaction tx, SortedSet<ManagedObject> managedObjects)
+  public boolean putAll(PersistenceTransaction tx, SortedSet<ManagedObject> managedObjects)
       throws TCDatabaseException;
 
-<<<<<<< .working
-  public boolean putAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException;
-=======
-  public OperationStatus deleteAll(PersistenceTransaction tx, SortedSet<ObjectID> oidsToDelete,
+  public boolean deleteAll(PersistenceTransaction tx, SortedSet<ObjectID> oidsToDelete,
                                    SyncObjectIdSet extantMapTypeOidSet, SyncObjectIdSet extantEvictableOidSet)
       throws TCDatabaseException;
->>>>>>> .merge-right.r15747
 
-<<<<<<< .working
-  public boolean deleteAll(PersistenceTransaction tx, Set<ObjectID> oidSet) throws TCDatabaseException;
-=======
   public Runnable getObjectIDReader(SyncObjectIdSet objectIDSet);
->>>>>>> .merge-right.r15747
 
   public Runnable getMapsObjectIDReader(SyncObjectIdSet objectIDSet);
 
