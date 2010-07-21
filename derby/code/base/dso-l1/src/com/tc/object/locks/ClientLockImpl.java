@@ -924,13 +924,13 @@ class ClientLockImpl extends SynchronizedSinglyLinkedList<LockStateNode> impleme
       }
 
       remote.recallCommit(this.lock, contexts);
-      
+
       this.greediness = this.greediness.recallCommitted();
-      
-      if(this.greediness.isGreedy()) {
+
+      if (this.greediness.isGreedy()) {
         unparkFirstQueuedAcquire();
       }
-      
+
       return this.greediness;
     }
   }

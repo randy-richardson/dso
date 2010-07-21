@@ -84,7 +84,8 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
               host = L2ConfigForL1Object.this.defaultL2Data.host();
             }
 
-            int dsoPort = l2.getDsoPort().getIntValue() > 0 ? l2.getDsoPort().getIntValue() : L2ConfigForL1Object.this.defaultL2Data.dsoPort();
+            int dsoPort = (l2.getDsoPort() != null && l2.getDsoPort().getIntValue() > 0) ? l2.getDsoPort()
+                .getIntValue() : L2ConfigForL1Object.this.defaultL2Data.dsoPort();
 
             if (name == null) {
               name = host + ":" + dsoPort;
@@ -107,13 +108,14 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
         }
         MirrorGroup[] asgArray = asgs.getMirrorGroupArray();
         if (asgArray == null || asgArray.length == 0) {
-          MirrorGroup group = asgs.addNewMirrorGroup();
+          MirrorGroups mgs = MirrorGroups.Factory.newInstance();
+          MirrorGroup group = mgs.addNewMirrorGroup();
           Members members = group.addNewMembers();
           for (Iterator iter = L2ConfigForL1Object.this.l2DataByName.keySet().iterator(); iter.hasNext();) {
             String host = (String) iter.next();
             members.addMember(host);
           }
-          asgArray = asgs.getMirrorGroupArray();
+          asgArray = mgs.getMirrorGroupArray();
         }
         Assert.assertNotNull(asgArray);
         Assert.assertTrue(asgArray.length >= 1);

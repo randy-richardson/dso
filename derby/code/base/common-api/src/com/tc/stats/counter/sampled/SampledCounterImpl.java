@@ -66,3 +66,4 @@ public class SampledCounterImpl extends CounterImpl implements SampledCounter {
     return getAndSet(0L);
   }
 }
+

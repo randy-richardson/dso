@@ -33,8 +33,9 @@ import java.util.ArrayList;
 public class DSOEclipseApplicationLaunchConfiguration extends EclipseApplicationLaunchConfiguration implements
     IDSOLaunchDelegate {
 
-  private LaunchHelper fLaunchHelper = new LaunchHelper(this);
+  private final LaunchHelper fLaunchHelper = new LaunchHelper(this);
 
+  @Override
   public void launch(ILaunchConfiguration config, String mode, ILaunch launch, IProgressMonitor monitor)
       throws CoreException {
     ILaunchConfigurationWorkingCopy wc = fLaunchHelper.setup(config, mode, launch, monitor);
@@ -61,7 +62,9 @@ public class DSOEclipseApplicationLaunchConfiguration extends EclipseApplication
   }
 
   public String getJavaProjectName(ILaunchConfiguration configuration) throws CoreException {
+    @SuppressWarnings("static-access")
     String appNameRoot = configuration.getAttribute(IPDELauncherConstants.APPLICATION, (String) null);
+
     if (appNameRoot != null) {
       appNameRoot = appNameRoot.substring(0, appNameRoot.lastIndexOf('.'));
     } else {
@@ -70,9 +73,9 @@ public class DSOEclipseApplicationLaunchConfiguration extends EclipseApplication
       throw new CoreException(status);
     }
     IProject[] projs = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-    for (int i = 0; i < projs.length; i++) {
-      IPluginModelBase base = PluginRegistry.findModel(projs[i]);
-      if (base != null && appNameRoot.equals(base.getPluginBase().getId())) { return projs[i].getName(); }
+    for (IProject proj : projs) {
+      IPluginModelBase base = PluginRegistry.findModel(proj);
+      if (base != null && appNameRoot.equals(base.getPluginBase().getId())) { return proj.getName(); }
     }
     String msg = "Unable to determine project for pluginId '" + appNameRoot + "'";
     Status status = new Status(IStatus.ERROR, TcPlugin.getPluginId(), 1, msg, null);
@@ -80,7 +83,9 @@ public class DSOEclipseApplicationLaunchConfiguration extends EclipseApplication
   }
 
   public IVMInstall getVMInstall(ILaunchConfiguration configuration) throws CoreException {
+    @SuppressWarnings("static-access")
     String vm = configuration.getAttribute(IPDELauncherConstants.VMINSTALL, (String) null);
+
     IVMInstall launcher = getVMInstall(vm);
     if (launcher == null) {
       String msg = "Cannot locate VMInstall for '" + vm + "'";
@@ -93,8 +98,8 @@ public class DSOEclipseApplicationLaunchConfiguration extends EclipseApplication
   public static IVMInstall getVMInstall(String name) {
     if (name != null) {
       IVMInstall[] installs = getAllVMInstances();
-      for (int i = 0; i < installs.length; i++) {
-        if (installs[i].getName().equals(name)) return installs[i];
+      for (IVMInstall install : installs) {
+        if (install.getName().equals(name)) { return install; }
       }
     }
     return JavaRuntime.getDefaultVMInstall();
@@ -103,10 +108,10 @@ public class DSOEclipseApplicationLaunchConfiguration extends EclipseApplication
   public static IVMInstall[] getAllVMInstances() {
     ArrayList res = new ArrayList();
     IVMInstallType[] types = JavaRuntime.getVMInstallTypes();
-    for (int i = 0; i < types.length; i++) {
-      IVMInstall[] installs = types[i].getVMInstalls();
-      for (int k = 0; k < installs.length; k++) {
-        res.add(installs[k]);
+    for (IVMInstallType type : types) {
+      IVMInstall[] installs = type.getVMInstalls();
+      for (IVMInstall install : installs) {
+        res.add(install);
       }
     }
     return (IVMInstall[]) res.toArray(new IVMInstall[res.size()]);

@@ -20,6 +20,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
   # the kit and bundle into a patch tarball.
   def patch(product_code = 'DSO', flavor = 'OPENSOURCE')
     @no_demo = true
+    $patch = true
     
     # Do error checking first, before going through the lengthy dist target
     descriptor_file = self.patch_descriptor_file.to_s
@@ -33,9 +34,10 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
     end
 
     patch_level = config_source['level'] || patch_descriptor['level']
- 
+    $XXX_patch_level = patch_level
+
     if config_source[MAVEN_REPO_CONFIG_KEY]
-      @internal_config_source[MAVEN_CLASSIFIER_CONFIG_KEY] = "patch-#{patch_level}"
+      @internal_config_source[MAVEN_CLASSIFIER_CONFIG_KEY] = "patch#{patch_level}"
     end
 
     dist(product_code, flavor)

@@ -13,7 +13,7 @@ artifacts:
     groupId: org.terracotta.samples.ehcache
     artifactId: colorcache
     classifier: distribution
-    version: 3.3.0-SNAPSHOT
+    version: 3.4.0-SNAPSHOT
     type: tar.gz
     destination: ehcache/samples/colorcache
     explode: true
@@ -24,7 +24,7 @@ artifacts:
     groupId: org.terracotta.samples.ehcache.hibernate
     artifactId: events
     classifier: distribution
-    version: 3.3.0-SNAPSHOT
+    version: 3.4.0-SNAPSHOT
     type: tar.gz
     destination: ehcache/samples/hibernate
     explode: true
@@ -59,18 +59,23 @@ artifacts:
     groupId: org.slf4j
     artifactId: slf4j-api
     version: 1.5.11
-    destination: ehcache
+    destination: ehcache/lib
 
   - maven_artifact: true
     groupId: org.slf4j
     artifactId: slf4j-jdk14
     version: 1.5.11
-    destination: ehcache
+    destination: ehcache/lib
     
   - maven_artifact: false
     name: README.html
     destination: ehcache
-    url: http://svn.terracotta.org/svn/forge/projects/terracotta-ehcache/trunk/ehcache-express-kit/src/assemble/README.html
+    url: http://svn.terracotta.org/svn/forge/projects/terracotta-ehcache/branches/taraval-rc/ehcache-express-kit/src/assemble/README.html
+
+  - maven_artifact: false
+    name: QUICK-START.html
+    destination: ehcache
+    url: http://svn.terracotta.org/svn/forge/projects/terracotta-ehcache/branches/taraval-rc/ehcache-express-kit/src/assemble/QUICK-START.html
     
   - maven_artifact: false
     name: CHANGELOG.txt
@@ -79,8 +84,18 @@ artifacts:
     
   - maven_artifact: false
     name: EHCACHE-CORE-LICENSE.txt
-    destination: ehcache
-    url: http://svn.terracotta.org/svn/ehcache/trunk/core/src/assemble/LICENSE.txt
+    destination: ehcache/licenses
+    url: http://svn.terracotta.org/svn/ehcache/trunk/core/src/assemble/EHCACHE-CORE-LICENSE.txt
+
+  - maven_artifact: false
+    name: THIRD-PARTY-LICENSES.txt
+    destination: ehcache/licenses
+    url: http://svn.terracotta.org/svn/ehcache/trunk/core/src/assemble/THIRD-PARTY-LICENSES.txt
+
+  - maven_artifact: false
+    name: EHCACHE-TERRACOTTA-LICENSE.txt
+    destination: ehcache/licenses
+    url: http://svn.terracotta.org/svn/forge/projects/terracotta-ehcache/trunk/ehcache-express-kit/src/assemble/EHCACHE-TERRACOTTA-LICENSE.txt 
 
   - maven_artifact: false
     name: ehcache.xml
@@ -99,7 +114,7 @@ artifacts:
     destination: quartz
     explode: true
     remove_root_folder: true
-    url: http://download.terracotta.org/quartz/quartz-1.8.3.tar.gz
+    url: http://download.terracotta.org/quartz/quartz-1.8.4.tar.gz
 # end QUARTZ
 
 # begin express products

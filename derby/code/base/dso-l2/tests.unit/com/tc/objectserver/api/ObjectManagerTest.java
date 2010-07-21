@@ -571,8 +571,8 @@ public class ObjectManagerTest extends TCTestCase {
     final ManagedObject dateManagedObject = lookedUpObjects.get(dateID);
 
     final ObjectInstanceMonitor imo = new ObjectInstanceMonitorImpl();
-    dateManagedObject.apply(new TestDateDNA("java.util.Date", dateID), new TransactionID(1),
-                            new ApplyTransactionInfo(), imo, false);
+    dateManagedObject.apply(new TestDateDNA("java.util.Date", dateID), new TransactionID(1), new ApplyTransactionInfo(), imo,
+                            false);
 
     this.objectManager.releaseAllAndCommit(this.NULL_TRANSACTION, lookedUpObjects.values());
 
@@ -601,8 +601,7 @@ public class ObjectManagerTest extends TCTestCase {
     final ManagedObject managedObject = lookedUpObjects.get(literalID);
 
     final ObjectInstanceMonitor imo = new ObjectInstanceMonitorImpl();
-    managedObject.apply(new TestLiteralValuesDNA(literalID), new TransactionID(1), new ApplyTransactionInfo(), imo,
-                        false);
+    managedObject.apply(new TestLiteralValuesDNA(literalID), new TransactionID(1), new ApplyTransactionInfo(), imo, false);
 
     this.objectManager.releaseAllAndCommit(this.NULL_TRANSACTION, lookedUpObjects.values());
 
@@ -650,10 +649,9 @@ public class ObjectManagerTest extends TCTestCase {
 
     final ObjectInstanceMonitor imo = new ObjectInstanceMonitorImpl();
     map.apply(new TestMapDNA(mapID), new TransactionID(1), new ApplyTransactionInfo(), imo, false);
-    set.apply(new TestListSetDNA("java.util.HashSet", setID), new TransactionID(1), new ApplyTransactionInfo(), imo,
-              false);
-    list.apply(new TestListSetDNA("java.util.LinkedList", listID), new TransactionID(1), new ApplyTransactionInfo(),
-               imo, false);
+    set.apply(new TestListSetDNA("java.util.HashSet", setID), new TransactionID(1), new ApplyTransactionInfo(), imo, false);
+    list.apply(new TestListSetDNA("java.util.LinkedList", listID), new TransactionID(1), new ApplyTransactionInfo(), imo,
+               false);
 
     this.objectManager.releaseAllAndCommit(this.NULL_TRANSACTION, lookedUpObjects.values());
 

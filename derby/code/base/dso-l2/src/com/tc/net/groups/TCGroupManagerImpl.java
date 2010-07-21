@@ -594,9 +594,10 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     }
 
     if (m == null) {
-      String errInfo = "Received message for non-exist member from " + channel.getRemoteAddress() + " to "
-                       + channel.getLocalAddress() + " Node: " + channelToNodeID.get(channel) + " msg: " + message;
       TCGroupHandshakeStateMachine stateMachine = getHandshakeStateMachine(channel);
+      String errInfo = "Received message for non-exist member from " + channel.getRemoteAddress() + " to "
+                       + channel.getLocalAddress() + "; Node: " + channelToNodeID.get(channel) + "; " + stateMachine
+                       + "; msg: " + message;
       if (stateMachine != null && stateMachine.isFailureState()) {
         // message received after node left
         logger.warn(errInfo);
@@ -901,6 +902,11 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
       else return (peerNodeID.toString() + " -> " + localNodeID.toString() + info);
     }
 
+    @Override
+    public String toString() {
+      return "TCGroupHandshakeStateMachine: " + stateInfo(current);
+    }
+
     protected void switchToState(HandshakeState state) {
       Assert.assertNotNull(state);
       synchronized (this) {
@@ -1050,8 +1056,9 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
       public void enter() {
         createMember();
         if (member.isHighPriorityNode()) {
+          member.memberAddingInProcess();
           boolean isAdded = manager.tryAddMember(member);
-          if (isAdded) member.memberAddingInProcess();
+          if (!isAdded) member.abortMemberAdding();
           signalToJoin(isAdded);
         }
       }

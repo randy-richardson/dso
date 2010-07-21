@@ -152,14 +152,15 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       throws ConfigurationSetupException {
     MutableBeanRepository changedL2sBeanRepository = new StandardBeanRepository(Servers.class);
 
-    this.configurationCreator.reloadServersConfiguration(changedL2sBeanRepository, false);
+    this.configurationCreator.reloadServersConfiguration(changedL2sBeanRepository, false, false);
 
     TopologyVerifier topologyVerifier = new TopologyVerifier(serversBeanRepository(), changedL2sBeanRepository,
-                                                             this.activeServerGroupsConfig, serverConnectionValidator);
+                                                             this.activeServerGroupsConfig, serverConnectionValidator, this);
     TopologyReloadStatus status = topologyVerifier.checkAndValidateConfig();
     if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
 
-    this.configurationCreator.reloadServersConfiguration(serversBeanRepository(), true);
+    this.configurationCreator.reloadServersConfiguration(serversBeanRepository(), true, true);
+    this.l2ConfigData.clear();
 
     try {
       this.activeServerGroupsConfig = createActiveServerGroupsConfig();
@@ -206,9 +207,9 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   private void verifyServerPortUsed(Set<String> serverPorts, Server server) throws ConfigurationSetupException {
     String hostname = server.getHost();
-    verifyPortUsed(serverPorts, hostname, server.getDsoPort().getIntValue());
-    verifyPortUsed(serverPorts, hostname, server.getJmxPort().getIntValue());
-    verifyPortUsed(serverPorts, hostname, server.getL2GroupPort().getIntValue());
+    if (server.isSetDsoPort()) verifyPortUsed(serverPorts, hostname, server.getDsoPort().getIntValue());
+    if (server.isSetJmxPort()) verifyPortUsed(serverPorts, hostname, server.getJmxPort().getIntValue());
+    if (server.isSetL2GroupPort()) verifyPortUsed(serverPorts, hostname, server.getL2GroupPort().getIntValue());
   }
 
   private void validateGroups() throws ConfigurationSetupException {

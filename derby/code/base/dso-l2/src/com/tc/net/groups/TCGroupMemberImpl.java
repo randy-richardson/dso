@@ -63,13 +63,18 @@ public class TCGroupMemberImpl implements TCGroupMember, ChannelEventListener {
   }
 
   public String toString() {
-    return ("Group Member: " + localNodeID + " <-> " + peerNodeID + " " + channel);
+    return ("Group Member: " + localNodeID + " <-> " + peerNodeID + " " + channel + "; Ready:" + ready + "; Joined: "
+            + joined + "; memberAdding:" + memberAdding + "; HighPri: " + isHighPriorityNode());
   }
 
   public void notifyChannelEvent(ChannelEvent event) {
     if (event.getChannel() == channel) {
       if (event.getType() == ChannelEventType.TRANSPORT_CONNECTED_EVENT) {
-        ready.set(true);
+        if (isJoinedEventFired()) {
+          ready.set(true);
+        } else {
+          // Ignore tx connect event before the member join.
+        }
       } else if ((event.getType() == ChannelEventType.TRANSPORT_DISCONNECTED_EVENT)
                  || (event.getType() == ChannelEventType.CHANNEL_CLOSED_EVENT)) {
         ready.set(false);

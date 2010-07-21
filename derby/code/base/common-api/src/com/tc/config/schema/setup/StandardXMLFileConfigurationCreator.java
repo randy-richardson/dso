@@ -10,7 +10,6 @@ import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlInteger;
 import org.xml.sax.SAXException;
 
-import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.beanfactory.BeanWithErrors;
 import com.tc.config.schema.beanfactory.ConfigBeanFactory;
 import com.tc.config.schema.defaults.DefaultValueProvider;
@@ -26,11 +25,9 @@ import com.tc.config.schema.setup.sources.URLConfigurationSource;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
-import com.terracottatech.config.BindPort;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.TcConfigDocument;
@@ -116,24 +113,26 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     if (this.configurationSpec.shouldOverrideServerTopology()) {
       sources = getConfigurationSources(this.configurationSpec.getServerTopologyOverrideConfigSpec());
       ConfigDataSourceStream serverOverrideConfigDataSourceStream = loadServerConfigDataFromSources(sources,
-                                                                                                    l2sBeanRepository);
+                                                                                                    l2sBeanRepository,
+                                                                                                    true);
       serverOverrideConfigLoadedFromTrustedSource = serverOverrideConfigDataSourceStream.isTrustedSource();
       serverOverrideConfigDescription = serverOverrideConfigDataSourceStream.getDescription();
     }
     logCopyOfConfig();
   }
 
-  public void reloadServersConfiguration(MutableBeanRepository l2sBeanRepository, boolean shouldLogTcConfig)
-      throws ConfigurationSetupException {
+  public void reloadServersConfiguration(MutableBeanRepository l2sBeanRepository, boolean shouldLogTcConfig,
+                                         boolean reportToConsole) throws ConfigurationSetupException {
     ConfigurationSource[] sources = getConfigurationSources(this.configurationSpec.getBaseConfigSpec());
     if (this.configurationSpec.shouldOverrideServerTopology()) {
       sources = getConfigurationSources(this.configurationSpec.getServerTopologyOverrideConfigSpec());
       ConfigDataSourceStream serverOverrideConfigDataSourceStream = loadServerConfigDataFromSources(sources,
-                                                                                                    l2sBeanRepository);
+                                                                                                    l2sBeanRepository,
+                                                                                                    reportToConsole);
       serverOverrideConfigLoadedFromTrustedSource = serverOverrideConfigDataSourceStream.isTrustedSource();
       serverOverrideConfigDescription = serverOverrideConfigDataSourceStream.getDescription();
     } else {
-      loadServerConfigDataFromSources(sources, l2sBeanRepository);
+      loadServerConfigDataFromSources(sources, l2sBeanRepository, reportToConsole);
     }
 
     if (shouldLogTcConfig) {
@@ -173,7 +172,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       String portText = matcher.group(2);
 
       try {
-        return new ServerConfigurationSource(host, Integer.parseInt(portText));
+        return new ServerConfigurationSource(host.trim(), Integer.parseInt(portText.trim()));
       } catch (Exception e) {/**/
       }
     }
@@ -214,7 +213,8 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   }
 
   private ConfigDataSourceStream loadServerConfigDataFromSources(ConfigurationSource[] sources,
-                                                                 MutableBeanRepository l2sBeanRepository)
+                                                                 MutableBeanRepository l2sBeanRepository,
+                                                                 boolean reportToConsole)
       throws ConfigurationSetupException {
     long startTime = System.currentTimeMillis();
     ConfigDataSourceStream configDataSourceStream = getConfigDataSourceStrean(sources, startTime, "server topology");
@@ -222,7 +222,9 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     loadServerConfigurationData(configDataSourceStream.getSourceInputStream(),
                                 configDataSourceStream.isTrustedSource(), configDataSourceStream.getDescription(),
                                 l2sBeanRepository);
-    consoleLogger.info("Successfully overridden " + configDataSourceStream.getDescription() + ".");
+    if (reportToConsole) {
+      consoleLogger.info("Successfully overridden " + configDataSourceStream.getDescription() + ".");
+    }
     return configDataSourceStream;
   }
 
@@ -434,7 +436,6 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private void setServerBean(MutableBeanRepository serversBeanRepository, TcConfig config, String description)
       throws XmlException {
     serversBeanRepository.setBean(config.getServers(), description);
-    initBindPorts((Servers) serversBeanRepository.bean());
   }
 
   private void setSystemBean(MutableBeanRepository systemBeanRepository, TcConfig config, String description)
@@ -574,56 +575,5 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
            + baseConfigDescription
            + "'"
            + (this.serverOverrideConfigDescription == null ? "" : " and '" + this.serverOverrideConfigDescription + "'");
-  }
-
-  private void initBindPorts(Servers servers) throws XmlException {
-    Server[] serverArray = servers.getServerArray();
-    for (Server server : serverArray) {
-
-      if (!server.isSetDsoPort()) {
-        BindPort dsoBindPort = BindPort.Factory.newInstance();
-        dsoBindPort.setBind(server.getBind());
-
-        final DefaultValueProvider defaultValueProvider = new FromSchemaDefaultValueProvider();
-        if (defaultValueProvider.hasDefault(server.schemaType(), "dso-port")) {
-          final XmlInteger defaultValue = (XmlInteger) defaultValueProvider.defaultFor(server.schemaType(), "dso-port");
-          int dsoPort = defaultValue.getBigIntegerValue().intValue();
-          dsoBindPort.setIntValue(dsoPort);
-        }
-
-        server.addNewDsoPort();
-        server.setDsoPort(dsoBindPort);
-      } else if (!server.getDsoPort().isSetBind()) {
-        server.getDsoPort().setBind(server.getBind());
-      }
-
-      if (!server.isSetJmxPort()) {
-        BindPort jmxBindPort = BindPort.Factory.newInstance();
-        jmxBindPort.setBind(server.getBind());
-
-        int tempJmxPort = server.getDsoPort().getIntValue() + NewCommonL2Config.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
-        int defaultJmxPort = ((tempJmxPort <= NewCommonL2Config.MAX_PORTNUMBER) ? tempJmxPort
-            : (tempJmxPort % NewCommonL2Config.MAX_PORTNUMBER) + NewCommonL2Config.MIN_PORTNUMBER);
-        jmxBindPort.setIntValue(defaultJmxPort);
-
-        server.addNewJmxPort();
-        server.setJmxPort(jmxBindPort);
-      } else if (!server.getJmxPort().isSetBind()) {
-        server.getJmxPort().setBind(server.getBind());
-      }
-
-      if (!server.isSetL2GroupPort()) {
-        BindPort l2GroupBindPort = BindPort.Factory.newInstance();
-        l2GroupBindPort.setBind(server.getBind());
-
-        int tempGroupPort = server.getDsoPort().getIntValue() + NewL2DSOConfig.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
-        int defaultGroupPort = ((tempGroupPort <= NewCommonL2Config.MAX_PORTNUMBER) ? (tempGroupPort)
-            : (tempGroupPort % NewCommonL2Config.MAX_PORTNUMBER) + NewCommonL2Config.MIN_PORTNUMBER);
-        l2GroupBindPort.setIntValue(defaultGroupPort);
-
-        server.addNewL2GroupPort();
-        server.setL2GroupPort(l2GroupBindPort);
-      } else if (!server.getL2GroupPort().isSetBind()) server.getL2GroupPort().setBind(server.getBind());
-    }
   }
 }

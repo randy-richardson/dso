@@ -9,15 +9,22 @@ import com.tc.util.Assert;
 import com.tc.util.SinglyLinkedList;
 
 import java.util.Stack;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 abstract class LockStateNode implements SinglyLinkedList.LinkedNode<LockStateNode> {
 
-  private static final Timer LOCK_TIMER = new Timer("LockStateNode Timer", true);
-
+  private static final Executor UNPARK_HANDLER = Executors.newCachedThreadPool(new ThreadFactory() {
+    public Thread newThread(Runnable r) {
+      Thread t = new Thread(r, "Unpark Handler Thread");
+      t.setDaemon(true);
+      return t;
+    }
+  });
+  
   private final ThreadID     owner;
 
   private LockStateNode      next;
@@ -143,12 +150,12 @@ abstract class LockStateNode implements SinglyLinkedList.LinkedNode<LockStateNod
   static class PendingLockHold extends LockStateNode {
     private final LockLevel  level;
     private final Thread     javaThread;
-    final Semaphore          permit      = new Semaphore(0);
-    
-    private volatile boolean delegates   = true;
+    final Semaphore          permit           = new Semaphore(0);
 
-    volatile boolean         responded   = false;
-    volatile boolean         awarded     = false;
+    private volatile boolean delegates        = true;
+
+    volatile boolean         responded        = false;
+    volatile boolean         awarded          = false;
 
     private volatile String  delegationMethod = "Not Delegated";
 
@@ -352,10 +359,15 @@ abstract class LockStateNode implements SinglyLinkedList.LinkedNode<LockStateNod
 
     @Override
     void unpark() {
-      synchronized (waitObject) {
-        unparked = true;
-        waitObject.notifyAll();
-      }
+      UNPARK_HANDLER.execute(new Runnable() {
+        
+        public void run() {
+          synchronized (waitObject) {
+            unparked = true;
+            waitObject.notifyAll();
+          }
+        }
+      });
     }
 
     @Override
@@ -413,15 +425,15 @@ abstract class LockStateNode implements SinglyLinkedList.LinkedNode<LockStateNod
 
     void unpark() {
       // this is a slight hack to avoiding blocking the stage thread
-      LOCK_TIMER.schedule(new TimerTask() {
-        @Override
+      UNPARK_HANDLER.execute(new Runnable() {
+        
         public void run() {
           synchronized (waitObject) {
             notified = true;
             waitObject.notifyAll();
           }
         }
-      }, 0);
+      });
     }
 
     public boolean equals(Object o) {
