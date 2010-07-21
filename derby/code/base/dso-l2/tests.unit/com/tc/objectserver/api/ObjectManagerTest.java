@@ -72,11 +72,10 @@ import com.tc.objectserver.persistence.impl.InMemoryPersistor;
 import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransaction;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransactionProvider;
-import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
-import com.tc.objectserver.persistence.sleepycat.SleepycatSerializationAdapterFactory;
 import com.tc.objectserver.tx.ServerTransaction;
 import com.tc.objectserver.tx.ServerTransactionImpl;
 import com.tc.objectserver.tx.ServerTransactionSequencerImpl;
@@ -788,7 +787,8 @@ public class ObjectManagerTest extends TCTestCase {
   }
 
   private SerializationAdapterFactory newSleepycatSerializationAdapterFactory(BerkeleyDBEnvironment dbEnv) {
-    return new SleepycatSerializationAdapterFactory(dbEnv);
+    return new CustomSerializationAdapterFactory();
+//    return new SleepycatSerializationAdapterFactory(dbEnv);
   }
 
   private SerializationAdapterFactory newCustomSerializationAdapterFactory() {

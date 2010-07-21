@@ -64,8 +64,7 @@ public class ManagedObjectPersistorImplTest extends TCTestCase {
     final SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
     this.testSleepycatCollectionsPersistor = new TestSleepycatCollectionsPersistor(logger, this.env.getMapsDatabase(),
                                                                                    sleepycatCollectionFactory);
-    this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger,
-                                                                 new SleepycatSerializationAdapterFactory(this.env),
+    this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger, new CustomSerializationAdapterFactory(),
                                                                  this.env, new TestMutableSequence(), this.env
                                                                      .getRootDatabase(),
                                                                  this.persistenceTransactionProvider,

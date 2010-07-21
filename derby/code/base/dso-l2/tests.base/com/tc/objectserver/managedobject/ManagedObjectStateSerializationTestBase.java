@@ -20,11 +20,11 @@ import com.tc.objectserver.persistence.api.PersistenceTransaction;
 import com.tc.objectserver.persistence.impl.TestMutableSequence;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
+import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
 import com.tc.objectserver.persistence.sleepycat.ManagedObjectPersistorImpl;
 import com.tc.objectserver.persistence.sleepycat.SleepycatCollectionFactory;
 import com.tc.objectserver.persistence.sleepycat.SleepycatCollectionsPersistor;
 import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
-import com.tc.objectserver.persistence.sleepycat.SleepycatSerializationAdapterFactory;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 
@@ -43,8 +43,7 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
     super.setUp();
 
     this.env = newDBEnvironment();
-    final SleepycatSerializationAdapterFactory sleepycatSerializationAdapterFactory = new SleepycatSerializationAdapterFactory(
-                                                                                                                               env);
+    final CustomSerializationAdapterFactory sleepycatSerializationAdapterFactory = new CustomSerializationAdapterFactory();
     final SleepycatPersistor persistor = new SleepycatPersistor(this.logger, this.env,
                                                                 sleepycatSerializationAdapterFactory);
 
