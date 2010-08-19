@@ -22,8 +22,10 @@ import com.tc.object.config.schema.NewDSOApplicationConfig;
 import com.tc.object.config.schema.NewDSOApplicationConfigObject;
 import com.tc.util.Assert;
 import com.terracottatech.config.Application;
+import com.terracottatech.config.BindPort;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoApplication;
+import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
 import com.terracottatech.config.TcProperties;
@@ -38,6 +40,13 @@ import java.util.Set;
  * A base class for all TVS configuration setup managers.
  */
 public class BaseTVSConfigurationSetupManager {
+  static final int                                DEFAULT_DSO_PORT                      = 9510;
+
+  public static final short                       DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT   = 10;
+  public static final short                       DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT = 20;
+  public static final int                         MIN_PORTNUMBER                        = 0x0FFF;
+  public static final int                         MAX_PORTNUMBER                        = 0xFFFF;
+
   private final MutableBeanRepository             clientBeanRepository;
   private final MutableBeanRepository             serversBeanRepository;
   private final MutableBeanRepository             systemBeanRepository;
@@ -101,6 +110,68 @@ public class BaseTVSConfigurationSetupManager {
     configurationCreator.createConfigurationIntoRepositories(clientBeanRepository, serversBeanRepository,
                                                              systemBeanRepository, tcPropertiesRepository,
                                                              applicationsRepository);
+    initializeDefaults();
+  }
+
+  private void initializeDefaults() {
+    initializeServerDefaults();
+  }
+
+  private void initializeServerDefaults() {
+    Servers servers = (Servers) serversBeanRepository.bean();
+    Server[] serverArray = servers.getServerArray();
+    for (int i = 0; i < serverArray.length; i++) {
+      initializeServerDefaults(serverArray[i]);
+    }
+  }
+
+  private void initializeServerDefaults(Server server) {
+    initializeDsoPort(server);
+    initializeJmxPort(server);
+    initializeL2GroupPort(server);
+  }
+
+  private void initializeDsoPort(Server server) {
+    XmlObject[] dsoPorts = server.selectPath("dso-port");
+    Assert.assertTrue(dsoPorts.length <= 1);
+    if (!server.isSetDsoPort()) {
+      BindPort dsoPort = server.addNewDsoPort();
+      dsoPort.setIntValue(DEFAULT_DSO_PORT);
+      dsoPort.setBind(server.getBind());
+    } else if (!server.getDsoPort().isSetBind()) {
+      server.getDsoPort().setBind(server.getBind());
+    }
+  }
+
+  private void initializeJmxPort(Server server) {
+    XmlObject[] jmxPorts = server.selectPath("jmx-port");
+    Assert.assertTrue(jmxPorts.length <= 1);
+    if (!server.isSetJmxPort()) {
+      BindPort jmxPort = server.addNewJmxPort();
+      int tempJmxPort = server.getDsoPort().getIntValue() + DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
+      int defaultJmxPort = ((tempJmxPort <= MAX_PORTNUMBER) ? tempJmxPort : (tempJmxPort % MAX_PORTNUMBER)
+                                                                            + MIN_PORTNUMBER);
+
+      jmxPort.setIntValue(defaultJmxPort);
+      jmxPort.setBind(server.getBind());
+    } else if (!server.getJmxPort().isSetBind()) {
+      server.getJmxPort().setBind(server.getBind());
+    }
+  }
+
+  private void initializeL2GroupPort(Server server) {
+    XmlObject[] l2GroupPorts = server.selectPath("l2-group-port");
+    Assert.assertTrue(l2GroupPorts.length <= 1);
+    if (!server.isSetL2GroupPort()) {
+      BindPort l2GrpPort = server.addNewL2GroupPort();
+      int tempGroupPort = server.getDsoPort().getIntValue() + DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
+      int defaultGroupPort = ((tempGroupPort <= MAX_PORTNUMBER) ? (tempGroupPort) : (tempGroupPort % MAX_PORTNUMBER)
+                                                                                    + MIN_PORTNUMBER);
+      l2GrpPort.setIntValue(defaultGroupPort);
+      l2GrpPort.setBind(server.getBind());
+    } else if (!server.getL2GroupPort().isSetBind()) {
+      server.getL2GroupPort().setBind(server.getBind());
+    }
   }
 
   public String[] applicationNames() {
