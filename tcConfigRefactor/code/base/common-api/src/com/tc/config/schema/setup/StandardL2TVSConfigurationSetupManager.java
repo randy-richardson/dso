@@ -78,7 +78,6 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   private static final TCLogger             logger                 = TCLogging
                                                                        .getLogger(StandardL2TVSConfigurationSetupManager.class);
 
-  private final ConfigurationCreator        configurationCreator;
   private final Map                         l2ConfigData;
   private final NewHaConfig                 haConfig;
   private final UpdateCheckConfig           updateCheckConfig;
@@ -96,13 +95,11 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                 XmlObjectComparator xmlObjectComparator,
                                                 IllegalConfigurationChangeHandler illegalConfigChangeHandler)
       throws ConfigurationSetupException {
-    super(defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler);
+    super(configurationCreator, defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler);
 
-    Assert.assertNotNull(configurationCreator);
     Assert.assertNotNull(defaultValueProvider);
     Assert.assertNotNull(xmlObjectComparator);
 
-    this.configurationCreator = configurationCreator;
 
     this.systemConfig = null;
     this.l2ConfigData = new HashMap();
@@ -110,7 +107,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     this.localInetAddresses = getAllLocalInetAddresses();
 
     // this sets the beans in each repository
-    runConfigurationCreator(this.configurationCreator);
+    runConfigurationCreator();
     this.configTCProperties = new ConfigTCPropertiesFromObject((TcProperties) tcPropertiesRepository().bean());
     overwriteTcPropertiesFromConfig();
 
@@ -152,7 +149,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       throws ConfigurationSetupException {
     MutableBeanRepository changedL2sBeanRepository = new StandardBeanRepository(Servers.class);
 
-    this.configurationCreator.reloadServersConfiguration(changedL2sBeanRepository, false, false);
+    configurationCreator().reloadServersConfiguration(changedL2sBeanRepository, false, false);
 
     TopologyVerifier topologyVerifier = new TopologyVerifier(serversBeanRepository(), changedL2sBeanRepository,
                                                              this.activeServerGroupsConfig, serverConnectionValidator,
@@ -160,7 +157,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     TopologyReloadStatus status = topologyVerifier.checkAndValidateConfig();
     if (TopologyReloadStatus.TOPOLOGY_CHANGE_ACCEPTABLE != status) { return status; }
 
-    this.configurationCreator.reloadServersConfiguration(serversBeanRepository(), true, true);
+    configurationCreator().reloadServersConfiguration(serversBeanRepository(), true, true);
     this.l2ConfigData.clear();
 
     try {
@@ -273,7 +270,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                                      return activeServerGroups;
                                                                    }
                                                                  });
-    return new ActiveServerGroupsConfigObject(createContext(beanRepository, configurationCreator
+    return new ActiveServerGroupsConfigObject(createContext(beanRepository, configurationCreator()
         .directoryConfigurationLoadedFrom()), this);
   }
 
@@ -306,7 +303,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                                    }
                                                                  });
 
-    return new UpdateCheckConfigObject(createContext(beanRepository, configurationCreator
+    return new UpdateCheckConfigObject(createContext(beanRepository, configurationCreator()
         .directoryConfigurationLoadedFrom()));
   }
 
@@ -323,7 +320,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   // called by configObjects that need to create their own context
   public File getConfigFilePath() {
-    return configurationCreator.directoryConfigurationLoadedFrom();
+    return configurationCreator().directoryConfigurationLoadedFrom();
   }
 
   public NewHaConfig getCommomOrDefaultHa() throws XmlException {
@@ -340,7 +337,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                                    }
                                                                  });
 
-    newHaConfig = new NewHaConfigObject(createContext(beanRepository, configurationCreator
+    newHaConfig = new NewHaConfigObject(createContext(beanRepository, configurationCreator()
         .directoryConfigurationLoadedFrom()));
     Assert.assertNotNull(newHaConfig);
     return newHaConfig;
@@ -357,9 +354,9 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       this.name = name;
       findMyL2Bean(); // To get the exception in case things are screwed up
       this.beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class, new BeanFetcher());
-      this.commonL2Config = new NewCommonL2ConfigObject(createContext(this.beanRepository, configurationCreator
+      this.commonL2Config = new NewCommonL2ConfigObject(createContext(this.beanRepository, configurationCreator()
           .directoryConfigurationLoadedFrom()));
-      this.dsoL2Config = new NewL2DSOConfigObject(createContext(this.beanRepository, configurationCreator
+      this.dsoL2Config = new NewL2DSOConfigObject(createContext(this.beanRepository, configurationCreator()
           .directoryConfigurationLoadedFrom()));
     }
 
@@ -469,7 +466,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public String describeSources() {
-    return this.configurationCreator.describeSources();
+    return this.configurationCreator().describeSources();
   }
 
   private synchronized L2ConfigData configDataFor(String name) throws ConfigurationSetupException {
@@ -517,7 +514,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   private L2ConfigData setupConfigDataForL2(final String l2Identifier) throws ConfigurationSetupException {
-    this.systemConfig = new NewSystemConfigObject(createContext(systemBeanRepository(), configurationCreator
+    this.systemConfig = new NewSystemConfigObject(createContext(systemBeanRepository(), configurationCreator()
         .directoryConfigurationLoadedFrom()));
     L2ConfigData serverConfigData = configDataFor(this.thisL2Identifier);
     LogSettingConfigItemListener listener = new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L2);
@@ -646,7 +643,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public InputStream rawConfigFile() {
-    String text = configurationCreator.rawConfigText();
+    String text = configurationCreator().rawConfigText();
     try {
       return new ByteArrayInputStream(text.getBytes("UTF-8"));
     } catch (UnsupportedEncodingException uee) {

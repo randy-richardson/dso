@@ -37,7 +37,6 @@ import java.util.Map;
  */
 public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfigurationSetupManager implements
     L1TVSConfigurationSetupManager {
-  private final ConfigurationCreator configurationCreator;
   private final NewCommonL1Config    commonL1Config;
   private final NewL1DSOConfig       dsoL1Config;
   private final ConfigTCProperties   configTCProperties;
@@ -49,13 +48,12 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                 XmlObjectComparator xmlObjectComparator,
                                                 IllegalConfigurationChangeHandler illegalConfigChangeHandler)
       throws ConfigurationSetupException {
-    super(defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler);
+    super(configurationCreator, defaultValueProvider, xmlObjectComparator, illegalConfigChangeHandler);
 
     Assert.assertNotNull(configurationCreator);
 
-    this.configurationCreator = configurationCreator;
-    runConfigurationCreator(this.configurationCreator);
-    loadedFromTrustedSource = this.configurationCreator.loadedFromTrustedSource();
+    runConfigurationCreator();
+    loadedFromTrustedSource = configurationCreator().loadedFromTrustedSource();
 
     commonL1Config = new NewCommonL1ConfigObject(createContext(clientBeanRepository(), null));
     l2ConfigForL1 = new L2ConfigForL1Object(createContext(serversBeanRepository(), null),
@@ -80,7 +78,7 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public String rawConfigText() {
-    return configurationCreator.rawConfigText();
+    return configurationCreator().rawConfigText();
   }
 
   public boolean loadedFromTrustedSource() {
@@ -111,7 +109,7 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public void reloadServersConfiguration() throws ConfigurationSetupException {
-    configurationCreator.reloadServersConfiguration(serversBeanRepository(), true, false);
+    configurationCreator().reloadServersConfiguration(serversBeanRepository(), true, false);
     // reload L2 config here as well
     L2ConfigForL1 tempL2ConfigForL1 = new L2ConfigForL1Object(createContext(serversBeanRepository(), null),
                                                               createContext(systemBeanRepository(), null));

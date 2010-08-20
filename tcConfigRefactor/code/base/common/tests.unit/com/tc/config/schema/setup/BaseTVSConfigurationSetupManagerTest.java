@@ -55,17 +55,15 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(InetAddress.getLocalHost().getHostAddress() + ":" + server.getDsoPort().getIntValue(), server
         .getName());
 
-    Assert.assertEquals(BaseTVSConfigurationSetupManager.DEFAULT_DSO_PORT, server.getDsoPort().getIntValue());
+    Assert.assertEquals(9510, server.getDsoPort().getIntValue());
     Assert.assertEquals(server.getBind(), server.getDsoPort().getBind());
 
-    int tempGroupPort = BaseTVSConfigurationSetupManager.DEFAULT_DSO_PORT
-                        + BaseTVSConfigurationSetupManager.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
+    int tempGroupPort = 9510 + BaseTVSConfigurationSetupManager.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
     int defaultGroupPort = ((tempGroupPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? (tempGroupPort)
         : (tempGroupPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
           + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
 
-    int tempJmxPort = BaseTVSConfigurationSetupManager.DEFAULT_DSO_PORT
-                      + BaseTVSConfigurationSetupManager.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
+    int tempJmxPort = 9510 + BaseTVSConfigurationSetupManager.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
     int defaultJmxPort = ((tempJmxPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? tempJmxPort
         : (tempJmxPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
           + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
@@ -261,13 +259,54 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
 
   }
 
+  public void testServerDirtctoryDefaults() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+                    + "</server>" + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+
+    Assert.assertEquals(new File(BaseTVSConfigurationSetupManagerTest.class.getSimpleName() + File.separator + "data")
+        .getAbsolutePath(), server.getData());
+    Assert.assertEquals(new File(BaseTVSConfigurationSetupManagerTest.class.getSimpleName() + File.separator + "logs")
+        .getAbsolutePath(), server.getLogs());
+    Assert.assertEquals(new File(BaseTVSConfigurationSetupManagerTest.class.getSimpleName() + File.separator
+                                 + "data-backup").getAbsolutePath(), server.getDataBackup());
+    Assert.assertEquals(new File(BaseTVSConfigurationSetupManagerTest.class.getSimpleName() + File.separator
+                                 + "statistics").getAbsolutePath(), server.getStatistics());
+  }
+
+  public void testServerDirtctoryPaths() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+                    + "<data>abc/xyz/123</data>" + "<logs>xyz/abc/451</logs>"
+                    + "<data-backup>/qrt/opt/pqr</data-backup>" + "<statistics>/opq/pqr/123/or</statistics>"
+                    + "</server>" + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+
+    Assert.assertEquals("abc/xyz/123", server.getData());
+    Assert.assertEquals("xyz/abc/451", server.getLogs());
+    Assert.assertEquals("/qrt/opt/pqr", server.getDataBackup());
+    Assert.assertEquals("/opq/pqr/123/or", server.getStatistics());
+  }
+
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
       throws ConfigurationSetupException {
-    BaseTVSConfigurationSetupManager configSetupMgr = new BaseTVSConfigurationSetupManager(
-                                                                                           new FromSchemaDefaultValueProvider(),
-                                                                                           new StandardXmlObjectComparator(),
-                                                                                           new FatalIllegalConfigurationChangeHandler());
-
     String[] args = new String[] { "-f", tcConfig.getAbsolutePath() };
 
     String effectiveConfigSpec = getEffectiveConfigSpec(
@@ -295,7 +334,12 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
                                                                                         configurationSpec,
                                                                                         new TerracottaDomainConfigurationDocumentBeanFactory());
 
-    configSetupMgr.runConfigurationCreator(configurationCreator);
+    BaseTVSConfigurationSetupManager configSetupMgr = new BaseTVSConfigurationSetupManager(
+                                                                                           configurationCreator,
+                                                                                           new FromSchemaDefaultValueProvider(),
+                                                                                           new StandardXmlObjectComparator(),
+                                                                                           new FatalIllegalConfigurationChangeHandler());
+    configSetupMgr.runConfigurationCreator();
 
     return configSetupMgr;
   }
