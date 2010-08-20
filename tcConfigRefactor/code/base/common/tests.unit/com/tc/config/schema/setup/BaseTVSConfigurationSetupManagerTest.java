@@ -304,6 +304,28 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals("/qrt/opt/pqr", server.getDataBackup());
     Assert.assertEquals("/opq/pqr/123/or", server.getStatistics());
   }
+  
+  public void testServerSubsitutedDirtctoryPaths() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+                    + "<data>%h</data>" + "<logs>%i</logs>"
+                    + "<data-backup>%H</data-backup>" + "<statistics>%n</statistics>"
+                    + "</server>" + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+
+    Assert.assertEquals(InetAddress.getLocalHost().getHostName(), server.getData());
+    Assert.assertEquals(InetAddress.getLocalHost().getHostAddress(), server.getLogs());
+    Assert.assertEquals(System.getProperty("user.home"), server.getDataBackup());
+    Assert.assertEquals(System.getProperty("user.name"), server.getStatistics());
+  }
 
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
       throws ConfigurationSetupException {
