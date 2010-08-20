@@ -10,7 +10,9 @@ import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.context.StandardConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
+import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
+import com.tc.config.schema.dynamic.XPathBasedConfigItem;
 import com.tc.config.schema.repository.ApplicationsRepository;
 import com.tc.config.schema.repository.BeanRepository;
 import com.tc.config.schema.repository.ChildBeanFetcher;
@@ -26,6 +28,9 @@ import com.terracottatech.config.Application;
 import com.terracottatech.config.BindPort;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoApplication;
+import com.terracottatech.config.DsoServerData;
+import com.terracottatech.config.GarbageCollection;
+import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
@@ -46,7 +51,7 @@ public class BaseTVSConfigurationSetupManager {
   public static final int                         MIN_PORTNUMBER                        = 0x0FFF;
   public static final int                         MAX_PORTNUMBER                        = 0xFFFF;
 
-  private final ConfigurationCreator configurationCreator;
+  private final ConfigurationCreator              configurationCreator;
   private final MutableBeanRepository             clientBeanRepository;
   private final MutableBeanRepository             serversBeanRepository;
   private final MutableBeanRepository             systemBeanRepository;
@@ -60,7 +65,8 @@ public class BaseTVSConfigurationSetupManager {
   private final Map                               dsoApplicationConfigs;
   private final Map                               springApplicationConfigs;
 
-  public BaseTVSConfigurationSetupManager(ConfigurationCreator configurationCreator, DefaultValueProvider defaultValueProvider,
+  public BaseTVSConfigurationSetupManager(ConfigurationCreator configurationCreator,
+                                          DefaultValueProvider defaultValueProvider,
                                           XmlObjectComparator xmlObjectComparator,
                                           IllegalConfigurationChangeHandler illegalConfigurationChangeHandler) {
     Assert.assertNotNull(configurationCreator);
@@ -106,16 +112,15 @@ public class BaseTVSConfigurationSetupManager {
   protected final XmlObjectComparator xmlObjectComparator() {
     return this.xmlObjectComparator;
   }
-  
-  protected final ConfigurationCreator configurationCreator(){
+
+  protected final ConfigurationCreator configurationCreator() {
     return this.configurationCreator;
   }
 
-  protected final void runConfigurationCreator()
-      throws ConfigurationSetupException {
+  protected final void runConfigurationCreator() throws ConfigurationSetupException {
     this.configurationCreator.createConfigurationIntoRepositories(clientBeanRepository, serversBeanRepository,
-                                                             systemBeanRepository, tcPropertiesRepository,
-                                                             applicationsRepository);
+                                                                  systemBeanRepository, tcPropertiesRepository,
+                                                                  applicationsRepository);
     initializeDefaults();
   }
 
@@ -139,14 +144,17 @@ public class BaseTVSConfigurationSetupManager {
     initializeLogsDiretcory(server);
     initializeDataBackupDiretcory(server);
     initializeStatisticsDiretcory(server);
+    initializeDso(server);
   }
 
   private void initializeDsoPort(Server server) {
     XmlObject[] dsoPorts = server.selectPath("dso-port");
     Assert.assertTrue(dsoPorts.length <= 1);
     if (!server.isSetDsoPort()) {
-      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class, new BeanFetcher(server));
-      ConfigContext configContext = createContext(beanRepository, this.configurationCreator.directoryConfigurationLoadedFrom());
+      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class,
+                                                                   new BeanFetcher(server));
+      ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+          .directoryConfigurationLoadedFrom());
       int defaultdsoPort = configContext.intItem("dso-port").getInt();
       BindPort dsoPort = server.addNewDsoPort();
       dsoPort.setIntValue(defaultdsoPort);
@@ -171,7 +179,7 @@ public class BaseTVSConfigurationSetupManager {
       server.getJmxPort().setBind(server.getBind());
     }
   }
-  
+
   private void initializeL2GroupPort(Server server) {
     XmlObject[] l2GroupPorts = server.selectPath("l2-group-port");
     Assert.assertTrue(l2GroupPorts.length <= 1);
@@ -179,66 +187,150 @@ public class BaseTVSConfigurationSetupManager {
       BindPort l2GrpPort = server.addNewL2GroupPort();
       int tempGroupPort = server.getDsoPort().getIntValue() + DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
       int defaultGroupPort = ((tempGroupPort <= MAX_PORTNUMBER) ? (tempGroupPort) : (tempGroupPort % MAX_PORTNUMBER)
-          + MIN_PORTNUMBER);
+                                                                                    + MIN_PORTNUMBER);
       l2GrpPort.setIntValue(defaultGroupPort);
       l2GrpPort.setBind(server.getBind());
     } else if (!server.getL2GroupPort().isSetBind()) {
       server.getL2GroupPort().setBind(server.getBind());
     }
   }
-  
+
   private void initializeDataDiretcory(Server server) {
-    if(!server.isSetData()){
-      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class, new BeanFetcher(server));
-      ConfigContext configContext = createContext(beanRepository, this.configurationCreator.directoryConfigurationLoadedFrom());
+    if (!server.isSetData()) {
+      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class,
+                                                                   new BeanFetcher(server));
+      ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+          .directoryConfigurationLoadedFrom());
       server.setData(configContext.configRelativeSubstitutedFileItem("data").getFile().getAbsolutePath());
-    }else{
+    } else {
       server.setData(ParameterSubstituter.substitute(server.getData()));
     }
   }
-  
+
   private void initializeLogsDiretcory(Server server) {
-    if(!server.isSetLogs()){
-      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class, new BeanFetcher(server));
-      ConfigContext configContext = createContext(beanRepository, this.configurationCreator.directoryConfigurationLoadedFrom());
+    if (!server.isSetLogs()) {
+      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class,
+                                                                   new BeanFetcher(server));
+      ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+          .directoryConfigurationLoadedFrom());
       server.setLogs(configContext.configRelativeSubstitutedFileItem("logs").getFile().getAbsolutePath());
-    }else{
+    } else {
       server.setLogs(ParameterSubstituter.substitute(server.getLogs()));
     }
   }
-  
+
   private void initializeDataBackupDiretcory(Server server) {
-    if(!server.isSetDataBackup()){
-      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class, new BeanFetcher(server));
-      ConfigContext configContext = createContext(beanRepository, this.configurationCreator.directoryConfigurationLoadedFrom());
+    if (!server.isSetDataBackup()) {
+      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class,
+                                                                   new BeanFetcher(server));
+      ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+          .directoryConfigurationLoadedFrom());
       server.setDataBackup(configContext.configRelativeSubstitutedFileItem("data-backup").getFile().getAbsolutePath());
-    }else{
+    } else {
       server.setDataBackup(ParameterSubstituter.substitute(server.getDataBackup()));
     }
   }
-  
+
   private void initializeStatisticsDiretcory(Server server) {
-    if(!server.isSetStatistics()){
-      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class, new BeanFetcher(server));
-      ConfigContext configContext = createContext(beanRepository, this.configurationCreator.directoryConfigurationLoadedFrom());
+    if (!server.isSetStatistics()) {
+      ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class,
+                                                                   new BeanFetcher(server));
+      ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+          .directoryConfigurationLoadedFrom());
       server.setStatistics(configContext.configRelativeSubstitutedFileItem("statistics").getFile().getAbsolutePath());
-    }else{
+    } else {
       server.setStatistics(ParameterSubstituter.substitute(server.getStatistics()));
     }
   }
   
+  private void initializeDso(Server server) {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class,
+                                                                 new BeanFetcher(server));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    if (!server.isSetDso()) {
+      DsoServerData dso = server.addNewDso();
+      dso.addNewPersistence().setMode(getDefaultPersistence(configContext));
+      dso.setClientReconnectWindow(getDefaultReconnectWindow(configContext));
+      setDefaultGarbageCollection(configContext, dso.addNewGarbageCollection());
+    } else {
+      DsoServerData dso = server.getDso();
+
+      if (!dso.isSetPersistence()) {
+        dso.addNewPersistence().setMode(getDefaultPersistence(configContext));
+      }
+
+      if (!dso.isSetClientReconnectWindow()) {
+        dso.setClientReconnectWindow(getDefaultReconnectWindow(configContext));
+      }
+
+      if (!dso.isSetGarbageCollection()) {
+        setDefaultGarbageCollection(configContext, dso.addNewGarbageCollection());
+      } else {
+        GarbageCollection gc = dso.getGarbageCollection();
+        if (!gc.isSetEnabled()) {
+          gc.setEnabled(getDefaultGarbageCollectionEnabled(configContext));
+        }
+
+        if (!gc.isSetVerbose()) {
+          gc.setVerbose(getDefaultGarbageCollectionVerbose(configContext));
+        }
+
+        if (!gc.isSetInterval()) {
+          gc.setInterval(getDefaultGarbageCollectionInterval(configContext));
+        }
+      }
+    }
+  }
+
+  private void setDefaultGarbageCollection(ConfigContext configContext, GarbageCollection gc) {
+    gc.setEnabled(getDefaultGarbageCollectionEnabled(configContext));
+    gc.setVerbose(getDefaultGarbageCollectionVerbose(configContext));
+    gc.setInterval(getDefaultGarbageCollectionInterval(configContext));
+  }
+
+  private boolean getDefaultGarbageCollectionEnabled(ConfigContext configContext) {
+    return configContext.booleanItem("dso/garbage-collection/enabled").getBoolean();
+  }
+
+  private boolean getDefaultGarbageCollectionVerbose(ConfigContext configContext) {
+    return configContext.booleanItem("dso/garbage-collection/verbose").getBoolean();
+  }
+
+  private int getDefaultGarbageCollectionInterval(ConfigContext configContext) {
+    return configContext.intItem("dso/garbage-collection/interval").getInt();
+  }
+
+  private PersistenceMode.Enum getDefaultPersistence(ConfigContext configContext) {
+    ConfigItem persistenceMode = new XPathBasedConfigItem(configContext, "dso/persistence/mode") {
+      @Override
+      protected Object fetchDataFromXmlObject(XmlObject xmlObject) {
+        if (xmlObject == null) return null;
+        Assert.assertTrue((((PersistenceMode) xmlObject).enumValue() == PersistenceMode.TEMPORARY_SWAP_ONLY)
+                          || (((PersistenceMode) xmlObject).enumValue() == PersistenceMode.PERMANENT_STORE));
+        return ((PersistenceMode) xmlObject).enumValue();
+      }
+    };
+    return (PersistenceMode.Enum) persistenceMode.getObject();
+  }
+
+  private int getDefaultReconnectWindow(ConfigContext configContext) {
+    return configContext.intItem("dso/client-reconnect-window").getInt();
+  }
+
+
   private class BeanFetcher implements ChildBeanFetcher {
     private final XmlObject xmlObject;
-    
+
     public BeanFetcher(XmlObject xmlObject) {
       this.xmlObject = xmlObject;
     }
-    
+
     public XmlObject getChild(XmlObject parent) {
-        return this.xmlObject;
+      return this.xmlObject;
     }
   }
-  
+
   public String[] applicationNames() {
     Set names = new HashSet();
 

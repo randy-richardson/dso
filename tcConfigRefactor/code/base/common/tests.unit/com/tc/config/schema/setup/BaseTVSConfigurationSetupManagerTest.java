@@ -17,6 +17,7 @@ import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.Co
 import com.tc.config.schema.utils.StandardXmlObjectComparator;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
+import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 
@@ -304,13 +305,12 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals("/qrt/opt/pqr", server.getDataBackup());
     Assert.assertEquals("/opq/pqr/123/or", server.getStatistics());
   }
-  
+
   public void testServerSubsitutedDirtctoryPaths() throws IOException, ConfigurationSetupException {
     this.tcConfig = getTempFile("default-config.xml");
     String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
-                    + "<data>%h</data>" + "<logs>%i</logs>"
-                    + "<data-backup>%H</data-backup>" + "<statistics>%n</statistics>"
-                    + "</server>" + "</servers>" + "</tc:tc-config>";
+                    + "<data>%h</data>" + "<logs>%i</logs>" + "<data-backup>%H</data-backup>"
+                    + "<statistics>%n</statistics>" + "</server>" + "</servers>" + "</tc:tc-config>";
 
     writeConfigFile(config);
 
@@ -325,6 +325,51 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(InetAddress.getLocalHost().getHostAddress(), server.getLogs());
     Assert.assertEquals(System.getProperty("user.home"), server.getDataBackup());
     Assert.assertEquals(System.getProperty("user.name"), server.getStatistics());
+  }
+
+  public void testDefaultDso() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+                    + "</server>" + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+
+    Assert.assertEquals(PersistenceMode.TEMPORARY_SWAP_ONLY, server.getDso().getPersistence().getMode());
+    Assert.assertEquals(120, server.getDso().getClientReconnectWindow());
+    Assert.assertEquals(true, server.getDso().getGarbageCollection().getEnabled());
+    Assert.assertEquals(false, server.getDso().getGarbageCollection().getVerbose());
+    Assert.assertEquals(3600, server.getDso().getGarbageCollection().getInterval());
+  }
+
+  public void testDso() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>" + "<dso>"
+                    + "<persistence>" + "<mode>permanent-store</mode>" + "</persistence>"
+                    + "<client-reconnect-window>9876</client-reconnect-window>" + "<garbage-collection>"
+                    + "<enabled>false</enabled>" + "<verbose>true</verbose>" + "<interval>1234</interval>"
+                    + "</garbage-collection>" +"</dso>" + "</server>" + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+
+    Assert.assertEquals(PersistenceMode.PERMANENT_STORE, server.getDso().getPersistence().getMode());
+    Assert.assertEquals(9876, server.getDso().getClientReconnectWindow());
+    Assert.assertEquals(false, server.getDso().getGarbageCollection().getEnabled());
+    Assert.assertEquals(true, server.getDso().getGarbageCollection().getVerbose());
+    Assert.assertEquals(1234, server.getDso().getGarbageCollection().getInterval());
   }
 
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
