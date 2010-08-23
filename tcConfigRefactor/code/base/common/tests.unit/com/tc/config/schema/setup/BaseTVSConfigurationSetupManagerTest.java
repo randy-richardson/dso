@@ -540,7 +540,44 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(HaMode.NETWORKED_ACTIVE_PASSIVE, ha.getMode());
     Assert.assertEquals(15, ha.getNetworkedActivePassive().getElectionTime());
   }
+  
+  public void testUpdateCheckDefault() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+                    + "</server>" + "</servers>" + "</tc:tc-config>";
 
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+    
+    Assert.assertTrue(servers.isSetUpdateCheck());
+    Assert.assertEquals(true, servers.getUpdateCheck().getEnabled());
+    Assert.assertEquals(7, servers.getUpdateCheck().getPeriodDays());
+  }
+
+  public void testUpdateCheck() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+                    + "</server>"
+                    + "<update-check>"
+                    + "<enabled>false</enabled>"
+                    + "<period-days>14</period-days>"
+                    + "</update-check>"
+                    + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+    
+    Assert.assertTrue(servers.isSetUpdateCheck());
+    Assert.assertEquals(false, servers.getUpdateCheck().getEnabled());
+    Assert.assertEquals(14, servers.getUpdateCheck().getPeriodDays());
+  }
+  
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
       throws ConfigurationSetupException {
     String[] args = new String[] { "-f", tcConfig.getAbsolutePath() };

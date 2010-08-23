@@ -4,6 +4,7 @@
  */
 package com.tc.config.schema.setup;
 
+import org.apache.xmlbeans.XmlBoolean;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlInteger;
 import org.apache.xmlbeans.XmlObject;
@@ -44,6 +45,7 @@ import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
 import com.terracottatech.config.TcProperties;
+import com.terracottatech.config.UpdateCheck;
 import com.terracottatech.config.HaMode.Enum;
 
 import java.io.File;
@@ -137,52 +139,7 @@ public class BaseTVSConfigurationSetupManager {
   private void initializeDefaults() throws ConfigurationSetupException {
     initializeServerDefaults();
     initializeMirrorGroups();
-  }
-
-  private void initializeMirrorGroups() throws ConfigurationSetupException {
-    Servers servers = (Servers) serversBeanRepository.bean();
-    if (!servers.isSetMirrorGroups()) {
-      createDefaultServerMirrorGroups();
-    } else {
-      MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
-      for (MirrorGroup mirrorGroup : mirrorGroups) {
-        if (!mirrorGroup.isSetHa()) {
-          Ha ha;
-          try {
-            ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa();
-          } catch (XmlException e) {
-            throw new ConfigurationSetupException(e);
-          }
-          mirrorGroup.setHa(ha);
-        }
-      }
-    }
-  }
-
-  private void createDefaultServerMirrorGroups() throws ConfigurationSetupException {
-    Servers servers = (Servers) serversBeanRepository.bean();
-    Ha ha;
-    try {
-      ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa();
-    } catch (XmlException e) {
-      throw new ConfigurationSetupException(e);
-    }
-    MirrorGroups mirrorGroups = servers.addNewMirrorGroups();
-    MirrorGroup mirrorGroup = mirrorGroups.addNewMirrorGroup();
-    mirrorGroup.setHa(ha);
-    Members members = mirrorGroup.addNewMembers();
-    Server[] serverArray = servers.getServerArray();
-
-    for (int i = 0; i < serverArray.length; i++) {
-      // name for each server should exist
-      String name = serverArray[i].getName();
-      if (name == null || name.equals("")) { throw new ConfigurationSetupException(
-                                                                                   "server's name not defined... name=["
-                                                                                       + name + "] serverDsoPort=["
-                                                                                       + serverArray[i].getDsoPort()
-                                                                                       + "]"); }
-      members.insertMember(i, serverArray[i].getName());
-    }
+    initializeUpdateCheck();
   }
 
   private void initializeServerDefaults() {
@@ -375,6 +332,63 @@ public class BaseTVSConfigurationSetupManager {
     return configContext.intItem("dso/client-reconnect-window").getInt();
   }
 
+  private void initializeMirrorGroups() throws ConfigurationSetupException {
+    Servers servers = (Servers) serversBeanRepository.bean();
+    if (!servers.isSetMirrorGroups()) {
+      createDefaultServerMirrorGroups();
+    } else {
+      MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
+      for (MirrorGroup mirrorGroup : mirrorGroups) {
+        if (!mirrorGroup.isSetHa()) {
+          Ha ha;
+          try {
+            ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa();
+          } catch (XmlException e) {
+            throw new ConfigurationSetupException(e);
+          }
+          mirrorGroup.setHa(ha);
+        }
+      }
+    }
+  }
+
+  private void createDefaultServerMirrorGroups() throws ConfigurationSetupException {
+    Servers servers = (Servers) serversBeanRepository.bean();
+    Ha ha;
+    try {
+      ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa();
+    } catch (XmlException e) {
+      throw new ConfigurationSetupException(e);
+    }
+    MirrorGroups mirrorGroups = servers.addNewMirrorGroups();
+    MirrorGroup mirrorGroup = mirrorGroups.addNewMirrorGroup();
+    mirrorGroup.setHa(ha);
+    Members members = mirrorGroup.addNewMembers();
+    Server[] serverArray = servers.getServerArray();
+
+    for (int i = 0; i < serverArray.length; i++) {
+      // name for each server should exist
+      String name = serverArray[i].getName();
+      if (name == null || name.equals("")) { throw new ConfigurationSetupException(
+                                                                                   "server's name not defined... name=["
+                                                                                       + name + "] serverDsoPort=["
+                                                                                       + serverArray[i].getDsoPort()
+                                                                                       + "]"); }
+      members.insertMember(i, serverArray[i].getName());
+    }
+  }
+
+  private void initializeUpdateCheck() throws ConfigurationSetupException {
+    Servers servers = (Servers) serversBeanRepository.bean();
+    if(!servers.isSetUpdateCheck()){
+      try {
+        servers.setUpdateCheck(getDefaultUpdateCheck());
+      } catch (XmlException e) {
+        throw new ConfigurationSetupException(e);
+      }
+    }
+  }
+  
   private class BeanFetcher implements ChildBeanFetcher {
     private final XmlObject xmlObject;
 
@@ -442,5 +456,16 @@ public class BaseTVSConfigurationSetupManager {
     nap.setElectionTime(defaultElectionTime);
     ha.setNetworkedActivePassive(nap);
     return ha;
+  }
+  
+  private UpdateCheck getDefaultUpdateCheck() throws XmlException {
+    final int defaultPeriodDays = ((XmlInteger) defaultValueProvider.defaultFor(serversBeanRepository()
+        .rootBeanSchemaType(), "update-check/period-days")).getBigIntegerValue().intValue();
+    final boolean defaultEnabled = ((XmlBoolean) defaultValueProvider.defaultFor(serversBeanRepository()
+        .rootBeanSchemaType(), "update-check/enabled")).getBooleanValue();
+    UpdateCheck uc = UpdateCheck.Factory.newInstance();
+    uc.setEnabled(defaultEnabled);
+    uc.setPeriodDays(defaultPeriodDays);
+    return uc;
   }
 }
