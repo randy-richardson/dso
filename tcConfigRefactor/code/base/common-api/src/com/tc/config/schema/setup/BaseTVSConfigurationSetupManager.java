@@ -137,6 +137,11 @@ public class BaseTVSConfigurationSetupManager {
   }
 
   private void initializeDefaults() throws ConfigurationSetupException {
+    initializeServer();
+    initializeClient();
+  }
+
+  private void initializeServer() throws ConfigurationSetupException {
     initializeServerDefaults();
     initializeMirrorGroups();
     initializeUpdateCheck();
@@ -380,12 +385,27 @@ public class BaseTVSConfigurationSetupManager {
 
   private void initializeUpdateCheck() throws ConfigurationSetupException {
     Servers servers = (Servers) serversBeanRepository.bean();
-    if(!servers.isSetUpdateCheck()){
+    if (!servers.isSetUpdateCheck()) {
       try {
         servers.setUpdateCheck(getDefaultUpdateCheck());
       } catch (XmlException e) {
         throw new ConfigurationSetupException(e);
       }
+    }
+  }
+
+  private void initializeClient() {
+    Client client = (Client) clientBeanRepository.bean();
+    if (client != null) initializeLogsDirectory(client);
+  }
+
+  private void initializeLogsDirectory(Client client) {
+    if (!client.isSetLogs()) {
+      ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                   new BeanFetcher(client));
+      ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+          .directoryConfigurationLoadedFrom());
+      client.setLogs(configContext.substitutedFileItem("logs").getFile().getAbsolutePath());
     }
   }
   
@@ -457,7 +477,7 @@ public class BaseTVSConfigurationSetupManager {
     ha.setNetworkedActivePassive(nap);
     return ha;
   }
-  
+
   private UpdateCheck getDefaultUpdateCheck() throws XmlException {
     final int defaultPeriodDays = ((XmlInteger) defaultValueProvider.defaultFor(serversBeanRepository()
         .rootBeanSchemaType(), "update-check/period-days")).getBigIntegerValue().intValue();

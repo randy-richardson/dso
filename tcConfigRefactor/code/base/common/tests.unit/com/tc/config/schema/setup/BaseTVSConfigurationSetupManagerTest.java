@@ -13,10 +13,12 @@ import org.apache.commons.lang.StringUtils;
 
 import com.tc.config.schema.beanfactory.TerracottaDomainConfigurationDocumentBeanFactory;
 import com.tc.config.schema.defaults.FromSchemaDefaultValueProvider;
+import com.tc.config.schema.dynamic.ParameterSubstituter;
 import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.ConfigMode;
 import com.tc.config.schema.utils.StandardXmlObjectComparator;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
+import com.terracottatech.config.Client;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.HaMode;
 import com.terracottatech.config.MirrorGroup;
@@ -576,6 +578,32 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertTrue(servers.isSetUpdateCheck());
     Assert.assertEquals(false, servers.getUpdateCheck().getEnabled());
     Assert.assertEquals(14, servers.getUpdateCheck().getPeriodDays());
+  }
+  
+  public void testDefaultClientLogDirectory()throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+    + "</server>" + "</servers>" + "<clients>" + "</clients>"+ "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    Client client = (Client)configSetupMgr.clientBeanRepository().bean();
+    Assert.assertEquals(new File(ParameterSubstituter.substitute("logs-%i")).getAbsolutePath(), client.getLogs());
+  }
+  
+  public void testClientLogDirectory()throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+    + "</server>" + "</servers>" + "<clients>" +"<logs>/abc/xyz/tra</logs>"+ "</clients>"+ "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    Client client = (Client)configSetupMgr.clientBeanRepository().bean();
+    Assert.assertEquals("/abc/xyz/tra", client.getLogs());
   }
   
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
