@@ -4,7 +4,10 @@
  */
 package com.tc.config.schema.setup;
 
+import org.apache.xmlbeans.XmlException;
+import org.apache.xmlbeans.XmlInteger;
 import org.apache.xmlbeans.XmlObject;
+import org.apache.xmlbeans.XmlString;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.context.ConfigContext;
@@ -30,11 +33,18 @@ import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoApplication;
 import com.terracottatech.config.DsoServerData;
 import com.terracottatech.config.GarbageCollection;
+import com.terracottatech.config.Ha;
+import com.terracottatech.config.HaMode;
+import com.terracottatech.config.Members;
+import com.terracottatech.config.MirrorGroup;
+import com.terracottatech.config.MirrorGroups;
+import com.terracottatech.config.NetworkedActivePassive;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
 import com.terracottatech.config.TcProperties;
+import com.terracottatech.config.HaMode.Enum;
 
 import java.io.File;
 import java.util.HashMap;
@@ -124,8 +134,55 @@ public class BaseTVSConfigurationSetupManager {
     initializeDefaults();
   }
 
-  private void initializeDefaults() {
+  private void initializeDefaults() throws ConfigurationSetupException {
     initializeServerDefaults();
+    initializeMirrorGroups();
+  }
+
+  private void initializeMirrorGroups() throws ConfigurationSetupException {
+    Servers servers = (Servers) serversBeanRepository.bean();
+    if (!servers.isSetMirrorGroups()) {
+      createDefaultServerMirrorGroups();
+    } else {
+      MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
+      for (MirrorGroup mirrorGroup : mirrorGroups) {
+        if (!mirrorGroup.isSetHa()) {
+          Ha ha;
+          try {
+            ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa();
+          } catch (XmlException e) {
+            throw new ConfigurationSetupException(e);
+          }
+          mirrorGroup.setHa(ha);
+        }
+      }
+    }
+  }
+
+  private void createDefaultServerMirrorGroups() throws ConfigurationSetupException {
+    Servers servers = (Servers) serversBeanRepository.bean();
+    Ha ha;
+    try {
+      ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa();
+    } catch (XmlException e) {
+      throw new ConfigurationSetupException(e);
+    }
+    MirrorGroups mirrorGroups = servers.addNewMirrorGroups();
+    MirrorGroup mirrorGroup = mirrorGroups.addNewMirrorGroup();
+    mirrorGroup.setHa(ha);
+    Members members = mirrorGroup.addNewMembers();
+    Server[] serverArray = servers.getServerArray();
+
+    for (int i = 0; i < serverArray.length; i++) {
+      // name for each server should exist
+      String name = serverArray[i].getName();
+      if (name == null || name.equals("")) { throw new ConfigurationSetupException(
+                                                                                   "server's name not defined... name=["
+                                                                                       + name + "] serverDsoPort=["
+                                                                                       + serverArray[i].getDsoPort()
+                                                                                       + "]"); }
+      members.insertMember(i, serverArray[i].getName());
+    }
   }
 
   private void initializeServerDefaults() {
@@ -242,7 +299,7 @@ public class BaseTVSConfigurationSetupManager {
       server.setStatistics(ParameterSubstituter.substitute(server.getStatistics()));
     }
   }
-  
+
   private void initializeDso(Server server) {
     ChildBeanRepository beanRepository = new ChildBeanRepository(serversBeanRepository(), Server.class,
                                                                  new BeanFetcher(server));
@@ -318,7 +375,6 @@ public class BaseTVSConfigurationSetupManager {
     return configContext.intItem("dso/client-reconnect-window").getInt();
   }
 
-
   private class BeanFetcher implements ChildBeanFetcher {
     private final XmlObject xmlObject;
 
@@ -366,5 +422,25 @@ public class BaseTVSConfigurationSetupManager {
         return ((Application) parent).getDso();
       }
     }), null));
+  }
+
+  private Ha getDefaultCommonHa() throws XmlException {
+    final int defaultElectionTime = ((XmlInteger) defaultValueProvider.defaultFor(serversBeanRepository
+        .rootBeanSchemaType(), "ha/networked-active-passive/election-time")).getBigIntegerValue().intValue();
+    final String defaultHaModeString = ((XmlString) defaultValueProvider.defaultFor(serversBeanRepository
+        .rootBeanSchemaType(), "ha/mode")).getStringValue();
+    final Enum defaultHaMode;
+    if (HaMode.DISK_BASED_ACTIVE_PASSIVE.toString().equals(defaultHaModeString)) {
+      defaultHaMode = HaMode.DISK_BASED_ACTIVE_PASSIVE;
+    } else {
+      defaultHaMode = HaMode.NETWORKED_ACTIVE_PASSIVE;
+    }
+
+    Ha ha = Ha.Factory.newInstance();
+    ha.setMode(defaultHaMode);
+    NetworkedActivePassive nap = NetworkedActivePassive.Factory.newInstance();
+    nap.setElectionTime(defaultElectionTime);
+    ha.setNetworkedActivePassive(nap);
+    return ha;
   }
 }

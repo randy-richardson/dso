@@ -17,6 +17,10 @@ import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.Co
 import com.tc.config.schema.utils.StandardXmlObjectComparator;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
+import com.terracottatech.config.Ha;
+import com.terracottatech.config.HaMode;
+import com.terracottatech.config.MirrorGroup;
+import com.terracottatech.config.MirrorGroups;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
@@ -354,7 +358,7 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
                     + "<persistence>" + "<mode>permanent-store</mode>" + "</persistence>"
                     + "<client-reconnect-window>9876</client-reconnect-window>" + "<garbage-collection>"
                     + "<enabled>false</enabled>" + "<verbose>true</verbose>" + "<interval>1234</interval>"
-                    + "</garbage-collection>" +"</dso>" + "</server>" + "</servers>" + "</tc:tc-config>";
+                    + "</garbage-collection>" + "</dso>" + "</server>" + "</servers>" + "</tc:tc-config>";
 
     writeConfigFile(config);
 
@@ -370,6 +374,171 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(false, server.getDso().getGarbageCollection().getEnabled());
     Assert.assertEquals(true, server.getDso().getGarbageCollection().getVerbose());
     Assert.assertEquals(1234, server.getDso().getGarbageCollection().getInterval());
+  }
+
+  public void testMirrorGroupDefaults() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
+                    + "</server>" + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Assert.assertTrue(servers.isSetMirrorGroups());
+    MirrorGroups mirrorGroups = servers.getMirrorGroups();
+    Assert.assertEquals(1, mirrorGroups.sizeOfMirrorGroupArray());
+    Assert.assertEquals(1, mirrorGroups.getMirrorGroupArray().length);
+
+    Server server = servers.getServerArray(0);
+    MirrorGroup mirrorGroup = mirrorGroups.getMirrorGroupArray(0);
+    Assert.assertEquals(1, mirrorGroup.getMembers().sizeOfMemberArray());
+    Assert.assertEquals(1, mirrorGroup.getMembers().getMemberArray().length);
+    Assert.assertEquals(server.getName(), mirrorGroup.getMembers().getMemberArray(0));
+
+    Assert.assertTrue(mirrorGroup.isSetHa());
+    Ha defaultHa = mirrorGroup.getHa();
+    Assert.assertEquals(HaMode.NETWORKED_ACTIVE_PASSIVE, defaultHa.getMode());
+    Assert.assertEquals(5, defaultHa.getNetworkedActivePassive().getElectionTime());
+  }
+
+  public void testMirrorGroupWithDefaultHa() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>"
+    + "<server host=\"eng01\" name=\"server1\"></server>"
+    + "<server host=\"eng02\" name=\"server2\"></server>"
+    + "<server host=\"eng03\" name=\"server3\"></server>"
+    + "<server host=\"eng04\" name=\"server4\"></server>"
+    + "<mirror-groups>"
+    + "<mirror-group group-name=\"group1\">"
+    + "<members>"
+    + "<member>server1</member>"
+    + "<member>server2</member>"
+    + "</members>"
+    + "</mirror-group>"
+    + "<mirror-group group-name=\"group2\">"
+    + "<members>"
+    + "<member>server3</member>"
+    + "<member>server4</member>"
+    + "</members>"
+    + "</mirror-group>"
+    + "</mirror-groups>"
+    + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(4, servers.getServerArray().length);
+    Assert.assertTrue(servers.isSetMirrorGroups());
+    MirrorGroups mirrorGroups = servers.getMirrorGroups();
+    Assert.assertEquals(2, mirrorGroups.sizeOfMirrorGroupArray());
+    Assert.assertEquals(2, mirrorGroups.getMirrorGroupArray().length);
+
+    MirrorGroup mirrorGroup = mirrorGroups.getMirrorGroupArray(0);
+    Assert.assertEquals(2, mirrorGroup.getMembers().sizeOfMemberArray());
+    Assert.assertEquals(2, mirrorGroup.getMembers().getMemberArray().length);
+    Assert.assertEquals(servers.getServerArray(0).getName(), mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals("server1", mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals(servers.getServerArray(1).getName(), mirrorGroup.getMembers().getMemberArray(1));
+    Assert.assertEquals("server2", mirrorGroup.getMembers().getMemberArray(1));
+    
+    Assert.assertTrue(mirrorGroup.isSetHa());
+    Ha defaultHa = mirrorGroup.getHa();
+    Assert.assertEquals(HaMode.NETWORKED_ACTIVE_PASSIVE, defaultHa.getMode());
+    Assert.assertEquals(5, defaultHa.getNetworkedActivePassive().getElectionTime());
+    
+    mirrorGroup = mirrorGroups.getMirrorGroupArray(1);
+    Assert.assertEquals(2, mirrorGroup.getMembers().sizeOfMemberArray());
+    Assert.assertEquals(2, mirrorGroup.getMembers().getMemberArray().length);
+    Assert.assertEquals(servers.getServerArray(2).getName(), mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals("server3", mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals(servers.getServerArray(3).getName(), mirrorGroup.getMembers().getMemberArray(1));
+    Assert.assertEquals("server4", mirrorGroup.getMembers().getMemberArray(1));
+
+    Assert.assertTrue(mirrorGroup.isSetHa());
+    defaultHa = mirrorGroup.getHa();
+    Assert.assertEquals(HaMode.NETWORKED_ACTIVE_PASSIVE, defaultHa.getMode());
+    Assert.assertEquals(5, defaultHa.getNetworkedActivePassive().getElectionTime());
+  }
+  
+  public void testMirrorGroupWithGivenHa() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>"
+    + "<server host=\"eng01\" name=\"server1\"></server>"
+    + "<server host=\"eng02\" name=\"server2\"></server>"
+    + "<server host=\"eng03\" name=\"server3\"></server>"
+    + "<server host=\"eng04\" name=\"server4\"></server>"
+    + "<mirror-groups>"
+    + "<mirror-group group-name=\"group1\">"
+    + "<members>"
+    + "<member>server1</member>"
+    + "<member>server2</member>"
+    + "</members>"
+    + "</mirror-group>"
+    + "<mirror-group group-name=\"group2\">"
+    + "<members>"
+    + "<member>server3</member>"
+    + "<member>server4</member>"
+    + "</members>"
+    + "<ha>"
+    + "<mode>networked-active-passive</mode>"
+    + "<networked-active-passive>"
+    + " <election-time>15</election-time>"
+    + "</networked-active-passive>"
+    + "</ha>"
+    + "</mirror-group>"
+    + "</mirror-groups>"
+    + "<ha>"
+    + "<mode>disk-based-active-passive</mode>"
+    + "<networked-active-passive>"
+    + " <election-time>25</election-time>"
+    + "</networked-active-passive>"
+    + "</ha>"
+    + "</servers>" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(4, servers.getServerArray().length);
+    Assert.assertTrue(servers.isSetMirrorGroups());
+    MirrorGroups mirrorGroups = servers.getMirrorGroups();
+    Assert.assertEquals(2, mirrorGroups.sizeOfMirrorGroupArray());
+    Assert.assertEquals(2, mirrorGroups.getMirrorGroupArray().length);
+
+    MirrorGroup mirrorGroup = mirrorGroups.getMirrorGroupArray(0);
+    Assert.assertEquals(2, mirrorGroup.getMembers().sizeOfMemberArray());
+    Assert.assertEquals(2, mirrorGroup.getMembers().getMemberArray().length);
+    Assert.assertEquals(servers.getServerArray(0).getName(), mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals("server1", mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals(servers.getServerArray(1).getName(), mirrorGroup.getMembers().getMemberArray(1));
+    Assert.assertEquals("server2", mirrorGroup.getMembers().getMemberArray(1));
+    
+    Assert.assertTrue(mirrorGroup.isSetHa());
+    Ha ha = mirrorGroup.getHa();
+    Assert.assertEquals(HaMode.DISK_BASED_ACTIVE_PASSIVE, ha.getMode());
+    Assert.assertEquals(25, ha.getNetworkedActivePassive().getElectionTime());
+    
+    mirrorGroup = mirrorGroups.getMirrorGroupArray(1);
+    Assert.assertEquals(2, mirrorGroup.getMembers().sizeOfMemberArray());
+    Assert.assertEquals(2, mirrorGroup.getMembers().getMemberArray().length);
+    Assert.assertEquals(servers.getServerArray(2).getName(), mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals("server3", mirrorGroup.getMembers().getMemberArray(0));
+    Assert.assertEquals(servers.getServerArray(3).getName(), mirrorGroup.getMembers().getMemberArray(1));
+    Assert.assertEquals("server4", mirrorGroup.getMembers().getMemberArray(1));
+
+    Assert.assertTrue(mirrorGroup.isSetHa());
+    ha = mirrorGroup.getHa();
+    Assert.assertEquals(HaMode.NETWORKED_ACTIVE_PASSIVE, ha.getMode());
+    Assert.assertEquals(15, ha.getNetworkedActivePassive().getElectionTime());
   }
 
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
