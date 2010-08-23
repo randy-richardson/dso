@@ -19,11 +19,16 @@ import com.tc.config.schema.utils.StandardXmlObjectComparator;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 import com.terracottatech.config.Client;
+import com.terracottatech.config.DsoClientData;
+import com.terracottatech.config.DsoClientDebugging;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.HaMode;
+import com.terracottatech.config.InstrumentationLogging;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
 import com.terracottatech.config.PersistenceMode;
+import com.terracottatech.config.RuntimeLogging;
+import com.terracottatech.config.RuntimeOutputOptions;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 
@@ -604,6 +609,280 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     
     Client client = (Client)configSetupMgr.clientBeanRepository().bean();
     Assert.assertEquals("/abc/xyz/tra", client.getLogs());
+  }
+  
+  public void testDefaultFaultCount()throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<clients>" + "</clients>"+ "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    Client client = (Client)configSetupMgr.clientBeanRepository().bean();
+    Assert.assertTrue(client.isSetDso());
+    Assert.assertEquals(500, client.getDso().getFaultCount());
+  }
+  
+  public void testFaultCount()throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+      + "<clients>"
+      + "<dso>"
+      + "<fault-count>1234</fault-count>"
+      + "</dso>"
+      + "</clients>"+ "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    Client client = (Client)configSetupMgr.clientBeanRepository().bean();
+    Assert.assertTrue(client.isSetDso());
+    Assert.assertEquals(1234, client.getDso().getFaultCount());
+  }
+  
+  public void testDefaultClientDso()throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<clients>" + "</clients>"+ "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    Client client = (Client)configSetupMgr.clientBeanRepository().bean();
+    Assert.assertTrue(client.isSetDso());
+    
+    DsoClientData dso = client.getDso();
+    Assert.assertTrue(dso.isSetFaultCount());
+    Assert.assertTrue(dso.isSetDebugging());
+    
+    Assert.assertEquals(500, dso.getFaultCount());
+    
+    DsoClientDebugging debugging = dso.getDebugging();
+    Assert.assertTrue(debugging.isSetInstrumentationLogging());
+    Assert.assertTrue(debugging.isSetRuntimeLogging());
+    Assert.assertTrue(debugging.isSetRuntimeOutputOptions());
+    
+    InstrumentationLogging instrumentationLogging = debugging.getInstrumentationLogging();
+    Assert.assertTrue(instrumentationLogging.isSetClass1());
+    Assert.assertTrue(instrumentationLogging.isSetDistributedMethods());
+    Assert.assertTrue(instrumentationLogging.isSetHierarchy());
+    Assert.assertTrue(instrumentationLogging.isSetLocks());
+    Assert.assertTrue(instrumentationLogging.isSetRoots());
+    Assert.assertTrue(instrumentationLogging.isSetTransientRoot());
+    
+    Assert.assertEquals(false, instrumentationLogging.getClass1());
+    Assert.assertEquals(false, instrumentationLogging.getDistributedMethods());
+    Assert.assertEquals(true, instrumentationLogging.getHierarchy());
+    Assert.assertEquals(false, instrumentationLogging.getLocks());
+    Assert.assertEquals(false, instrumentationLogging.getRoots());
+    Assert.assertEquals(true, instrumentationLogging.getTransientRoot());
+    
+    RuntimeLogging runtimeLogging = debugging.getRuntimeLogging();
+    Assert.assertTrue(runtimeLogging.isSetDistributedMethodDebug());
+    Assert.assertTrue(runtimeLogging.isSetFieldChangeDebug());
+    Assert.assertTrue(runtimeLogging.isSetLockDebug());
+    Assert.assertTrue(runtimeLogging.isSetNamedLoaderDebug());
+    Assert.assertTrue(runtimeLogging.isSetNewObjectDebug());
+    Assert.assertTrue(runtimeLogging.isSetNonPortableDump());
+    Assert.assertTrue(runtimeLogging.isSetWaitNotifyDebug());
+    
+    Assert.assertEquals(false, runtimeLogging.getDistributedMethodDebug());
+    Assert.assertEquals(false, runtimeLogging.getFieldChangeDebug());
+    Assert.assertEquals(false, runtimeLogging.getLockDebug());
+    Assert.assertEquals(false, runtimeLogging.getNamedLoaderDebug());
+    Assert.assertEquals(false, runtimeLogging.getNewObjectDebug());
+    Assert.assertEquals(true, runtimeLogging.getNonPortableDump());
+    Assert.assertEquals(false, runtimeLogging.getWaitNotifyDebug());
+    
+    RuntimeOutputOptions runtimeOutputOptions = debugging.getRuntimeOutputOptions();
+    Assert.assertTrue(runtimeOutputOptions.isSetAutoLockDetails());
+    Assert.assertTrue(runtimeOutputOptions.isSetCaller());
+    Assert.assertTrue(runtimeOutputOptions.isSetFullStack());
+    
+    Assert.assertEquals(false, runtimeOutputOptions.getAutoLockDetails());
+    Assert.assertEquals(false, runtimeOutputOptions.getCaller());
+    Assert.assertEquals(false, runtimeOutputOptions.getFullStack());
+  }
+  
+  public void testClientDso()throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "<clients>"
+                    + "<dso>"
+                    + "<fault-count>1234</fault-count>"
+                    + "<debugging>"
+                    +   "<instrumentation-logging>"
+                    +     "<class>true</class>"
+                    +     "<locks>true</locks>"
+                    +     "<roots>true</roots>"
+                    +   "</instrumentation-logging>"
+                    +   "<runtime-logging>"
+                    +     "<non-portable-dump>false</non-portable-dump>"
+                    +     "<lock-debug>true</lock-debug>"
+                    +     "<new-object-debug>true</new-object-debug>"
+                    +   "</runtime-logging>"
+                    +   "<runtime-output-options>"
+                    +     "<caller>true</caller>"
+                    +     "<full-stack>true</full-stack>"
+                    +   "</runtime-output-options>"
+                    + "</debugging>"
+                    + "</dso>"
+                    + "</clients>"+ "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    Client client = (Client)configSetupMgr.clientBeanRepository().bean();
+    Assert.assertTrue(client.isSetDso());
+    
+    DsoClientData dso = client.getDso();
+    Assert.assertTrue(dso.isSetFaultCount());
+    Assert.assertTrue(dso.isSetDebugging());
+    
+    Assert.assertEquals(1234, dso.getFaultCount());
+    
+    DsoClientDebugging debugging = dso.getDebugging();
+    Assert.assertTrue(debugging.isSetInstrumentationLogging());
+    Assert.assertTrue(debugging.isSetRuntimeLogging());
+    Assert.assertTrue(debugging.isSetRuntimeOutputOptions());
+    
+    InstrumentationLogging instrumentationLogging = debugging.getInstrumentationLogging();
+    Assert.assertTrue(instrumentationLogging.isSetClass1());
+    Assert.assertTrue(instrumentationLogging.isSetDistributedMethods());
+    Assert.assertTrue(instrumentationLogging.isSetHierarchy());
+    Assert.assertTrue(instrumentationLogging.isSetLocks());
+    Assert.assertTrue(instrumentationLogging.isSetRoots());
+    Assert.assertTrue(instrumentationLogging.isSetTransientRoot());
+    
+    Assert.assertEquals(true, instrumentationLogging.getClass1());
+    Assert.assertEquals(false, instrumentationLogging.getDistributedMethods());
+    Assert.assertEquals(true, instrumentationLogging.getHierarchy());
+    Assert.assertEquals(true, instrumentationLogging.getLocks());
+    Assert.assertEquals(true, instrumentationLogging.getRoots());
+    Assert.assertEquals(true, instrumentationLogging.getTransientRoot());
+    
+    RuntimeLogging runtimeLogging = debugging.getRuntimeLogging();
+    Assert.assertTrue(runtimeLogging.isSetDistributedMethodDebug());
+    Assert.assertTrue(runtimeLogging.isSetFieldChangeDebug());
+    Assert.assertTrue(runtimeLogging.isSetLockDebug());
+    Assert.assertTrue(runtimeLogging.isSetNamedLoaderDebug());
+    Assert.assertTrue(runtimeLogging.isSetNewObjectDebug());
+    Assert.assertTrue(runtimeLogging.isSetNonPortableDump());
+    Assert.assertTrue(runtimeLogging.isSetWaitNotifyDebug());
+    
+    Assert.assertEquals(false, runtimeLogging.getDistributedMethodDebug());
+    Assert.assertEquals(false, runtimeLogging.getFieldChangeDebug());
+    Assert.assertEquals(true, runtimeLogging.getLockDebug());
+    Assert.assertEquals(false, runtimeLogging.getNamedLoaderDebug());
+    Assert.assertEquals(true, runtimeLogging.getNewObjectDebug());
+    Assert.assertEquals(false, runtimeLogging.getNonPortableDump());
+    Assert.assertEquals(false, runtimeLogging.getWaitNotifyDebug());
+    
+    RuntimeOutputOptions runtimeOutputOptions = debugging.getRuntimeOutputOptions();
+    Assert.assertTrue(runtimeOutputOptions.isSetAutoLockDetails());
+    Assert.assertTrue(runtimeOutputOptions.isSetCaller());
+    Assert.assertTrue(runtimeOutputOptions.isSetFullStack());
+    
+    Assert.assertEquals(false, runtimeOutputOptions.getAutoLockDetails());
+    Assert.assertEquals(true, runtimeOutputOptions.getCaller());
+    Assert.assertEquals(true, runtimeOutputOptions.getFullStack());
+  }
+  
+  public void testClientDsoOverridden()throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+      + "<clients>"
+      + "<dso>"
+      + "<fault-count>1234</fault-count>"
+      + "<debugging>"
+      +   "<instrumentation-logging>"
+      +     "<class>true</class>"
+      +     "<hierarchy>false</hierarchy>"
+      +     "<distributed-methods>true</distributed-methods>"
+      +     "<transient-root>false</transient-root>"
+      +     "<locks>true</locks>"
+      +     "<roots>true</roots>"
+      +   "</instrumentation-logging>"
+      +   "<runtime-logging>"
+      +     "<non-portable-dump>false</non-portable-dump>"
+      +     "<lock-debug>true</lock-debug>"
+      +     "<field-change-debug>true</field-change-debug>"
+      +     "<wait-notify-debug>true</wait-notify-debug>"
+      +     "<distributed-method-debug>true</distributed-method-debug>"
+      +     "<new-object-debug>true</new-object-debug>"
+      +     "<named-loader-debug>true</named-loader-debug>"
+      +   "</runtime-logging>"
+      +   "<runtime-output-options>"
+      +     "<auto-lock-details>true</auto-lock-details>"
+      +     "<caller>true</caller>"
+      +     "<full-stack>true</full-stack>"
+      +   "</runtime-output-options>"
+      + "</debugging>"
+      + "</dso>"
+      + "</clients>"+ "</tc:tc-config>";
+    
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    Client client = (Client)configSetupMgr.clientBeanRepository().bean();
+    Assert.assertTrue(client.isSetDso());
+    
+    DsoClientData dso = client.getDso();
+    Assert.assertTrue(dso.isSetFaultCount());
+    Assert.assertTrue(dso.isSetDebugging());
+    
+    Assert.assertEquals(1234, dso.getFaultCount());
+    
+    DsoClientDebugging debugging = dso.getDebugging();
+    Assert.assertTrue(debugging.isSetInstrumentationLogging());
+    Assert.assertTrue(debugging.isSetRuntimeLogging());
+    Assert.assertTrue(debugging.isSetRuntimeOutputOptions());
+    
+    InstrumentationLogging instrumentationLogging = debugging.getInstrumentationLogging();
+    Assert.assertTrue(instrumentationLogging.isSetClass1());
+    Assert.assertTrue(instrumentationLogging.isSetDistributedMethods());
+    Assert.assertTrue(instrumentationLogging.isSetHierarchy());
+    Assert.assertTrue(instrumentationLogging.isSetLocks());
+    Assert.assertTrue(instrumentationLogging.isSetRoots());
+    Assert.assertTrue(instrumentationLogging.isSetTransientRoot());
+    
+    Assert.assertEquals(true, instrumentationLogging.getClass1());
+    Assert.assertEquals(true, instrumentationLogging.getDistributedMethods());
+    Assert.assertEquals(false, instrumentationLogging.getHierarchy());
+    Assert.assertEquals(true, instrumentationLogging.getLocks());
+    Assert.assertEquals(true, instrumentationLogging.getRoots());
+    Assert.assertEquals(false, instrumentationLogging.getTransientRoot());
+    
+    RuntimeLogging runtimeLogging = debugging.getRuntimeLogging();
+    Assert.assertTrue(runtimeLogging.isSetDistributedMethodDebug());
+    Assert.assertTrue(runtimeLogging.isSetFieldChangeDebug());
+    Assert.assertTrue(runtimeLogging.isSetLockDebug());
+    Assert.assertTrue(runtimeLogging.isSetNamedLoaderDebug());
+    Assert.assertTrue(runtimeLogging.isSetNewObjectDebug());
+    Assert.assertTrue(runtimeLogging.isSetNonPortableDump());
+    Assert.assertTrue(runtimeLogging.isSetWaitNotifyDebug());
+    
+    Assert.assertEquals(true, runtimeLogging.getDistributedMethodDebug());
+    Assert.assertEquals(true, runtimeLogging.getFieldChangeDebug());
+    Assert.assertEquals(true, runtimeLogging.getLockDebug());
+    Assert.assertEquals(true, runtimeLogging.getNamedLoaderDebug());
+    Assert.assertEquals(true, runtimeLogging.getNewObjectDebug());
+    Assert.assertEquals(false, runtimeLogging.getNonPortableDump());
+    Assert.assertEquals(true, runtimeLogging.getWaitNotifyDebug());
+    
+    RuntimeOutputOptions runtimeOutputOptions = debugging.getRuntimeOutputOptions();
+    Assert.assertTrue(runtimeOutputOptions.isSetAutoLockDetails());
+    Assert.assertTrue(runtimeOutputOptions.isSetCaller());
+    Assert.assertTrue(runtimeOutputOptions.isSetFullStack());
+    
+    Assert.assertEquals(true, runtimeOutputOptions.getAutoLockDetails());
+    Assert.assertEquals(true, runtimeOutputOptions.getCaller());
+    Assert.assertEquals(true, runtimeOutputOptions.getFullStack());
   }
   
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()

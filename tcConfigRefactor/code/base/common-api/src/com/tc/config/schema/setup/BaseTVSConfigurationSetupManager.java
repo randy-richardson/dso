@@ -32,15 +32,21 @@ import com.terracottatech.config.Application;
 import com.terracottatech.config.BindPort;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoApplication;
+import com.terracottatech.config.DsoClientData;
+import com.terracottatech.config.DsoClientDebugging;
 import com.terracottatech.config.DsoServerData;
 import com.terracottatech.config.GarbageCollection;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.HaMode;
+import com.terracottatech.config.InstrumentationLogging;
 import com.terracottatech.config.Members;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
+import com.terracottatech.config.Modules;
 import com.terracottatech.config.NetworkedActivePassive;
 import com.terracottatech.config.PersistenceMode;
+import com.terracottatech.config.RuntimeLogging;
+import com.terracottatech.config.RuntimeOutputOptions;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
@@ -395,12 +401,14 @@ public class BaseTVSConfigurationSetupManager {
   }
 
   private void initializeClient() {
-    Client client = (Client) clientBeanRepository.bean();
-    if (client != null) initializeLogsDirectory(client);
+    initializeLogsDirectory();
+    initializeModules();
+    initiailizeDsoClient();
   }
 
-  private void initializeLogsDirectory(Client client) {
-    if (!client.isSetLogs()) {
+  private void initializeLogsDirectory() {
+    Client client = (Client) clientBeanRepository.bean();
+    if (client != null && !client.isSetLogs()) {
       ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
                                                                    new BeanFetcher(client));
       ConfigContext configContext = createContext(beanRepository, this.configurationCreator
@@ -408,7 +416,281 @@ public class BaseTVSConfigurationSetupManager {
       client.setLogs(configContext.substitutedFileItem("logs").getFile().getAbsolutePath());
     }
   }
+
+  private void initializeModules() {
+    Client client = (Client) clientBeanRepository.bean();
+    if (client != null && client.isSetModules()) {
+      Modules modules = client.getModules();
+      for (int i = 0; i < modules.sizeOfRepositoryArray(); i++) {
+        String location = modules.getRepositoryArray(i);
+        modules.setRepositoryArray(i, ParameterSubstituter.substitute(location));
+      }
+    }
+  }
+
+  private void initiailizeDsoClient() {
+    Client client = (Client) clientBeanRepository.bean();
+    if (client != null) {
+      if (!client.isSetDso()) {
+        DsoClientData dsoClientData = client.addNewDso();
+        dsoClientData.setFaultCount(getDefaultFaultCount());
+
+        DsoClientDebugging debugging = dsoClientData.addNewDebugging();
+        addDefaultInstrumentationLogging(debugging);
+        addDefaultRuntimeLogging(debugging);
+        addDefaultRuntimeOutputOptions(debugging);
+      } else {
+        DsoClientData dsoClientData = client.getDso();
+        if (!dsoClientData.isSetFaultCount()) {
+          dsoClientData.setFaultCount(getDefaultFaultCount());
+        }
+
+        if (!dsoClientData.isSetDebugging()) {
+          DsoClientDebugging debugging = dsoClientData.addNewDebugging();
+          addDefaultInstrumentationLogging(debugging);
+          addDefaultRuntimeLogging(debugging);
+        } else {
+          DsoClientDebugging debugging = dsoClientData.getDebugging();
+          if (!debugging.isSetInstrumentationLogging()) {
+            addDefaultInstrumentationLogging(debugging);
+          }else{
+            checkAndSetInstrumentationLogging(debugging.getInstrumentationLogging());
+          }
+          
+          if(!debugging.isSetRuntimeLogging()){
+            addDefaultRuntimeLogging(debugging);
+          }else{
+            checkAndSetRuntimeLogging(debugging.getRuntimeLogging());
+          }
+          
+          if(!debugging.isSetRuntimeOutputOptions()){
+            addDefaultRuntimeOutputOptions(debugging);
+          }else{
+            checkAndSetRuntimeOutputOptions(debugging.getRuntimeOutputOptions());
+          }
+        }
+      }
+    }
+  }
   
+  private void addDefaultInstrumentationLogging(DsoClientDebugging debugging) {
+    checkAndSetInstrumentationLogging(debugging.addNewInstrumentationLogging());
+  }
+
+  private void addDefaultRuntimeLogging(DsoClientDebugging debugging) {
+    checkAndSetRuntimeLogging(debugging.addNewRuntimeLogging());
+  }
+  
+  private void addDefaultRuntimeOutputOptions(DsoClientDebugging debugging) {
+    checkAndSetRuntimeOutputOptions(debugging.addNewRuntimeOutputOptions());
+  }
+
+  private void checkAndSetInstrumentationLogging(InstrumentationLogging instrumentationLogging) {
+    if(!instrumentationLogging.isSetClass1()){
+      instrumentationLogging.setClass1(getDefaultClassInstrumentationLogging());
+    }
+    
+    if(!instrumentationLogging.isSetHierarchy()){
+      instrumentationLogging.setHierarchy(getDefaultHierarchyInstrumentationLogging());
+    }
+    
+    if(!instrumentationLogging.isSetLocks()){
+      instrumentationLogging.setLocks(getDefaultLocksInstrumentationLoggings());
+    }
+    
+    if(!instrumentationLogging.isSetTransientRoot()){
+      instrumentationLogging.setTransientRoot(getDefaultTransientRootInstrumentationLogging());
+    }
+    
+    if(!instrumentationLogging.isSetRoots()){
+      instrumentationLogging.setRoots(getDefaultRootsInstrumentationLogging());
+    }
+    
+    if(!instrumentationLogging.isSetDistributedMethods()){
+      instrumentationLogging.setDistributedMethods(getDefaultDistributedMethodInstrumentationLogging());
+    }
+  }
+  
+  private void checkAndSetRuntimeLogging(RuntimeLogging runtimeLogging) {
+    if(!runtimeLogging.isSetNonPortableDump()){
+      runtimeLogging.setNonPortableDump(getDefaultNonPortableDumpRuntimeLogging());
+    }
+    
+    if(!runtimeLogging.isSetLockDebug()){
+      runtimeLogging.setLockDebug(getDefaultLockDebugRuntimeLogging());
+    }
+    
+    if(!runtimeLogging.isSetFieldChangeDebug()){
+      runtimeLogging.setFieldChangeDebug(getDefaultFieldChangeDebugRuntimeLogging());
+    }
+    
+    if(!runtimeLogging.isSetWaitNotifyDebug()){
+      runtimeLogging.setWaitNotifyDebug(getDefaultWaitNotifyDebugRuntimeLogging());
+    }
+    
+    if(!runtimeLogging.isSetDistributedMethodDebug()){
+      runtimeLogging.setDistributedMethodDebug(getDefaultDistributedMethodDebugRuntimeLogging());
+    }
+    
+    if(!runtimeLogging.isSetNewObjectDebug()){
+      runtimeLogging.setNewObjectDebug(getDefaultNewObjectDebugRuntimeLogging());
+    }
+    
+    if(!runtimeLogging.isSetNamedLoaderDebug()){
+      runtimeLogging.setNamedLoaderDebug(getDefaultNamedLoaderDebugRuntimeLogging());
+    }
+  }
+  
+  private void checkAndSetRuntimeOutputOptions(RuntimeOutputOptions runtimeOutputOptions) {
+    if(!runtimeOutputOptions.isSetAutoLockDetails()){
+      runtimeOutputOptions.setAutoLockDetails(getDefaultAutoLockDetailsRuntimeOutputOption());
+    }
+    
+    if(!runtimeOutputOptions.isSetCaller()){
+      runtimeOutputOptions.setCaller(getDefaultCallerRuntimeOutputOption());
+    }
+    
+    if(!runtimeOutputOptions.isSetFullStack()){
+      runtimeOutputOptions.setFullStack(getDefaultFullStackRuntimeOutputOption());
+    }
+  }
+  
+  private int getDefaultFaultCount() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.intItem("dso/fault-count").getInt();
+  }
+  
+  private boolean getDefaultHierarchyInstrumentationLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/instrumentation-logging/hierarchy").getBoolean();
+  }
+
+  private boolean getDefaultLocksInstrumentationLoggings() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/instrumentation-logging/locks").getBoolean();
+  }
+
+  private boolean getDefaultTransientRootInstrumentationLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/instrumentation-logging/transient-root").getBoolean();
+  }
+
+  private boolean getDefaultRootsInstrumentationLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/instrumentation-logging/roots").getBoolean();
+  }
+
+  private boolean getDefaultDistributedMethodInstrumentationLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/instrumentation-logging/distributed-methods").getBoolean();
+  }
+
+  private boolean getDefaultClassInstrumentationLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/instrumentation-logging/class").getBoolean();
+  }
+  
+  private boolean getDefaultAutoLockDetailsRuntimeOutputOption() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-output-options/auto-lock-details").getBoolean();
+  }
+
+  private boolean getDefaultCallerRuntimeOutputOption() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-output-options/caller").getBoolean();
+  }
+
+  private boolean getDefaultFullStackRuntimeOutputOption() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-output-options/full-stack").getBoolean();
+  }
+
+  private boolean getDefaultNonPortableDumpRuntimeLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-logging/non-portable-dump").getBoolean();
+  }
+
+  private boolean getDefaultLockDebugRuntimeLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-logging/lock-debug").getBoolean();
+  }
+
+  private boolean getDefaultFieldChangeDebugRuntimeLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-logging/field-change-debug").getBoolean();
+  }
+
+  private boolean getDefaultWaitNotifyDebugRuntimeLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-logging/wait-notify-debug").getBoolean();
+  }
+
+  private boolean getDefaultDistributedMethodDebugRuntimeLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-logging/distributed-method-debug").getBoolean();
+  }
+
+  private boolean getDefaultNewObjectDebugRuntimeLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-logging/new-object-debug").getBoolean();
+  }
+
+  private boolean getDefaultNamedLoaderDebugRuntimeLogging() {
+    ChildBeanRepository beanRepository = new ChildBeanRepository(clientBeanRepository(), Client.class,
+                                                                 new BeanFetcher(clientBeanRepository.bean()));
+    ConfigContext configContext = createContext(beanRepository, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+    return configContext.booleanItem("dso/debugging/runtime-logging/named-loader-debug").getBoolean();
+  }
+
   private class BeanFetcher implements ChildBeanFetcher {
     private final XmlObject xmlObject;
 
