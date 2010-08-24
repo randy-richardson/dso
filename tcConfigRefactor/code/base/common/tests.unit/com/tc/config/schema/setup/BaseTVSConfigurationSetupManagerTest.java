@@ -19,8 +19,10 @@ import com.tc.config.schema.utils.StandardXmlObjectComparator;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 import com.terracottatech.config.Client;
+import com.terracottatech.config.ConfigurationModel;
 import com.terracottatech.config.DsoClientData;
 import com.terracottatech.config.DsoClientDebugging;
+import com.terracottatech.config.DsoServerData;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.HaMode;
 import com.terracottatech.config.InstrumentationLogging;
@@ -70,15 +72,15 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(9510, server.getDsoPort().getIntValue());
     Assert.assertEquals(server.getBind(), server.getDsoPort().getBind());
 
-    int tempGroupPort = 9510 + BaseTVSConfigurationSetupManager.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
-    int defaultGroupPort = ((tempGroupPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? (tempGroupPort)
-        : (tempGroupPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
-          + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
+    int tempGroupPort = 9510 + StandardXMLFileConfigurationCreator.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
+    int defaultGroupPort = ((tempGroupPort <= StandardXMLFileConfigurationCreator.MAX_PORTNUMBER) ? (tempGroupPort)
+        : (tempGroupPort % StandardXMLFileConfigurationCreator.MAX_PORTNUMBER)
+          + StandardXMLFileConfigurationCreator.MIN_PORTNUMBER);
 
-    int tempJmxPort = 9510 + BaseTVSConfigurationSetupManager.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
-    int defaultJmxPort = ((tempJmxPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? tempJmxPort
-        : (tempJmxPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
-          + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
+    int tempJmxPort = 9510 + StandardXMLFileConfigurationCreator.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
+    int defaultJmxPort = ((tempJmxPort <= StandardXMLFileConfigurationCreator.MAX_PORTNUMBER) ? tempJmxPort
+        : (tempJmxPort % StandardXMLFileConfigurationCreator.MAX_PORTNUMBER)
+          + StandardXMLFileConfigurationCreator.MIN_PORTNUMBER);
 
     Assert.assertEquals(defaultJmxPort, server.getJmxPort().getIntValue());
     Assert.assertEquals(server.getBind(), server.getJmxPort().getBind());
@@ -112,15 +114,15 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(dsoPort, server.getDsoPort().getIntValue());
     Assert.assertEquals(server.getBind(), server.getDsoPort().getBind());
 
-    int tempGroupPort = dsoPort + BaseTVSConfigurationSetupManager.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
-    int defaultGroupPort = ((tempGroupPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? (tempGroupPort)
-        : (tempGroupPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
-          + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
+    int tempGroupPort = dsoPort + StandardXMLFileConfigurationCreator.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
+    int defaultGroupPort = ((tempGroupPort <= StandardXMLFileConfigurationCreator.MAX_PORTNUMBER) ? (tempGroupPort)
+        : (tempGroupPort % StandardXMLFileConfigurationCreator.MAX_PORTNUMBER)
+          + StandardXMLFileConfigurationCreator.MIN_PORTNUMBER);
 
-    int tempJmxPort = dsoPort + BaseTVSConfigurationSetupManager.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
-    int defaultJmxPort = ((tempJmxPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? tempJmxPort
-        : (tempJmxPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
-          + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
+    int tempJmxPort = dsoPort + StandardXMLFileConfigurationCreator.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
+    int defaultJmxPort = ((tempJmxPort <= StandardXMLFileConfigurationCreator.MAX_PORTNUMBER) ? tempJmxPort
+        : (tempJmxPort % StandardXMLFileConfigurationCreator.MAX_PORTNUMBER)
+          + StandardXMLFileConfigurationCreator.MIN_PORTNUMBER);
 
     Assert.assertEquals(defaultJmxPort, server.getJmxPort().getIntValue());
     Assert.assertEquals(server.getBind(), server.getJmxPort().getBind());
@@ -155,15 +157,15 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(dsoPort, server.getDsoPort().getIntValue());
     Assert.assertEquals(dsoBind, server.getDsoPort().getBind());
 
-    int tempGroupPort = dsoPort + BaseTVSConfigurationSetupManager.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
-    int defaultGroupPort = ((tempGroupPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? (tempGroupPort)
-        : (tempGroupPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
-          + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
+    int tempGroupPort = dsoPort + StandardXMLFileConfigurationCreator.DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT;
+    int defaultGroupPort = ((tempGroupPort <= StandardXMLFileConfigurationCreator.MAX_PORTNUMBER) ? (tempGroupPort)
+        : (tempGroupPort % StandardXMLFileConfigurationCreator.MAX_PORTNUMBER)
+          + StandardXMLFileConfigurationCreator.MIN_PORTNUMBER);
 
-    int tempJmxPort = dsoPort + BaseTVSConfigurationSetupManager.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
-    int defaultJmxPort = ((tempJmxPort <= BaseTVSConfigurationSetupManager.MAX_PORTNUMBER) ? tempJmxPort
-        : (tempJmxPort % BaseTVSConfigurationSetupManager.MAX_PORTNUMBER)
-          + BaseTVSConfigurationSetupManager.MIN_PORTNUMBER);
+    int tempJmxPort = dsoPort + StandardXMLFileConfigurationCreator.DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT;
+    int defaultJmxPort = ((tempJmxPort <= StandardXMLFileConfigurationCreator.MAX_PORTNUMBER) ? tempJmxPort
+        : (tempJmxPort % StandardXMLFileConfigurationCreator.MAX_PORTNUMBER)
+          + StandardXMLFileConfigurationCreator.MIN_PORTNUMBER);
 
     Assert.assertEquals(defaultJmxPort, server.getJmxPort().getIntValue());
     Assert.assertEquals(server.getBind(), server.getJmxPort().getBind());
@@ -359,6 +361,23 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(3600, server.getDso().getGarbageCollection().getInterval());
   }
 
+  public void testDefaultPersistence() throws IOException, ConfigurationSetupException{
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+    Assert.assertTrue(server.isSetDso());
+    DsoServerData dsoServerData = server.getDso();
+    Assert.assertEquals(PersistenceMode.TEMPORARY_SWAP_ONLY, dsoServerData.getPersistence().getMode());
+  }
+  
   public void testDso() throws IOException, ConfigurationSetupException {
     this.tcConfig = getTempFile("default-config.xml");
     String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>" + "<dso>"
@@ -883,6 +902,21 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(true, runtimeOutputOptions.getAutoLockDetails());
     Assert.assertEquals(true, runtimeOutputOptions.getCaller());
     Assert.assertEquals(true, runtimeOutputOptions.getFullStack());
+  }
+  
+  public void testSystemDefaultConfigModel() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">"
+                    + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    com.terracottatech.config.System system = (com.terracottatech.config.System) configSetupMgr.systemBeanRepository().bean();
+    
+    Assert.assertTrue(system.isSetConfigurationModel());
+    Assert.assertEquals(ConfigurationModel.DEVELOPMENT, system.getConfigurationModel());
   }
   
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
