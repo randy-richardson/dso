@@ -919,6 +919,24 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(ConfigurationModel.DEVELOPMENT, system.getConfigurationModel());
   }
   
+  public void testSystemConfigModel() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">"
+                    + "<system>"
+                    + "<configuration-model>production</configuration-model>"
+                    + "</system>"
+                    + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    
+    com.terracottatech.config.System system = (com.terracottatech.config.System) configSetupMgr.systemBeanRepository().bean();
+    
+    Assert.assertTrue(system.isSetConfigurationModel());
+    Assert.assertEquals(ConfigurationModel.PRODUCTION, system.getConfigurationModel());
+  }
+  
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()
       throws ConfigurationSetupException {
     String[] args = new String[] { "-f", tcConfig.getAbsolutePath() };
