@@ -65,18 +65,17 @@ import com.tc.objectserver.mgmt.MapEntryFacade;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.api.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
-import com.tc.objectserver.persistence.api.PersistenceTransaction;
-import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.api.Persistor;
-import com.tc.objectserver.persistence.impl.InMemoryPersistor;
-import com.tc.objectserver.persistence.impl.NullPersistenceTransactionProvider;
+import com.tc.objectserver.persistence.db.CustomSerializationAdapterFactory;
+import com.tc.objectserver.persistence.db.DBPersistorImpl;
+import com.tc.objectserver.persistence.db.SerializationAdapterFactory;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransaction;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransactionProvider;
-import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.DBEnvironment;
-import com.tc.objectserver.persistence.sleepycat.SerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
-import com.tc.objectserver.persistence.sleepycat.SleepycatSerializationAdapterFactory;
+import com.tc.objectserver.persistence.inmemory.InMemoryPersistor;
+import com.tc.objectserver.persistence.inmemory.NullPersistenceTransactionProvider;
+import com.tc.objectserver.storage.api.PersistenceTransaction;
+import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
+import com.tc.objectserver.storage.berkeleydb.BerkeleyDBEnvironment;
 import com.tc.objectserver.tx.ServerTransaction;
 import com.tc.objectserver.tx.ServerTransactionImpl;
 import com.tc.objectserver.tx.ServerTransactionSequencerImpl;
@@ -571,8 +570,8 @@ public class ObjectManagerTest extends TCTestCase {
     final ManagedObject dateManagedObject = lookedUpObjects.get(dateID);
 
     final ObjectInstanceMonitor imo = new ObjectInstanceMonitorImpl();
-    dateManagedObject.apply(new TestDateDNA("java.util.Date", dateID), new TransactionID(1), new ApplyTransactionInfo(), imo,
-                            false);
+    dateManagedObject.apply(new TestDateDNA("java.util.Date", dateID), new TransactionID(1),
+                            new ApplyTransactionInfo(), imo, false);
 
     this.objectManager.releaseAllAndCommit(this.NULL_TRANSACTION, lookedUpObjects.values());
 
@@ -601,7 +600,8 @@ public class ObjectManagerTest extends TCTestCase {
     final ManagedObject managedObject = lookedUpObjects.get(literalID);
 
     final ObjectInstanceMonitor imo = new ObjectInstanceMonitorImpl();
-    managedObject.apply(new TestLiteralValuesDNA(literalID), new TransactionID(1), new ApplyTransactionInfo(), imo, false);
+    managedObject.apply(new TestLiteralValuesDNA(literalID), new TransactionID(1), new ApplyTransactionInfo(), imo,
+                        false);
 
     this.objectManager.releaseAllAndCommit(this.NULL_TRANSACTION, lookedUpObjects.values());
 
@@ -649,9 +649,10 @@ public class ObjectManagerTest extends TCTestCase {
 
     final ObjectInstanceMonitor imo = new ObjectInstanceMonitorImpl();
     map.apply(new TestMapDNA(mapID), new TransactionID(1), new ApplyTransactionInfo(), imo, false);
-    set.apply(new TestListSetDNA("java.util.HashSet", setID), new TransactionID(1), new ApplyTransactionInfo(), imo, false);
-    list.apply(new TestListSetDNA("java.util.LinkedList", listID), new TransactionID(1), new ApplyTransactionInfo(), imo,
-               false);
+    set.apply(new TestListSetDNA("java.util.HashSet", setID), new TransactionID(1), new ApplyTransactionInfo(), imo,
+              false);
+    list.apply(new TestListSetDNA("java.util.LinkedList", listID), new TransactionID(1), new ApplyTransactionInfo(),
+               imo, false);
 
     this.objectManager.releaseAllAndCommit(this.NULL_TRANSACTION, lookedUpObjects.values());
 
@@ -769,7 +770,7 @@ public class ObjectManagerTest extends TCTestCase {
     assertTrue(value instanceof Date);
   }
 
-  private DBEnvironment newDBEnvironment(final boolean paranoid) throws Exception {
+  private BerkeleyDBEnvironment newDBEnvironment(final boolean paranoid) throws Exception {
     File dbHome;
     int count = 0;
     do {
@@ -779,16 +780,17 @@ public class ObjectManagerTest extends TCTestCase {
     assertTrue(dbHome.exists());
     assertTrue(dbHome.isDirectory());
     System.out.println("DB Home: " + dbHome);
-    return new DBEnvironment(paranoid, dbHome);
+    return new BerkeleyDBEnvironment(paranoid, dbHome);
   }
 
-  private Persistor newPersistor(final DBEnvironment dbEnv,
+  private Persistor newPersistor(final BerkeleyDBEnvironment dbEnv,
                                  final SerializationAdapterFactory serializationAdapterFactory) throws Exception {
-    return new SleepycatPersistor(this.logger, dbEnv, serializationAdapterFactory);
+    return new DBPersistorImpl(this.logger, dbEnv, serializationAdapterFactory);
   }
 
-  private SerializationAdapterFactory newSleepycatSerializationAdapterFactory(final DBEnvironment dbEnv) {
-    return new SleepycatSerializationAdapterFactory();
+  private SerializationAdapterFactory newSleepycatSerializationAdapterFactory(final BerkeleyDBEnvironment dbEnv) {
+    return new CustomSerializationAdapterFactory();
+    // return new SleepycatSerializationAdapterFactory(dbEnv);
   }
 
   private SerializationAdapterFactory newCustomSerializationAdapterFactory() {
@@ -798,7 +800,7 @@ public class ObjectManagerTest extends TCTestCase {
   public void testLookupInPersistentContext() throws Exception {
     boolean paranoid = false;
     // sleepycat serializer, not paranoid
-    DBEnvironment dbEnv = newDBEnvironment(paranoid);
+    BerkeleyDBEnvironment dbEnv = newDBEnvironment(paranoid);
     SerializationAdapterFactory saf = newSleepycatSerializationAdapterFactory(dbEnv);
     Persistor persistor = newPersistor(dbEnv, saf);
 
@@ -893,7 +895,8 @@ public class ObjectManagerTest extends TCTestCase {
     dna.version = 5;
 
     final ObjectInstanceMonitor imo = new ObjectInstanceMonitorImpl();
-    lookedUpViaLookupObjectsForCreateIfNecessary.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), imo, false);
+    lookedUpViaLookupObjectsForCreateIfNecessary.apply(dna, new TransactionID(1), new ApplyTransactionInfo(), imo,
+                                                       false);
 
     PersistenceTransaction tx = ptp.newTransaction();
     this.objectManager.releaseAndCommit(tx, lookedUpViaLookupObjectsForCreateIfNecessary);
@@ -918,7 +921,8 @@ public class ObjectManagerTest extends TCTestCase {
     dna = new TestDNA(cursor);
     dna.version = 10;
     dna.isDelta = true;
-    lookedUpViaLookupObjectsForCreateIfNecessary.apply(dna, new TransactionID(2), new ApplyTransactionInfo(), imo, false);
+    lookedUpViaLookupObjectsForCreateIfNecessary.apply(dna, new TransactionID(2), new ApplyTransactionInfo(), imo,
+                                                       false);
     // lookedUpViaLookupObjectsForCreateIfNecessary.commit();
     tx = ptp.newTransaction();
     this.objectManager.releaseAndCommit(tx, lookedUpViaLookupObjectsForCreateIfNecessary);
@@ -935,9 +939,11 @@ public class ObjectManagerTest extends TCTestCase {
 
   private static void close(final Persistor persistor, final PersistentManagedObjectStore store) {
     // to work around timing problem with this test, calling snapshot
-    // this should block this thread until trasaction reading all oject ids from bdb completes,
-    // at which point, it's ok to close the DB
+    // this should block this thread until transaction reading all object IDs from BDB completes,
+    // at which point, it's OK to close the DB
     persistor.getManagedObjectPersistor().snapshotObjectIDs();
+    persistor.getManagedObjectPersistor().snapshotEvictableObjectIDs();
+    persistor.getManagedObjectPersistor().snapshotMapTypeObjectIDs();
     try {
       store.shutdown();
       persistor.close();
@@ -991,7 +997,7 @@ public class ObjectManagerTest extends TCTestCase {
   }
 
   private void testPhysicalObjectFacade(final boolean paranoid) throws Exception {
-    final DBEnvironment dbEnv = newDBEnvironment(paranoid);
+    final BerkeleyDBEnvironment dbEnv = newDBEnvironment(paranoid);
     final SerializationAdapterFactory saf = newCustomSerializationAdapterFactory();
     final Persistor persistor = newPersistor(dbEnv, saf);
     final PersistenceTransactionProvider ptp = persistor.getPersistenceTransactionProvider();
@@ -1016,6 +1022,10 @@ public class ObjectManagerTest extends TCTestCase {
 
     final PersistenceTransaction tx = ptp.newTransaction();
     this.objectManager.releaseAndCommit(tx, mo);
+    if (!paranoid) {
+      // Object manager doesn't commit if in non-paranoid mode.
+      tx.commit();
+    }
 
     ManagedObjectFacade facade;
     try {
@@ -1309,7 +1319,7 @@ public class ObjectManagerTest extends TCTestCase {
    * recall in TransactionalObjectManager in persistence mode
    */
   public void testRecallNewObjects() throws Exception {
-    final DBEnvironment dbEnv = newDBEnvironment(true);
+    final BerkeleyDBEnvironment dbEnv = newDBEnvironment(true);
     final SerializationAdapterFactory saf = newCustomSerializationAdapterFactory();
     final Persistor persistor = newPersistor(dbEnv, saf);
     final PersistenceTransactionProvider ptp = persistor.getPersistenceTransactionProvider();

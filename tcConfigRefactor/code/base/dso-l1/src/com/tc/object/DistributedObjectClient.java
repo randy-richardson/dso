@@ -82,6 +82,7 @@ import com.tc.object.handler.LockStatisticsEnableDisableHandler;
 import com.tc.object.handler.LockStatisticsResponseHandler;
 import com.tc.object.handler.ReceiveObjectHandler;
 import com.tc.object.handler.ReceiveRootIDHandler;
+import com.tc.object.handler.ReceiveServerMapEvictionBroadcastHandler;
 import com.tc.object.handler.ReceiveServerMapResponseHandler;
 import com.tc.object.handler.ReceiveSyncWriteTransactionAckHandler;
 import com.tc.object.handler.ReceiveTransactionCompleteHandler;
@@ -107,6 +108,8 @@ import com.tc.object.msg.CommitTransactionMessageImpl;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessage;
 import com.tc.object.msg.GetSizeServerMapRequestMessageImpl;
 import com.tc.object.msg.GetSizeServerMapResponseMessageImpl;
+import com.tc.object.msg.GetAllKeysServerMapRequestMessageImpl;
+import com.tc.object.msg.GetAllKeysServerMapResponseMessageImpl;
 import com.tc.object.msg.GetValueServerMapRequestMessageImpl;
 import com.tc.object.msg.GetValueServerMapResponseMessageImpl;
 import com.tc.object.msg.JMXMessage;
@@ -126,6 +129,7 @@ import com.tc.object.msg.RequestManagedObjectMessageImpl;
 import com.tc.object.msg.RequestManagedObjectResponseMessageImpl;
 import com.tc.object.msg.RequestRootMessageImpl;
 import com.tc.object.msg.RequestRootResponseMessage;
+import com.tc.object.msg.ServerMapEvictionBroadcastMessageImpl;
 import com.tc.object.msg.SyncWriteTransactionReceivedMessage;
 import com.tc.object.net.DSOClientMessageChannel;
 import com.tc.object.session.SessionID;
@@ -247,7 +251,17 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                  final PreparedComponentsFromL2Connection connectionComponents, final Manager manager,
                                  final StatisticsAgentSubSystem statisticsAgentSubSystem,
                                  final DsoClusterInternal dsoCluster, final RuntimeLogger runtimeLogger) {
-    super(threadGroup, BoundedLinkedQueue.class.getName());
+    this(config, threadGroup, classProvider, connectionComponents, manager, statisticsAgentSubSystem, dsoCluster,
+         runtimeLogger, BoundedLinkedQueue.class.getName());
+  }
+
+  public DistributedObjectClient(final DSOClientConfigHelper config, final TCThreadGroup threadGroup,
+                                 final ClassProvider classProvider,
+                                 final PreparedComponentsFromL2Connection connectionComponents, final Manager manager,
+                                 final StatisticsAgentSubSystem statisticsAgentSubSystem,
+                                 final DsoClusterInternal dsoCluster, final RuntimeLogger runtimeLogger,
+                                 final String sedaStageQueueClassName) {
+    super(threadGroup, sedaStageQueueClassName);
     Assert.assertNotNull(config);
     this.config = config;
     this.classProvider = classProvider;
@@ -619,6 +633,9 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final Stage receiveServerMapStage = stageManager
         .createStage(ClientConfigurationContext.RECEIVE_SERVER_MAP_RESPONSE_STAGE,
                      new ReceiveServerMapResponseHandler(remoteServerMapManager), 1, maxSize);
+    final Stage receiveServerMapEvictionBroadcastStage = stageManager
+        .createStage(ClientConfigurationContext.RECEIVE_SERVER_MAP_EVICTION_BROADCAST_STAGE,
+                     new ReceiveServerMapEvictionBroadcastHandler(this.objectManager), 1, maxSize);
 
     // By design this stage needs to be single threaded. If it wasn't then cluster membership messages could get
     // processed before the client handshake ack, and this client would get a faulty view of the cluster at best, or
@@ -743,6 +760,50 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                                                   + " shouldn't be created using this constructor at the client.");
                                    }
                                  });
+    this.channel.addClassMapping(TCMessageType.GET_ALL_KEYS_SERVER_MAP_REQUEST_MESSAGE,
+                                 GetAllKeysServerMapRequestMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.GET_ALL_KEYS_SERVER_MAP_RESPONSE_MESSAGE,
+                                 // Special handling to get the applicator encoding
+                                                              new GeneratedMessageFactory() {
+
+                                                                public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                                               final MessageChannel mChannel,
+                                                                                               final TCMessageHeader msgHeader,
+                                                                                               final TCByteBuffer[] data) {
+                                                                  return new GetAllKeysServerMapResponseMessageImpl(sid, monitor, mChannel, msgHeader,
+                                                                                                                  data, encoding);
+                                                                }
+
+                                                                public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                                               final TCByteBufferOutputStream output,
+                                                                                               final MessageChannel mChannel,
+                                                                                               final TCMessageType type) {
+                                                                  throw new AssertionError(
+                                                                                           GetAllKeysServerMapRequestMessageImpl.class.getName()
+                                                                                               + " shouldn't be created using this constructor at the client.");
+                                                                }
+                                                              });  
+    this.channel.addClassMapping(TCMessageType.EVICTION_SERVER_MAP_BROADCAST_MESSAGE,
+    // Special handling to get the applicator encoding
+                                 new GeneratedMessageFactory() {
+
+                                   public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                  final MessageChannel mChannel,
+                                                                  final TCMessageHeader msgHeader,
+                                                                  final TCByteBuffer[] data) {
+                                     return new ServerMapEvictionBroadcastMessageImpl(sid, monitor, mChannel,
+                                                                                      msgHeader, data, encoding);
+                                   }
+
+                                   public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                  final TCByteBufferOutputStream output,
+                                                                  final MessageChannel mChannel,
+                                                                  final TCMessageType type) {
+                                     throw new AssertionError(
+                                                              ServerMapEvictionBroadcastMessageImpl.class.getName()
+                                                                  + " shouldn't be created using this constructor at the client.");
+                                   }
+                                 });
     this.channel.addClassMapping(TCMessageType.TUNNELED_DOMAINS_CHANGED_MESSAGE, TunneledDomainsChanged.class);
 
     DSO_LOGGER.debug("Added class mappings.");
@@ -782,8 +843,12 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                   hydrateSink);
     this.channel.routeMessageType(TCMessageType.GET_SIZE_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage.getSink(),
                                   hydrateSink);
+    this.channel.routeMessageType(TCMessageType.GET_ALL_KEYS_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage.getSink(),
+                                  hydrateSink);
     this.channel.routeMessageType(TCMessageType.OBJECT_NOT_FOUND_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage
         .getSink(), hydrateSink);
+    this.channel.routeMessageType(TCMessageType.EVICTION_SERVER_MAP_BROADCAST_MESSAGE,
+                                  receiveServerMapEvictionBroadcastStage.getSink(), hydrateSink);
 
     int i = 0;
     while (maxConnectRetries <= 0 || i < maxConnectRetries) {
@@ -1016,12 +1081,13 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     }
 
     CommonShutDownHook.shutdown();
-    
+
     if (threadGroup != null) {
       boolean interrupted = false;
-      
+
       try {
-        long end = System.currentTimeMillis() + l1Properties.getLong(TCPropertiesConsts.L1_SHUTDOWN_THREADGROUP_GRACETIME);
+        long end = System.currentTimeMillis()
+                   + TCPropertiesImpl.getProperties().getLong(TCPropertiesConsts.L1_SHUTDOWN_THREADGROUP_GRACETIME);
 
         while (threadGroup.activeCount() > 0 && System.currentTimeMillis() < end) {
           try {
@@ -1032,7 +1098,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         }
         if (threadGroup.activeCount() > 0) {
           logger.warn("Timed out waiting for TC thread group threads to die - probable shutdown memory leak\n"
-                     + "Live threads: " + getLiveThreads(threadGroup));
+                      + "Live threads: " + getLiveThreads(threadGroup));
         } else {
           logger.info("Destroying TC thread group");
           threadGroup.destroy();
@@ -1045,7 +1111,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         }
       }
     }
-    
+
     try {
       TCLogging.closeFileAppender();
       TCLogging.disableLocking();
@@ -1053,15 +1119,15 @@ public class DistributedObjectClient extends SEDA implements TCClient {
       Logger.getAnonymousLogger().log(Level.WARNING, "Error shutting down TC logging system", t);
     }
   }
-  
+
   private static List<Thread> getLiveThreads(ThreadGroup group) {
     int estimate = group.activeCount();
-    
+
     Thread[] threads = new Thread[estimate + 1];
 
     while (true) {
       int count = group.enumerate(threads);
-      
+
       if (count < threads.length) {
         List<Thread> l = new ArrayList<Thread>(count);
         for (Thread t : threads) {

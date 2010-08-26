@@ -5,6 +5,8 @@ package com.tc.object;
 
 import com.tc.object.bytecode.TCServerMap;
 
+import java.util.Set;
+
 public interface TCObjectServerMap extends TCObject {
 
   /**
@@ -25,6 +27,15 @@ public interface TCObjectServerMap extends TCObject {
    * @param value Object in the mapping
    */
   public void doLogicalRemove(final TCServerMap map, final Object key);
+  
+  /**
+   * Does a logic remove and mark as removed in the local cache if present. The cached item is incoherent
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object
+   * @param value Object in the mapping
+   */
+  public void doLogicalRemoveIncoherent(final TCServerMap map, final Object key);
 
   /**
    * Does a logical put and updates the local cache
@@ -45,6 +56,16 @@ public interface TCObjectServerMap extends TCObject {
    * @param value Object in the mapping
    */
   public void doLogicalPutButDontCache(final TCServerMap map, final Object key, final Object value);
+  
+  /**
+   * Does a logical put and updates the local cache. The cached item is incoherent
+   * 
+   * @param map ServerTCMap
+   * @param lockID, lock under which this entry is added
+   * @param key Key Object
+   * @param value Object in the mapping
+   */
+  public void doLogicalPutIncoherent(final TCServerMap map, final Object key, final Object value);
 
   /**
    * Returns the value for a particular Key in a ServerTCMap, gets it from the server and doesn't cache the value
@@ -56,7 +77,28 @@ public interface TCObjectServerMap extends TCObject {
    * @return value Object in the mapping, null if no mapping present.
    */
   public Object getValueButDontCache(final TCServerMap map, final Object key);
+  
+  /**
+   * Returns the value for a particular key in a TCServerMap. If already present in local cache, returns the value
+   * otherwise fetches it from server and returns it, after caching it in local cache (if present). The cached item is incoherent.
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object : Note currently only literal keys or shared keys are supported. Even if the key is portable,
+   *        but not shared, it is not supported.
+   * @return value Object in the mapping, null if no mapping present.
+   */
+  public Object getValueIncoherent(final TCServerMap map, final Object key);
 
+  
+  /**
+   * Returns a snapshot of keys for the giver ServerTCMap
+   * 
+   * @param map ServerTCMap
+   * @return set Set return snapshot of keys
+   */
+  public Set keySet(final TCServerMap map);
+  
+  
   /**
    * Returns the value for a particular Key in a ServerTCMap.
    * 
@@ -94,4 +136,9 @@ public interface TCObjectServerMap extends TCObject {
    * Runs Target capacity eviction to evict Cached Entries from local cache
    */
   public void doCapacityEviction();
+  
+  /**
+   * Clears local cache for the corresponding key
+   */
+  public void removeFromLocalCache(Object key);
 }

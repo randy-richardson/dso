@@ -47,6 +47,7 @@ import com.terracottatech.config.NetworkedActivePassive;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.RuntimeLogging;
 import com.terracottatech.config.RuntimeOutputOptions;
+import com.tc.util.concurrent.ThreadUtil;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
@@ -387,12 +388,8 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private void sleepIfNecessaryToAvoidPoundingSources(long lastLoopStartTime) {
     long delay = MIN_RETRY_TIMEOUT - (java.lang.System.currentTimeMillis() - lastLoopStartTime);
     if (delay > 0) {
-      try {
-        logger.info("Waiting " + delay + " ms until we try to get configuration data again...");
-        Thread.sleep(delay);
-      } catch (InterruptedException ie) {
-        // whatever
-      }
+      logger.info("Waiting " + delay + " ms until we try to get configuration data again...");
+      ThreadUtil.reallySleep(delay);
     }
   }
 
