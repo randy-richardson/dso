@@ -9,11 +9,9 @@ import com.tc.config.schema.context.ConfigContext;
 import com.terracottatech.config.BindPort;
 
 public class BindPortXPathBasedConfigObject extends XPathBasedConfigItem implements BindPortConfigItem {
-  private BindPort defaultValue;
 
   public BindPortXPathBasedConfigObject(ConfigContext context, String xpath, BindPort defaultValue) {
     super(context, xpath, defaultValue);
-    this.defaultValue = defaultValue;
   }
 
   protected Object fetchDataFromXmlObject(XmlObject xmlObject) {
@@ -23,7 +21,7 @@ public class BindPortXPathBasedConfigObject extends XPathBasedConfigItem impleme
     
     String bindAddress = (String) super.fetchDataFromXmlObjectByReflection(xmlObject, "getBind");
     if(bindAddress == null){
-      bindAddress = this.defaultValue.getBind();
+      return null;
     }
     
     bindPort.setIntValue(port);
