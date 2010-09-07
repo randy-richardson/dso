@@ -28,6 +28,7 @@ import com.terracottatech.config.HaMode;
 import com.terracottatech.config.InstrumentationLogging;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
+import com.terracottatech.config.Persistence;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.RuntimeLogging;
 import com.terracottatech.config.RuntimeOutputOptions;
@@ -375,16 +376,118 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Server server = servers.getServerArray(0);
     Assert.assertTrue(server.isSetDso());
     DsoServerData dsoServerData = server.getDso();
+    Assert.assertTrue(dsoServerData.isSetPersistence());
     Assert.assertEquals(PersistenceMode.TEMPORARY_SWAP_ONLY, dsoServerData.getPersistence().getMode());
+    Persistence persistence = dsoServerData.getPersistence();
+    Assert.assertTrue(persistence.isSetMode());
+    Assert.assertTrue(persistence.isSetOffheap());
+    Assert.assertEquals(false, persistence.getOffheap().getEnabled());
+    Assert.assertEquals("100m", persistence.getOffheap().getMaxDataSize());
+  }
+  
+  public void testDefaultOffHeap() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "<servers>" 
+                    +  "<server>" 
+                    +   "<dso>"
+                    +     "<persistence>" 
+                    +       "<mode>permanent-store</mode>" 
+                    +     "</persistence>"
+                    +     "<client-reconnect-window>9876</client-reconnect-window>" 
+                    +     "<garbage-collection>"
+                    +       "<enabled>false</enabled>" 
+                    +       "<verbose>true</verbose>" 
+                    +       "<interval>1234</interval>"
+                    +     "</garbage-collection>" 
+                    +   "</dso>" 
+                    +  "</server>" 
+                    + "</servers>" 
+                    + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+
+    Assert.assertEquals(PersistenceMode.PERMANENT_STORE, server.getDso().getPersistence().getMode());
+    Assert.assertEquals(9876, server.getDso().getClientReconnectWindow());
+    Assert.assertEquals(false, server.getDso().getGarbageCollection().getEnabled());
+    Assert.assertEquals(true, server.getDso().getGarbageCollection().getVerbose());
+    Assert.assertEquals(1234, server.getDso().getGarbageCollection().getInterval());
+    
+    Assert.assertTrue(server.getDso().getPersistence().isSetOffheap());
+    Assert.assertEquals(false, server.getDso().getPersistence().getOffheap().getEnabled());
+    Assert.assertEquals("100m", server.getDso().getPersistence().getOffheap().getMaxDataSize());
+  }
+  
+  public void testOffHeap() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "<servers>" 
+                    +  "<server>" 
+                    +   "<dso>"
+                    +     "<persistence>" 
+                    +       "<mode>permanent-store</mode>" 
+                    +       "<offheap>"
+                    +         "<enabled>true</enabled>"
+                    +         "<maxDataSize>5628m</maxDataSize>"
+                    +       "</offheap>"
+                    +     "</persistence>"
+                    +     "<client-reconnect-window>9876</client-reconnect-window>" 
+                    +     "<garbage-collection>"
+                    +       "<enabled>false</enabled>" 
+                    +       "<verbose>true</verbose>" 
+                    +       "<interval>1234</interval>"
+                    +     "</garbage-collection>" 
+                    +   "</dso>" 
+                    +  "</server>" 
+                    + "</servers>" 
+                    + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+
+    Servers servers = (Servers) configSetupMgr.serversBeanRepository().bean();
+
+    Assert.assertEquals(1, servers.getServerArray().length);
+    Server server = servers.getServerArray(0);
+
+    Assert.assertEquals(PersistenceMode.PERMANENT_STORE, server.getDso().getPersistence().getMode());
+    Assert.assertEquals(9876, server.getDso().getClientReconnectWindow());
+    Assert.assertEquals(false, server.getDso().getGarbageCollection().getEnabled());
+    Assert.assertEquals(true, server.getDso().getGarbageCollection().getVerbose());
+    Assert.assertEquals(1234, server.getDso().getGarbageCollection().getInterval());
+    
+    Assert.assertTrue(server.getDso().getPersistence().isSetOffheap());
+    Assert.assertEquals(true, server.getDso().getPersistence().getOffheap().getEnabled());
+    Assert.assertEquals("5628m", server.getDso().getPersistence().getOffheap().getMaxDataSize());
   }
   
   public void testDso() throws IOException, ConfigurationSetupException {
     this.tcConfig = getTempFile("default-config.xml");
-    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>" + "<dso>"
-                    + "<persistence>" + "<mode>permanent-store</mode>" + "</persistence>"
-                    + "<client-reconnect-window>9876</client-reconnect-window>" + "<garbage-collection>"
-                    + "<enabled>false</enabled>" + "<verbose>true</verbose>" + "<interval>1234</interval>"
-                    + "</garbage-collection>" + "</dso>" + "</server>" + "</servers>" + "</tc:tc-config>";
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "<servers>" 
+                    +  "<server>" 
+                    +   "<dso>"
+                    +     "<persistence>" 
+                    +       "<mode>permanent-store</mode>" 
+                    +     "</persistence>"
+                    +     "<client-reconnect-window>9876</client-reconnect-window>" 
+                    +     "<garbage-collection>"
+                    +       "<enabled>false</enabled>" 
+                    +       "<verbose>true</verbose>" 
+                    +       "<interval>1234</interval>"
+                    +     "</garbage-collection>" 
+                    +   "</dso>" 
+                    +  "</server>" 
+                    + "</servers>" 
+                    + "</tc:tc-config>";
 
     writeConfigFile(config);
 

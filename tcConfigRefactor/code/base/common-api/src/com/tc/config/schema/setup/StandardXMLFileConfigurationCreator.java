@@ -47,6 +47,8 @@ import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
 import com.terracottatech.config.Modules;
 import com.terracottatech.config.NetworkedActivePassive;
+import com.terracottatech.config.Offheap;
+import com.terracottatech.config.Persistence;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.RuntimeLogging;
 import com.terracottatech.config.RuntimeOutputOptions;
@@ -708,14 +710,33 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private void initializeDso(Server server) throws XmlException {
     if (!server.isSetDso()) {
       DsoServerData dso = server.addNewDso();
-      dso.addNewPersistence().setMode(getDefaultPersistence(server));
+      initializeDefaultPersistence(server);
       dso.setClientReconnectWindow(getDefaultReconnectWindow(server));
-      setDefaultGarbageCollection(server, dso.addNewGarbageCollection());
+      initializeDefaultGarbageCollection(server);
     } else {
       DsoServerData dso = server.getDso();
 
       if (!dso.isSetPersistence()) {
         dso.addNewPersistence().setMode(getDefaultPersistence(server));
+        initializeDefaultOffHeap(server);
+      }else{
+        Persistence persistence = dso.getPersistence();
+        if(!persistence.isSetMode()){
+          persistence.setMode(getDefaultPersistence(server));
+        }
+        
+        if(!persistence.isSetOffheap()){
+          initializeDefaultOffHeap(server);
+        }else{
+          Offheap offHeap = persistence.getOffheap();
+          if(!offHeap.isSetEnabled()){
+            offHeap.setEnabled(getDefaultOffHeapEnabled(server));
+          }
+          
+          if(!offHeap.isSetMaxDataSize()){
+            offHeap.setMaxDataSize(getDefaultOffHeapMaxDataSize(server));
+          }
+        }
       }
 
       if (!dso.isSetClientReconnectWindow()) {
@@ -723,7 +744,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       }
 
       if (!dso.isSetGarbageCollection()) {
-        setDefaultGarbageCollection(server, dso.addNewGarbageCollection());
+        initializeDefaultGarbageCollection(server);
       } else {
         GarbageCollection gc = dso.getGarbageCollection();
         if (!gc.isSetEnabled()) {
@@ -741,7 +762,28 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     }
   }
 
-  private void setDefaultGarbageCollection(Server server, GarbageCollection gc) throws XmlException {
+  private void initializeDefaultPersistence(Server server) throws XmlException {
+    Assert.assertTrue(server.isSetDso());
+    Assert.assertFalse(server.getDso().isSetPersistence());
+    Persistence persistence = server.getDso().addNewPersistence();
+
+    persistence.setMode(getDefaultPersistence(server));
+    initializeDefaultOffHeap(server);
+  }
+
+  private void initializeDefaultOffHeap(Server server) throws XmlException {
+    Assert.assertTrue(server.isSetDso());
+    Assert.assertTrue(server.getDso().isSetPersistence());
+    Offheap offHeap = server.getDso().getPersistence().addNewOffheap();
+    offHeap.setEnabled(getDefaultOffHeapEnabled(server));
+    offHeap.setMaxDataSize(getDefaultOffHeapMaxDataSize(server));
+  }
+
+  private void initializeDefaultGarbageCollection(Server server) throws XmlException {
+    Assert.assertTrue(server.isSetDso());
+    Assert.assertFalse(server.getDso().isSetGarbageCollection());
+    
+    GarbageCollection gc = server.getDso().addNewGarbageCollection();
     gc.setEnabled(getDefaultGarbageCollectionEnabled(server));
     gc.setVerbose(getDefaultGarbageCollectionVerbose(server));
     gc.setInterval(getDefaultGarbageCollectionInterval(server));
@@ -754,6 +796,16 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
                       || xmlObject.getStringValue().equals(PersistenceMode.TEMPORARY_SWAP_ONLY.toString()));
     if (xmlObject.getStringValue().equals(PersistenceMode.PERMANENT_STORE.toString())) return PersistenceMode.PERMANENT_STORE;
     return PersistenceMode.TEMPORARY_SWAP_ONLY;
+  }
+  
+  private boolean getDefaultOffHeapEnabled(Server server) throws XmlException {
+    return ((XmlBoolean) this.defaultValueProvider.defaultFor(server.schemaType(), "dso/persistence/offheap/enabled"))
+    .getBooleanValue();
+  }
+  
+  private String getDefaultOffHeapMaxDataSize(Server server) throws XmlException {
+    return ((XmlString) this.defaultValueProvider
+        .defaultFor(server.schemaType(), "dso/persistence/offheap/maxDataSize")).getStringValue();
   }
 
   private int getDefaultReconnectWindow(Server server) throws XmlException {
