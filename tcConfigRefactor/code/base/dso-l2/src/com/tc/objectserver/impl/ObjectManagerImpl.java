@@ -271,6 +271,12 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private boolean markReferenced(final ManagedObjectReference reference) {
     final boolean marked = reference.markReference();
     if (marked) {
+      if (reference != this.references.get(reference.getObjectID())) {
+        // This reference was removed by someone else and then unmarked before this thread got a chance to call
+        // markReferenced.
+        reference.unmarkReference();
+        return false;
+      }
       this.checkedOutCount.incrementAndGet();
     }
     return marked;
@@ -291,7 +297,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   }
 
   /**
-   * Retrieves materialized references-- if not materialized, will initiate a request to materialize them from the
+   * Retrieves materialized references -- if not materialized, will initiate a request to materialize them from the
    * object store.
    * 
    * @return null if the object is missing
@@ -317,7 +323,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       if (context.updateStats()) {
         this.stats.cacheHit();
       }
-      if (!rv.isRemoveOnRelease()) {
+      if (rv.isCacheManaged()) {
         // TODO:: this is synchronized, see if we can avoid synchronization
         this.evictionPolicy.markReferenced(rv);
       }
@@ -343,7 +349,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     final ManagedObjectReference mor = this.references.get(oid);
     if (mor == null || !(mor instanceof FaultingManagedObjectReference) || !oid.equals(mor.getObjectID())) {
       // Format
-      throw new AssertionError("ManagedObjectReference is not what was expected : " + mor + " oid : " + oid);
+      throw new AssertionError("ManagedObjectReference is not what was expected : " + mor + " oid : " + oid
+                               + " Faulting in : " + mo);
     }
     final FaultingManagedObjectReference fmor = (FaultingManagedObjectReference) mor;
     if (mo == null) {
@@ -380,14 +387,14 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   }
 
   private ManagedObjectReference addNewReference(final ManagedObjectReference newReference,
-                                                 final boolean isRemoveOnRelease,
-                                                 final ManagedObjectReference expectedOld) {
-    newReference.setRemoveOnRelease(isRemoveOnRelease);
+                                                 final boolean removeOnRelease, final ManagedObjectReference expectedOld) {
     final Object oldRef = this.references.put(newReference.getObjectID(), newReference);
     if (oldRef != expectedOld) { throw new AssertionError("Object was not as expected. Reference was not equal to : = "
                                                           + expectedOld + " but was : " + oldRef + " : new = "
                                                           + newReference); }
-    if (!isRemoveOnRelease) {
+    if (removeOnRelease) {
+      newReference.setRemoveOnRelease(removeOnRelease);
+    } else if (newReference.isCacheManaged()) {
       this.evictionPolicy.add(newReference);
     }
     return newReference;
@@ -412,23 +419,26 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       }
       for (final Object cand : removalCandidates) {
         final ManagedObjectReference removalCandidate = (ManagedObjectReference) cand;
-        if (removalCandidate == null || removalCandidate.isNew() && removalCandidate.isReferenced()) {
+        if (removalCandidate == null || removalCandidate.isReferenced()) {
           continue;
         }
         if (markReferenced(removalCandidate)) {
           // It is possible that before the cache evictor has a chance to mark the reference, the DGC could come and
           // remove the reference, hence we check in references map again - this order of checking is important
-          if (this.references.containsKey(removalCandidate.getObjectID())) {
+          final ObjectID id = removalCandidate.getObjectID();
+          if (this.references.containsKey(id)) {
             this.evictionPolicy.remove(removalCandidate);
             if (removalCandidate.getObject().isDirty()) {
               Assert.assertFalse(this.config.paranoid());
               toFlush.add(removalCandidate.getObject());
             } else {
               // paranoid mode or the object is not dirty - just remove from reference
-              final ManagedObjectReference inMap = this.references.remove(removalCandidate.getObjectID());
-              Assert.assertTrue(inMap == removalCandidate);
+              final ManagedObjectReference inMap = this.references.remove(id);
+              if (inMap != removalCandidate) { throw new AssertionError("Not the same element : removalCandidate : "
+                                                                        + removalCandidate + " inMap : " + inMap); }
               removedObjects.add(removalCandidate);
               unmarkReferenced(removalCandidate);
+              makeUnBlocked(id);
             }
           } else {
             unmarkReferenced(removalCandidate);
@@ -455,10 +465,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
         logger.warn("Object ID : " + mo.getID() + " was mapped to null but should have been mapped to a reference of  "
                     + mo);
       }
-      // Remove first and then check blocked to make sure we don't miss any request
-      if (isBlocked(oid)) {
-        makeUnBlocked(oid);
-      }
+      // Remove first and then unblock to make sure we don't miss any request
+      makeUnBlocked(oid);
     }
     this.checkedOutCount.addAndGet(-managedObjects.size());
     postRelease();
@@ -531,6 +539,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     } else {
       context.makeOldRequest();
       unmarkReferenced(objects.values());
+      // It is OK to not unblock these unmarked references as any request that is blocked by these objects will be 
+      // processed after this request is (unblocked) and processed
       return addBlocked(nodeID, context, maxReachableObjects, blockedObjectID);
     }
   }
@@ -670,8 +680,9 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
         }
         this.noReferencesIDStore.clearFromNoReferencesStore(id);
         if (ref != null) {
-          if (ref.isNew()) { throw new AssertionError("DGCed Reference is still new : " + ref); }
-          this.evictionPolicy.remove(ref);
+          if (ref.isCacheManaged()) {
+            this.evictionPolicy.remove(ref);
+          } else if (ref.isNew()) { throw new AssertionError("DGCed Reference is still new : " + ref); }
         }
       }
     } finally {
@@ -763,7 +774,14 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       this.objectStore.addNewObject(object);
       this.noReferencesIDStore.addToNoReferences(object);
       object.setIsNew(false);
+      addToCacheIfNecessary(object.getReference());
       fireNewObjectinitialized(object.getID());
+    }
+  }
+
+  private void addToCacheIfNecessary(final ManagedObjectReference mor) {
+    if (mor.isCacheManaged()) {
+      this.evictionPolicy.add(mor);
     }
   }
 
@@ -778,7 +796,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
         throw new AssertionError(mor + " is DIRTY");
       }
       final Object removed = this.references.remove(mor.getObjectID());
-      Assert.assertNotNull(removed);
+      if (removed == null) { throw new AssertionError("Removed is null : " + mor); }
     }
   }
 
@@ -911,10 +929,6 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     this.pending.makeUnBlocked(id);
   }
 
-  private boolean isBlocked(final ObjectID id) {
-    return this.pending.isBlocked(id);
-  }
-
   private void makePending(final NodeID nodeID, final ObjectManagerLookupContext context, final int maxReachableObjects) {
     this.pending.addPending(new Pending(nodeID, context, maxReachableObjects));
   }
@@ -940,6 +954,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
 
     final int evicted = (toFlush.size() + removed.size());
+    final boolean doPostRelease = !removed.isEmpty();
 
     this.stats.flushed(evicted);
 
@@ -955,6 +970,10 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
     // TODO:: Send the right objects to the cache manager
     stat.objectEvicted(evicted, references_size(), Collections.EMPTY_LIST, true);
+    if (doPostRelease) {
+      // Only running postRelease when necessary to avoid hogging memory manager thread here.
+      postRelease();
+    }
   }
 
   private void updateFlushStats(final Collection<ManagedObject> toFlush,
@@ -1201,10 +1220,6 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       return success;
     }
 
-    public boolean isBlocked(final ObjectID id) {
-      return this.blocked.containsKey(id);
-    }
-
     public void makeUnBlocked(final ObjectID id) {
       final Set<Pending> blockedRequests = this.blocked.removeAll(id);
       if (blockedRequests.isEmpty()) { return; }
@@ -1227,7 +1242,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       out.print(this.getClass().getName()).flush();
       out.indent().print("pending lookups : ").visit(this.pending.size()).flush();
       out.indent().print("blocked count   : ").visit(this.blockedCount.get()).flush();
-      out.indent().print("blocked oids    : ").visit(this.pending).flush();
+      out.indent().print("blocked         : ").visit(this.blocked).flush();
+      out.indent().print("pending         : ").visit(this.pending).flush();
       return out;
     }
 

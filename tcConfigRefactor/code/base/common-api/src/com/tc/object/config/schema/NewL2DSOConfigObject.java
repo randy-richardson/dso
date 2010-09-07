@@ -7,6 +7,7 @@ package com.tc.object.config.schema;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.BaseNewConfigObject;
+import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.dynamic.BindPortConfigItem;
 import com.tc.config.schema.dynamic.BooleanConfigItem;
@@ -24,6 +25,7 @@ import com.terracottatech.config.Server;
 public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DSOConfig {
 
   private final ConfigItem         persistenceMode;
+  private final OffHeapConfigItem  offHeapConfig;
   private final BooleanConfigItem  garbageCollectionEnabled;
   private final BooleanConfigItem  garbageCollectionVerbose;
   private final IntConfigItem      garbageCollectionInterval;
@@ -60,8 +62,12 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
 
     Server server = (Server) this.context.bean();
     this.dsoPort = this.context.bindPortItem("dso-port", server.getDsoPort());
-    
     this.l2GroupPort = this.context.bindPortItem("l2-group-port", server.getL2GroupPort());
+    this.offHeapConfig = new OffHeapConfigItem(this.context, "dso/persistence/offheap");
+  }
+
+  public OffHeapConfigItem offHeapConfig() {
+    return this.offHeapConfig;
   }
 
   public BindPortConfigItem dsoPort() {
