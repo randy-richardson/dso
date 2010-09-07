@@ -14,7 +14,6 @@ import com.tc.config.schema.NewCommonL1Config;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
-import com.tc.config.schema.OffHeapConfigObject;
 import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.TestConfigObjectInvocationHandler;
 import com.tc.config.schema.dynamic.ConfigItem;
@@ -30,6 +29,7 @@ import com.terracottatech.config.Application;
 import com.terracottatech.config.Members;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
+import com.terracottatech.config.Offheap;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Property;
 import com.terracottatech.config.Server;
@@ -177,7 +177,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   private int                            gcIntervalInSec         = 3600;
 
   private boolean                        isConfigDone            = false;
-  private OffHeapConfigObject            offHeapConfigObject     = new OffHeapConfigObject(false, "-1m");
+  private boolean                        offHeapEnabled          = false;
+  private String                         maxOffHeapDataSize      = "-1m";
 
   public TestTVSConfigurationSetupManagerFactory(int mode, String l2Identifier,
                                                  IllegalConfigurationChangeHandler illegalConfigurationChangeHandler)
@@ -474,9 +475,13 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     }
   }
 
-  public void setOffHeapConfigObject(final OffHeapConfigObject offHeapConfigObject) {
-    this.offHeapConfigObject = offHeapConfigObject;
-    // ((SettableConfigItem) l2DSOConfig().offHeapConfig()).setValue(offHeapConfigObject);
+  public void setOffHeapConfigObject(boolean enabled, String maxDataSize) {
+    offHeapEnabled = enabled;
+    maxOffHeapDataSize = maxDataSize;
+    Offheap offheap = Offheap.Factory.newInstance();
+    offheap.setEnabled(enabled);
+    offheap.setMaxDataSize(maxDataSize);
+    ((SettableConfigItem) l2DSOConfig().offHeapConfig()).setValue(offheap);
   }
 
   public void setGCEnabled(boolean val) {
@@ -500,11 +505,11 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   }
 
   public boolean isOffHeapEnabled() {
-    return this.offHeapConfigObject.isEnabled();
+    return offHeapEnabled;
   }
 
   public String getOffHeapMaxDataSize() {
-    return this.offHeapConfigObject.getMaxDataSize();
+    return maxOffHeapDataSize;
   }
 
   public boolean getGCEnabled() {
@@ -566,9 +571,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   }
 
   public NewDSOApplicationConfig dsoApplicationConfig(String applicationName) {
-    return (NewDSOApplicationConfig) proxify(NewDSOApplicationConfig.class,
-                                             this.beanSet.applicationBeanFor(applicationName),
-                                             this.sampleDSOApplication, "dso");
+    return (NewDSOApplicationConfig) proxify(NewDSOApplicationConfig.class, this.beanSet
+        .applicationBeanFor(applicationName), this.sampleDSOApplication, "dso");
   }
 
   public NewDSOApplicationConfig dsoApplicationConfig() {
@@ -632,14 +636,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   public L2TVSConfigurationSetupManager createL2TVSConfigurationSetupManager(File tcConfig, String l2Identifier)
       throws ConfigurationSetupException {
     String effectiveL2Identifier = l2Identifier == null ? this.defaultL2Identifier : l2Identifier;
-    ConfigurationCreator configurationCreator = new StandardXMLFileConfigurationCreator(
-                                                                                        new ConfigurationSpec(
-                                                                                                              tcConfig
-                                                                                                                  .getAbsolutePath(),
-                                                                                                              ConfigMode.L2,
-                                                                                                              tcConfig
-                                                                                                                  .getParentFile()),
-                                                                                        this.beanFactory);
+    ConfigurationCreator configurationCreator = new StandardXMLFileConfigurationCreator(new ConfigurationSpec(tcConfig
+        .getAbsolutePath(), ConfigMode.L2, tcConfig.getParentFile()), this.beanFactory);
     return new StandardL2TVSConfigurationSetupManager(configurationCreator, effectiveL2Identifier,
                                                       this.defaultValueProvider, this.xmlObjectComparator,
                                                       this.illegalChangeHandler);

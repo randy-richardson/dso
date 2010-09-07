@@ -16,6 +16,7 @@ import com.terracottatech.config.HaMode;
 import com.terracottatech.config.Members;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
+import com.terracottatech.config.Offheap;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
@@ -63,6 +64,10 @@ public class TestConfigBeanSet {
     BindPort groupPort = initialServer.addNewL2GroupPort();
     groupPort.setIntValue(0);
     groupPort.setBind("0.0.0.0");
+    
+    Offheap offheap = initialServer.addNewDso().addNewPersistence().addNewOffheap();
+    offheap.setEnabled(false);
+    offheap.setMaxDataSize("1m");
     
     Ha commonHa = this.rootServersBean.addNewHa();
     commonHa.setMode(HaMode.DISK_BASED_ACTIVE_PASSIVE);

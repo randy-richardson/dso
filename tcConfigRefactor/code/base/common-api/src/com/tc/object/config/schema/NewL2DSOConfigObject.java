@@ -63,7 +63,7 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
     Server server = (Server) this.context.bean();
     this.dsoPort = this.context.bindPortItem("dso-port", server.getDsoPort());
     this.l2GroupPort = this.context.bindPortItem("l2-group-port", server.getL2GroupPort());
-    this.offHeapConfig = new OffHeapConfigItem(this.context, "dso/persistence/offheap");
+    this.offHeapConfig = this.context.offHeapConfigItem("dso/persistence/offheap", server.getDso().getPersistence().getOffheap());
   }
 
   public OffHeapConfigItem offHeapConfig() {

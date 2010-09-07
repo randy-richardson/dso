@@ -8,6 +8,8 @@ import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
+import com.tc.config.schema.OffHeapConfigItem;
+import com.tc.config.schema.OffHeapConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.BindPortConfigItem;
 import com.tc.config.schema.dynamic.BindPortXPathBasedConfigObject;
@@ -27,6 +29,7 @@ import com.tc.config.schema.listen.ConfigurationChangeListener;
 import com.tc.config.schema.repository.BeanRepository;
 import com.tc.util.Assert;
 import com.terracottatech.config.BindPort;
+import com.terracottatech.config.Offheap;
 
 import java.io.File;
 
@@ -128,6 +131,10 @@ public class StandardConfigContext implements ConfigContext {
 
   public BindPortConfigItem bindPortItem(String xpath, BindPort defaultValue) {
     return new BindPortXPathBasedConfigObject(this, xpath, defaultValue);
+  }
+
+  public OffHeapConfigItem offHeapConfigItem(String xPath, Offheap defaultOffHeap) {
+    return new OffHeapConfigObject(this, xPath, defaultOffHeap);
   }
 
 }

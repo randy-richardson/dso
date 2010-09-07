@@ -22,6 +22,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.util.Assert;
 import com.terracottatech.config.BindPort;
+import com.terracottatech.config.Offheap;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -60,7 +61,7 @@ public class TestConfigObjectInvocationHandler implements InvocationHandler {
    * {@link com.tc.util.TCAssertionError}s.
    */
   private class OurSettableConfigItem implements SettableConfigItem, BooleanConfigItem, FileConfigItem, IntConfigItem,
-      ObjectArrayConfigItem, StringArrayConfigItem, StringConfigItem, BindPortConfigItem {
+      ObjectArrayConfigItem, StringArrayConfigItem, StringConfigItem, BindPortConfigItem, OffHeapConfigItem {
     private final String xpath;
 
     public OurSettableConfigItem(String xpath) {
@@ -418,6 +419,14 @@ public class TestConfigObjectInvocationHandler implements InvocationHandler {
 
     public int getBindPort() {
       return ((BindPort)getObject()).getIntValue();
+    }
+
+    public String getMaxDataSize() {
+      return ((Offheap)getObject()).getMaxDataSize();
+    }
+
+    public boolean isEnabled() {
+      return ((Offheap)getObject()).getEnabled();
     }
 
   }

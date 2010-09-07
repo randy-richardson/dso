@@ -565,10 +565,11 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   }
 
   private void initializeServers(TcConfig config) throws XmlException, ConfigurationSetupException {
+    if(!config.isSetServers()){
+      config.addNewServers();
+    }
     Servers servers = config.getServers();
-
-    if (servers == null) {
-      servers = config.addNewServers();
+    if(servers.getServerArray().length == 0){
       servers.addNewServer();
     }
 
