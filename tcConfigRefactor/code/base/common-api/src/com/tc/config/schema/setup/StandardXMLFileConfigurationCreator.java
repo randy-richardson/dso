@@ -16,7 +16,7 @@ import org.xml.sax.SAXException;
 import com.tc.config.schema.beanfactory.BeanWithErrors;
 import com.tc.config.schema.beanfactory.ConfigBeanFactory;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.defaults.FromSchemaDefaultValueProvider;
+import com.tc.config.schema.defaults.SchemaDefaultValueProvider;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
 import com.tc.config.schema.repository.ApplicationsRepository;
 import com.tc.config.schema.repository.MutableBeanRepository;
@@ -28,7 +28,10 @@ import com.tc.config.schema.setup.sources.URLConfigurationSource;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
+import com.tc.util.concurrent.ThreadUtil;
 import com.terracottatech.config.BindPort;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.ConfigurationModel;
@@ -47,7 +50,6 @@ import com.terracottatech.config.NetworkedActivePassive;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.RuntimeLogging;
 import com.terracottatech.config.RuntimeOutputOptions;
-import com.tc.util.concurrent.ThreadUtil;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
@@ -86,11 +88,11 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   // We require more than one character before the colon so that we don't mistake Windows-style directory paths as URLs.
   private static final Pattern       URL_PATTERN                           = Pattern.compile("[A-Za-z][A-Za-z]+://.*");
   private static final String        WILDCARD_IP                           = "0.0.0.0";
-  private static final long          GET_CONFIGURATION_ONE_SOURCE_TIMEOUT  = 30000;                                    // TCPropertiesImpl
-  // .getProperties()
-  // .getLong(
-  // TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT,
-  // 30000);
+  private static final long          GET_CONFIGURATION_ONE_SOURCE_TIMEOUT  = TCPropertiesImpl
+                                                                               .getProperties()
+                                                                               .getLong(
+                                                                                        TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT,
+                                                                                        30000);
 
   private final ConfigurationSpec    configurationSpec;
   private final ConfigBeanFactory    beanFactory;
@@ -103,7 +105,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private String                     baseConfigDescription                 = "";
   private volatile String            rawConfigText                         = "";
   private TcConfigDocument           tcConfigDocument;
-  private final DefaultValueProvider defaultValueProvider                  = new FromSchemaDefaultValueProvider();
+  private final DefaultValueProvider defaultValueProvider                  = new SchemaDefaultValueProvider();
 
   public StandardXMLFileConfigurationCreator(final ConfigurationSpec configurationSpec,
                                              final ConfigBeanFactory beanFactory) {
@@ -577,10 +579,10 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       // CDV-1220: per our documentation in the schema itself, host is supposed to default to server name or '%i'
       // and name is supposed to default to 'host:dso-port'
       initializeNameAndHost(server);
-      initializeDataDiretcory(server);
-      initializeLogsDiretcory(server);
-      initializeDataBackupDiretcory(server);
-      initializeStatisticsDiretcory(server);
+      initializeDataDirectory(server);
+      initializeLogsDirectory(server);
+      initializeDataBackupDirectory(server);
+      initializeStatisticsDirectory(server);
       initializeDso(server);
     }
 
@@ -660,7 +662,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     server.setName(ParameterSubstituter.substitute(server.getName()));
   }
 
-  private void initializeDataDiretcory(Server server) throws XmlException {
+  private void initializeDataDirectory(Server server) throws XmlException {
     if (!server.isSetData()) {
       final XmlString defaultValue = (XmlString) this.defaultValueProvider.defaultFor(server.schemaType(), "data");
       String substitutedString = ParameterSubstituter.substitute(defaultValue.getStringValue());
@@ -671,7 +673,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     }
   }
 
-  private void initializeLogsDiretcory(Server server) throws XmlException {
+  private void initializeLogsDirectory(Server server) throws XmlException {
     if (!server.isSetLogs()) {
       final XmlString defaultValue = (XmlString) this.defaultValueProvider.defaultFor(server.schemaType(), "logs");
       String substitutedString = ParameterSubstituter.substitute(defaultValue.getStringValue());
@@ -681,7 +683,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     }
   }
 
-  private void initializeDataBackupDiretcory(Server server) throws XmlException {
+  private void initializeDataBackupDirectory(Server server) throws XmlException {
     if (!server.isSetDataBackup()) {
       final XmlString defaultValue = (XmlString) this.defaultValueProvider.defaultFor(server.schemaType(),
                                                                                       "data-backup");
@@ -692,7 +694,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     }
   }
 
-  private void initializeStatisticsDiretcory(Server server) throws XmlException {
+  private void initializeStatisticsDirectory(Server server) throws XmlException {
     if (!server.isSetStatistics()) {
       final XmlString defaultValue = (XmlString) this.defaultValueProvider
           .defaultFor(server.schemaType(), "statistics");

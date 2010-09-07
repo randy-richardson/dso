@@ -10,7 +10,7 @@ import com.tc.config.schema.beanfactory.TerracottaDomainConfigurationDocumentBea
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.context.StandardConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.defaults.FromSchemaDefaultValueProvider;
+import com.tc.config.schema.defaults.SchemaDefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.MockConfigItemListener;
 import com.tc.config.schema.repository.StandardBeanRepository;
@@ -43,7 +43,7 @@ public abstract class ConfigObjectTestBase extends TCTestCase {
   public void setUp(Class repositoryBeanClass) throws Exception {
     this.repository = new StandardBeanRepository(repositoryBeanClass);
 
-    DefaultValueProvider provider = new FromSchemaDefaultValueProvider();
+    DefaultValueProvider provider = new SchemaDefaultValueProvider();
     this.context = new StandardConfigContext(this.repository, provider, new MockIllegalConfigurationChangeHandler(),
         null);
 

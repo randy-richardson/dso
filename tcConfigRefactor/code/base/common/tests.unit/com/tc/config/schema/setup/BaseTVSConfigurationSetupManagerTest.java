@@ -12,7 +12,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.tc.config.schema.beanfactory.TerracottaDomainConfigurationDocumentBeanFactory;
-import com.tc.config.schema.defaults.FromSchemaDefaultValueProvider;
+import com.tc.config.schema.defaults.SchemaDefaultValueProvider;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
 import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.ConfigMode;
 import com.tc.config.schema.utils.StandardXmlObjectComparator;
@@ -968,7 +968,7 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
 
     BaseTVSConfigurationSetupManager configSetupMgr = new BaseTVSConfigurationSetupManager(
                                                                                            configurationCreator,
-                                                                                           new FromSchemaDefaultValueProvider(),
+                                                                                           new SchemaDefaultValueProvider(),
                                                                                            new StandardXmlObjectComparator(),
                                                                                            new FatalIllegalConfigurationChangeHandler());
     configSetupMgr.runConfigurationCreator();
