@@ -4,19 +4,11 @@
  */
 package com.tc.object.config.schema;
 
-import org.apache.xmlbeans.XmlObject;
-
 import com.tc.config.schema.BaseNewConfigObject;
-import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.context.ConfigContext;
-import com.tc.config.schema.dynamic.BindPortConfigItem;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
-import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.IntConfigItem;
-import com.tc.config.schema.dynamic.StringConfigItem;
-import com.tc.config.schema.dynamic.XPathBasedConfigItem;
 import com.tc.util.Assert;
-import com.terracottatech.config.PersistenceMode;
+import com.terracottatech.config.BindPort;
+import com.terracottatech.config.Offheap;
 import com.terracottatech.config.Server;
 
 /**
@@ -24,90 +16,142 @@ import com.terracottatech.config.Server;
  */
 public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DSOConfig {
 
-  private final ConfigItem         persistenceMode;
-  private final OffHeapConfigItem  offHeapConfig;
-  private final BooleanConfigItem  garbageCollectionEnabled;
-  private final BooleanConfigItem  garbageCollectionVerbose;
-  private final IntConfigItem      garbageCollectionInterval;
-  private final BindPortConfigItem dsoPort;
-  private final BindPortConfigItem l2GroupPort;
-  private final IntConfigItem      clientReconnectWindow;
-  private final StringConfigItem   host;
-  private final StringConfigItem   serverName;
-  private final StringConfigItem   bind;
+  private final PersistenceMode persistenceMode;
+  private final Offheap         offHeapConfig;
+  private final boolean         garbageCollectionEnabled;
+  private final boolean         garbageCollectionVerbose;
+  private final int             garbageCollectionInterval;
+  private final BindPort        dsoPort;
+  private final BindPort        l2GroupPort;
+  private final int             clientReconnectWindow;
+  private final String          host;
+  private final String          serverName;
+  private final String          bind;
 
   public NewL2DSOConfigObject(ConfigContext context) {
     super(context);
 
     this.context.ensureRepositoryProvides(Server.class);
-
-    this.persistenceMode = new XPathBasedConfigItem(this.context, "dso/persistence/mode") {
-      @Override
-      protected Object fetchDataFromXmlObject(XmlObject xmlObject) {
-        if (xmlObject == null) return null;
-        if (((PersistenceMode) xmlObject).enumValue() == PersistenceMode.TEMPORARY_SWAP_ONLY) return com.tc.object.config.schema.PersistenceMode.TEMPORARY_SWAP_ONLY;
-        if (((PersistenceMode) xmlObject).enumValue() == PersistenceMode.PERMANENT_STORE) return com.tc.object.config.schema.PersistenceMode.PERMANENT_STORE;
-        throw Assert.failure("Persistence mode " + xmlObject + " is not anything in the enum?");
-      }
-    };
-
-    this.garbageCollectionEnabled = this.context.booleanItem("dso/garbage-collection/enabled");
-    this.garbageCollectionVerbose = this.context.booleanItem("dso/garbage-collection/verbose");
-    this.garbageCollectionInterval = this.context.intItem("dso/garbage-collection/interval");
-    this.clientReconnectWindow = this.context.intItem("dso/client-reconnect-window");
-
-    this.bind = this.context.stringItem("@bind");
-    this.host = this.context.stringItem("@host");
-    this.serverName = this.context.stringItem("@name");
-
     Server server = (Server) this.context.bean();
-    this.dsoPort = this.context.bindPortItem("dso-port", server.getDsoPort());
-    this.l2GroupPort = this.context.bindPortItem("l2-group-port", server.getL2GroupPort());
-    this.offHeapConfig = this.context.offHeapConfigItem("dso/persistence/offheap", server.getDso().getPersistence().getOffheap());
+
+    Assert
+        .assertTrue((server.getDso().getPersistence().getMode() == com.terracottatech.config.PersistenceMode.PERMANENT_STORE)
+                    || (server.getDso().getPersistence().getMode() == com.terracottatech.config.PersistenceMode.TEMPORARY_SWAP_ONLY));
+    if (server.getDso().getPersistence().getMode() == com.terracottatech.config.PersistenceMode.PERMANENT_STORE) {
+      this.persistenceMode = PersistenceMode.PERMANENT_STORE;
+    } else {
+      this.persistenceMode = PersistenceMode.TEMPORARY_SWAP_ONLY;
+    }
+
+    this.garbageCollectionEnabled = server.getDso().getGarbageCollection().getEnabled();
+    this.garbageCollectionVerbose = server.getDso().getGarbageCollection().getVerbose();
+    this.garbageCollectionInterval = server.getDso().getGarbageCollection().getInterval();
+    this.clientReconnectWindow = server.getDso().getClientReconnectWindow();
+
+    this.bind = server.getBind();
+    this.host = server.getHost();
+    this.serverName = server.getName();
+
+    this.dsoPort = server.getDsoPort();
+    this.l2GroupPort = server.getL2GroupPort();
+    this.offHeapConfig = server.getDso().getPersistence().getOffheap();
   }
 
-  public OffHeapConfigItem offHeapConfig() {
+  public Offheap offHeapConfig() {
     return this.offHeapConfig;
   }
 
-  public BindPortConfigItem dsoPort() {
+  public BindPort dsoPort() {
     return this.dsoPort;
   }
 
-  public BindPortConfigItem l2GroupPort() {
+  public BindPort l2GroupPort() {
     return this.l2GroupPort;
   }
 
-  public StringConfigItem host() {
+  public String host() {
     return host;
   }
 
-  public StringConfigItem serverName() {
+  public String serverName() {
     return this.serverName;
   }
 
-  public ConfigItem persistenceMode() {
+  public PersistenceMode persistenceMode() {
     return this.persistenceMode;
   }
 
-  public BooleanConfigItem garbageCollectionEnabled() {
+  public boolean garbageCollectionEnabled() {
     return this.garbageCollectionEnabled;
   }
 
-  public BooleanConfigItem garbageCollectionVerbose() {
+  public boolean garbageCollectionVerbose() {
     return this.garbageCollectionVerbose;
   }
 
-  public IntConfigItem garbageCollectionInterval() {
+  public int garbageCollectionInterval() {
     return this.garbageCollectionInterval;
   }
 
-  public IntConfigItem clientReconnectWindow() {
+  public int clientReconnectWindow() {
     return this.clientReconnectWindow;
   }
 
-  public StringConfigItem bind() {
+  public String bind() {
     return this.bind;
+  }
+  
+  //Used STRICTLY for test
+
+  public void setClientReconnectWindo(int clinetReconnectWindow) {
+    Server server = (Server) getBean();
+    server.getDso().setClientReconnectWindow(clinetReconnectWindow);
+  }
+
+  public void setDsoPort(BindPort dsoPort) {
+    Server server = (Server) getBean();
+    server.setDsoPort(dsoPort);
+  }
+
+  public void setGarbageCollectionInterval(int garbageCollectionInterval) {
+    Server server = (Server) getBean();
+    server.getDso().getGarbageCollection().setInterval(garbageCollectionInterval);
+  }
+
+  public void setGarbageCollectionVerbose(boolean garbageCollectionVerbose) {
+    Server server = (Server) getBean();
+    server.getDso().getGarbageCollection().setVerbose(garbageCollectionVerbose);
+  }
+
+  public void setGrabgeCollectionEnabled(boolean garbageCollectionEnabled) {
+    Server server = (Server) getBean();
+    server.getDso().getGarbageCollection().setEnabled(garbageCollectionEnabled);
+  }
+
+  public void setL2GroupPort(BindPort l2GroupPort) {
+    Server server = (Server) getBean();
+    server.setL2GroupPort(l2GroupPort);
+  }
+
+  public void setOffHeap(Offheap offheap) {
+    Server server = (Server) getBean();
+    server.getDso().getPersistence().setOffheap(offheap);
+  }
+
+  public void setPersistenceMode(PersistenceMode persistenceMode) {
+    Server server = (Server) getBean();
+    if(persistenceMode == PersistenceMode.PERMANENT_STORE){
+      server.getDso().getPersistence().setMode(com.terracottatech.config.PersistenceMode.PERMANENT_STORE);
+    }else if(persistenceMode == PersistenceMode.TEMPORARY_SWAP_ONLY){
+      server.getDso().getPersistence().setMode(com.terracottatech.config.PersistenceMode.TEMPORARY_SWAP_ONLY);
+    }else{
+      Assert.failure("Invalid persistence mode: " + persistenceMode);
+    }
+  }
+
+  public void setBind(String bind) {
+    Server server = (Server) getBean();
+    server.setBind(bind);
   }
 
 }

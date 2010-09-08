@@ -90,7 +90,7 @@ public class BaseDSOTestCase extends TCTestCase implements TestClientConfigHelpe
     AdditionalBootJarClasses classes = AdditionalBootJarClasses.Factory.newInstance();
     classes.setIncludeArray(new String[] { "com.dummy.whatever.Bar" });
 
-    ((SettableConfigItem) out.dsoApplicationConfig().additionalBootJarClasses()).setValue(classes);
+    out.dsoApplicationConfig().setAdditionalBootJarClasses(classes);
     // ((SettableConfigItem) out.dsoApplicationConfig().roots()).setValue(roots);
 
     setupConfigLogDataStatisticsPaths(out);
@@ -101,10 +101,10 @@ public class BaseDSOTestCase extends TCTestCase implements TestClientConfigHelpe
   protected synchronized void setupConfigLogDataStatisticsPaths(TestTVSConfigurationSetupManagerFactory out)
       throws ConfigurationSetupException {
     try {
-      ((SettableConfigItem) out.l2CommonConfig().dataPath()).setValue(getTempFile("l2-data").toString());
-      ((SettableConfigItem) out.l2CommonConfig().logsPath()).setValue(getTempFile("l2-logs").toString());
-      ((SettableConfigItem) out.l2CommonConfig().statisticsPath()).setValue(getTempFile("l2-statistics").toString());
-      ((SettableConfigItem) out.l1CommonConfig().logsPath()).setValue(getTempFile("l1-logs").toString());
+      out.l2CommonConfig().setDataPath(getTempFile("l2-data").toString());
+      out.l2CommonConfig().setLogsPath(getTempFile("l2-logs").toString());
+      out.l2CommonConfig().setStatisticsPath(getTempFile("l2-statistics").toString());
+      out.l1CommonConfig().setLogsPath(getTempFile("l1-logs").toString());
     } catch (IOException ioe) {
       throw new ConfigurationSetupException("Can't set up log, data and statistics paths", ioe);
     }

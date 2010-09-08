@@ -113,7 +113,6 @@ public class TestConfigBeanSet {
     return this.tcPropertiesBean;
   }
 
-
   public Servers serversBean() {
     return this.rootServersBean;
   }

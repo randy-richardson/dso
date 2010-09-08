@@ -22,7 +22,6 @@ import com.tc.objectserver.control.ExtraProcessServerControl.DebugParams;
 import com.tc.test.TestConfigObject;
 import com.tc.util.PortChooser;
 import com.tctest.restart.TestThreadGroup;
-import com.terracottatech.config.PersistenceMode;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -145,7 +144,7 @@ public class RestartTestEnvironment {
       persistenceMode = L2ConfigBuilder.PERSISTENCE_MODE_TEMPORARY_SWAP_ONLY;
 
       // for normal mode tests
-      if (configFactory.getPersistenceMode() == PersistenceMode.PERMANENT_STORE) {
+      if (configFactory.getPersistenceMode() == com.tc.object.config.schema.PersistenceMode.PERMANENT_STORE) {
         persistenceMode = L2ConfigBuilder.PERSISTENCE_MODE_PERMANENT_STORE;
       }
 

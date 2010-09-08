@@ -15,7 +15,6 @@ import com.tc.config.schema.L2ConfigForL1Object;
 import com.tc.config.schema.NewCommonL1Config;
 import com.tc.config.schema.NewCommonL1ConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.repository.ChildBeanFetcher;
 import com.tc.config.schema.repository.ChildBeanRepository;
 import com.tc.config.schema.utils.XmlObjectComparator;
@@ -29,6 +28,7 @@ import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoClientData;
 import com.terracottatech.config.TcProperties;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -72,9 +72,9 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public void setupLogging() {
-    FileConfigItem logsPath = commonL1Config().logsPath();
-    TCLogging.setLogDirectory(logsPath.getFile(), TCLogging.PROCESS_TYPE_L1);
-    logsPath.addListener(new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L1));
+    File logsPath = commonL1Config().logsPath();
+    TCLogging.setLogDirectory(logsPath, TCLogging.PROCESS_TYPE_L1);
+//    logsPath.addListener(new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L1));
   }
 
   public String rawConfigText() {

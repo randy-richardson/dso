@@ -5,7 +5,7 @@
 package com.tctest;
 
 import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
-import com.terracottatech.config.PersistenceMode;
+import com.tc.object.config.schema.PersistenceMode;
 
 public class GCConfigurationHelper {
   public interface Parameters {

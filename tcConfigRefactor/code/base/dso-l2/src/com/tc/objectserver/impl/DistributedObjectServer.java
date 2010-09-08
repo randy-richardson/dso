@@ -53,8 +53,8 @@ import com.tc.management.beans.L2State;
 import com.tc.management.beans.LockStatisticsMonitor;
 import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
-import com.tc.management.beans.object.ObjectManagementMonitor.ObjectIdsFetcher;
 import com.tc.management.beans.object.ServerDBBackupMBean;
+import com.tc.management.beans.object.ObjectManagementMonitor.ObjectIdsFetcher;
 import com.tc.management.lock.stats.L2LockStatisticsManagerImpl;
 import com.tc.management.lock.stats.LockStatisticsMessage;
 import com.tc.management.lock.stats.LockStatisticsResponseMessageImpl;
@@ -428,7 +428,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.thisServerNodeID = makeServerNodeID(this.configSetupManager.dsoL2Config());
 
     TerracottaOperatorEventLogging.setNodeNameProvider(new ServerNameProvider(this.configSetupManager.dsoL2Config()
-        .serverName().getString()));
+        .serverName()));
 
     final L2LockStatsManager lockStatsManager = new L2LockStatisticsManagerImpl();
 
@@ -445,7 +445,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     final NewL2DSOConfig l2DSOConfig = this.configSetupManager.dsoL2Config();
 
     // verify user input host name, DEV-2293
-    final String host = l2DSOConfig.host().getString();
+    final String host = l2DSOConfig.host();
     final InetAddress ip = InetAddress.getByName(host);
     if (!ip.isLoopbackAddress() && (NetworkInterface.getByInetAddress(ip) == null)) {
       final String msg = "Unable to find local network interface for " + host;
@@ -454,7 +454,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       System.exit(-1);
     }
 
-    String bindAddress = this.configSetupManager.commonl2Config().jmxPort().getBindAddress();
+    String bindAddress = this.configSetupManager.commonl2Config().jmxPort().getBind();
     if (bindAddress == null) {
       // workaround for CDV-584
       bindAddress = TCSocketAddress.WILDCARD_IP;
@@ -485,14 +485,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     NIOWorkarounds.solaris10Workaround();
     this.l2Properties = TCPropertiesImpl.getProperties().getPropertiesFor("l2");
-    this.configSetupManager.commonl2Config().changesInItemIgnored(this.configSetupManager.commonl2Config().dataPath());
-    l2DSOConfig.changesInItemIgnored(l2DSOConfig.persistenceMode());
-    final PersistenceMode persistenceMode = (PersistenceMode) l2DSOConfig.persistenceMode().getObject();
+//    this.configSetupManager.commonl2Config().changesInItemIgnored(this.configSetupManager.commonl2Config().dataPath());
+//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.persistenceMode());
+    final PersistenceMode persistenceMode = l2DSOConfig.persistenceMode();
     final TCProperties objManagerProperties = this.l2Properties.getPropertiesFor("objectmanager");
     this.l1ReconnectConfig = new L1ReconnectConfigImpl();
     final boolean swapEnabled = true;
     final boolean persistent = persistenceMode.equals(PersistenceMode.PERMANENT_STORE);
-    final TCFile location = new TCFileImpl(this.configSetupManager.commonl2Config().dataPath().getFile());
+    final TCFile location = new TCFileImpl(this.configSetupManager.commonl2Config().dataPath());
     this.startupLock = new StartupLock(location, this.l2Properties.getBoolean("startuplock.retries.enabled"));
 
     if (!this.startupLock.canProceed(new TCRandomFileAccessImpl(), persistent)) {
@@ -520,7 +520,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     if (swapEnabled) {
       final DBEnvironment dbenv;
-      final File dbhome = new File(this.configSetupManager.commonl2Config().dataPath().getFile(),
+      final File dbhome = new File(this.configSetupManager.commonl2Config().dataPath(),
                                    NewL2DSOConfig.OBJECTDB_DIRNAME);
       logger.debug("persistent: " + persistent);
       if (!persistent) {
@@ -539,14 +539,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       final SerializationAdapterFactory serializationAdapterFactory = new CustomSerializationAdapterFactory();
       this.persistor = new DBPersistorImpl(TCLogging.getLogger(DBPersistorImpl.class), dbenv,
                                            serializationAdapterFactory, this.configSetupManager.commonl2Config()
-                                               .dataPath().getFile(), this.objectStatsRecorder);
+                                               .dataPath(), this.objectStatsRecorder);
       sraForDb = dbenv.getSRA();
 
       // final DBFactory dbFactory = new BerkeleyDBFactory(this.l2Properties.getPropertiesFor("berkeleydb")
       // .addAllPropertiesTo(new Properties()));
       // start the JMX server
       try {
-        startJMXServer(jmxBind, this.configSetupManager.commonl2Config().jmxPort().getBindPort(),
+        startJMXServer(jmxBind, this.configSetupManager.commonl2Config().jmxPort().getIntValue(),
                        new RemoteJMXProcessor(), dbenv.getServerDBBackupMBean(this.configSetupManager));
       } catch (final Exception e) {
         final String msg = "Unable to start the JMX server. Do you have another Terracotta Server instance running?";
@@ -665,14 +665,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     this.clientStateManager = new ClientStateManagerImpl(TCLogging.getLogger(ClientStateManager.class));
 
-    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionEnabled());
-    final boolean gcEnabled = l2DSOConfig.garbageCollectionEnabled().getBoolean();
+//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionEnabled());
+    final boolean gcEnabled = l2DSOConfig.garbageCollectionEnabled();
 
-    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionInterval());
-    final long gcInterval = l2DSOConfig.garbageCollectionInterval().getInt();
+//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionInterval());
+    final long gcInterval = l2DSOConfig.garbageCollectionInterval();
 
-    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionVerbose());
-    final boolean verboseGC = l2DSOConfig.garbageCollectionVerbose().getBoolean();
+//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionVerbose());
+    final boolean verboseGC = l2DSOConfig.garbageCollectionVerbose();
     this.sampledCounterManager = new CounterManagerImpl();
     final SampledCounterConfig sampledCounterConfig = new SampledCounterConfig(1, 300, true, 0L);
     final SampledCumulativeCounterConfig sampledCumulativeCounterConfig = new SampledCumulativeCounterConfig(1, 300,
@@ -755,12 +755,12 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     this.connectionIdFactory = new ConnectionIDFactoryImpl(clientStateStore);
 
-    l2DSOConfig.changesInItemIgnored(l2DSOConfig.dsoPort());
-    final int serverPort = l2DSOConfig.dsoPort().getBindPort();
+//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.dsoPort());
+    final int serverPort = l2DSOConfig.dsoPort().getIntValue();
 
     this.statisticsAgentSubSystem.setDefaultAgentDifferentiator("L2/" + serverPort);
 
-    final String dsoBind = l2DSOConfig.dsoPort().getBindAddress();
+    final String dsoBind = l2DSOConfig.dsoPort().getBind();
     this.l1Listener = this.communicationsManager.createListener(sessionManager,
                                                                 new TCSocketAddress(dsoBind, serverPort), true,
                                                                 this.connectionIdFactory, this.httpSink);
@@ -1012,8 +1012,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                       clientHandshake, txnLwmStage, jmxEventsStage, jmxRemoteTunnelStage,
                       clientLockStatisticsRespondStage, clusterMetaDataStage, serverMapRequestStage);
 
-    l2DSOConfig.changesInItemIgnored(l2DSOConfig.clientReconnectWindow());
-    long reconnectTimeout = l2DSOConfig.clientReconnectWindow().getInt();
+//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.clientReconnectWindow());
+    long reconnectTimeout = l2DSOConfig.clientReconnectWindow();
     logger.debug("Client Reconnect Window: " + reconnectTimeout + " seconds");
     reconnectTimeout *= 1000;
     final ServerClientHandshakeManager clientHandshakeManager = new ServerClientHandshakeManager(
@@ -1263,11 +1263,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   }
 
   private ServerID makeServerNodeID(final NewL2DSOConfig l2DSOConfig) {
-    String host = l2DSOConfig.l2GroupPort().getBindAddress();
+    String host = l2DSOConfig.l2GroupPort().getBind();
     if (TCSocketAddress.WILDCARD_IP.equals(host) || TCSocketAddress.LOOPBACK_IP.equals(host)) {
-      host = l2DSOConfig.host().getString();
+      host = l2DSOConfig.host();
     }
-    final Node node = new Node(host, l2DSOConfig.dsoPort().getBindPort());
+    final Node node = new Node(host, l2DSOConfig.dsoPort().getIntValue());
     final ServerID aNodeID = new ServerID(node.getServerNodeName(), UUID.getUUID().toString().getBytes());
     logger.info("Creating server nodeID: " + aNodeID);
     return aNodeID;
@@ -1392,7 +1392,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
    */
   public int getListenPort() {
     final NewL2DSOConfig l2DSOConfig = this.configSetupManager.dsoL2Config();
-    final int configValue = l2DSOConfig.dsoPort().getBindPort();
+    final int configValue = l2DSOConfig.dsoPort().getIntValue();
     if (configValue != 0) { return configValue; }
     if (this.l1Listener != null) {
       try {
@@ -1409,7 +1409,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   public int getGroupPort() {
     final NewL2DSOConfig l2DSOConfig = this.configSetupManager.dsoL2Config();
-    final int configValue = l2DSOConfig.l2GroupPort().getBindPort();
+    final int configValue = l2DSOConfig.l2GroupPort().getIntValue();
     if (configValue != 0) { return configValue; }
     return -1;
   }

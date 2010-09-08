@@ -206,7 +206,7 @@ public class TwoDisconnectEventsTest extends BaseDSOTestCase {
       ManagedObjectStateFactory.disableSingleton(true);
       TestTVSConfigurationSetupManagerFactory factory = configFactory();
       L2TVSConfigurationSetupManager manager = factory.createL2TVSConfigurationSetupManager(null);
-      ((SettableConfigItem) factory.l2DSOConfig().bind()).setValue("127.0.0.1");
+      factory.l2DSOConfig().setBind("127.0.0.1");
 
       BindPort dsoBindPort = BindPort.Factory.newInstance();
       dsoBindPort.setIntValue(dsoPort);

@@ -12,6 +12,7 @@ import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.XPathBasedConfigItem;
+import com.terracottatech.config.AdditionalBootJarClasses;
 import com.terracottatech.config.DsoApplication;
 import com.terracottatech.config.Root;
 import com.terracottatech.config.Roots;
@@ -92,5 +93,10 @@ public class NewDSOApplicationConfigObject extends BaseNewConfigObject implement
       out[i] = new com.tc.object.config.schema.Root(theRoots[i].getRootName(), theRoots[i].getFieldName());
     }
     return out;
+  }
+
+  public void setAdditionalBootJarClasses(AdditionalBootJarClasses val) {
+    DsoApplication dsoApplication = (DsoApplication) context.bean();
+    dsoApplication.setAdditionalBootJarClasses(val);
   }
 }

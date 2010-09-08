@@ -140,11 +140,11 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     this.l2ReconnectConfig = new L2ReconnectConfigImpl();
     this.isUseOOOLayer = l2ReconnectConfig.getReconnectEnabled();
 
-    configSetupManager.commonl2Config().changesInItemIgnored(configSetupManager.commonl2Config().dataPath());
+//    configSetupManager.commonl2Config().changesInItemIgnored(configSetupManager.commonl2Config().dataPath());
     NewL2DSOConfig l2DSOConfig = configSetupManager.dsoL2Config();
 
-    l2DSOConfig.changesInItemIgnored(l2DSOConfig.l2GroupPort());
-    this.groupPort = l2DSOConfig.l2GroupPort().getBindPort();
+//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.l2GroupPort());
+    this.groupPort = l2DSOConfig.l2GroupPort().getIntValue();
 
     TCSocketAddress socketAddress;
     try {
@@ -155,7 +155,7 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
       groupConnectPort = TCPropertiesImpl.getProperties()
           .getInt(TCPropertiesConsts.L2_NHA_TCGROUPCOMM_RECONNECT_L2PROXY_TO_PORT, groupPort);
 
-      socketAddress = new TCSocketAddress(l2DSOConfig.l2GroupPort().getBindAddress(), groupConnectPort);
+      socketAddress = new TCSocketAddress(l2DSOConfig.l2GroupPort().getBind(), groupConnectPort);
     } catch (UnknownHostException e) {
       throw new TCRuntimeException(e);
     }

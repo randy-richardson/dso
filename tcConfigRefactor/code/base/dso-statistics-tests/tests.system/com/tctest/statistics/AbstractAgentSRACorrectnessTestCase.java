@@ -5,7 +5,6 @@
 package com.tctest.statistics;
 
 import com.tc.cluster.DsoClusterImpl;
-import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
@@ -96,17 +95,17 @@ abstract public class AbstractAgentSRACorrectnessTestCase extends BaseDSOTestCas
       ManagedObjectStateFactory.disableSingleton(true);
       TestTVSConfigurationSetupManagerFactory factory = AbstractAgentSRACorrectnessTestCase.this.configFactory();
       L2TVSConfigurationSetupManager manager = factory.createL2TVSConfigurationSetupManager(null);
-      ((SettableConfigItem) factory.l2DSOConfig().bind()).setValue("127.0.0.1");
+      factory.l2DSOConfig().setBind("127.0.0.1");
 
       BindPort dsoBindPort = BindPort.Factory.newInstance();
       dsoBindPort.setIntValue(dsoPort);
       dsoBindPort.setBind("127.0.0.1");
-      ((SettableConfigItem) factory.l2DSOConfig().dsoPort()).setValue(dsoBindPort);
+      factory.l2DSOConfig().setDsoPort(dsoBindPort);
 
       BindPort jmxBindPort = BindPort.Factory.newInstance();
       jmxBindPort.setIntValue(jmxPort);
       jmxBindPort.setBind("127.0.0.1");
-      ((SettableConfigItem) factory.l2CommonConfig().jmxPort()).setValue(jmxBindPort);
+      factory.l2CommonConfig().setJmxPort(jmxBindPort);
 
       server = new TCServerImpl(manager);
       server.start();

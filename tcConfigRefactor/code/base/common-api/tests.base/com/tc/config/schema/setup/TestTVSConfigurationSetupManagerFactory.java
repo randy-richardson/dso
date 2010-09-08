@@ -15,7 +15,8 @@ import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
 import com.tc.config.schema.SettableConfigItem;
-import com.tc.config.schema.TestConfigObjectInvocationHandler;
+import com.tc.config.schema.beanfactory.ConfigBeanFactory;
+import com.tc.config.schema.beanfactory.TerracottaDomainConfigurationDocumentBeanFactory;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.XPathBasedConfigItem;
 import com.tc.config.schema.repository.MutableBeanRepository;
@@ -23,6 +24,7 @@ import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.Co
 import com.tc.object.config.schema.NewDSOApplicationConfig;
 import com.tc.object.config.schema.NewL1DSOConfig;
 import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.object.config.schema.PersistenceMode;
 import com.tc.test.GroupData;
 import com.tc.util.Assert;
 import com.terracottatech.config.Application;
@@ -30,16 +32,12 @@ import com.terracottatech.config.Members;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
 import com.terracottatech.config.Offheap;
-import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Property;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
-import com.terracottatech.config.PersistenceMode.Enum;
 
 import java.io.File;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -150,7 +148,6 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   public static final int                MODE_CENTRALIZED_CONFIG = 0;
   public static final int                MODE_DISTRIBUTED_CONFIG = 1;
 
-  private final TestConfigBeanSet        beanSet;
   private final TestConfigBeanSet        l1_beanSet;
 
   private final TestConfigurationCreator l1ConfigurationCreator;
@@ -169,9 +166,6 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
   private final int                      mode;
 
-  // TODO: fix the way settableObjects are used
-  // this is temporary
-  private Enum                           persistenceMode         = PersistenceMode.TEMPORARY_SWAP_ONLY;
   private boolean                        gcEnabled               = true;
   private boolean                        gcVerbose               = false;
   private int                            gcIntervalInSec         = 3600;
@@ -179,22 +173,25 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   private boolean                        isConfigDone            = false;
   private boolean                        offHeapEnabled          = false;
   private String                         maxOffHeapDataSize      = "-1m";
+  private PersistenceMode                persistenceMode         = PersistenceMode.TEMPORARY_SWAP_ONLY;
 
   public TestTVSConfigurationSetupManagerFactory(int mode, String l2Identifier,
                                                  IllegalConfigurationChangeHandler illegalConfigurationChangeHandler)
       throws ConfigurationSetupException {
     super(illegalConfigurationChangeHandler);
 
-    this.beanSet = new TestConfigBeanSet();
     this.l1_beanSet = new TestConfigBeanSet();
 
-    this.l2ConfigurationCreator = new TestConfigurationCreator(this.beanSet, true);
+    final ConfigBeanFactory configBeanFactory = new TerracottaDomainConfigurationDocumentBeanFactory();
+    final ConfigurationSpec configSpec = new ConfigurationSpec("default-tc-config.xml", ConfigMode.L2, new File(System
+        .getProperty("user.dir")));
+    this.l2ConfigurationCreator = new TestConfigurationCreator(configSpec, configBeanFactory, true);
 
     this.mode = mode;
     if (mode == MODE_CENTRALIZED_CONFIG) {
-      this.l1ConfigurationCreator = new TestConfigurationCreator(this.l1_beanSet, true);
+      this.l1ConfigurationCreator = new TestConfigurationCreator(configSpec, configBeanFactory, true);
     } else if (mode == MODE_DISTRIBUTED_CONFIG) {
-      this.l1ConfigurationCreator = new TestConfigurationCreator(this.l1_beanSet, false);
+      this.l1ConfigurationCreator = new TestConfigurationCreator(configSpec, configBeanFactory, false);
     } else {
       throw Assert.failure("Unknown mode: " + mode);
     }
@@ -206,7 +203,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     L1TVSConfigurationSetupManager sampleL1Manager;
     L2TVSConfigurationSetupManager sampleL2Manager;
 
-    sampleL1Manager = this.createL1TVSConfigurationSetupManager(new TestConfigurationCreator(this.l1_beanSet, true));
+    sampleL1Manager = this.createL1TVSConfigurationSetupManager(new TestConfigurationCreator(configSpec,
+                                                                                             configBeanFactory, true));
     sampleL2Manager = this.createL2TVSConfigurationSetupManager(null);
 
     this.sampleSystem = sampleL2Manager.systemConfig();
@@ -220,10 +218,6 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     this.sampleHa = sampleL2Manager.haConfig();
 
     applyDefaultTestConfig();
-  }
-
-  public TestConfigBeanSet beanSet() {
-    return this.beanSet;
   }
 
   private static final String BOGUS_FILENAME = "nonexistent-directory-SHOULD-NEVER-EXIST/";
@@ -246,10 +240,10 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     // We also set the data and log directories to strings that shouldn't be valid on any platform: you need to set
     // these yourself before you use this config. If you don't, you'll write all over the place as we create 'data' and
     // 'logs' directories willy-nilly. Don't do that.
-    ((SettableConfigItem) l1CommonConfig().logsPath()).setValue(BOGUS_FILENAME);
-    ((SettableConfigItem) l2CommonConfig().dataPath()).setValue(BOGUS_FILENAME);
-    ((SettableConfigItem) l2CommonConfig().logsPath()).setValue(BOGUS_FILENAME);
-    ((SettableConfigItem) l2CommonConfig().statisticsPath()).setValue(BOGUS_FILENAME);
+    l1CommonConfig().setLogsPath(BOGUS_FILENAME);
+    l2CommonConfig().setDataPath(BOGUS_FILENAME);
+    l2CommonConfig().setLogsPath(BOGUS_FILENAME);
+    l2CommonConfig().setStatisticsPath(BOGUS_FILENAME);
   }
 
   public void activateConfigurationChange() throws ConfigurationSetupException {
@@ -283,35 +277,21 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   private Set collectAllRepositories() {
     Set allRepositories = new HashSet();
 
-    allRepositories.addAll(Arrays.asList(this.l1ConfigurationCreator.allRepositoriesStoredInto()));
-    allRepositories.addAll(Arrays.asList(this.l2ConfigurationCreator.allRepositoriesStoredInto()));
+    // allRepositories.addAll(Arrays.asList(this.l1ConfigurationCreator.allRepositoriesStoredInto()));
+    // allRepositories.addAll(Arrays.asList(this.l2ConfigurationCreator.allRepositoriesStoredInto()));
     return allRepositories;
   }
 
-  private Object proxify(Class theClass, XmlObject[] destObjects, Object realImplementation, String xpathPrefix) {
-    return Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { theClass },
-                                  new TestConfigObjectInvocationHandler(theClass, destObjects, realImplementation,
-                                                                        xpathPrefix));
-  }
-
-  private Object proxify(Class theClass, XmlObject destObject, Object realImplementation, String xpathPrefix) {
-    return proxify(theClass, new XmlObject[] { destObject }, realImplementation, xpathPrefix);
-  }
-
-  private XmlObject[] allServerBeans() {
-    return this.beanSet.serversBean().getServerArray();
-  }
-
   public NewSystemConfig systemConfig() {
-    return (NewSystemConfig) proxify(NewSystemConfig.class, this.beanSet.systemBean(), this.sampleSystem, null);
+    return this.sampleSystem;
   }
 
   public NewCommonL1Config l1CommonConfig() {
-    return (NewCommonL1Config) proxify(NewCommonL1Config.class, this.l1_beanSet.clientBean(), this.sampleL1Common, null);
+    return this.sampleL1Common;
   }
 
   public NewL1DSOConfig l1DSOConfig() {
-    return (NewL1DSOConfig) proxify(NewL1DSOConfig.class, this.l1_beanSet.clientBean(), this.sampleL1DSO, "dso");
+    return this.sampleL1DSO;
   }
 
   private void cleanBeanSetServersIfNeeded(TestConfigBeanSet beanSetArg) {
@@ -486,22 +466,22 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
   public void setGCEnabled(boolean val) {
     gcEnabled = val;
-    ((SettableConfigItem) l2DSOConfig().garbageCollectionEnabled()).setValue(gcEnabled);
+    l2DSOConfig().setGrabgeCollectionEnabled(val);
   }
 
   public void setGCVerbose(boolean val) {
     gcVerbose = val;
-    ((SettableConfigItem) l2DSOConfig().garbageCollectionVerbose()).setValue(gcVerbose);
+    l2DSOConfig().setGarbageCollectionVerbose(val);
   }
 
   public void setGCIntervalInSec(int val) {
     gcIntervalInSec = val;
-    ((SettableConfigItem) l2DSOConfig().garbageCollectionInterval()).setValue(gcIntervalInSec);
+    l2DSOConfig().setGarbageCollectionInterval(val);
   }
 
-  public void setPersistenceMode(Enum val) {
+  public void setPersistenceMode(PersistenceMode val) {
     persistenceMode = val;
-    ((SettableConfigItem) l2DSOConfig().persistenceMode()).setValue(persistenceMode);
+    l2DSOConfig().setPersistenceMode(val);
   }
 
   public boolean isOffHeapEnabled() {
@@ -524,59 +504,28 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     return gcIntervalInSec;
   }
 
-  public Enum getPersistenceMode() {
+  public PersistenceMode getPersistenceMode() {
     return persistenceMode;
   }
 
-  private Server findL2Bean(String name) {
-    Server[] allServers = this.beanSet.serversBean().getServerArray();
-
-    if (allServers == null || allServers.length == 0) throw Assert.failure("No L2s are defined.");
-
-    if (name == null) {
-      if (allServers.length == 1) return allServers[0];
-      else throw Assert
-          .failure("You passed in null for the L2 name, but there's more than one L2. Please specify which one you want.");
-    }
-
-    for (int i = 0; i < allServers.length; ++i) {
-      if (allServers[i].getName().equals(name)) return allServers[i];
-    }
-    throw Assert.failure("There is no L2 defined named '" + name + "'.");
-  }
-
-  public NewCommonL2Config l2CommonConfig(String l2Name) {
-    return (NewCommonL2Config) proxify(NewCommonL2Config.class, findL2Bean(l2Name), this.sampleL2Common, null);
-  }
-
-  public NewL2DSOConfig l2DSOConfig(String l2Name) {
-    return (NewL2DSOConfig) proxify(NewL2DSOConfig.class, findL2Bean(l2Name), this.sampleL2DSO, null);
-  }
-
   public NewCommonL2Config l2CommonConfig() {
-    return (NewCommonL2Config) proxify(NewCommonL2Config.class, allServerBeans(), this.sampleL2Common, null);
+    return this.sampleL2Common;
   }
 
   public NewL2DSOConfig l2DSOConfig() {
-    return (NewL2DSOConfig) proxify(NewL2DSOConfig.class, allServerBeans(), this.sampleL2DSO, null);
+    return this.sampleL2DSO;
   }
 
   public ActiveServerGroupsConfig activeServerGroupsConfig() {
-    return (ActiveServerGroupsConfig) proxify(ActiveServerGroupsConfig.class, allServerBeans(),
-                                              this.sampleActiveServerGroups, null);
+    return this.sampleActiveServerGroups;
   }
 
   public NewHaConfig haConfig() {
-    return (NewHaConfig) proxify(NewHaConfig.class, allServerBeans(), this.sampleHa, null);
-  }
-
-  public NewDSOApplicationConfig dsoApplicationConfig(String applicationName) {
-    return (NewDSOApplicationConfig) proxify(NewDSOApplicationConfig.class, this.beanSet
-        .applicationBeanFor(applicationName), this.sampleDSOApplication, "dso");
+    return this.sampleHa;
   }
 
   public NewDSOApplicationConfig dsoApplicationConfig() {
-    return dsoApplicationConfig(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME);
+    return this.sampleDSOApplication;
   }
 
   public TestTVSConfigurationSetupManagerFactory(String l2Identifier,
@@ -599,18 +548,11 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     if (mode == MODE_CENTRALIZED_CONFIG) {
       StringBuffer l2sSpec = new StringBuffer();
 
-      Server[] allServers = (Server[]) this.allServerBeans();
-      for (int i = 0; i < allServers.length; ++i) {
-        Server thisServer = allServers[i];
+      String hostname = this.sampleL2DSO.host();
+      if (hostname == null) hostname = this.sampleL2DSO.serverName();
+      Assert.assertNotBlank(hostname);
 
-        if (i > 0) l2sSpec.append(",");
-
-        String hostname = thisServer.getHost();
-        if (hostname == null) hostname = thisServer.getName();
-        Assert.assertNotBlank(hostname);
-
-        l2sSpec.append(hostname + ":" + thisServer.getDsoPort());
-      }
+      l2sSpec.append(hostname + ":" + this.sampleL2DSO.dsoPort().getIntValue());
 
       System.setProperty(TVSConfigurationSetupManagerFactory.CONFIG_FILE_PROPERTY_NAME, l2sSpec.toString());
     }

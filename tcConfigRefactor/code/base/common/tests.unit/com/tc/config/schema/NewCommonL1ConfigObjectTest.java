@@ -8,8 +8,6 @@ import org.apache.xmlbeans.XmlObject;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.TcConfigDocument.TcConfig;
 
-import java.io.File;
-
 /**
  * Unit/subsystem test for {@link NewCommonL1ConfigObject}.
  */
@@ -35,17 +33,17 @@ public class NewCommonL1ConfigObjectTest extends ConfigObjectTestBase {
     }
   }
 
-  public void testLogsPath() throws Exception {
-    addListeners(object.logsPath());
-
-    String theString = object.logsPath().getFile().toString();
-    assertTrue(theString.startsWith("logs-"));
-    checkNoListener();
-
-    builder().getClient().setLogs("foobar");
-    setConfig();
-    assertEquals(new File("foobar"), object.logsPath().getFile());
-    checkListener(new File(theString), new File("foobar"));
-  }
+//  public void testLogsPath() throws Exception {
+//    addListeners(object.logsPath());
+//
+//    String theString = object.logsPath().getFile().toString();
+//    assertTrue(theString.startsWith("logs-"));
+//    checkNoListener();
+//
+//    builder().getClient().setLogs("foobar");
+//    setConfig();
+//    assertEquals(new File("foobar"), object.logsPath().getFile());
+//    checkListener(new File(theString), new File("foobar"));
+//  }
 
 }

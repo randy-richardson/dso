@@ -5,14 +5,12 @@
 package com.tc.config.schema;
 
 import com.tc.config.schema.context.ConfigContext;
-import com.tc.config.schema.dynamic.BindPortConfigItem;
-import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
-import com.tc.config.schema.dynamic.StringConfigItem;
 import com.tc.license.LicenseCheck;
 import com.tc.license.util.LicenseConstants;
 import com.terracottatech.config.Authentication;
 import com.terracottatech.config.AuthenticationMode;
+import com.terracottatech.config.BindPort;
 import com.terracottatech.config.HttpAuthentication;
 import com.terracottatech.config.Server;
 
@@ -25,42 +23,38 @@ import javax.xml.namespace.QName;
  */
 public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewCommonL2Config {
 
-  private final FileConfigItem     dataPath;
-  private final FileConfigItem     logsPath;
-  private final FileConfigItem     serverDbBackupPath;
-  private final FileConfigItem     statisticsPath;
-  private final BindPortConfigItem jmxPort;
-  private final StringConfigItem   host;
-  private final boolean            authentication;
-  private final String             passwordFile;
-  private final String             loginConfigName;
-  private final String             accessFile;
-  private final boolean            httpAuthentication;
-  private final String             userRealmFile;
+  private final File     dataPath;
+  private final File     logsPath;
+  private final File     serverDbBackupPath;
+  private final File     statisticsPath;
+  private final BindPort jmxPort;
+  private final String   host;
+  private final boolean  authentication;
+  private final String   passwordFile;
+  private final String   loginConfigName;
+  private final String   accessFile;
+  private final boolean  httpAuthentication;
+  private final String   userRealmFile;
 
   public NewCommonL2ConfigObject(ConfigContext context) {
     super(context);
+    context.ensureRepositoryProvides(Server.class);
 
-    this.context.ensureRepositoryProvides(Server.class);
+    Server server = (Server) context.bean();
 
-    this.dataPath = context.configRelativeSubstitutedFileItem("data");
-    this.logsPath = context.configRelativeSubstitutedFileItem("logs");
+    this.dataPath = new File(server.getData());// context.configRelativeSubstitutedFileItem("data");
+    this.logsPath = new File(server.getLogs());// context.configRelativeSubstitutedFileItem("logs");
 
-    this.serverDbBackupPath = context.configRelativeSubstitutedFileItem("data-backup");
+    this.serverDbBackupPath = new File(server.getDataBackup());// context.configRelativeSubstitutedFileItem("data-backup");
 
-    this.statisticsPath = context.configRelativeSubstitutedFileItem("statistics");
-    this.host = context.stringItem("@host");
+    this.statisticsPath = new File(server.getStatistics());// context.configRelativeSubstitutedFileItem("statistics");
+    this.host = server.getHost();// context.stringItem("@host");
 
     // JMX authentication
     String pwd = null;
     String loginConfig = null;
     String access = null;
-    Server server = (Server) context.bean();
-    if (server != null) {
-      this.authentication = server.isSetAuthentication();
-    } else {
-      this.authentication = false;
-    }
+    this.authentication = server.isSetAuthentication();
 
     if (authentication) {
       LicenseCheck.checkCapability(LicenseConstants.AUTHENTICATION);
@@ -88,11 +82,7 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
 
     // HTTP authentication
     String userRealm = null;
-    if (server != null) {
-      this.httpAuthentication = server.isSetHttpAuthentication();
-    } else {
-      this.httpAuthentication = false;
-    }
+    this.httpAuthentication = server.isSetHttpAuthentication();
 
     if (httpAuthentication) {
       userRealm = server.getHttpAuthentication().getUserRealmFile();
@@ -103,30 +93,30 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
     }
     this.userRealmFile = userRealm;
 
-    this.jmxPort = context.bindPortItem("jmx-port", server.getJmxPort());
+    this.jmxPort = server.getJmxPort();// context.bindPortItem("jmx-port", server.getJmxPort());
   }
 
-  public FileConfigItem dataPath() {
+  public File dataPath() {
     return this.dataPath;
   }
 
-  public FileConfigItem logsPath() {
+  public File logsPath() {
     return this.logsPath;
   }
 
-  public FileConfigItem statisticsPath() {
+  public File serverDbBackupPath() {
+    return this.serverDbBackupPath;
+  }
+  
+  public File statisticsPath() {
     return this.statisticsPath;
   }
 
-  public FileConfigItem serverDbBackupPath() {
-    return this.serverDbBackupPath;
-  }
-
-  public BindPortConfigItem jmxPort() {
+  public BindPort jmxPort() {
     return this.jmxPort;
   }
 
-  public StringConfigItem host() {
+  public String host() {
     return this.host;
   }
 
@@ -153,4 +143,32 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
   public String httpAuthenticationUserRealmFile() {
     return userRealmFile;
   }
+
+  //all setters used STRICTLY in test
+
+  public void setDataPath(String dataPath) {
+    Server server = (Server) getBean();
+    server.setData(dataPath);
+  }
+
+  public void setJmxPort(BindPort jmxPort) {
+    Server server = (Server) getBean();
+    server.setJmxPort(jmxPort);
+  }
+
+  public void setLogsPath(String logsPath) {
+    Server server = (Server) getBean();
+    server.setLogs(logsPath);
+  }
+
+  public void setServerDbBackupPath(String dbBackupPath) {
+    Server server = (Server) getBean();
+    server.setDataBackup(dbBackupPath);
+  }
+
+  public void setStatisticsPath(String statisticsPath) {
+    Server server = (Server) getBean();
+    server.setStatistics(statisticsPath);
+  }
+
 }

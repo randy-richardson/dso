@@ -18,6 +18,7 @@ import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.Co
 import com.tc.config.schema.utils.StandardXmlObjectComparator;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
+import com.terracottatech.config.Application;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.ConfigurationModel;
 import com.terracottatech.config.DsoClientData;
@@ -39,6 +40,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Iterator;
 
 public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
 
@@ -1038,6 +1040,41 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     
     Assert.assertTrue(system.isSetConfigurationModel());
     Assert.assertEquals(ConfigurationModel.PRODUCTION, system.getConfigurationModel());
+  }
+  
+  public void testApplicationDefaults() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    for(Iterator i = configSetupMgr.applicationsRepository().applicationNames(); i.hasNext();){
+      Application application = (Application) configSetupMgr.applicationsRepository().repositoryFor((String) i.next()).bean();
+      Assert.assertTrue(application.isSetDso());
+      Assert.assertEquals(true, application.getDso().getDsoReflectionEnabled());
+    }
+  }
+  
+  public void testApplication() throws IOException, ConfigurationSetupException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "<application>"
+                    + "<dso>"
+                    +   "<dso-reflection-enabled>false</dso-reflection-enabled>"
+                    + "</dso>"
+                    + "</application>"
+                    + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    BaseTVSConfigurationSetupManager configSetupMgr = initializeAndGetBaseTVSConfigSetupManager();
+    for(Iterator i = configSetupMgr.applicationsRepository().applicationNames(); i.hasNext();){
+      Application application = (Application) configSetupMgr.applicationsRepository().repositoryFor((String) i.next()).bean();
+      Assert.assertTrue(application.isSetDso());
+      Assert.assertEquals(false, application.getDso().getDsoReflectionEnabled());
+    }
   }
   
   private BaseTVSConfigurationSetupManager initializeAndGetBaseTVSConfigSetupManager()

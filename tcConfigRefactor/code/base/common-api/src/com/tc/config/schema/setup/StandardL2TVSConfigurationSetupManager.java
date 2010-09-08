@@ -517,9 +517,9 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     this.systemConfig = new NewSystemConfigObject(createContext(systemBeanRepository(), configurationCreator()
         .directoryConfigurationLoadedFrom()));
     L2ConfigData serverConfigData = configDataFor(this.thisL2Identifier);
-    LogSettingConfigItemListener listener = new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L2);
-    serverConfigData.commonL2Config().logsPath().addListener(listener);
-    listener.valueChanged(null, serverConfigData.commonL2Config().logsPath().getObject());
+//    LogSettingConfigItemListener listener = new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L2);
+//    serverConfigData.commonL2Config().logsPath().addListener(listener);
+//    listener.valueChanged(null, serverConfigData.commonL2Config().logsPath().getObject());
     return serverConfigData;
   }
 
@@ -548,7 +548,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
           Assert.assertNotNull(data);
           boolean isNwAP = serversToMode.get(name);
-          if (!isNwAP && !(data.dsoL2Config().persistenceMode().getObject().equals(PersistenceMode.PERMANENT_STORE))) {
+          if (!isNwAP && !(data.dsoL2Config().persistenceMode().equals(PersistenceMode.PERMANENT_STORE))) {
             badServers.add(name);
           }
         }

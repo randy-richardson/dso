@@ -8,7 +8,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.impl.values.XmlObjectBase;
 
-import com.tc.config.schema.dynamic.BindPortConfigItem;
 import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.ConfigItemListener;
@@ -60,8 +59,8 @@ public class TestConfigObjectInvocationHandler implements InvocationHandler {
    * typed subinterfaces of {@link ConfigItem}; the methods shouldn't do anything, just throw
    * {@link com.tc.util.TCAssertionError}s.
    */
-  private class OurSettableConfigItem implements SettableConfigItem, BooleanConfigItem, FileConfigItem, IntConfigItem,
-      ObjectArrayConfigItem, StringArrayConfigItem, StringConfigItem, BindPortConfigItem, OffHeapConfigItem {
+  private class OurSettableConfigItem implements BooleanConfigItem, FileConfigItem, IntConfigItem,
+      ObjectArrayConfigItem, StringArrayConfigItem, StringConfigItem, OffHeapConfigItem {
     private final String xpath;
 
     public OurSettableConfigItem(String xpath) {

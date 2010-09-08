@@ -32,9 +32,11 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.tc.util.concurrent.ThreadUtil;
+import com.terracottatech.config.Application;
 import com.terracottatech.config.BindPort;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.ConfigurationModel;
+import com.terracottatech.config.DsoApplication;
 import com.terracottatech.config.DsoClientData;
 import com.terracottatech.config.DsoClientDebugging;
 import com.terracottatech.config.DsoServerData;
@@ -173,7 +175,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     }
   }
 
-  private ConfigurationSource[] getConfigurationSources(String configrationSpec) throws ConfigurationSetupException {
+  protected ConfigurationSource[] getConfigurationSources(String configrationSpec) throws ConfigurationSetupException {
     String[] components = configrationSpec.split(",");
     ConfigurationSource[] out = new ConfigurationSource[components.length];
 
@@ -522,6 +524,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       initializeSystem(config);
       initializeServers(config);
       initializeClients(config);
+      initializeApplication(config);
     } catch (IOException ioe) {
       throw new ConfigurationSetupException("We were unable to read configuration data from the " + descrip + ": "
                                             + ioe.getLocalizedMessage(), ioe);
@@ -565,11 +568,11 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   }
 
   private void initializeServers(TcConfig config) throws XmlException, ConfigurationSetupException {
-    if(!config.isSetServers()){
+    if (!config.isSetServers()) {
       config.addNewServers();
     }
     Servers servers = config.getServers();
-    if(servers.getServerArray().length == 0){
+    if (servers.getServerArray().length == 0) {
       servers.addNewServer();
     }
 
@@ -720,21 +723,21 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       if (!dso.isSetPersistence()) {
         dso.addNewPersistence().setMode(getDefaultPersistence(server));
         initializeDefaultOffHeap(server);
-      }else{
+      } else {
         Persistence persistence = dso.getPersistence();
-        if(!persistence.isSetMode()){
+        if (!persistence.isSetMode()) {
           persistence.setMode(getDefaultPersistence(server));
         }
-        
-        if(!persistence.isSetOffheap()){
+
+        if (!persistence.isSetOffheap()) {
           initializeDefaultOffHeap(server);
-        }else{
+        } else {
           Offheap offHeap = persistence.getOffheap();
-          if(!offHeap.isSetEnabled()){
+          if (!offHeap.isSetEnabled()) {
             offHeap.setEnabled(getDefaultOffHeapEnabled(server));
           }
-          
-          if(!offHeap.isSetMaxDataSize()){
+
+          if (!offHeap.isSetMaxDataSize()) {
             offHeap.setMaxDataSize(getDefaultOffHeapMaxDataSize(server));
           }
         }
@@ -783,7 +786,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private void initializeDefaultGarbageCollection(Server server) throws XmlException {
     Assert.assertTrue(server.isSetDso());
     Assert.assertFalse(server.getDso().isSetGarbageCollection());
-    
+
     GarbageCollection gc = server.getDso().addNewGarbageCollection();
     gc.setEnabled(getDefaultGarbageCollectionEnabled(server));
     gc.setVerbose(getDefaultGarbageCollectionVerbose(server));
@@ -798,12 +801,12 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     if (xmlObject.getStringValue().equals(PersistenceMode.PERMANENT_STORE.toString())) return PersistenceMode.PERMANENT_STORE;
     return PersistenceMode.TEMPORARY_SWAP_ONLY;
   }
-  
+
   private boolean getDefaultOffHeapEnabled(Server server) throws XmlException {
     return ((XmlBoolean) this.defaultValueProvider.defaultFor(server.schemaType(), "dso/persistence/offheap/enabled"))
-    .getBooleanValue();
+        .getBooleanValue();
   }
-  
+
   private String getDefaultOffHeapMaxDataSize(Server server) throws XmlException {
     return ((XmlString) this.defaultValueProvider
         .defaultFor(server.schemaType(), "dso/persistence/offheap/maxDataSize")).getStringValue();
@@ -1171,6 +1174,38 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private boolean getDefaultNamedLoaderDebugRuntimeLogging(Client client) throws XmlException {
     return ((XmlBoolean) this.defaultValueProvider.defaultFor(client.schemaType(),
                                                               "dso/debugging/runtime-logging/named-loader-debug"))
+        .getBooleanValue();
+  }
+
+  private void initializeApplication(TcConfig config) throws XmlException {
+    Application application;
+    if (!config.isSetApplication()) {
+      application = config.addNewApplication();
+    } else {
+      application = config.getApplication();
+    }
+    initializeApplicationDso(application);
+  }
+
+  private void initializeApplicationDso(Application application) throws XmlException {
+    if (!application.isSetDso()) {
+      application.addNewDso();
+    }
+
+    initializeDsoReflectionEnabled(application);
+  }
+
+  private void initializeDsoReflectionEnabled(Application application) throws XmlException {
+    Assert.assertTrue(application.isSetDso());
+
+    DsoApplication dsoApplication = application.getDso();
+    if (!dsoApplication.isSetDsoReflectionEnabled()) {
+      dsoApplication.setDsoReflectionEnabled(getDefaultDsoReflectionEnabled(application));
+    }
+  }
+
+  private boolean getDefaultDsoReflectionEnabled(Application application) throws XmlException {
+    return ((XmlBoolean) this.defaultValueProvider.defaultFor(application.schemaType(), "dso/dso-reflection-enabled"))
         .getBooleanValue();
   }
 

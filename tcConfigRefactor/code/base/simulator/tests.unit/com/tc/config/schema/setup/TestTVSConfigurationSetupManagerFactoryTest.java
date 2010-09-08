@@ -48,9 +48,9 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
         "Bar.bar" });
 
     // Hit the remaining top-level config objects
-    ((SettableConfigItem) factory.l2DSOConfig().garbageCollectionInterval()).setValue(142);
-    ((SettableConfigItem) factory.l1CommonConfig().logsPath()).setValue("whatever");
-    ((SettableConfigItem) factory.l2CommonConfig().dataPath()).setValue("marph");
+    factory.l2DSOConfig().setGarbageCollectionInterval(142);
+    factory.l1CommonConfig().setLogsPath("whatever");
+    factory.l2CommonConfig().setDataPath("marph");
 
     // A complex value (locks)
     ((SettableConfigItem) factory.dsoApplicationConfig().locks()).setValue(createLocks(new Lock[] {
@@ -70,9 +70,9 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
     assertEqualsOrdered(new String[] { "Foo.foo", "Bar.bar" }, this.l2Manager
         .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME).transientFields()
         .getObject());
-    assertEquals(142, this.l2Manager.dsoL2Config().garbageCollectionInterval().getInt());
-    assertEquals(new File("whatever"), this.l1Manager.commonL1Config().logsPath().getFile());
-    assertEquals(new File("marph"), this.l2Manager.commonl2Config().dataPath().getFile());
+    assertEquals(142, this.l2Manager.dsoL2Config().garbageCollectionInterval());
+    assertEquals(new File("whatever"), this.l1Manager.commonL1Config().logsPath());
+    assertEquals(new File("marph"), this.l2Manager.commonl2Config().dataPath());
     assertEqualsUnordered(new Lock[] { new AutoLock("* Foo.foo(..)", LockLevel.CONCURRENT),
         new com.tc.object.config.schema.NamedLock("bar", "* Baz.baz(..)", LockLevel.READ) }, this.l2Manager
         .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME).locks().getObject());

@@ -10,7 +10,6 @@ import org.apache.xmlbeans.XmlObject;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.dynamic.BindPortConfigItem;
 import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
@@ -18,7 +17,6 @@ import com.tc.config.schema.dynamic.IntConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.StringConfigItem;
 import com.tc.config.schema.repository.BeanRepository;
-import com.terracottatech.config.BindPort;
 import com.terracottatech.config.Offheap;
 
 /**
@@ -60,8 +58,6 @@ public interface ConfigContext {
   BooleanConfigItem booleanItem(String xpath);
 
   BooleanConfigItem booleanItem(String xpath, boolean defaultValue);
-
-  BindPortConfigItem bindPortItem(String xpath, BindPort defaultValue);
 
   OffHeapConfigItem offHeapConfigItem(String string, Offheap offheap);
 

@@ -7,6 +7,7 @@ import com.tc.config.schema.NewConfig;
 import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
+import com.terracottatech.config.AdditionalBootJarClasses;
 
 /**
  * Represents the per-application config for DSO.
@@ -26,5 +27,8 @@ public interface NewDSOApplicationConfig extends NewConfig {
   BooleanConfigItem supportSharingThroughReflection();
 
   StringArrayConfigItem webApplications();
+  
+  //used STRICTLY in tests
+  void setAdditionalBootJarClasses(AdditionalBootJarClasses val);
 
 }
