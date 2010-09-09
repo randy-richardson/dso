@@ -58,7 +58,7 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
         new com.tc.object.config.schema.NamedLock("bar", "* Baz.baz(..)", LockLevel.READ) }));
 
     // A sub-config object
-    ((SettableConfigItem) factory.l1DSOConfig().instrumentationLoggingOptions().logDistributedMethods()).setValue(true);
+    factory.l1DSOConfig().instrumentationLoggingOptions().setLogDistributedMethods(true);
 
     this.factory.activateConfigurationChange();
 
@@ -76,7 +76,7 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
     assertEqualsUnordered(new Lock[] { new AutoLock("* Foo.foo(..)", LockLevel.CONCURRENT),
         new com.tc.object.config.schema.NamedLock("bar", "* Baz.baz(..)", LockLevel.READ) }, this.l2Manager
         .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME).locks().getObject());
-    assertTrue(this.l1Manager.dsoL1Config().instrumentationLoggingOptions().logDistributedMethods().getBoolean());
+    assertTrue(this.l1Manager.dsoL1Config().instrumentationLoggingOptions().logDistributedMethods());
   }
 
   private com.terracottatech.config.LockLevel.Enum level(LockLevel in) {

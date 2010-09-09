@@ -5,28 +5,26 @@
 package com.tc.config.schema;
 
 import com.tc.config.schema.context.ConfigContext;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
-import com.tc.config.schema.dynamic.IntConfigItem;
 import com.terracottatech.config.UpdateCheck;
 
 public class UpdateCheckConfigObject extends BaseNewConfigObject implements UpdateCheckConfig {
-  private final BooleanConfigItem isEnabled;
-  private final IntConfigItem     periodDays;
+  private final boolean isEnabled;
+  private final int     periodDays;
 
   public UpdateCheckConfigObject(ConfigContext context) {
     super(context);
 
     context.ensureRepositoryProvides(UpdateCheck.class);
-
-    isEnabled = context.booleanItem("enabled");
-    periodDays = context.intItem("period-days");
+    UpdateCheck updateCheck = (UpdateCheck) this.context.bean();
+    this.isEnabled = updateCheck.getEnabled();
+    this.periodDays = updateCheck.getPeriodDays();
   }
 
-  public BooleanConfigItem isEnabled() {
+  public boolean isEnabled() {
     return isEnabled;
   }
 
-  public IntConfigItem periodDays() {
+  public int periodDays() {
     return periodDays;
   }
 }

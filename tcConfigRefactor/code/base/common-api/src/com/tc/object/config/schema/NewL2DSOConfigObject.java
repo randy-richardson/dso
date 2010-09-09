@@ -10,7 +10,10 @@ import org.apache.xmlbeans.XmlInteger;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlString;
 
+import com.tc.config.schema.ActiveServerGroupConfigObject;
+import com.tc.config.schema.ActiveServerGroupsConfigObject;
 import com.tc.config.schema.BaseNewConfigObject;
+import com.tc.config.schema.NewHaConfigObject;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
@@ -20,11 +23,7 @@ import com.terracottatech.config.BindPort;
 import com.terracottatech.config.DsoServerData;
 import com.terracottatech.config.GarbageCollection;
 import com.terracottatech.config.Ha;
-import com.terracottatech.config.HaMode;
-import com.terracottatech.config.Members;
 import com.terracottatech.config.MirrorGroup;
-import com.terracottatech.config.MirrorGroups;
-import com.terracottatech.config.NetworkedActivePassive;
 import com.terracottatech.config.Offheap;
 import com.terracottatech.config.Persistence;
 import com.terracottatech.config.PersistenceMode;
@@ -464,67 +463,25 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
   private static void initializeMirrorGroups(Servers servers, DefaultValueProvider defaultValueProvider)
       throws ConfigurationSetupException {
     if (!servers.isSetMirrorGroups()) {
-      createDefaultServerMirrorGroups(servers, defaultValueProvider);
+      ActiveServerGroupsConfigObject.createDefaultServerMirrorGroups(servers, defaultValueProvider);
     } else {
       MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
+      Ha ha;
+      try {
+        ha = servers.isSetHa() ? servers.getHa() : NewHaConfigObject.getDefaultCommonHa(servers, defaultValueProvider);
+      } catch (XmlException e) {
+        throw new ConfigurationSetupException(e);
+      }
+      if (mirrorGroups.length == 0) {
+        ActiveServerGroupConfigObject.createDefaultMirrorGroup(servers, ha);
+      }
+
       for (MirrorGroup mirrorGroup : mirrorGroups) {
         if (!mirrorGroup.isSetHa()) {
-          Ha ha;
-          try {
-            ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa(servers, defaultValueProvider);
-          } catch (XmlException e) {
-            throw new ConfigurationSetupException(e);
-          }
           mirrorGroup.setHa(ha);
         }
       }
     }
-  }
-
-  private static void createDefaultServerMirrorGroups(Servers servers, DefaultValueProvider defaultValueProvider)
-      throws ConfigurationSetupException {
-    Ha ha;
-    try {
-      ha = servers.isSetHa() ? servers.getHa() : getDefaultCommonHa(servers, defaultValueProvider);
-    } catch (XmlException e) {
-      throw new ConfigurationSetupException(e);
-    }
-    MirrorGroups mirrorGroups = servers.addNewMirrorGroups();
-    MirrorGroup mirrorGroup = mirrorGroups.addNewMirrorGroup();
-    mirrorGroup.setHa(ha);
-    Members members = mirrorGroup.addNewMembers();
-    Server[] serverArray = servers.getServerArray();
-
-    for (int i = 0; i < serverArray.length; i++) {
-      // name for each server should exist
-      String name = serverArray[i].getName();
-      if (name == null || name.equals("")) { throw new ConfigurationSetupException(
-                                                                                   "server's name not defined... name=["
-                                                                                       + name + "] serverDsoPort=["
-                                                                                       + serverArray[i].getDsoPort()
-                                                                                       + "]"); }
-      members.insertMember(i, serverArray[i].getName());
-    }
-  }
-
-  private static Ha getDefaultCommonHa(Servers servers, DefaultValueProvider defaultValueProvider) throws XmlException {
-    final int defaultElectionTime = ((XmlInteger) defaultValueProvider
-        .defaultFor(servers.schemaType(), "ha/networked-active-passive/election-time")).getBigIntegerValue().intValue();
-    final String defaultHaModeString = ((XmlString) defaultValueProvider.defaultFor(servers.schemaType(), "ha/mode"))
-        .getStringValue();
-    final com.terracottatech.config.HaMode.Enum defaultHaMode;
-    if (HaMode.DISK_BASED_ACTIVE_PASSIVE.toString().equals(defaultHaModeString)) {
-      defaultHaMode = HaMode.DISK_BASED_ACTIVE_PASSIVE;
-    } else {
-      defaultHaMode = HaMode.NETWORKED_ACTIVE_PASSIVE;
-    }
-
-    Ha ha = Ha.Factory.newInstance();
-    ha.setMode(defaultHaMode);
-    NetworkedActivePassive nap = NetworkedActivePassive.Factory.newInstance();
-    nap.setElectionTime(defaultElectionTime);
-    ha.setNetworkedActivePassive(nap);
-    return ha;
   }
 
   private static void initializeUpdateCheck(Servers servers, DefaultValueProvider defaultValueProvider)

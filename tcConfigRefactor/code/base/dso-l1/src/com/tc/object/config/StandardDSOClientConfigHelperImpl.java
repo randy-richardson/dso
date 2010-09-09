@@ -1170,7 +1170,7 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
   }
 
   public int getFaultCount() {
-    return faultCount < 0 ? this.configSetupManager.dsoL1Config().faultCount().getInt() : faultCount;
+    return faultCount < 0 ? this.configSetupManager.dsoL1Config().faultCount() : faultCount;
   }
 
   private Boolean readAdaptableCache(final String name) {

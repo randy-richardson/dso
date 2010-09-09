@@ -4,11 +4,9 @@
  */
 package com.tc.config.schema;
 
-import com.tc.config.schema.dynamic.BooleanConfigItem;
-import com.tc.config.schema.dynamic.IntConfigItem;
 
 public interface UpdateCheckConfig extends NewConfig {
-  BooleanConfigItem isEnabled();
+  boolean isEnabled();
 
-  IntConfigItem periodDays();
+  int periodDays();
 }

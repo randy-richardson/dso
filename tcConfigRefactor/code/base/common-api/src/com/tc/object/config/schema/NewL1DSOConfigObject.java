@@ -12,7 +12,6 @@ import org.apache.xmlbeans.XmlString;
 import com.tc.config.schema.BaseNewConfigObject;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.dynamic.IntConfigItem;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoClientData;
@@ -29,7 +28,7 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
 
   public static final String                     DSO_INSTRUMENTATION_LOGGING_OPTIONS_SUB_XPATH = "";
 
-  private final IntConfigItem                    faultCount;
+  private final int                    faultCount;
 
   private final DSOInstrumentationLoggingOptions instrumentationLoggingOptions;
   private final DSORuntimeLoggingOptions         runtimeLoggingOptions;
@@ -39,8 +38,9 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
     super(context);
 
     this.context.ensureRepositoryProvides(DsoClientData.class);
+    DsoClientData dsoClientData = (DsoClientData) this.context.bean();
 
-    this.faultCount = this.context.intItem("fault-count");
+    this.faultCount = dsoClientData.getFaultCount();
     this.instrumentationLoggingOptions = new StandardDSOInstrumentationLoggingOptions(this.context);
     this.runtimeLoggingOptions = new StandardDSORuntimeLoggingOptions(this.context);
     this.runtimeOutputOptions = new StandardDSORuntimeOutputOptions(this.context);
@@ -58,7 +58,7 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
     return this.runtimeOutputOptions;
   }
 
-  public IntConfigItem faultCount() {
+  public int faultCount() {
     return faultCount;
   }
 
