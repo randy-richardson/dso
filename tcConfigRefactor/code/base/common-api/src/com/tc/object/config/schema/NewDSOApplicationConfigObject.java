@@ -4,18 +4,24 @@
  */
 package com.tc.object.config.schema;
 
+import org.apache.xmlbeans.XmlBoolean;
+import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.BaseNewConfigObject;
 import com.tc.config.schema.context.ConfigContext;
+import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.XPathBasedConfigItem;
+import com.tc.util.Assert;
 import com.terracottatech.config.AdditionalBootJarClasses;
+import com.terracottatech.config.Application;
 import com.terracottatech.config.DsoApplication;
 import com.terracottatech.config.Root;
 import com.terracottatech.config.Roots;
+import com.terracottatech.config.TcConfigDocument.TcConfig;
 
 public class NewDSOApplicationConfigObject extends BaseNewConfigObject implements NewDSOApplicationConfig {
   private final ConfigItem            instrumentedClasses;
@@ -98,5 +104,41 @@ public class NewDSOApplicationConfigObject extends BaseNewConfigObject implement
   public void setAdditionalBootJarClasses(AdditionalBootJarClasses val) {
     DsoApplication dsoApplication = (DsoApplication) context.bean();
     dsoApplication.setAdditionalBootJarClasses(val);
+  }
+
+  public static void initializeApplication(TcConfig config, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    Application application;
+    if (!config.isSetApplication()) {
+      application = config.addNewApplication();
+    } else {
+      application = config.getApplication();
+    }
+    initializeApplicationDso(application, defaultValueProvider);
+  }
+
+  private static void initializeApplicationDso(Application application, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    if (!application.isSetDso()) {
+      application.addNewDso();
+    }
+
+    initializeDsoReflectionEnabled(application, defaultValueProvider);
+  }
+
+  private static void initializeDsoReflectionEnabled(Application application, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    Assert.assertTrue(application.isSetDso());
+
+    DsoApplication dsoApplication = application.getDso();
+    if (!dsoApplication.isSetDsoReflectionEnabled()) {
+      dsoApplication.setDsoReflectionEnabled(getDefaultDsoReflectionEnabled(application, defaultValueProvider));
+    }
+  }
+
+  private static boolean getDefaultDsoReflectionEnabled(Application application,
+                                                        DefaultValueProvider defaultValueProvider) throws XmlException {
+    return ((XmlBoolean) defaultValueProvider.defaultFor(application.schemaType(), "dso/dso-reflection-enabled"))
+        .getBooleanValue();
   }
 }
