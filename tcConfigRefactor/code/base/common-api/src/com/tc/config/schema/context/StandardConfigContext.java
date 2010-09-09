@@ -8,8 +8,6 @@ import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
-import com.tc.config.schema.OffHeapConfigItem;
-import com.tc.config.schema.OffHeapConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
@@ -20,7 +18,6 @@ import com.tc.config.schema.dynamic.SubstitutedFileXPathBasedConfigItem;
 import com.tc.config.schema.listen.ConfigurationChangeListener;
 import com.tc.config.schema.repository.BeanRepository;
 import com.tc.util.Assert;
-import com.terracottatech.config.Offheap;
 
 import java.io.File;
 
@@ -98,10 +95,6 @@ public class StandardConfigContext implements ConfigContext {
 
   public String toString() {
     return "<ConfigContext around repository: " + this.beanRepository + ">";
-  }
-
-  public OffHeapConfigItem offHeapConfigItem(String xPath, Offheap defaultOffHeap) {
-    return new OffHeapConfigObject(this, xPath, defaultOffHeap);
   }
 
 }

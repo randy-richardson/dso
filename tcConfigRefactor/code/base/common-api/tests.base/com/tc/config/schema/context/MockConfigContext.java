@@ -7,11 +7,9 @@ package com.tc.config.schema.context;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
-import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
-import com.terracottatech.config.Offheap;
 
 public class MockConfigContext implements ConfigContext {
 
@@ -197,10 +195,6 @@ public class MockConfigContext implements ConfigContext {
   }
 
   public FileConfigItem configRelativeSubstitutedFileItem(String xpath) {
-    return null;
-  }
-
-  public OffHeapConfigItem offHeapConfigItem(String string, Offheap offheap) {
     return null;
   }
 

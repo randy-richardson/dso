@@ -8,13 +8,11 @@ import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
-import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.repository.BeanRepository;
-import com.terracottatech.config.Offheap;
 
 /**
  * Binds together a {@link BeanRepository} and a {@link DefaultValueProvider}, and provides convenience methods for
@@ -45,7 +43,5 @@ public interface ConfigContext {
   FileConfigItem substitutedFileItem(String xpath);
 
   FileConfigItem configRelativeSubstitutedFileItem(String xpath);
-
-  OffHeapConfigItem offHeapConfigItem(String string, Offheap offheap);
 
 }
