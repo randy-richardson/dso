@@ -16,8 +16,6 @@ import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.FileXPathBasedConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.StringArrayXPathBasedConfigItem;
-import com.tc.config.schema.dynamic.StringConfigItem;
-import com.tc.config.schema.dynamic.StringXPathBasedConfigItem;
 import com.tc.config.schema.dynamic.SubstitutedFileXPathBasedConfigItem;
 import com.tc.config.schema.listen.ConfigurationChangeListener;
 import com.tc.config.schema.repository.BeanRepository;
@@ -80,10 +78,6 @@ public class StandardConfigContext implements ConfigContext {
   public void itemCreated(ConfigItem item) {
     if (item instanceof ConfigurationChangeListener) this.beanRepository
         .addListener((ConfigurationChangeListener) item);
-  }
-
-  public StringConfigItem stringItem(String xpath) {
-    return new StringXPathBasedConfigItem(this, xpath);
   }
 
   public StringArrayConfigItem stringArrayItem(String xpath) {

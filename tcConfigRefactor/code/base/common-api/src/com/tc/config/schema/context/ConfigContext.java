@@ -13,7 +13,6 @@ import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
-import com.tc.config.schema.dynamic.StringConfigItem;
 import com.tc.config.schema.repository.BeanRepository;
 import com.terracottatech.config.Offheap;
 
@@ -38,8 +37,6 @@ public interface ConfigContext {
   Object syncLockForBean();
 
   void itemCreated(ConfigItem item);
-
-  StringConfigItem stringItem(String xpath);
 
   StringArrayConfigItem stringArrayItem(String xpath);
 

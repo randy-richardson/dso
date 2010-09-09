@@ -11,7 +11,6 @@ import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
-import com.tc.config.schema.dynamic.StringConfigItem;
 import com.terracottatech.config.Offheap;
 
 public class MockConfigContext implements ConfigContext {
@@ -126,10 +125,6 @@ public class MockConfigContext implements ConfigContext {
   public void itemCreated(ConfigItem item) {
     ++this.numItemCreateds;
     this.lastItemCreated = item;
-  }
-
-  public StringConfigItem stringItem(String xpath) {
-    return null;
   }
 
   public StringArrayConfigItem stringArrayItem(String xpath) {

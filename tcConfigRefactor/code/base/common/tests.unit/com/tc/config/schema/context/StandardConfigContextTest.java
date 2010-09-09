@@ -12,7 +12,6 @@ import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.MockConfigItem;
 import com.tc.config.schema.dynamic.MockListeningConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
-import com.tc.config.schema.dynamic.StringConfigItem;
 import com.tc.config.schema.dynamic.XPathBasedConfigItem;
 import com.tc.config.schema.repository.MockBeanRepository;
 import com.tc.test.TCTestCase;
@@ -166,7 +165,6 @@ public class StandardConfigContextTest extends TCTestCase {
   }
 
   public void testItems() throws Exception {
-    checkItem(this.context.stringItem("foobar/baz"), "foobar/baz", StringConfigItem.class, null);
     checkItem(this.context.stringArrayItem("foobar/baz"), "foobar/baz", StringArrayConfigItem.class, null);
     checkItem(this.context.fileItem("foobar/baz"), "foobar/baz", FileConfigItem.class, null);
   }
