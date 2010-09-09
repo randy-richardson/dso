@@ -11,13 +11,9 @@ import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.OffHeapConfigObject;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
-import com.tc.config.schema.dynamic.BooleanXPathBasedConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.FileXPathBasedConfigItem;
-import com.tc.config.schema.dynamic.IntConfigItem;
-import com.tc.config.schema.dynamic.IntXPathBasedConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.StringArrayXPathBasedConfigItem;
 import com.tc.config.schema.dynamic.StringConfigItem;
@@ -86,14 +82,6 @@ public class StandardConfigContext implements ConfigContext {
         .addListener((ConfigurationChangeListener) item);
   }
 
-  public IntConfigItem intItem(String xpath) {
-    return new IntXPathBasedConfigItem(this, xpath);
-  }
-
-  public IntConfigItem intItem(String xpath, int defaultValue, boolean logDefaultValueUsage) {
-    return new IntXPathBasedConfigItem(this, xpath, defaultValue, logDefaultValueUsage);
-  }
-
   public StringConfigItem stringItem(String xpath) {
     return new StringXPathBasedConfigItem(this, xpath);
   }
@@ -108,14 +96,6 @@ public class StandardConfigContext implements ConfigContext {
 
   public FileConfigItem substitutedFileItem(String xpath) {
     return new SubstitutedFileXPathBasedConfigItem(this, xpath);
-  }
-
-  public BooleanConfigItem booleanItem(String xpath) {
-    return new BooleanXPathBasedConfigItem(this, xpath);
-  }
-
-  public BooleanConfigItem booleanItem(String xpath, boolean defaultValue) {
-    return new BooleanXPathBasedConfigItem(this, xpath, defaultValue);
   }
 
   public FileConfigItem configRelativeSubstitutedFileItem(String xpath) {

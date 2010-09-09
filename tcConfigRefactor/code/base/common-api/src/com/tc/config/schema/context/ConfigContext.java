@@ -10,10 +10,8 @@ import org.apache.xmlbeans.XmlObject;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.OffHeapConfigItem;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
-import com.tc.config.schema.dynamic.IntConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.StringConfigItem;
 import com.tc.config.schema.repository.BeanRepository;
@@ -41,10 +39,6 @@ public interface ConfigContext {
 
   void itemCreated(ConfigItem item);
 
-  IntConfigItem intItem(String xpath);
-
-  IntConfigItem intItem(String xpath, int defaultValue, boolean logDefaultValueUsage);
-
   StringConfigItem stringItem(String xpath);
 
   StringArrayConfigItem stringArrayItem(String xpath);
@@ -54,10 +48,6 @@ public interface ConfigContext {
   FileConfigItem substitutedFileItem(String xpath);
 
   FileConfigItem configRelativeSubstitutedFileItem(String xpath);
-
-  BooleanConfigItem booleanItem(String xpath);
-
-  BooleanConfigItem booleanItem(String xpath, boolean defaultValue);
 
   OffHeapConfigItem offHeapConfigItem(String string, Offheap offheap);
 

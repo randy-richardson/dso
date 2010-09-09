@@ -7,10 +7,8 @@ import com.tc.config.schema.MockIllegalConfigurationChangeHandler;
 import com.tc.config.schema.MockSchemaType;
 import com.tc.config.schema.MockXmlObject;
 import com.tc.config.schema.defaults.MockDefaultValueProvider;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
-import com.tc.config.schema.dynamic.IntConfigItem;
 import com.tc.config.schema.dynamic.MockConfigItem;
 import com.tc.config.schema.dynamic.MockListeningConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
@@ -168,13 +166,9 @@ public class StandardConfigContextTest extends TCTestCase {
   }
 
   public void testItems() throws Exception {
-    checkItem(this.context.intItem("foobar/baz"), "foobar/baz", IntConfigItem.class, null);
     checkItem(this.context.stringItem("foobar/baz"), "foobar/baz", StringConfigItem.class, null);
     checkItem(this.context.stringArrayItem("foobar/baz"), "foobar/baz", StringArrayConfigItem.class, null);
     checkItem(this.context.fileItem("foobar/baz"), "foobar/baz", FileConfigItem.class, null);
-    checkItem(this.context.booleanItem("foobar/baz"), "foobar/baz", BooleanConfigItem.class, null);
-    checkItem(this.context.booleanItem("foobar/baz", true), "foobar/baz", BooleanConfigItem.class, Boolean.TRUE);
-    checkItem(this.context.booleanItem("foobar/baz", false), "foobar/baz", BooleanConfigItem.class, Boolean.FALSE);
   }
 
   private void checkItem(ConfigItem item, String xpath, Class expectedClass, Object expectedDefaultValue) {

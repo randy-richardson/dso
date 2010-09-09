@@ -11,7 +11,6 @@ import org.apache.xmlbeans.XmlObject;
 import com.tc.config.schema.BaseNewConfigObject;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.XPathBasedConfigItem;
@@ -29,13 +28,14 @@ public class NewDSOApplicationConfigObject extends BaseNewConfigObject implement
   private final ConfigItem            locks;
   private final ConfigItem            roots;
   private final StringArrayConfigItem additionalBootJarClasses;
-  private final BooleanConfigItem     supportSharingThroughReflection;
+  private final boolean     supportSharingThroughReflection;
   private final StringArrayConfigItem webApplications;
 
   public NewDSOApplicationConfigObject(ConfigContext context) {
     super(context);
 
     this.context.ensureRepositoryProvides(DsoApplication.class);
+    DsoApplication dsoApplication = (DsoApplication) this.context.bean();
 
     this.instrumentedClasses = new XPathBasedConfigItem(this.context, "instrumented-classes") {
       protected Object fetchDataFromXmlObject(XmlObject xmlObject) {
@@ -58,7 +58,7 @@ public class NewDSOApplicationConfigObject extends BaseNewConfigObject implement
     this.transientFields = this.context.stringArrayItem("transient-fields");
     this.additionalBootJarClasses = this.context.stringArrayItem("additional-boot-jar-classes");
     this.webApplications = this.context.stringArrayItem("web-applications");
-    this.supportSharingThroughReflection = this.context.booleanItem("dso-reflection-enabled");
+    this.supportSharingThroughReflection = dsoApplication.getDsoReflectionEnabled();
   }
 
   public StringArrayConfigItem webApplications() {
@@ -85,8 +85,8 @@ public class NewDSOApplicationConfigObject extends BaseNewConfigObject implement
     return this.additionalBootJarClasses;
   }
 
-  public BooleanConfigItem supportSharingThroughReflection() {
-    return supportSharingThroughReflection;
+  public boolean supportSharingThroughReflection() {
+    return this.supportSharingThroughReflection;
   }
 
   private static Object translateRoots(XmlObject xmlObject) {

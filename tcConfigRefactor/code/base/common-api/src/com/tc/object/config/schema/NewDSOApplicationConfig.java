@@ -4,7 +4,6 @@
 package com.tc.object.config.schema;
 
 import com.tc.config.schema.NewConfig;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.terracottatech.config.AdditionalBootJarClasses;
@@ -24,7 +23,7 @@ public interface NewDSOApplicationConfig extends NewConfig {
 
   StringArrayConfigItem additionalBootJarClasses();
 
-  BooleanConfigItem supportSharingThroughReflection();
+  boolean supportSharingThroughReflection();
 
   StringArrayConfigItem webApplications();
   

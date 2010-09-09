@@ -26,7 +26,7 @@ public class NewHaConfigObject extends BaseNewConfigObject implements NewHaConfi
     ha = (Ha) context.bean();
     haMode = ha.getMode().toString();
     checkHaModeSet(haMode);
-    electionTime = context.intItem("networked-active-passive/election-time").getInt();
+    electionTime = ha.getNetworkedActivePassive().getElectionTime();
   }
 
   private void checkHaModeSet(String mode) {

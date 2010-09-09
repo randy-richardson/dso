@@ -8,10 +8,8 @@ import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.OffHeapConfigItem;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.FileConfigItem;
-import com.tc.config.schema.dynamic.IntConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.StringConfigItem;
 import com.terracottatech.config.Offheap;
@@ -130,14 +128,6 @@ public class MockConfigContext implements ConfigContext {
     this.lastItemCreated = item;
   }
 
-  public IntConfigItem intItem(String xpath) {
-    return null;
-  }
-
-  public IntConfigItem intItem(String xpath, int defaultValue, boolean logDefaultValueUsage) {
-    return null;
-  }
-
   public StringConfigItem stringItem(String xpath) {
     return null;
   }
@@ -147,14 +137,6 @@ public class MockConfigContext implements ConfigContext {
   }
 
   public FileConfigItem fileItem(String xpath) {
-    return null;
-  }
-
-  public BooleanConfigItem booleanItem(String xpath) {
-    return null;
-  }
-
-  public BooleanConfigItem booleanItem(String xpath, boolean defaultValue) {
     return null;
   }
 

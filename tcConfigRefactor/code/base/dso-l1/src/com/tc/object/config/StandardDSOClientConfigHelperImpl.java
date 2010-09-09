@@ -251,7 +251,7 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     NewDSOApplicationConfig appConfig = configSetupManager
         .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME);
 
-    supportSharingThroughReflection = appConfig.supportSharingThroughReflection().getBoolean();
+    supportSharingThroughReflection = appConfig.supportSharingThroughReflection();
     try {
       doPreInstrumentedAutoconfig();
       doAutoconfig();
