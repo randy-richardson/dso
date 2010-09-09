@@ -35,6 +35,7 @@ import com.terracottatech.config.Offheap;
 import com.terracottatech.config.Property;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
+import com.terracottatech.config.TcProperties;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -145,42 +146,41 @@ import java.util.Set;
  */
 public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfigurationSetupManagerFactory {
 
-  public static final int                MODE_CENTRALIZED_CONFIG = 0;
-  public static final int                MODE_DISTRIBUTED_CONFIG = 1;
+  public static final int                              MODE_CENTRALIZED_CONFIG = 0;
+  public static final int                              MODE_DISTRIBUTED_CONFIG = 1;
+  public static final String                           DEFAULT_HOST            = "localhost";
+  public static final String                           DEFAULT_SERVER_NAME     = "default";
 
-  private final TestConfigBeanSet        l1_beanSet;
+  private final TestConfigurationCreator               l1ConfigurationCreator;
+  private final TestConfigurationCreator               l2ConfigurationCreator;
 
-  private final TestConfigurationCreator l1ConfigurationCreator;
-  private final TestConfigurationCreator l2ConfigurationCreator;
+  private final NewSystemConfig                        sampleSystem;
+  private final NewCommonL1Config                      sampleL1Common;
+  private final NewL1DSOConfig                         sampleL1DSO;
+  private final NewCommonL2Config                      sampleL2Common;
+  private final NewL2DSOConfig                         sampleL2DSO;
+  private final NewDSOApplicationConfig                sampleDSOApplication;
+  private final ActiveServerGroupsConfig               sampleActiveServerGroups;
+  private final NewHaConfig                            sampleHa;
 
-  private final NewSystemConfig          sampleSystem;
-  private final NewCommonL1Config        sampleL1Common;
-  private final NewL1DSOConfig           sampleL1DSO;
-  private final NewCommonL2Config        sampleL2Common;
-  private final NewL2DSOConfig           sampleL2DSO;
-  private final NewDSOApplicationConfig  sampleDSOApplication;
-  private final ActiveServerGroupsConfig sampleActiveServerGroups;
-  private final NewHaConfig              sampleHa;
+  private final String                                 defaultL2Identifier;
 
-  private final String                   defaultL2Identifier;
+  private final int                                    mode;
 
-  private final int                      mode;
+  private boolean                                      gcEnabled               = true;
+  private boolean                                      gcVerbose               = false;
+  private int                                          gcIntervalInSec         = 3600;
 
-  private boolean                        gcEnabled               = true;
-  private boolean                        gcVerbose               = false;
-  private int                            gcIntervalInSec         = 3600;
-
-  private boolean                        isConfigDone            = false;
-  private boolean                        offHeapEnabled          = false;
-  private String                         maxOffHeapDataSize      = "-1m";
-  private PersistenceMode                persistenceMode         = PersistenceMode.TEMPORARY_SWAP_ONLY;
+  private boolean                                      isConfigDone            = false;
+  private boolean                                      offHeapEnabled          = false;
+  private String                                       maxOffHeapDataSize      = "-1m";
+  private PersistenceMode                              persistenceMode         = PersistenceMode.TEMPORARY_SWAP_ONLY;
+  private final StandardL1TVSConfigurationSetupManager sampleL1Manager;
 
   public TestTVSConfigurationSetupManagerFactory(int mode, String l2Identifier,
                                                  IllegalConfigurationChangeHandler illegalConfigurationChangeHandler)
       throws ConfigurationSetupException {
     super(illegalConfigurationChangeHandler);
-
-    this.l1_beanSet = new TestConfigBeanSet();
 
     final ConfigBeanFactory configBeanFactory = new TerracottaDomainConfigurationDocumentBeanFactory();
     final ConfigurationSpec configSpec = new ConfigurationSpec("default-tc-config.xml", ConfigMode.L2, new File(System
@@ -200,7 +200,6 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
     // FIXME 2005-11-30 andrew -- This stinks like mad...we should be able to do something better than perverting the
     // existing config-setup managers here.
-    L1TVSConfigurationSetupManager sampleL1Manager;
     L2TVSConfigurationSetupManager sampleL2Manager;
 
     sampleL1Manager = this.createL1TVSConfigurationSetupManager(new TestConfigurationCreator(configSpec,
@@ -294,24 +293,22 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     return this.sampleL1DSO;
   }
 
-  private void cleanBeanSetServersIfNeeded(TestConfigBeanSet beanSetArg) {
-    Assert.assertNotNull(beanSetArg);
+  private void cleanBeanSetServersIfNeeded(Servers l2s) {
+    Assert.assertNotNull(l2s);
 
-    Servers l2s = beanSetArg.serversBean();
     if (l2s.sizeOfServerArray() == 1) {
       Server l2 = l2s.getServerArray(0);
-      if (l2.getName() != null && l2.getName().equals(TestConfigBeanSet.DEFAULT_SERVER_NAME)
-          && l2.getHost().equals(TestConfigBeanSet.DEFAULT_HOST)) {
+      if (l2.getName() != null && l2.getName().equals(DEFAULT_SERVER_NAME)
+          && l2.getHost().equals(DEFAULT_HOST)) {
         l2s.removeServer(0);
         if (l2s.sizeOfServerArray() != 0) { throw new AssertionError("Default server has not been cleared"); }
       }
     }
   }
 
-  private void cleanBeanSetServerGroupsIfNeeded(TestConfigBeanSet beanSetArg) {
-    Assert.assertNotNull(beanSetArg);
+  private void cleanBeanSetServerGroupsIfNeeded(Servers l2s) {
+    Assert.assertNotNull(l2s);
 
-    Servers l2s = beanSetArg.serversBean();
     MirrorGroups groups = l2s.getMirrorGroups();
     Assert.assertNotNull(groups);
     if (groups != null) {
@@ -323,7 +320,7 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
         String[] memberNames = members.getMemberArray();
         Assert.assertNotNull(memberNames);
 
-        if (memberNames.length == 1 && memberNames[0].equals(TestConfigBeanSet.DEFAULT_SERVER_NAME)) {
+        if (memberNames.length == 1 && memberNames[0].equals(DEFAULT_SERVER_NAME)) {
           groups.removeMirrorGroup(0);
           Assert.assertEquals(0, groups.getMirrorGroupArray().length);
         }
@@ -385,22 +382,23 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   }
 
   public void addTcPropertyToConfig(String propertyName, String propertyValue) {
-    Property tcProps = l1_beanSet.tcPropertiesBean().addNewProperty();
+    Property tcProps = ((TcProperties) this.sampleL1Manager.tcPropertiesRepository().bean()).addNewProperty();
     tcProps.setName(propertyName);
     tcProps.setValue(propertyValue);
   }
 
   private void addServerToL1Config(String name, int dsoPort, int jmxPort, boolean cleanGroupsBeanSet) {
     Assert.assertTrue(dsoPort >= 0);
-    cleanBeanSetServersIfNeeded(l1_beanSet);
+    Servers l2s = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
+    cleanBeanSetServersIfNeeded(l2s);
 
-    Server newL2 = l1_beanSet.serversBean().addNewServer();
+    Server newL2 = l2s.addNewServer();
 
     if (name == null || name.equals("")) {
-      name = TestConfigBeanSet.DEFAULT_HOST;
+      name = DEFAULT_HOST;
     }
     newL2.setName(name);
-    newL2.setHost(TestConfigBeanSet.DEFAULT_HOST);
+    newL2.setHost(DEFAULT_HOST);
 
     newL2.addNewDsoPort();
     newL2.getDsoPort().setIntValue(dsoPort);
@@ -413,7 +411,7 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     newL2.setData(BOGUS_FILENAME);
     newL2.setLogs(BOGUS_FILENAME);
 
-    if (cleanGroupsBeanSet) cleanBeanSetServerGroupsIfNeeded(l1_beanSet);
+    if (cleanGroupsBeanSet) cleanBeanSetServerGroupsIfNeeded(l2s);
   }
 
   private void addServerGroupToL1Config() {
@@ -422,7 +420,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
   // should be called after all servers have been added to l1_beanset
   private void addServerGroupToL1Config(String groupName) {
-    Server[] serverArray = l1_beanSet.serversBean().getServerArray();
+    Servers l2s = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
+    Server[] serverArray = l2s.getServerArray();
     Assert.assertNotNull(serverArray);
     Assert.assertTrue(serverArray.length > 0);
     String[] memberNames = new String[serverArray.length];
@@ -438,9 +437,10 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     Assert.assertNotNull(members);
     Assert.assertTrue(members.length > 0);
     Assert.assertTrue(groupId >= 0);
-    cleanBeanSetServerGroupsIfNeeded(l1_beanSet);
+    Servers l2s = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
+    cleanBeanSetServerGroupsIfNeeded(l2s);
 
-    MirrorGroups groups = l1_beanSet.serversBean().getMirrorGroups();
+    MirrorGroups groups = l2s.getMirrorGroups();
     if (groups != null) {
       MirrorGroup group = groups.addNewMirrorGroup();
       group.setGroupName(groupName);
@@ -448,7 +448,7 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
       for (int i = 0; i < members.length; i++) {
         String memberName = members[i];
         if (memberName == null || memberName.equals("")) {
-          memberName = TestConfigBeanSet.DEFAULT_HOST;
+          memberName = DEFAULT_HOST;
         }
         newMembers.addMember(members[i]);
       }
@@ -543,7 +543,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     return createL1TVSConfigurationSetupManager(this.l1ConfigurationCreator);
   }
 
-  public L1TVSConfigurationSetupManager createL1TVSConfigurationSetupManager(TestConfigurationCreator configCreator)
+  public StandardL1TVSConfigurationSetupManager createL1TVSConfigurationSetupManager(
+                                                                                     TestConfigurationCreator configCreator)
       throws ConfigurationSetupException {
     if (mode == MODE_CENTRALIZED_CONFIG) {
       StringBuffer l2sSpec = new StringBuffer();
