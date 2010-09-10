@@ -7,11 +7,8 @@ import com.tc.config.schema.MockIllegalConfigurationChangeHandler;
 import com.tc.config.schema.MockSchemaType;
 import com.tc.config.schema.MockXmlObject;
 import com.tc.config.schema.defaults.MockDefaultValueProvider;
-import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.dynamic.MockConfigItem;
 import com.tc.config.schema.dynamic.MockListeningConfigItem;
-import com.tc.config.schema.dynamic.StringArrayConfigItem;
-import com.tc.config.schema.dynamic.XPathBasedConfigItem;
 import com.tc.config.schema.repository.MockBeanRepository;
 import com.tc.test.TCTestCase;
 
@@ -35,7 +32,7 @@ public class StandardConfigContextTest extends TCTestCase {
     this.illegalConfigurationChangeHandler = new MockIllegalConfigurationChangeHandler();
 
     this.context = new StandardConfigContext(this.beanRepository, this.defaultValueProvider,
-                                             this.illegalConfigurationChangeHandler, null);
+                                             this.illegalConfigurationChangeHandler);
   }
 
   public void testEnsureRepositoryProvides() throws Exception {
@@ -61,21 +58,21 @@ public class StandardConfigContextTest extends TCTestCase {
 
   public void testConstruction() throws Exception {
     try {
-      new StandardConfigContext(null, this.defaultValueProvider, this.illegalConfigurationChangeHandler, null);
+      new StandardConfigContext(null, this.defaultValueProvider, this.illegalConfigurationChangeHandler);
       fail("Didn't get NPE on no bean repository");
     } catch (NullPointerException npe) {
       // ok
     }
 
     try {
-      new StandardConfigContext(this.beanRepository, null, this.illegalConfigurationChangeHandler, null);
+      new StandardConfigContext(this.beanRepository, null, this.illegalConfigurationChangeHandler);
       fail("Didn't get NPE on no default value provider");
     } catch (NullPointerException npe) {
       // ok
     }
 
     try {
-      new StandardConfigContext(this.beanRepository, this.defaultValueProvider, null, null);
+      new StandardConfigContext(this.beanRepository, this.defaultValueProvider, null);
       fail("Didn't get NPE on no illegal configuration change handler");
     } catch (NullPointerException npe) {
       // ok
@@ -161,17 +158,6 @@ public class StandardConfigContextTest extends TCTestCase {
     this.context.itemCreated(listeningItem);
     assertEquals(1, this.beanRepository.getNumAddListeners());
     assertSame(listeningItem, this.beanRepository.getLastListener());
-  }
-
-  public void testItems() throws Exception {
-    checkItem(this.context.stringArrayItem("foobar/baz"), "foobar/baz", StringArrayConfigItem.class, null);
-  }
-
-  private void checkItem(ConfigItem item, String xpath, Class expectedClass, Object expectedDefaultValue) {
-    assertTrue(expectedClass.isInstance(item));
-    assertEquals(xpath, ((XPathBasedConfigItem) item).xpath());
-    assertSame(this.context, ((XPathBasedConfigItem) item).context());
-    assertEquals(expectedDefaultValue, ((XPathBasedConfigItem) item).defaultValue());
   }
 
 }

@@ -8,7 +8,6 @@ import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.StringArrayConfigItem;
 
 public class MockConfigContext implements ConfigContext {
 
@@ -122,10 +121,6 @@ public class MockConfigContext implements ConfigContext {
   public void itemCreated(ConfigItem item) {
     ++this.numItemCreateds;
     this.lastItemCreated = item;
-  }
-
-  public StringArrayConfigItem stringArrayItem(String xpath) {
-    return null;
   }
 
   public ConfigItem getLastItemCreated() {

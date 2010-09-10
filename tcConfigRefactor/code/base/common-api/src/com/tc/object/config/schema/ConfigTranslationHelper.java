@@ -10,6 +10,7 @@ import com.tc.util.Assert;
 import com.terracottatech.config.Autolock;
 import com.terracottatech.config.ClassExpression;
 import com.terracottatech.config.Include;
+import com.terracottatech.config.InstrumentedClasses;
 import com.terracottatech.config.LockLevel;
 import com.terracottatech.config.Locks;
 import com.terracottatech.config.NamedLock;
@@ -21,10 +22,8 @@ import com.terracottatech.config.OnLoad;
  */
 public class ConfigTranslationHelper {
 
-  static Object translateIncludes(XmlObject xmlObject) {
-    if (xmlObject == null) return null;
-
-    XmlObject[] objects = xmlObject.selectPath("*");
+  static InstrumentedClass[] translateIncludes(InstrumentedClasses instrumentedClasses) {
+    XmlObject[] objects = instrumentedClasses.selectPath("*");
     InstrumentedClass[] classes = new InstrumentedClass[objects.length];
 
     Assert.eval(classes.length == objects.length);
@@ -51,11 +50,9 @@ public class ConfigTranslationHelper {
     return classes;
   }
 
-  static Object translateLocks(XmlObject xmlObject) {
-    if (xmlObject == null) return null;
-
-    NamedLock[] namedLocks = ((Locks) xmlObject).getNamedLockArray();
-    Autolock[] autoLocks = ((Locks) xmlObject).getAutolockArray();
+  static Lock[] translateLocks(Locks locks) {
+    NamedLock[] namedLocks = locks.getNamedLockArray();
+    Autolock[] autoLocks = locks.getAutolockArray();
 
     int namedLength = namedLocks == null ? 0 : namedLocks.length;
     int autoLength = autoLocks == null ? 0 : autoLocks.length;

@@ -44,8 +44,7 @@ public abstract class ConfigObjectTestBase extends TCTestCase {
     this.repository = new StandardBeanRepository(repositoryBeanClass);
 
     DefaultValueProvider provider = new SchemaDefaultValueProvider();
-    this.context = new StandardConfigContext(this.repository, provider, new MockIllegalConfigurationChangeHandler(),
-        null);
+    this.context = new StandardConfigContext(this.repository, provider, new MockIllegalConfigurationChangeHandler());
 
     this.builder = TerracottaConfigBuilder.newMinimalInstance();
 
@@ -77,8 +76,8 @@ public abstract class ConfigObjectTestBase extends TCTestCase {
   }
 
   public void setConfig() throws Exception {
-    TcConfigDocument bean = (TcConfigDocument) new TerracottaDomainConfigurationDocumentBeanFactory().createBean(
-        new ByteArrayInputStream(this.builder.toString().getBytes()), "for test").bean();
+    TcConfigDocument bean = (TcConfigDocument) new TerracottaDomainConfigurationDocumentBeanFactory()
+        .createBean(new ByteArrayInputStream(this.builder.toString().getBytes()), "for test").bean();
     this.repository.setBean(getBeanFromTcConfig(bean.getTcConfig()), "from test config builder");
   }
 

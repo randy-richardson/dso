@@ -10,13 +10,9 @@ import org.apache.xmlbeans.XmlObject;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.StringArrayConfigItem;
-import com.tc.config.schema.dynamic.StringArrayXPathBasedConfigItem;
 import com.tc.config.schema.listen.ConfigurationChangeListener;
 import com.tc.config.schema.repository.BeanRepository;
 import com.tc.util.Assert;
-
-import java.io.File;
 
 /**
  * Binds together a {@link BeanRepository} and a {@link DefaultValueProvider}.
@@ -26,10 +22,9 @@ public class StandardConfigContext implements ConfigContext {
   private final BeanRepository                    beanRepository;
   private final DefaultValueProvider              defaultValueProvider;
   private final IllegalConfigurationChangeHandler illegalConfigurationChangeHandler;
-  private final File                              configDirectory;
 
   public StandardConfigContext(BeanRepository beanRepository, DefaultValueProvider defaultValueProvider,
-                               IllegalConfigurationChangeHandler illegalConfigurationChangeHandler, File configDirectory) {
+                               IllegalConfigurationChangeHandler illegalConfigurationChangeHandler) {
     Assert.assertNotNull(beanRepository);
     Assert.assertNotNull(defaultValueProvider);
     Assert.assertNotNull(illegalConfigurationChangeHandler);
@@ -37,7 +32,6 @@ public class StandardConfigContext implements ConfigContext {
     this.beanRepository = beanRepository;
     this.defaultValueProvider = defaultValueProvider;
     this.illegalConfigurationChangeHandler = illegalConfigurationChangeHandler;
-    this.configDirectory = configDirectory;
   }
 
   public IllegalConfigurationChangeHandler illegalConfigurationChangeHandler() {
@@ -72,10 +66,6 @@ public class StandardConfigContext implements ConfigContext {
   public void itemCreated(ConfigItem item) {
     if (item instanceof ConfigurationChangeListener) this.beanRepository
         .addListener((ConfigurationChangeListener) item);
-  }
-
-  public StringArrayConfigItem stringArrayItem(String xpath) {
-    return new StringArrayXPathBasedConfigItem(this, xpath);
   }
 
   public String toString() {

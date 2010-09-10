@@ -121,8 +121,7 @@ public class BaseTVSConfigurationSetupManager {
 
   public final ConfigContext createContext(BeanRepository beanRepository, File configFilePath) {
     Assert.assertNotNull(beanRepository);
-    return new StandardConfigContext(beanRepository, this.defaultValueProvider, this.illegalConfigurationChangeHandler,
-                                     configFilePath);
+    return new StandardConfigContext(beanRepository, this.defaultValueProvider, this.illegalConfigurationChangeHandler);
   }
 
   public synchronized NewDSOApplicationConfig dsoApplicationConfigFor(String applicationName) {

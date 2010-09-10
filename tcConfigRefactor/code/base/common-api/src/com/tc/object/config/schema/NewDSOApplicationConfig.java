@@ -4,30 +4,31 @@
 package com.tc.object.config.schema;
 
 import com.tc.config.schema.NewConfig;
-import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.terracottatech.config.AdditionalBootJarClasses;
+import com.terracottatech.config.TransientFields;
+import com.terracottatech.config.WebApplications;
 
 /**
  * Represents the per-application config for DSO.
  */
 public interface NewDSOApplicationConfig extends NewConfig {
 
-  ConfigItem instrumentedClasses();
+  InstrumentedClass[] instrumentedClasses();
 
-  StringArrayConfigItem transientFields();
+  TransientFields transientFields();
 
-  ConfigItem locks();
+  Lock[] locks();
 
-  ConfigItem roots();
+  Root[] roots();
 
-  StringArrayConfigItem additionalBootJarClasses();
+  AdditionalBootJarClasses additionalBootJarClasses();
 
   boolean supportSharingThroughReflection();
 
-  StringArrayConfigItem webApplications();
+  WebApplications webApplications();
   
   //used STRICTLY in tests
   void setAdditionalBootJarClasses(AdditionalBootJarClasses val);
-
+  
+  void setLocks(Lock[] locks);
 }

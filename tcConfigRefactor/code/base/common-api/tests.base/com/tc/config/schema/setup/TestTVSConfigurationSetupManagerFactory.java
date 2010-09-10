@@ -202,19 +202,19 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     // existing config-setup managers here.
     L2TVSConfigurationSetupManager sampleL2Manager;
 
-    sampleL1Manager = this.createL1TVSConfigurationSetupManager(new TestConfigurationCreator(configSpec,
-                                                                                             configBeanFactory, true));
     sampleL2Manager = this.createL2TVSConfigurationSetupManager(null);
-
     this.sampleSystem = sampleL2Manager.systemConfig();
-    this.sampleL1Common = sampleL1Manager.commonL1Config();
-    this.sampleL1DSO = sampleL1Manager.dsoL1Config();
     this.sampleL2Common = sampleL2Manager.commonl2Config();
     this.sampleL2DSO = sampleL2Manager.dsoL2Config();
-    this.sampleDSOApplication = sampleL1Manager
-        .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME);
     this.sampleActiveServerGroups = sampleL2Manager.activeServerGroupsConfig();
     this.sampleHa = sampleL2Manager.haConfig();
+
+    sampleL1Manager = this.createL1TVSConfigurationSetupManager(new TestConfigurationCreator(configSpec,
+                                                                                             configBeanFactory, true));
+    this.sampleL1Common = sampleL1Manager.commonL1Config();
+    this.sampleL1DSO = sampleL1Manager.dsoL1Config();
+    this.sampleDSOApplication = sampleL1Manager
+        .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME);
 
     applyDefaultTestConfig();
   }

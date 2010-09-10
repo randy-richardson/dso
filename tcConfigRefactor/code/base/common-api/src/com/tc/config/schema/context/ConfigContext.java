@@ -10,7 +10,6 @@ import org.apache.xmlbeans.XmlObject;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.repository.BeanRepository;
 
 /**
@@ -34,7 +33,5 @@ public interface ConfigContext {
   Object syncLockForBean();
 
   void itemCreated(ConfigItem item);
-
-  StringArrayConfigItem stringArrayItem(String xpath);
 
 }
