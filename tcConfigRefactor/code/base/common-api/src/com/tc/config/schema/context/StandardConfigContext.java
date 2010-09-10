@@ -10,11 +10,8 @@ import org.apache.xmlbeans.XmlObject;
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.FileConfigItem;
-import com.tc.config.schema.dynamic.FileXPathBasedConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 import com.tc.config.schema.dynamic.StringArrayXPathBasedConfigItem;
-import com.tc.config.schema.dynamic.SubstitutedFileXPathBasedConfigItem;
 import com.tc.config.schema.listen.ConfigurationChangeListener;
 import com.tc.config.schema.repository.BeanRepository;
 import com.tc.util.Assert;
@@ -79,18 +76,6 @@ public class StandardConfigContext implements ConfigContext {
 
   public StringArrayConfigItem stringArrayItem(String xpath) {
     return new StringArrayXPathBasedConfigItem(this, xpath);
-  }
-
-  public FileConfigItem fileItem(String xpath) {
-    return new FileXPathBasedConfigItem(this, xpath);
-  }
-
-  public FileConfigItem substitutedFileItem(String xpath) {
-    return new SubstitutedFileXPathBasedConfigItem(this, xpath);
-  }
-
-  public FileConfigItem configRelativeSubstitutedFileItem(String xpath) {
-    return new SubstitutedFileXPathBasedConfigItem(this, xpath, configDirectory);
   }
 
   public String toString() {

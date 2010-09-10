@@ -8,7 +8,6 @@ import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
 
 public class MockConfigContext implements ConfigContext {
@@ -129,14 +128,6 @@ public class MockConfigContext implements ConfigContext {
     return null;
   }
 
-  public FileConfigItem fileItem(String xpath) {
-    return null;
-  }
-
-  public FileConfigItem substitutedFileItem(String xpath) {
-    return null;
-  }
-
   public ConfigItem getLastItemCreated() {
     return lastItemCreated;
   }
@@ -192,10 +183,6 @@ public class MockConfigContext implements ConfigContext {
   public void setReturnedIllegalConfigurationChangeHandler(
                                                            IllegalConfigurationChangeHandler returnedIllegalConfigurationChangeHandler) {
     this.returnedIllegalConfigurationChangeHandler = returnedIllegalConfigurationChangeHandler;
-  }
-
-  public FileConfigItem configRelativeSubstitutedFileItem(String xpath) {
-    return null;
   }
 
 }

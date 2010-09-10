@@ -8,7 +8,6 @@ import com.tc.config.schema.MockSchemaType;
 import com.tc.config.schema.MockXmlObject;
 import com.tc.config.schema.defaults.MockDefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.FileConfigItem;
 import com.tc.config.schema.dynamic.MockConfigItem;
 import com.tc.config.schema.dynamic.MockListeningConfigItem;
 import com.tc.config.schema.dynamic.StringArrayConfigItem;
@@ -166,7 +165,6 @@ public class StandardConfigContextTest extends TCTestCase {
 
   public void testItems() throws Exception {
     checkItem(this.context.stringArrayItem("foobar/baz"), "foobar/baz", StringArrayConfigItem.class, null);
-    checkItem(this.context.fileItem("foobar/baz"), "foobar/baz", FileConfigItem.class, null);
   }
 
   private void checkItem(ConfigItem item, String xpath, Class expectedClass, Object expectedDefaultValue) {
