@@ -305,7 +305,7 @@ public class DSOContextImpl implements DSOContext {
 
   private static PreparedComponentsFromL2Connection validateMakeL2Connection(L1TVSConfigurationSetupManager config)
       throws UnknownHostException, IOException, TCTimeoutException {
-    L2Data[] l2Data = (L2Data[]) config.l2Config().l2Data().getObjects();
+    L2Data[] l2Data = config.l2Config().l2Data();
     Assert.assertNotNull(l2Data);
 
     String serverHost = l2Data[0].host();

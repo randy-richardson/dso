@@ -23,7 +23,6 @@ import com.tc.aspectwerkz.reflect.impl.asm.AsmClassInfo;
 import com.tc.backport175.bytecode.AnnotationElement.Annotation;
 import com.tc.config.schema.NewCommonL1Config;
 import com.tc.config.schema.builder.DSOApplicationConfigBuilder;
-import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
 import com.tc.config.schema.setup.TVSConfigurationSetupManagerFactory;
@@ -1894,8 +1893,8 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     String serverList = "";
     boolean loggedInConsole = false;
 
-    ConnectionInfoConfigItem connectInfo = (ConnectionInfoConfigItem) serverInfos.createConnectionInfoConfigItem();
-    ConnectionInfo[] connections = (ConnectionInfo[]) connectInfo.getObject();
+    ConnectionInfoConfig connectInfo = serverInfos.createConnectionInfoConfigItem();
+    ConnectionInfo[] connections = connectInfo.getConnectionInfos();
 
     for (ConnectionInfo connection : connections) {
       if (serverList.length() > 0) serverList += ", ";
@@ -1950,10 +1949,10 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     PreparedComponentsFromL2Connection connectionComponents = new PreparedComponentsFromL2Connection(configSetupManager);
     ServerGroups serverGroupsFromL2 = getServerGroupsFromL2(connectionComponents);
 
-    ConfigItem[] connectionInfoItems = connectionComponents.createConnectionInfoConfigItemByGroup();
+    ConnectionInfoConfig[] connectionInfoItems = connectionComponents.createConnectionInfoConfigItemByGroup();
     HashSet<ConnectionInfo> connInfoFromL1 = new HashSet<ConnectionInfo>();
     for (int i = 0; i < connectionInfoItems.length; i++) {
-      ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItems[i].getObject();
+      ConnectionInfo[] connectionInfo = connectionInfoItems[i].getConnectionInfos();
       for (int j = 0; j < connectionInfo.length; j++) {
         ConnectionInfo connectionIn = new ConnectionInfo(getIpAddressOfServer(connectionInfo[j].getHostname()),
                                                          connectionInfo[j].getPort(), i * j + j, connectionInfo[j]
@@ -2030,8 +2029,8 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     boolean loggedInConsole = false;
 
     PreparedComponentsFromL2Connection serverInfos = new PreparedComponentsFromL2Connection(configSetupManager);
-    ConnectionInfoConfigItem connectInfo = (ConnectionInfoConfigItem) serverInfos.createConnectionInfoConfigItem();
-    ConnectionInfo[] connections = (ConnectionInfo[]) connectInfo.getObject();
+    ConnectionInfoConfig connectInfo = serverInfos.createConnectionInfoConfigItem();
+    ConnectionInfo[] connections = connectInfo.getConnectionInfos();
 
     for (ConnectionInfo connection : connections) {
       if (serverList.length() > 0) serverList += ", ";

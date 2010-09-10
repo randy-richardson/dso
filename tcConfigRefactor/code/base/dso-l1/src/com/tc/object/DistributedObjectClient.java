@@ -13,7 +13,6 @@ import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
 import com.tc.async.api.StageManager;
 import com.tc.bytes.TCByteBuffer;
-import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.handler.CallbackDumpAdapter;
 import com.tc.handler.CallbackDumpHandler;
@@ -64,6 +63,7 @@ import com.tc.object.cache.CacheConfig;
 import com.tc.object.cache.CacheConfigImpl;
 import com.tc.object.cache.CacheManager;
 import com.tc.object.cache.ClockEvictionPolicy;
+import com.tc.object.config.ConnectionInfoConfig;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.SRASpec;
 import com.tc.object.dna.api.DNAEncoding;
@@ -106,10 +106,10 @@ import com.tc.object.msg.ClientHandshakeMessageImpl;
 import com.tc.object.msg.ClusterMembershipMessage;
 import com.tc.object.msg.CommitTransactionMessageImpl;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessage;
-import com.tc.object.msg.GetSizeServerMapRequestMessageImpl;
-import com.tc.object.msg.GetSizeServerMapResponseMessageImpl;
 import com.tc.object.msg.GetAllKeysServerMapRequestMessageImpl;
 import com.tc.object.msg.GetAllKeysServerMapResponseMessageImpl;
+import com.tc.object.msg.GetSizeServerMapRequestMessageImpl;
+import com.tc.object.msg.GetSizeServerMapResponseMessageImpl;
 import com.tc.object.msg.GetValueServerMapRequestMessageImpl;
 import com.tc.object.msg.GetValueServerMapResponseMessageImpl;
 import com.tc.object.msg.JMXMessage;
@@ -435,8 +435,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
     DSO_LOGGER.debug("Created CommunicationsManager.");
 
-    final ConfigItem[] connectionInfoItems = this.connectionComponents.createConnectionInfoConfigItemByGroup();
-    final ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItems[0].getObject();
+    final ConnectionInfoConfig[] connectionInfoItems = this.connectionComponents.createConnectionInfoConfigItemByGroup();
+    final ConnectionInfo[] connectionInfo = connectionInfoItems[0].getConnectionInfos();
     final String serverHost = connectionInfo[0].getHostname();
     final int serverPort = connectionInfo[0].getPort();
 
