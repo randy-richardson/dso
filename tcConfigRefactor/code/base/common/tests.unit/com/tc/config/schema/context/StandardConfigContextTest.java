@@ -7,8 +7,6 @@ import com.tc.config.schema.MockIllegalConfigurationChangeHandler;
 import com.tc.config.schema.MockSchemaType;
 import com.tc.config.schema.MockXmlObject;
 import com.tc.config.schema.defaults.MockDefaultValueProvider;
-import com.tc.config.schema.dynamic.MockConfigItem;
-import com.tc.config.schema.dynamic.MockListeningConfigItem;
 import com.tc.config.schema.repository.MockBeanRepository;
 import com.tc.test.TCTestCase;
 
@@ -145,19 +143,6 @@ public class StandardConfigContextTest extends TCTestCase {
 
     assertSame(object, this.context.bean());
     assertEquals(1, this.beanRepository.getNumBeans());
-  }
-
-  public void testItemCreated() throws Exception {
-    MockConfigItem item = new MockConfigItem();
-
-    this.context.itemCreated(item);
-    assertEquals(0, this.beanRepository.getNumAddListeners());
-
-    MockListeningConfigItem listeningItem = new MockListeningConfigItem();
-
-    this.context.itemCreated(listeningItem);
-    assertEquals(1, this.beanRepository.getNumAddListeners());
-    assertSame(listeningItem, this.beanRepository.getLastListener());
   }
 
 }

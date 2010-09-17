@@ -18,7 +18,6 @@ import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.beanfactory.ConfigBeanFactory;
 import com.tc.config.schema.beanfactory.TerracottaDomainConfigurationDocumentBeanFactory;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.XPathBasedConfigItem;
 import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.ConfigMode;
 import com.tc.object.config.schema.NewDSOApplicationConfig;
