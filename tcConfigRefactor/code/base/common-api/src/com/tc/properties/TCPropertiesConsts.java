@@ -561,7 +561,8 @@ public interface TCPropertiesConsts {
    * debug.hops.interval             : Number of hops between debug printing
    * debug.invalidate                : Log session invalidation vhosts.excluded : comma separated list of virtual hosts that should never use Terracotta clustered
    *                                   sessions (tomcat only)
-   * session.debug.sessions          : output additional debug information when sessions are looked up, created, etc
+   * debug.sessions                  : output additional debug information when sessions are looked up, created, etc
+   * verify.set.attribute            : Snapshot attributes on access/mutation and report if the attribute has changed at the end of the request
    * </code>
    ********************************************************************************************************************/
   public static final String   SESSION_INVALIDATOR_SLEEP                                       = "session.invalidator.sleep";
@@ -577,6 +578,7 @@ public interface TCPropertiesConsts {
   public static final String   SESSION_DEBUG_SESSIONS                                          = "session.debug.sessions";
   public static final String   SESSION_VHOSTS_EXCLUDED                                         = "session.vhosts.excluded";
   public static final String   SESSION_STATISTICS_ENABLED                                      = "session.statistics.enabled";
+  public static final String   SESSION_VERIFY_SET_ATTRIBUTE                                    = "session.verify.set.attribute";
 
   /*********************************************************************************************************************
    * <code>
@@ -636,7 +638,6 @@ public interface TCPropertiesConsts {
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_PERELEMENT_TTI_TTL_ENABLED         = "ehcache.storageStrategy.dcv2.perElementTTITTL.enabled";
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_PERIODICEVICTION_ENABLED           = "ehcache.storageStrategy.dcv2.periodicEviction.enabled";
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_PINSEGMENTS_ENABLED                = "ehcache.storageStrategy.dcv2.pinSegments.enabled";
-  public static final String   EHCACHE_STORAGESTRATEGY_DCV2_OFFHEAP_CACHEENTRIES_ENABLED       = "ehcache.storageStrategy.dcv2.offHeap.cacheEntries.enabled";
   /*********************************************************************************************************************
    * <code>
    * Section : L1 Lock Manager Properties
@@ -792,13 +793,12 @@ public interface TCPropertiesConsts {
   /*********************************************************************************************************************
    * <code>
    * Section :  EnterpriseLicenseResovler
-   * license.resource.path                       - Resource path to license key
-   * license.url                                 - URL to license key
+   * license.path                                - path to license key
    * </code>
    ********************************************************************************************************************/
   public static final String   PRODUCTKEY_RESOURCE_PATH                                        = "productkey.resource.path";
-  public static final String   PRODUCTKEY_URL                                                  = "productkey.url";
   public static final String   PRODUCTKEY_PATH                                                 = "productkey.path";
+  public static final String   LICENSE_PATH                                                    = "license.path";
 
   /*********************************************************************************************************************
    * <code>
@@ -848,6 +848,7 @@ public interface TCPropertiesConsts {
   public static final String   L2_OFFHEAP_OBJECT_CACHE_CONCURRENCY                             = "l2.offHeapCache.object.concurrency";
   public static final String   L2_OFFHEAP_MAP_CACHE_INITIAL_DATASIZE                           = "l2.offHeapCache.map.initialDataSize";
   public static final String   L2_OFFHEAP_MAP_CACHE_TABLESIZE                                  = "l2.offHeapCache.map.tableSize";
+  public static final String   L2_OFFHEAP_MAP_CACHE_CONCURRENCY                                = "l2.offHeapCache.map.concurrency";
 
   // for tests
   public static final String   L2_OFFHEAP_SKIP_JVMARG_CHECK                                    = "l2.offHeapCache.skip.jvmarg.check";

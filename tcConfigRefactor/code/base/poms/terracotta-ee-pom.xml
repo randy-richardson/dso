@@ -17,6 +17,10 @@
 
   <dependencies>
     <!-- got most of its dependencies from terracotta-core-parent -->
+    <dependency>
+      <groupId>org.terracotta</groupId>
+      <artifactId>native-cache</artifactId>
+    </dependency>    
   </dependencies>
 
   <repositories>

@@ -103,6 +103,10 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
     end
   end
 
+  def enterprise?
+    flavor = (@flavor || OPENSOURCE).downcase
+    flavor == 'enterprise'
+  end
 
   def handle_appserver_overwite()
     appserver = @config_source['tc.build-control.appserver'] || @config_source['appserver']
@@ -264,6 +268,10 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
     rescue Errno::ENOENT => e       
       # ignore file not found error
     end
+  end
+
+  def clean_dist
+    FileUtils.rm_rf File.join(@basedir.to_s, "build/dist")
   end
 
   def clean_cache
@@ -926,11 +934,7 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
     @internal_config_source[MAVEN_SNAPSHOT_CONFIG_KEY] = snapshot.to_s
     @internal_config_source[MAVEN_REPO_ID_CONFIG_KEY] = repo_id
     @internal_config_source[MAVEN_REPO_CONFIG_KEY] = repo_url
-    if flavor == ENTERPRISE
-      dist_maven_ee
-    else
-      dist_maven
-    end
+    mvn_install(flavor)
   end
 
   def generate_xmlbeans_class(target)

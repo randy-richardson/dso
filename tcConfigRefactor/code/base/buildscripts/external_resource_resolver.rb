@@ -2,6 +2,7 @@ class ExternalResourceResolver
   def initialize(repositories, use_local_maven_repo = false)
     @repositories = repositories
     @use_local_maven_repo = use_local_maven_repo
+    @download_util = DownloadUtil.new(Registry[:static_resources].global_cache_directory)
   end
 
   def use_local_maven_repo?
@@ -37,6 +38,7 @@ class ExternalResourceResolver
     end
 
     candidate_urls.each do |url|
+      puts "trying #{url}"
       dest_file = File.join(dest_dir, resource['name'] || File.basename(url))
       result = download(url, dest_file)
       if result
@@ -108,7 +110,7 @@ class ExternalResourceResolver
       FileUtils.copy(url, dest_file)
     elsif is_live?(url)
       puts("Fetching #{url}")
-      ant.get(:src => url, :dest => dest_file, :verbose => true)
+      @download_util.get(url, dest_file)
     else
       return nil
     end
