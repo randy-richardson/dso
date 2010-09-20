@@ -44,7 +44,7 @@ public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implemen
     ActiveServerGroupConfigObject[] tempGroupConfigArray = new ActiveServerGroupConfigObject[groupArray.length];
 
     for(int i = 0; i < tempGroupConfigArray.length; i++){
-      tempGroupConfigArray[0] = new ActiveServerGroupConfigObject(createContext(setupManager, groupArray[i]), setupManager);
+      tempGroupConfigArray[i] = new ActiveServerGroupConfigObject(createContext(setupManager, groupArray[i]), setupManager);
     }
     this.groupConfigArray = ActiveCoordinatorHelper.generateGroupInfo(tempGroupConfigArray);
   }
