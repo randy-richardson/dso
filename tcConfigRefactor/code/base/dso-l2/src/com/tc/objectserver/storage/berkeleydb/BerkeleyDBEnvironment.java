@@ -19,7 +19,6 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.StatsConfig;
 import com.sleepycat.je.Transaction;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -56,8 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.management.NotCompliantMBeanException;
-
 public class BerkeleyDBEnvironment implements DBEnvironment {
 
   private static final TCLogger      clogger                     = CustomerLogging.getDSOGenericLogger();
@@ -85,6 +82,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
 
   private final boolean              paranoid;
   private final SampledCounter       l2FaultFromDisk;
+  private final SRAForBerkeleyDB     sraBerkeleyDB;
 
   public BerkeleyDBEnvironment(boolean paranoid, File envHome) throws IOException {
     this(paranoid, envHome, new Properties(), SampledCounter.NULL_SAMPLED_COUNTER);
@@ -138,6 +136,7 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     this.paranoid = paranoid;
     this.envHome = envHome;
     this.l2FaultFromDisk = l2FaultFrmDisk;
+    this.sraBerkeleyDB = new SRAForBerkeleyDB(this);
     FileUtils.forceMkdir(this.envHome);
   }
 
@@ -296,13 +295,8 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     }
   }
 
-  public StatisticRetrievalAction getSRA() {
-    return new SRAForBerkeleyDB(this);
-  }
-
-  public ServerDBBackupMBean getServerDBBackupMBean(final L2TVSConfigurationSetupManager configurationSetupManager)
-      throws NotCompliantMBeanException {
-    return new ServerDBBackup(configurationSetupManager);
+  public StatisticRetrievalAction[] getSRAs() {
+    return new StatisticRetrievalAction[] { sraBerkeleyDB };
   }
 
   public synchronized TCObjectDatabase getObjectDatabase() throws TCDatabaseException {
