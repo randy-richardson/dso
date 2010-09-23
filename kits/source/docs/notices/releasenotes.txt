@@ -1,4 +1,4 @@
-Terracotta 3.2.1-ee-patch-5 - Simple Scale for Enterprise Java
+Terracotta 3.2.1-ee-patch-6 - Simple Scale for Enterprise Java
 ===================================================
 
 Release Notes: http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=ReleaseNotes
@@ -62,6 +62,11 @@ Patch Level 5
 
 - DEV-3901
 - If Zapped node connects, resend Zap request to force restart other node
+
+Patch Level 6
+- DEV-4278
+- GroupID to ServerID mapping was wrongly removed at ActiveServerIDManagerImpl
+
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
 http://www.terracotta.org
