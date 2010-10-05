@@ -5,7 +5,6 @@
 package com.tc.net.protocol.tcm;
 
 import com.tc.cluster.DsoClusterImpl;
-import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
@@ -36,7 +35,6 @@ import com.tc.statistics.StatisticsAgentSubSystemImpl;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
 import com.tc.util.concurrent.ThreadUtil;
-import com.terracottatech.config.BindPort;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -206,15 +204,11 @@ public class TwoDisconnectEventsTest extends BaseDSOTestCase {
       ManagedObjectStateFactory.disableSingleton(true);
       TestTVSConfigurationSetupManagerFactory factory = configFactory();
       L2TVSConfigurationSetupManager manager = factory.createL2TVSConfigurationSetupManager(null);
-      factory.l2DSOConfig().setBind("127.0.0.1");
+      factory.l2DSOConfig().dsoPort().setIntValue(dsoPort);
+      factory.l2DSOConfig().dsoPort().setBind("127.0.0.1");
 
-      BindPort dsoBindPort = BindPort.Factory.newInstance();
-      dsoBindPort.setIntValue(dsoPort);
-      ((SettableConfigItem) factory.l2DSOConfig().dsoPort()).setValue(dsoBindPort);
-      
-      BindPort jmxBindPort = BindPort.Factory.newInstance();
-      jmxBindPort.setIntValue(jmxPort);
-      ((SettableConfigItem) factory.l2CommonConfig().jmxPort()).setValue(jmxBindPort);
+      factory.l2CommonConfig().jmxPort().setIntValue(jmxPort);
+      factory.l2CommonConfig().jmxPort().setBind("127.0.0.1");
 
       server = new TCServerImpl(manager);
       server.start();

@@ -39,42 +39,33 @@ import java.io.File;
  * The standard implementation of {@link NewL2DSOConfig}.
  */
 public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DSOConfig {
-  private static final String                               WILDCARD_IP                           = "0.0.0.0";
-  public static final short                                 DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT   = 10;
-  public static final short                                 DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT = 20;
-  public static final int                                   MIN_PORTNUMBER                        = 0x0FFF;
-  public static final int                                   MAX_PORTNUMBER                        = 0xFFFF;
+  private static final String     WILDCARD_IP                           = "0.0.0.0";
+  public static final short       DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT   = 10;
+  public static final short       DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT = 20;
+  public static final int         MIN_PORTNUMBER                        = 0x0FFF;
+  public static final int         MAX_PORTNUMBER                        = 0xFFFF;
 
-  private final com.tc.object.config.schema.PersistenceMode persistenceMode;
-  private final Offheap                                     offHeapConfig;
-  private final boolean                                     garbageCollectionEnabled;
-  private final boolean                                     garbageCollectionVerbose;
-  private final int                                         garbageCollectionInterval;
-  private final BindPort                                    dsoPort;
-  private final BindPort                                    l2GroupPort;
-  private final int                                         clientReconnectWindow;
-  private final String                                      host;
-  private final String                                      serverName;
-  private final String                                      bind;
+  private final Persistence       persistence;
+  private final Offheap           offHeapConfig;
+  private final GarbageCollection garbageCollection;
+  private final BindPort          dsoPort;
+  private final BindPort          l2GroupPort;
+  private final int               clientReconnectWindow;
+  private final String            host;
+  private final String            serverName;
+  private final String            bind;
 
   public NewL2DSOConfigObject(ConfigContext context) {
     super(context);
 
     this.context.ensureRepositoryProvides(Server.class);
     Server server = (Server) this.context.bean();
+    this.persistence = server.getDso().getPersistence();
 
-    Assert
-        .assertTrue((server.getDso().getPersistence().getMode() == com.terracottatech.config.PersistenceMode.PERMANENT_STORE)
-                    || (server.getDso().getPersistence().getMode() == com.terracottatech.config.PersistenceMode.TEMPORARY_SWAP_ONLY));
-    if (server.getDso().getPersistence().getMode() == com.terracottatech.config.PersistenceMode.PERMANENT_STORE) {
-      this.persistenceMode = com.tc.object.config.schema.PersistenceMode.PERMANENT_STORE;
-    } else {
-      this.persistenceMode = com.tc.object.config.schema.PersistenceMode.TEMPORARY_SWAP_ONLY;
-    }
+    Assert.assertTrue((this.persistence.getMode() == PersistenceMode.PERMANENT_STORE)
+                      || (this.persistence.getMode() == PersistenceMode.TEMPORARY_SWAP_ONLY));
 
-    this.garbageCollectionEnabled = server.getDso().getGarbageCollection().getEnabled();
-    this.garbageCollectionVerbose = server.getDso().getGarbageCollection().getVerbose();
-    this.garbageCollectionInterval = server.getDso().getGarbageCollection().getInterval();
+    this.garbageCollection = server.getDso().getGarbageCollection();
     this.clientReconnectWindow = server.getDso().getClientReconnectWindow();
 
     this.bind = server.getBind();
@@ -106,20 +97,12 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
     return this.serverName;
   }
 
-  public com.tc.object.config.schema.PersistenceMode persistenceMode() {
-    return this.persistenceMode;
+  public Persistence getPersistence() {
+    return this.persistence;
   }
 
-  public boolean garbageCollectionEnabled() {
-    return this.garbageCollectionEnabled;
-  }
-
-  public boolean garbageCollectionVerbose() {
-    return this.garbageCollectionVerbose;
-  }
-
-  public int garbageCollectionInterval() {
-    return this.garbageCollectionInterval;
+  public GarbageCollection garbageCollection() {
+    return this.garbageCollection;
   }
 
   public int clientReconnectWindow() {
@@ -128,59 +111,6 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
 
   public String bind() {
     return this.bind;
-  }
-
-  // Used STRICTLY for test
-
-  public void setClientReconnectWindo(int clinetReconnectWindow) {
-    Server server = (Server) getBean();
-    server.getDso().setClientReconnectWindow(clinetReconnectWindow);
-  }
-
-  public void setDsoPort(BindPort dsoPort) {
-    Server server = (Server) getBean();
-    server.setDsoPort(dsoPort);
-  }
-
-  public void setGarbageCollectionInterval(int garbageCollectionInterval) {
-    Server server = (Server) getBean();
-    server.getDso().getGarbageCollection().setInterval(garbageCollectionInterval);
-  }
-
-  public void setGarbageCollectionVerbose(boolean garbageCollectionVerbose) {
-    Server server = (Server) getBean();
-    server.getDso().getGarbageCollection().setVerbose(garbageCollectionVerbose);
-  }
-
-  public void setGrabgeCollectionEnabled(boolean garbageCollectionEnabled) {
-    Server server = (Server) getBean();
-    server.getDso().getGarbageCollection().setEnabled(garbageCollectionEnabled);
-  }
-
-  public void setL2GroupPort(BindPort l2GroupPort) {
-    Server server = (Server) getBean();
-    server.setL2GroupPort(l2GroupPort);
-  }
-
-  public void setOffHeap(Offheap offheap) {
-    Server server = (Server) getBean();
-    server.getDso().getPersistence().setOffheap(offheap);
-  }
-
-  public void setPersistenceMode(com.tc.object.config.schema.PersistenceMode persistenceMode) {
-    Server server = (Server) getBean();
-    if (persistenceMode == com.tc.object.config.schema.PersistenceMode.PERMANENT_STORE) {
-      server.getDso().getPersistence().setMode(com.terracottatech.config.PersistenceMode.PERMANENT_STORE);
-    } else if (persistenceMode == com.tc.object.config.schema.PersistenceMode.TEMPORARY_SWAP_ONLY) {
-      server.getDso().getPersistence().setMode(com.terracottatech.config.PersistenceMode.TEMPORARY_SWAP_ONLY);
-    } else {
-      Assert.failure("Invalid persistence mode: " + persistenceMode);
-    }
-  }
-
-  public void setBind(String bind) {
-    Server server = (Server) getBean();
-    server.setBind(bind);
   }
 
   public static void initializeServers(TcConfig config, DefaultValueProvider defaultValueProvider,

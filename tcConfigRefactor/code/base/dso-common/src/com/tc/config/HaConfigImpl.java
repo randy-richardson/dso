@@ -182,7 +182,7 @@ public class HaConfigImpl implements HaConfig {
 
   public static Node makeNode(NewL2DSOConfig l2) {
     String host = l2.l2GroupPort().getBind();
-    if (TCSocketAddress.LOOPBACK_IP.equals(host) || TCSocketAddress.WILDCARD_IP.equals(host)) {
+    if (TCSocketAddress.WILDCARD_IP.equals(host)) {
       host = l2.host();
     }
     return new Node(host, l2.dsoPort().getIntValue(), l2.l2GroupPort().getIntValue());

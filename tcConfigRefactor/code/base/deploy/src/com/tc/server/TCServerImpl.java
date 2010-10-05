@@ -181,7 +181,7 @@ public class TCServerImpl extends SEDA implements TCServer {
         }
 
         String host = config.jmxPort().getBind();
-        if (TCSocketAddress.WILDCARD_IP.equals(host) || TCSocketAddress.LOOPBACK_IP.equals(host)) {
+        if (TCSocketAddress.WILDCARD_IP.equals(host)) {
           host = config.host();
         }
         if (StringUtils.isBlank(host)) {
@@ -267,11 +267,11 @@ public class TCServerImpl extends SEDA implements TCServer {
   }
 
   public boolean isGarbageCollectionEnabled() {
-    return this.configurationSetupManager.dsoL2Config().garbageCollectionEnabled();
+    return this.configurationSetupManager.dsoL2Config().garbageCollection().getEnabled();
   }
 
   public int getGarbageCollectionInterval() {
-    return this.configurationSetupManager.dsoL2Config().garbageCollectionInterval();
+    return this.configurationSetupManager.dsoL2Config().garbageCollection().getInterval();
   }
 
   public String getConfig() {
@@ -284,7 +284,7 @@ public class TCServerImpl extends SEDA implements TCServer {
   }
 
   public String getPersistenceMode() {
-    return this.configurationSetupManager.dsoL2Config().persistenceMode().toString();
+    return this.configurationSetupManager.dsoL2Config().getPersistence().getMode().toString();
   }
 
   public String getFailoverMode() {

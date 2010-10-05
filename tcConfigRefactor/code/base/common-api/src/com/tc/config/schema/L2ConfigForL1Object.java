@@ -57,7 +57,7 @@ public class L2ConfigForL1Object implements L2ConfigForL1 {
     for (int i = 0; i < l2Array.length; i++) {
       Server l2 = l2Array[i];
       String host = l2.getDsoPort().getBind();
-      if (TCSocketAddress.WILDCARD_IP.equals(host) || TCSocketAddress.LOOPBACK_IP.equals(host)) {
+      if (TCSocketAddress.WILDCARD_IP.equals(host)) {
         host = l2.getHost();
       }
       String name = l2.getName();

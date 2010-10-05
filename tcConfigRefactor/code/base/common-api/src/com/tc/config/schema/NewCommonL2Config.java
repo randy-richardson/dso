@@ -31,8 +31,6 @@ public interface NewCommonL2Config extends NewConfig, NewStatisticsConfig {
   
   BindPort jmxPort();
   
-  void setJmxPort(BindPort jmxPort);
-  
   String host();
 
   boolean authentication();

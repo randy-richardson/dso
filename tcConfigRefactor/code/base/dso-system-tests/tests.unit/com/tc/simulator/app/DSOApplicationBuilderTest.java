@@ -38,7 +38,7 @@ public class DSOApplicationBuilderTest extends BaseDSOTestCase {
 
     this.applicationConfig = new SimpleApplicationConfig();
 
-    L1TVSConfigurationSetupManager configManager = factory.createL1TVSConfigurationSetupManager();
+    L1TVSConfigurationSetupManager configManager = factory.getL1TVSConfigurationSetupManager();
     PreparedComponentsFromL2Connection components = new PreparedComponentsFromL2Connection(configManager);
 
     this.builder = new DSOApplicationBuilder(new IsolationClassLoaderFactory(this, SimpleApplication.class, null, components, null) {

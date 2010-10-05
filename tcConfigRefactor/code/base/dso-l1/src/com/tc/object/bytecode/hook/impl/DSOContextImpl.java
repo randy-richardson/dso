@@ -104,7 +104,7 @@ public class DSOContextImpl implements DSOContext {
                                                                                                           new FatalIllegalConfigurationChangeHandler(),
                                                                                                           configSpec);
 
-    L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();
+    L1TVSConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager();
     config.setupLogging();
     PreparedComponentsFromL2Connection l2Connection;
     try {
@@ -143,7 +143,7 @@ public class DSOContextImpl implements DSOContext {
                                                                                                           new FatalIllegalConfigurationChangeHandler(),
                                                                                                           configSpec);
 
-    L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();
+    L1TVSConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager();
     config.setupLogging();
     PreparedComponentsFromL2Connection l2Connection;
     try {
@@ -300,7 +300,7 @@ public class DSOContextImpl implements DSOContext {
                                                                                                             new FatalIllegalConfigurationChangeHandler());
 
       logger.debug("Created StandardTVSConfigurationSetupManagerFactory.");
-      L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();
+      L1TVSConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager();
       config.setupLogging();
       logger.debug("Created L1TVSConfigurationSetupManager.");
 

@@ -41,13 +41,13 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
 
     Server server = (Server) context.bean();
 
-    this.dataPath = new File(server.getData());// context.configRelativeSubstitutedFileItem("data");
-    this.logsPath = new File(server.getLogs());// context.configRelativeSubstitutedFileItem("logs");
+    this.dataPath = new File(server.getData());
+    this.logsPath = new File(server.getLogs());
 
-    this.serverDbBackupPath = new File(server.getDataBackup());// context.configRelativeSubstitutedFileItem("data-backup");
+    this.serverDbBackupPath = new File(server.getDataBackup());
 
-    this.statisticsPath = new File(server.getStatistics());// context.configRelativeSubstitutedFileItem("statistics");
-    this.host = server.getHost();// context.stringItem("@host");
+    this.statisticsPath = new File(server.getStatistics());
+    this.host = server.getHost();
 
     // JMX authentication
     String pwd = null;
@@ -148,11 +148,6 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
   public void setDataPath(String dataPath) {
     Server server = (Server) getBean();
     server.setData(dataPath);
-  }
-
-  public void setJmxPort(BindPort jmxPort) {
-    Server server = (Server) getBean();
-    server.setJmxPort(jmxPort);
   }
 
   public void setLogsPath(String logsPath) {

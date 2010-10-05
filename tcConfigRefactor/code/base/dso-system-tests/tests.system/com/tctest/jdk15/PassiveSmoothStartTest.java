@@ -61,7 +61,7 @@ public class PassiveSmoothStartTest extends TransparentTestBase {
                                                                                                   new FatalIllegalConfigurationChangeHandler());
     // to be used by in-process clients
     setConfigFactory(factory);
-    L1TVSConfigurationSetupManager manager = factory.createL1TVSConfigurationSetupManager();
+    L1TVSConfigurationSetupManager manager = factory.getL1TVSConfigurationSetupManager();
     setUpForMultipleExternalProcesses(factory, new StandardDSOClientConfigHelperImpl(manager), dsoPorts, jmxPorts,
                                       l2GroupPorts, null, serverNames, configFiles);
     doSetUp(this);

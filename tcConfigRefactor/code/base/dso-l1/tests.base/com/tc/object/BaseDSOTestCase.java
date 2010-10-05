@@ -126,7 +126,7 @@ public class BaseDSOTestCase extends TCTestCase implements TestClientConfigHelpe
 
   protected synchronized final L1TVSConfigurationSetupManager createL1ConfigManager()
       throws ConfigurationSetupException {
-    return configFactory().createL1TVSConfigurationSetupManager();
+    return configFactory().getL1TVSConfigurationSetupManager();
   }
 
   protected synchronized final DSOClientConfigHelper configHelper() throws ConfigurationSetupException {

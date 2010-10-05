@@ -98,7 +98,6 @@ import com.tc.object.cache.LFUEvictionPolicy;
 import com.tc.object.cache.LRUEvictionPolicy;
 import com.tc.object.cache.NullCache;
 import com.tc.object.config.schema.NewL2DSOConfig;
-import com.tc.object.config.schema.PersistenceMode;
 import com.tc.object.msg.AcknowledgeTransactionMessageImpl;
 import com.tc.object.msg.BatchTransactionAcknowledgeMessageImpl;
 import com.tc.object.msg.BroadcastTransactionMessageImpl;
@@ -301,6 +300,7 @@ import com.tc.util.sequence.MutableSequence;
 import com.tc.util.sequence.Sequence;
 import com.tc.util.startuplock.FileNotCreatedException;
 import com.tc.util.startuplock.LocationNotCreatedException;
+import com.terracottatech.config.PersistenceMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -477,7 +477,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     if (!this.statisticsAgentSubSystem.setup(StatisticsSystemType.SERVER, this.configSetupManager.commonl2Config())) {
       System.exit(-1);
     }
-    if (TCSocketAddress.WILDCARD_IP.equals(bindAddress) || TCSocketAddress.LOOPBACK_IP.equals(bindAddress)) {
+    if (TCSocketAddress.WILDCARD_IP.equals(bindAddress)) {
       this.statisticsAgentSubSystem.setDefaultAgentIp(InetAddress.getLocalHost().getHostAddress());
     } else {
       this.statisticsAgentSubSystem.setDefaultAgentIp(jmxBind.getHostAddress());
@@ -491,13 +491,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     NIOWorkarounds.solaris10Workaround();
     this.l2Properties = TCPropertiesImpl.getProperties().getPropertiesFor("l2");
-//    this.configSetupManager.commonl2Config().changesInItemIgnored(this.configSetupManager.commonl2Config().dataPath());
-//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.persistenceMode());
-    final PersistenceMode persistenceMode = l2DSOConfig.persistenceMode();
+    final PersistenceMode.Enum persistenceMode = l2DSOConfig.getPersistence().getMode();
     final TCProperties objManagerProperties = this.l2Properties.getPropertiesFor("objectmanager");
     this.l1ReconnectConfig = new L1ReconnectConfigImpl();
     final boolean swapEnabled = true;
-    final boolean persistent = persistenceMode.equals(PersistenceMode.PERMANENT_STORE);
+    final boolean persistent = (persistenceMode == PersistenceMode.PERMANENT_STORE);
 
     // XXX: one day DB selection will be from tc.props
     final DBFactory dbFactory = new BerkeleyDBFactory(l2Properties.getPropertiesFor("berkeleydb")
@@ -550,8 +548,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
         .createCounter(sampledCounterConfig);
 
     if (swapEnabled) {
-      final File dbhome = new File(this.configSetupManager.commonl2Config().dataPath(),
-                                   NewL2DSOConfig.OBJECTDB_DIRNAME);
+      final File dbhome = new File(this.configSetupManager.commonl2Config().dataPath(), NewL2DSOConfig.OBJECTDB_DIRNAME);
       logger.debug("persistent: " + persistent);
       if (!persistent) {
         if (dbhome.exists()) {
@@ -573,7 +570,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                            serializationAdapterFactory, this.configSetupManager.commonl2Config()
                                                .dataPath(), this.objectStatsRecorder);
       sraForDbEnv = dbenv.getSRAs();
-
 
       // Setting the DB environment for the bean which takes backup of the active server
       if (persistent) {
@@ -685,14 +681,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     this.clientStateManager = new ClientStateManagerImpl(TCLogging.getLogger(ClientStateManager.class));
 
-//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionEnabled());
-    final boolean gcEnabled = l2DSOConfig.garbageCollectionEnabled();
+    final boolean gcEnabled = l2DSOConfig.garbageCollection().getEnabled();
 
-//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionInterval());
-    final long gcInterval = l2DSOConfig.garbageCollectionInterval();
+    final long gcInterval = l2DSOConfig.garbageCollection().getInterval();
 
-//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.garbageCollectionVerbose());
-    final boolean verboseGC = l2DSOConfig.garbageCollectionVerbose();
+    final boolean verboseGC = l2DSOConfig.garbageCollection().getVerbose();
     final SampledCumulativeCounterConfig sampledCumulativeCounterConfig = new SampledCumulativeCounterConfig(1, 300,
                                                                                                              true, 0L);
     final SampledCounter objectCreationRate = (SampledCounter) this.sampledCounterManager
@@ -769,7 +762,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     this.connectionIdFactory = new ConnectionIDFactoryImpl(clientStateStore);
 
-//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.dsoPort());
     final int serverPort = l2DSOConfig.dsoPort().getIntValue();
 
     this.statisticsAgentSubSystem.setDefaultAgentDifferentiator("L2/" + serverPort);
@@ -1022,7 +1014,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                       clientHandshake, txnLwmStage, jmxEventsStage, jmxRemoteTunnelStage,
                       clientLockStatisticsRespondStage, clusterMetaDataStage, serverMapRequestStage);
 
-//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.clientReconnectWindow());
     long reconnectTimeout = l2DSOConfig.clientReconnectWindow();
     logger.debug("Client Reconnect Window: " + reconnectTimeout + " seconds");
     reconnectTimeout *= 1000;
@@ -1277,7 +1268,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   private ServerID makeServerNodeID(final NewL2DSOConfig l2DSOConfig) {
     String host = l2DSOConfig.l2GroupPort().getBind();
-    if (TCSocketAddress.WILDCARD_IP.equals(host) || TCSocketAddress.LOOPBACK_IP.equals(host)) {
+    if (TCSocketAddress.WILDCARD_IP.equals(host)) {
       host = l2DSOConfig.host();
     }
     final Node node = new Node(host, l2DSOConfig.dsoPort().getIntValue());

@@ -28,7 +28,6 @@ import com.tc.statistics.StatisticRetrievalAction;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
 import com.tc.statistics.retrieval.StatisticsRetrievalRegistry;
-import com.terracottatech.config.BindPort;
 
 import java.util.Collection;
 
@@ -51,7 +50,7 @@ abstract public class AbstractAgentSRACorrectnessTestCase extends BaseDSOTestCas
 
   protected DistributedObjectClient startupClient(final int dsoPort, final int jmxPort)
       throws ConfigurationSetupException {
-    configFactory().addServerToL1Config(null, dsoPort, jmxPort);
+    configFactory().addServerToL1Config("127.0.0.1", dsoPort, jmxPort);
     L1TVSConfigurationSetupManager manager = super.createL1ConfigManager();
 
     DistributedObjectClient client = new DistributedObjectClient(new StandardDSOClientConfigHelperImpl(manager),
@@ -95,17 +94,12 @@ abstract public class AbstractAgentSRACorrectnessTestCase extends BaseDSOTestCas
       ManagedObjectStateFactory.disableSingleton(true);
       TestTVSConfigurationSetupManagerFactory factory = AbstractAgentSRACorrectnessTestCase.this.configFactory();
       L2TVSConfigurationSetupManager manager = factory.createL2TVSConfigurationSetupManager(null);
-      factory.l2DSOConfig().setBind("127.0.0.1");
 
-      BindPort dsoBindPort = BindPort.Factory.newInstance();
-      dsoBindPort.setIntValue(dsoPort);
-      dsoBindPort.setBind("127.0.0.1");
-      factory.l2DSOConfig().setDsoPort(dsoBindPort);
+      manager.dsoL2Config().dsoPort().setIntValue(dsoPort);
+      manager.dsoL2Config().dsoPort().setBind("127.0.0.1");
 
-      BindPort jmxBindPort = BindPort.Factory.newInstance();
-      jmxBindPort.setIntValue(jmxPort);
-      jmxBindPort.setBind("127.0.0.1");
-      factory.l2CommonConfig().setJmxPort(jmxBindPort);
+      manager.commonl2Config().jmxPort().setIntValue(jmxPort);
+      manager.commonl2Config().jmxPort().setBind("127.0.0.1");
 
       server = new TCServerImpl(manager);
       server.start();

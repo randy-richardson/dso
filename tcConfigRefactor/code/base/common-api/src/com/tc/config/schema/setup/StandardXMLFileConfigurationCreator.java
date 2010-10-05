@@ -73,7 +73,6 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private boolean                    serverOverrideConfigLoadedFromTrustedSource;
   private File                       directoryLoadedFrom;
   private String                     baseConfigDescription                 = "";
-  private volatile String            rawConfigText                         = "";
   private TcConfigDocument           tcConfigDocument;
   private final DefaultValueProvider defaultValueProvider                  = new SchemaDefaultValueProvider();
 
@@ -203,7 +202,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
                                                            MutableBeanRepository tcPropertiesRepository,
                                                            ApplicationsRepository applicationsRepository)
       throws ConfigurationSetupException {
-    long startTime = java.lang.System.currentTimeMillis();
+    long startTime = System.currentTimeMillis();
     ConfigDataSourceStream configDataSourceStream = getConfigDataSourceStrean(sources, startTime, "base configuration");
     if (configDataSourceStream.getSourceInputStream() == null) configurationFetchFailed(sources, startTime);
     loadConfigurationData(configDataSourceStream.getSourceInputStream(), configDataSourceStream.isTrustedSource(),
@@ -217,7 +216,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
                                                                  MutableBeanRepository l2sBeanRepository,
                                                                  boolean reportToConsole)
       throws ConfigurationSetupException {
-    long startTime = java.lang.System.currentTimeMillis();
+    long startTime = System.currentTimeMillis();
     ConfigDataSourceStream configDataSourceStream = getConfigDataSourceStrean(sources, startTime, "server topology");
     if (configDataSourceStream.getSourceInputStream() == null) configurationFetchFailed(sources, startTime);
     loadServerConfigurationData(configDataSourceStream.getSourceInputStream(),
@@ -257,16 +256,16 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
                                                            String description) {
     ConfigurationSource[] remainingSources = new ConfigurationSource[sources.length];
     ConfigurationSource loadedSource = null;
-    java.lang.System.arraycopy(sources, 0, remainingSources, 0, sources.length);
+    System.arraycopy(sources, 0, remainingSources, 0, sources.length);
     long lastLoopStartTime = 0;
     int iteration = 0;
     InputStream out = null;
     boolean trustedSource = false;
     String descrip = null;
 
-    while (iteration == 0 || (java.lang.System.currentTimeMillis() - startTime < GET_CONFIGURATION_TOTAL_TIMEOUT)) {
+    while (iteration == 0 || (System.currentTimeMillis() - startTime < GET_CONFIGURATION_TOTAL_TIMEOUT)) {
       sleepIfNecessaryToAvoidPoundingSources(lastLoopStartTime);
-      lastLoopStartTime = java.lang.System.currentTimeMillis();
+      lastLoopStartTime = System.currentTimeMillis();
 
       for (int i = 0; i < remainingSources.length; ++i) {
 
@@ -311,8 +310,8 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       text += ". ";
     }
 
-    if (java.lang.System.currentTimeMillis() - startTime >= GET_CONFIGURATION_TOTAL_TIMEOUT) {
-      text += " Fetch attempt duration: " + ((java.lang.System.currentTimeMillis() - startTime) / 1000) + " seconds.";
+    if (System.currentTimeMillis() - startTime >= GET_CONFIGURATION_TOTAL_TIMEOUT) {
+      text += " Fetch attempt duration: " + ((System.currentTimeMillis() - startTime) / 1000) + " seconds.";
     }
 
     text += "\n\nTo correct this problem specify a valid configuration location using the ";
@@ -358,7 +357,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   }
 
   private void sleepIfNecessaryToAvoidPoundingSources(long lastLoopStartTime) {
-    long delay = MIN_RETRY_TIMEOUT - (java.lang.System.currentTimeMillis() - lastLoopStartTime);
+    long delay = MIN_RETRY_TIMEOUT - (System.currentTimeMillis() - lastLoopStartTime);
     if (delay > 0) {
       logger.info("Waiting " + delay + " ms until we try to get configuration data again...");
       ThreadUtil.reallySleep(delay);
@@ -375,18 +374,18 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
 
   private void updateTcConfig(TcConfigDocument configDocument, String description, boolean serverElementsOnly) {
     if (!serverElementsOnly) {
-      this.tcConfigDocument = (TcConfigDocument) configDocument.copy();
+      this.tcConfigDocument = configDocument;
     } else {
       Assert.assertNotNull(this.tcConfigDocument);
       TcConfig toConfig = this.tcConfigDocument.getTcConfig();
       TcConfig fromConfig = configDocument.getTcConfig();
       if (toConfig.getServers() != null) toConfig.setServers(fromConfig.getServers());
     }
-    rawConfigText = this.tcConfigDocument.toString();
+//    rawConfigText = this.tcConfigDocument.toString();
   }
 
   private void logCopyOfConfig() {
-    logger.info(describeSources() + ":\n\n" + rawConfigText);
+    logger.info(describeSources() + ":\n\n" + this.tcConfigDocument.toString());
   }
 
   private void loadConfigurationData(InputStream in, boolean trustedSource, String descrip,
@@ -516,7 +515,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   }
 
   public String rawConfigText() {
-    return rawConfigText;
+    return this.tcConfigDocument.toString();
   }
 
   public String describeSources() {

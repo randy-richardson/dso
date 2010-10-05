@@ -5,10 +5,10 @@
 package com.tctest.longrunning;
 
 import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
-import com.tc.object.config.schema.PersistenceMode;
 import com.tctest.TestConfigurator;
 import com.tctest.TransparentTestBase;
 import com.tctest.TransparentTestIface;
+import com.terracottatech.config.PersistenceMode;
 
 public class LongrunningGCTester extends TransparentTestBase implements TestConfigurator {
 

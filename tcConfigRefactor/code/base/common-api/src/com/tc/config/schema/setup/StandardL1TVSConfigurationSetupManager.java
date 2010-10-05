@@ -74,7 +74,6 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
   public void setupLogging() {
     File logsPath = commonL1Config().logsPath();
     TCLogging.setLogDirectory(logsPath, TCLogging.PROCESS_TYPE_L1);
-//    logsPath.addListener(new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L1));
   }
 
   public String rawConfigText() {
@@ -86,7 +85,8 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public L2ConfigForL1 l2Config() {
-    return this.l2ConfigForL1;
+    return new L2ConfigForL1Object(createContext(serversBeanRepository(), null),
+                                   createContext(systemBeanRepository(), null));
   }
 
   public NewCommonL1Config commonL1Config() {

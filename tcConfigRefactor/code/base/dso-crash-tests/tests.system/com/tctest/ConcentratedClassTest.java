@@ -5,11 +5,11 @@
 package com.tctest;
 
 import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
-import com.tc.object.config.schema.PersistenceMode;
 import com.tc.test.MultipleServersCrashMode;
 import com.tc.test.MultipleServersPersistenceMode;
 import com.tc.test.MultipleServersSharedDataMode;
 import com.tc.test.activepassive.ActivePassiveTestSetupManager;
+import com.terracottatech.config.PersistenceMode;
 
 /**
  * This test makes heavy use of the same TCClass stuff underneath a particular class within a single VM. I'm hoping this // *

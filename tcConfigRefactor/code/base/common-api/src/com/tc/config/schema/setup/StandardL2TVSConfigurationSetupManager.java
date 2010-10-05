@@ -35,7 +35,6 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.config.schema.NewL2DSOConfig;
 import com.tc.object.config.schema.NewL2DSOConfigObject;
-import com.tc.object.config.schema.PersistenceMode;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.server.ServerConnectionValidator;
@@ -43,6 +42,7 @@ import com.tc.util.Assert;
 import com.terracottatech.config.Application;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.MirrorGroups;
+import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
@@ -505,7 +505,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
           Assert.assertNotNull(data);
           boolean isNwAP = serversToMode.get(name);
-          if (!isNwAP && !(data.dsoL2Config().persistenceMode().equals(PersistenceMode.PERMANENT_STORE))) {
+          if (!isNwAP && (data.dsoL2Config().getPersistence().getMode() != PersistenceMode.PERMANENT_STORE)) {
             badServers.add(name);
           }
         }

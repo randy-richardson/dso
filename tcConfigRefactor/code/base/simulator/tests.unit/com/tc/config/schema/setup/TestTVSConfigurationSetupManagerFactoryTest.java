@@ -34,7 +34,7 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
     this.factory.l1CommonConfig().setLogsPath(getTempFile("l1-logs").toString());
 
     this.l2Manager = this.factory.createL2TVSConfigurationSetupManager(null);
-    this.l1Manager = this.factory.createL1TVSConfigurationSetupManager();
+    this.l1Manager = this.factory.getL1TVSConfigurationSetupManager();
   }
 
   public void testSettingValues() throws Exception {
@@ -42,7 +42,7 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
     factory.dsoApplicationConfig().transientFields().setFieldNameArray(new String[] { "Foo.foo", "Bar.bar" });
 
     // Hit the remaining top-level config objects
-    factory.l2DSOConfig().setGarbageCollectionInterval(142);
+    factory.l2DSOConfig().garbageCollection().setInterval(142);
     factory.l1CommonConfig().setLogsPath("whatever");
     factory.l2CommonConfig().setDataPath("marph");
 
@@ -63,7 +63,7 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
     System.err.println(this.l2Manager.systemConfig());
     System.err.println(this.l1Manager.dsoL1Config());
 
-    assertEquals(142, this.l2Manager.dsoL2Config().garbageCollectionInterval());
+    assertEquals(142, this.l2Manager.dsoL2Config().garbageCollection().getInterval());
     assertEquals(new File("whatever"), this.l1Manager.commonL1Config().logsPath());
     assertEquals(new File("marph"), this.l2Manager.commonl2Config().dataPath());
     assertEqualsUnordered(new Lock[] { new AutoLock("* Foo.foo(..)", LockLevel.CONCURRENT),

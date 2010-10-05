@@ -4,7 +4,6 @@
  */
 package com.tctest.jdk15;
 
-import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
 import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
@@ -22,7 +21,6 @@ import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.server.NullTCServerInfo;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
-import com.terracottatech.config.BindPort;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -157,17 +155,11 @@ public class DSOServerBindAddressTest extends BaseDSOTestCase {
       throws ConfigurationSetupException {
     TestTVSConfigurationSetupManagerFactory factory = super.configFactory();
     L2TVSConfigurationSetupManager manager = factory.createL2TVSConfigurationSetupManager(null);
-    factory.l2DSOConfig().setBind(bindAddress);
-    
-    BindPort dsoBindPort = BindPort.Factory.newInstance();
-    dsoBindPort.setIntValue(dsoPort);
-    dsoBindPort.setBind(bindAddress);
-    ((SettableConfigItem) factory.l2DSOConfig().dsoPort()).setValue(dsoBindPort);
-    
-    BindPort jmxBindPort = BindPort.Factory.newInstance();
-    jmxBindPort.setIntValue(jmxPort);
-    jmxBindPort.setBind(bindAddress);
-    ((SettableConfigItem) factory.l2CommonConfig().jmxPort()).setValue(jmxBindPort);
+    factory.l2DSOConfig().dsoPort().setIntValue(dsoPort);
+    factory.l2DSOConfig().dsoPort().setBind(bindAddress);
+
+    factory.l2CommonConfig().jmxPort().setIntValue(jmxPort);
+    factory.l2CommonConfig().jmxPort().setBind(bindAddress);
     return manager;
   }
 }

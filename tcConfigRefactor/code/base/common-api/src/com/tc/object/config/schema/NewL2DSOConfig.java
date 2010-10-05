@@ -6,7 +6,9 @@ package com.tc.object.config.schema;
 
 import com.tc.config.schema.NewConfig;
 import com.terracottatech.config.BindPort;
+import com.terracottatech.config.GarbageCollection;
 import com.terracottatech.config.Offheap;
+import com.terracottatech.config.Persistence;
 
 /**
  * Represents all configuration read by the DSO L2 and which is independent of application.
@@ -18,13 +20,9 @@ public interface NewL2DSOConfig extends NewConfig {
   public static final String DIRTY_OBJECTDB_BACKUP_PREFIX          = "dirty-objectdb-";
   public static final short  DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT = 20;
 
-  PersistenceMode persistenceMode();
-
-  boolean garbageCollectionEnabled();
-
-  boolean garbageCollectionVerbose();
-
-  int garbageCollectionInterval();
+  Persistence getPersistence();
+  
+  GarbageCollection garbageCollection();
 
   BindPort dsoPort();
 
@@ -39,25 +37,5 @@ public interface NewL2DSOConfig extends NewConfig {
   String bind();
 
   Offheap offHeapConfig();
-  
-  //STRICTLY fot test
-  
-  void setPersistenceMode(PersistenceMode persistenceMode);
-  
-  void setGrabgeCollectionEnabled(boolean garbageCollection);
-  
-  void setGarbageCollectionVerbose(boolean garbageCollectionVerbose);
-  
-  void setGarbageCollectionInterval(int garbageCollectionInterval);
-  
-  void setDsoPort(BindPort dsoPort);
-  
-  void setL2GroupPort(BindPort l2GroupPort);
-  
-  void setClientReconnectWindo(int clinetReconnectWindow);
-  
-  void setOffHeap(Offheap offheap);
-
-  void setBind(String bind);
 
 }

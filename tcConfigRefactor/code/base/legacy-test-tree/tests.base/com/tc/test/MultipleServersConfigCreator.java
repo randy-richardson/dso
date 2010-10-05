@@ -105,6 +105,7 @@ public class MultipleServersConfigCreator {
   }
 
   private void writeL2ConfigBase(boolean cleanIfDataExist) throws Exception {
+    new Exception().printStackTrace();
     checkConfigurationModel();
     SystemConfigBuilder system = SystemConfigBuilder.newMinimalInstance();
     system.setConfigurationModel(configModel);

@@ -141,7 +141,7 @@ public class DistributedTestRunner implements ResultsListener {
   protected TCServer instantiateTCServer() {
     try {
       AbstractServerFactory serverFactory = AbstractServerFactory.getFactory();
-      return serverFactory.createServer(configFactory.createL2TVSConfigurationSetupManager(null),
+      return serverFactory.createServer(configFactory.getL2TVSConfigurationSetupManager(),
                                         new TCThreadGroup(new ThrowableHandler(TCLogging.getLogger(TCServer.class))));
 
     } catch (Exception e) {
@@ -439,7 +439,7 @@ public class DistributedTestRunner implements ResultsListener {
 
     for (int i = 0; i < rv.length; i++) {
       L1TVSConfigurationSetupManager l1ConfigManager;
-      l1ConfigManager = this.configFactory.createL1TVSConfigurationSetupManager();
+      l1ConfigManager = this.configFactory.getL1TVSConfigurationSetupManager();
       l1ConfigManager.setupLogging();
       PreparedComponentsFromL2Connection components = new PreparedComponentsFromL2Connection(l1ConfigManager);
       if (adapterMap != null
