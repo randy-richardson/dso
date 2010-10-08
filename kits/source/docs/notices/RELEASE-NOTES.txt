@@ -1,12 +1,17 @@
-Terracotta 3.3.0 - Simple Scale for Enterprise Java
+Terracotta 3.3.0-ee-patch-1 - Simple Scale for Enterprise Java
 ===================================================
 
-Release Notes: http://www.terracotta.org/kit/reflector?kitID=3.3.0&pageID=BetaReleaseNotes
+Release Notes: http://www.terracotta.org/kit/reflector?kitID=3.3.0&pageID=ReleaseNotes
 Documentation: http://www.terracotta.org/kit/reflector?kitID=3.3.0&pageID=Documentation
 Forums:        http://forums.terracotta.org/forums/forums/list.page
 Mailing Lists: http://lists.terracotta.org
 Support:       http://www.terracotta.org/kit/reflector?kitID=default&pageID=SupportServices
 
-----
+================================
+PATCH HISTORY
+Patch Level 1
+- DEV-4792, DEV-4779
+-  Request for non-existent object error when MaxElementOnDisk is set in DCV2 and cluster killed- 
+
 All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
 http://www.terracotta.org
