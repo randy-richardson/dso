@@ -9,63 +9,46 @@ Support:       http://www.terracotta.org/web/display/enterprise/Support
 
 ================================
 PATCH HISTORY
-Patch Level 1
-- DEV-3956
-- fix clearing references does not look at the fields in the superclass of the physical objects
 
-- DEV-3932
-- Changed GroupTickerTokenManager to a setting in the properties file, with a default of 1 second
+Patch Level 1
+- DEV-3956: fix clearing references does not look at the fields in the superclass of the physical objects
+- DEV-3932: Changed GroupTickerTokenManager to a setting in the properties file, with a default of 1 second
 l2.objectmanager.dgc.enterpriseMarkStageInterval = 1000 
 ------------------------------------------------
 
 Patch Level 2
-- DEV-3972
-- Fix for Assertion Error in process transaction stage after client shutdown
-
-- DEV-3994
-- allow pin() and unpin() during txn apply
--------------------------------------------------
+- DEV-3972: Fix for Assertion Error in process transaction stage after client shutdown
+- DEV-3994: allow pin() and unpin() during txn apply
+------------------------------------------------
 
 Patch Level 3
-- DEV-4081
-- Fix for java.util.ConcurrentModificationException
-
-- DEV-4047
-- Fix to stop Dev console where expanding the object graph while browsing objects during a change 
+- DEV-4081: Fix for java.util.ConcurrentModificationException
+- DEV-4047: Fix to stop Dev console where expanding the object graph while browsing objects during a change 
 in Active Server takeover may cause crash
-
-- DEV-4092
-- Fix to a split-brain scenario with two Active servers in one group, messages could get
+- DEV-4092: Fix to a split-brain scenario with two Active servers in one group, messages could get
 dropped after split-brain resolved.
-
-- CDV-1475, CDV-1472, DEV-3488
-- Updates to resolve conflicts with JDK 6 updates 18, 19 and 20
-
-- DEV-3897
-- Fix for cluster-wide thread dumps that used to take too long to process and cause the server to stall and sometimes 
+- CDV-1475, CDV-1472, DEV-3488: Updates to resolve conflicts with JDK 6 updates 18, 19 and 20
+- DEV-3897: Fix for cluster-wide thread dumps that used to take too long to process and cause the server to stall and sometimes 
 disconnect from the client.
-
-- DEV-4049
-- Fix to exception caused re-applying a transaction after an Active Server is restarted as Passive.
-
------------------------------------------------------
+- DEV-4049: Fix to exception caused re-applying a transaction after an Active Server is restarted as Passive.
+------------------------------------------------
 
 Patch Level 4
-- DEV-4183
-- Change StandardClassProvider to prefer a non-system loader 
-
------------------------------------------------------
+- DEV-4183: Change StandardClassProvider to prefer a non-system loader 
+------------------------------------------------
 
 Patch Level 5
-- DEV-4244
-- Throw RejectedExecutionException back to the calling JMX client if seen on Server
-
-- DEV-3901
-- If Zapped node connects, resend Zap request to force restart other node
+- DEV-4244: Throw RejectedExecutionException back to the calling JMX client if seen on Server
+- DEV-3901: If Zapped node connects, resend Zap request to force restart other node
+------------------------------------------------
 
 Patch Level 6
-- DEV-4278
-- GroupID to ServerID mapping was wrongly removed at ActiveServerIDManagerImpl
+- DEV-4278: GroupID to ServerID mapping was wrongly removed at ActiveServerIDManagerImpl
+------------------------------------------------
+
+Patch Level 7
+- DEV-4860: ConcurrentModificationException while running destructive tests
+------------------------------------------------
 
 ==============================================
 Copyright Terracotta, Inc. All rights reserved. 
