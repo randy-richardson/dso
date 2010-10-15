@@ -1,4 +1,4 @@
-Terracotta 3.2.1-ee-patch-6 - Simple Scale for Enterprise Java
+Terracotta 3.2.1-ee-patch-7 - Simple Scale for Enterprise Java
 ===================================================
 
 Release Notes: http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=ReleaseNotes
@@ -48,11 +48,14 @@ Patch Level 6
 
 Patch Level 7
 - DEV-4860: ConcurrentModificationException while running destructive tests
+- DEV-3920: EnterpriseLockDistributionStrategy unevenly stripes locks when the stripe count is not a power of 2
+- DEV-3894: Zombie L1 with incoherent ehcache
+- CDV-1473: removeAll(Collection) broken for java.util.concurrent.CopyOnWriteArrayList
+- DEV-3880: Analyse and Fix SleepycatPersistableMap and SleepycatCollectionsPersistor's use of CursorConfig.READ_COMMITTED while committing to database.
 ------------------------------------------------
 
-==============================================
-Copyright Terracotta, Inc. All rights reserved. 
-http://www.terracotta.org
+
+
 
 All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
 http://www.terracotta.org
