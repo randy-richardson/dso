@@ -4,7 +4,7 @@
 # using the 'level' argument to the patch target.
 #
 # Example:
-# level: 1
+# level: 2
 level: dev2
 
 # List of files to include in the patch tar.  File paths listed here are
