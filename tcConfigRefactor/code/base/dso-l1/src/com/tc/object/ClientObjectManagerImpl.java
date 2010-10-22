@@ -457,10 +457,13 @@ public class ClientObjectManagerImpl implements ClientObjectManager, ClientHands
       } else {
         if (tcobj.isNull()) {
           this.objectStore.remove(tcobj);
+          // Calling remove from within the synchronized block to make sure there are no races between the lookups and
+          // remove.
           this.remoteObjectManager.removed(objectID);
         }
       }
     }
+
   }
 
   public boolean isManaged(final Object pojo) {

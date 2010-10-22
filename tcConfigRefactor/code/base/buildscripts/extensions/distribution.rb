@@ -117,9 +117,17 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
     mvn_install(ENTERPRISE)
   end
 
+  def dist_maven_all
+    @internal_config_source['dev_dist'] = 'true'
+    mvn_install(OPENSOURCE)
+    @flavor = ENTERPRISE
+    load_config
+    mvn_install(ENTERPRISE)
+  end
+
   def dist_dev(product_code = 'DSO', flavor = nil)
     flavor ||= @build_environment.is_ee_branch? ? ENTERPRISE : OPENSOURCE
-    if flavor == ENTERPRISE then dist_maven_ee else dist_maven end
+    if flavor == ENTERPRISE then dist_maven_all else dist_maven end
     build_external
     dist(product_code, flavor)
   end
@@ -162,6 +170,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
     product_codes.each do |product_code|
       @product_code = product_code
       @flavor = flavor.downcase
+      @internal_config_source['flavor'] = @flavor
       call_actions :__assemble, :__package, :__publish
     end
   end
@@ -203,18 +212,6 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
 
     depends :init, :compile, :load_config
 
-    dist_jar_log = File.join(@build_results.build_dir.to_s, "dist_jar.log")
-    prev_dist_jar_flavor = 'unknown'
-    if File.exists?(dist_jar_log)
-      prev_dist_jar_flavor = YAML.load_file(dist_jar_log)['flavor']
-    end
-
-    if flavor != prev_dist_jar_flavor
-      @ant.delete(:dir => @build_results.artifacts_classes_directory.to_s)
-      @internal_config_source['fresh_dist_jars'] = 'true'
-    end
-
-
     component = get_spec(:bundled_components, []).find { |component| /^#{component_name}$/i =~ component[:name] }
     libdir    = FilePath.new(@build_results.build_dir, 'tmp').ensure_directory
     destdir   = @build_results.artifacts_directory
@@ -223,10 +220,6 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
 
     add_module_packages(component, destdir)
     create_build_data(@config_source, File.join(destdir.to_s, 'resources'))
-
-    File.open(dist_jar_log, "w") do | f |
-      YAML.dump({'flavor' => flavor}, f)
-    end
   end
 
   def mvn_install(flavor=OPENSOURCE)
@@ -338,8 +331,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
         :snapshot => @config_source[MAVEN_SNAPSHOT_CONFIG_KEY])
 
       # rudimentary check to make sure we're not missing an artifact by mistake
-      artifact_count = args.shift
-      expected_count = artifact_count['artifact_count']
+      expected_count = args.shift['artifact_count']
       fail("Expecting to deploy #{expected_count} TC maven artifacts but found only #{args.size}") unless args.size == expected_count
 
       args.each do |arg|

@@ -70,6 +70,7 @@ import javax.management.QueryExp;
 import javax.management.remote.JMXConnector;
 import javax.naming.CommunicationException;
 import javax.naming.ServiceUnavailableException;
+import javax.swing.JOptionPane;
 import javax.swing.event.EventListenerList;
 
 public class Server extends BaseClusterNode implements IServer, NotificationListener, ManagedObjectFacadeProvider,
@@ -131,10 +132,14 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
                                                                                                    POLLED_ATTR_TRANSACTION_RATE);
   private static final PolledAttribute    PA_CACHE_MISS_RATE                 = new PolledAttribute(L2MBeanNames.DSO,
                                                                                                    POLLED_ATTR_CACHE_MISS_RATE);
-  private static final PolledAttribute    PA_FAULTED_RATE                    = new PolledAttribute(L2MBeanNames.DSO,
-                                                                                                   POLLED_ATTR_FAULTED_RATE);
-  private static final PolledAttribute    PA_FLUSHED_RATE                    = new PolledAttribute(L2MBeanNames.DSO,
-                                                                                                   POLLED_ATTR_FLUSHED_RATE);
+  private static final PolledAttribute    PA_ONHEAP_FAULT_RATE               = new PolledAttribute(L2MBeanNames.DSO,
+                                                                                                   POLLED_ATTR_ONHEAP_FAULT_RATE);
+  private static final PolledAttribute    PA_ONHEAP_FLUSH_RATE               = new PolledAttribute(L2MBeanNames.DSO,
+                                                                                                   POLLED_ATTR_ONHEAP_FLUSH_RATE);
+  private static final PolledAttribute    PA_OFFHEAP_FAULT_RATE              = new PolledAttribute(L2MBeanNames.DSO,
+                                                                                                   POLLED_ATTR_OFFHEAP_FAULT_RATE);
+  private static final PolledAttribute    PA_OFFHEAP_FLUSH_RATE              = new PolledAttribute(L2MBeanNames.DSO,
+                                                                                                   POLLED_ATTR_OFFHEAP_FLUSH_RATE);
   private static final PolledAttribute    PA_LIVE_OBJECT_COUNT               = new PolledAttribute(L2MBeanNames.DSO,
                                                                                                    POLLED_ATTR_LIVE_OBJECT_COUNT);
   private static final PolledAttribute    PA_LOCK_RECALL_RATE                = new PolledAttribute(L2MBeanNames.DSO,
@@ -254,8 +259,10 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     registerPolledAttribute(PA_OBJECT_FAULT_RATE);
     registerPolledAttribute(PA_TRANSACTION_RATE);
     registerPolledAttribute(PA_CACHE_MISS_RATE);
-    registerPolledAttribute(PA_FAULTED_RATE);
-    registerPolledAttribute(PA_FLUSHED_RATE);
+    registerPolledAttribute(PA_ONHEAP_FAULT_RATE);
+    registerPolledAttribute(PA_ONHEAP_FLUSH_RATE);
+    registerPolledAttribute(PA_OFFHEAP_FAULT_RATE);
+    registerPolledAttribute(PA_OFFHEAP_FLUSH_RATE);
     registerPolledAttribute(PA_LIVE_OBJECT_COUNT);
     registerPolledAttribute(PA_LOCK_RECALL_RATE);
     registerPolledAttribute(PA_BROADCAST_RATE);
@@ -1008,6 +1015,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
   }
 
   private void initServerInfoBean() {
+    checkCompatibility();
     ConnectionContext cc = getConnectionContext();
     if (cc != null) {
       try {
@@ -1015,6 +1023,28 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       } catch (Exception e) {
         /**/
       }
+    }
+  }
+
+  protected void checkCompatibility() {
+    TCServerInfoMBean serverInfo = getServerInfoBean();
+    if (serverInfo.isEnterprise()) {
+      Thread th = new Thread(new CompatibiltyThread(), "compatibility thread");
+      th.start();
+    }
+  }
+
+  private class CompatibiltyThread implements Runnable {
+
+    public void run() {
+      JOptionPane
+          .showMessageDialog(
+                             null,
+                             "Opensource edition of dev console can not connect to Enterprise edition of terracotta server",
+                             "Can not connect", JOptionPane.INFORMATION_MESSAGE);
+      connectManager.disconnect();
+      connectManager.setAutoConnect(false);
+      clusterModel.setAutoConnect(false);
     }
   }
 
@@ -1228,8 +1258,8 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       }
     } else if ("jmx.attribute.change".equals(type)) {
       AttributeChangeNotification acn = (AttributeChangeNotification) notification;
-      PropertyChangeEvent pce = new PropertyChangeEvent(this, acn.getAttributeName(), acn.getOldValue(),
-                                                        acn.getNewValue());
+      PropertyChangeEvent pce = new PropertyChangeEvent(this, acn.getAttributeName(), acn.getOldValue(), acn
+          .getNewValue());
       propertyChangeSupport.firePropertyChange(pce);
     }
   }
@@ -1829,8 +1859,8 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     StatisticsLocalGathererMBean theClusterStatsBean = getClusterStatsBean();
     if (theClusterStatsBean != null) {
       theClusterStatsBean.createSession(sessionId);
-      theClusterStatsBean.setSessionParam(StatisticsConfig.KEY_RETRIEVER_SCHEDULE_INTERVAL,
-                                          Long.valueOf(samplePeriodMillis));
+      theClusterStatsBean.setSessionParam(StatisticsConfig.KEY_RETRIEVER_SCHEDULE_INTERVAL, Long
+          .valueOf(samplePeriodMillis));
       theClusterStatsBean.enableStatistics(statsToRecord);
       theClusterStatsBean.startCapturing();
     }
