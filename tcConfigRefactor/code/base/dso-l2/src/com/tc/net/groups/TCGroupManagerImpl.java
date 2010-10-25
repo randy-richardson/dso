@@ -140,10 +140,8 @@ public class TCGroupManagerImpl implements GroupManager, ChannelManagerEventList
     this.l2ReconnectConfig = new L2ReconnectConfigImpl();
     this.isUseOOOLayer = l2ReconnectConfig.getReconnectEnabled();
 
-//    configSetupManager.commonl2Config().changesInItemIgnored(configSetupManager.commonl2Config().dataPath());
     NewL2DSOConfig l2DSOConfig = configSetupManager.dsoL2Config();
 
-//    l2DSOConfig.changesInItemIgnored(l2DSOConfig.l2GroupPort());
     this.groupPort = l2DSOConfig.l2GroupPort().getIntValue();
 
     TCSocketAddress socketAddress;

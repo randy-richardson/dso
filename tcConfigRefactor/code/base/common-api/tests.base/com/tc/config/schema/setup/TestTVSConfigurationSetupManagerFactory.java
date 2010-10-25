@@ -15,7 +15,6 @@ import com.tc.config.schema.NewCommonL1Config;
 import com.tc.config.schema.NewCommonL2Config;
 import com.tc.config.schema.NewHaConfig;
 import com.tc.config.schema.NewSystemConfig;
-import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.beanfactory.ConfigBeanFactory;
 import com.tc.config.schema.beanfactory.TerracottaDomainConfigurationDocumentBeanFactory;
 import com.tc.config.schema.dynamic.ConfigItem;
@@ -342,14 +341,13 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
   // This function will add all the servers in a group in L1 config. Ideally should be used when only 1 group contains
   // all the servers
-  public void addServersAndGroupToL1Config(String groupName, String[] name, int[] dsoPorts, int[] jmxPorts) {
+  public void addServersAndGroupToL1Config(Servers servers) {
     assertIfCalledBefore();
+    Servers l2s = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
+    cleanBeanSetServersIfNeeded(l2s);
 
-    for (int i = 0; i < name.length; i++)
-      addServerToL1Config(name[i], dsoPorts[i], jmxPorts[i], false);
-
-    addServerGroupToL1Config(groupName);
-
+    l2s.setServerArray(servers.getServerArray());
+    l2s.setMirrorGroups(servers.getMirrorGroups());
     isConfigDone = true;
   }
 
@@ -447,12 +445,12 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
       MirrorGroup group = groups.addNewMirrorGroup();
       group.setGroupName(groupName);
       Members newMembers = group.addNewMembers();
-      for (int i = 0; i < members.length; i++) {
-        String memberName = members[i];
+      for (String member : members) {
+        String memberName = member;
         if (memberName == null || memberName.equals("")) {
           memberName = DEFAULT_HOST;
         }
-        newMembers.addMember(members[i]);
+        newMembers.addMember(member);
       }
     }
   }
@@ -463,7 +461,8 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     Offheap offheap = Offheap.Factory.newInstance();
     offheap.setEnabled(enabled);
     offheap.setMaxDataSize(maxDataSize);
-    ((SettableConfigItem) l2DSOConfig().offHeapConfig()).setValue(offheap);
+    l2DSOConfig().offHeapConfig().setEnabled(enabled);
+    l2DSOConfig().offHeapConfig().setMaxDataSize(maxDataSize);
   }
 
   public void setGCEnabled(boolean val) {

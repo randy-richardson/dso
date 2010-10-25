@@ -7,6 +7,7 @@ package com.tctest;
 import org.apache.commons.io.CopyUtils;
 import org.apache.commons.lang.ClassUtils;
 
+import com.tc.config.schema.defaults.SchemaDefaultValueProvider;
 import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.management.beans.L2DumperMBean;
@@ -14,6 +15,7 @@ import com.tc.management.beans.L2MBeanNames;
 import com.tc.net.proxy.TCPProxy;
 import com.tc.object.BaseDSOTestCase;
 import com.tc.object.config.DSOClientConfigHelper;
+import com.tc.object.config.schema.NewL2DSOConfigObject;
 import com.tc.objectserver.control.ExtraProcessServerControl;
 import com.tc.objectserver.control.ServerControl;
 import com.tc.properties.TCProperties;
@@ -38,6 +40,7 @@ import com.tctest.runner.DistributedTestRunnerConfig;
 import com.tctest.runner.PostAction;
 import com.tctest.runner.TestGlobalIdGenerator;
 import com.tctest.runner.TransparentAppConfig;
+import com.terracottatech.config.TcConfigDocument;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -226,7 +229,7 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
 
       configFactory().l2CommonConfig().jmxPort().setIntValue(adminPort);
       configFactory().l2CommonConfig().jmxPort().setBind("0.0.0.0");
-      
+
       configFactory().l2DSOConfig().l2GroupPort().setIntValue(groupPort);
       configFactory().l2DSOConfig().l2GroupPort().setBind("0.0.0.0");
 
@@ -408,6 +411,8 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
       }
       List al = new ArrayList();
       al.add("-Dtc.node-name=" + serverNames[i]);
+      NewL2DSOConfigObject.initializeServers(TcConfigDocument.Factory.parse(configFiles[i]).getTcConfig(),
+                                             new SchemaDefaultValueProvider(), configFiles[i].getParentFile());
       serverControls[i] = new ExtraProcessServerControl("localhost", dsoPorts[i], jmxPorts[i], configFiles[i]
           .getAbsolutePath(), true, serverNames[i], null, javaHome, true);
     }
@@ -686,8 +691,8 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
     }
 
     if (serverControls != null) {
-      for (int i = 0; i < serverControls.length; i++) {
-        dumpServerControl(serverControls[i]);
+      for (ServerControl serverControl2 : serverControls) {
+        dumpServerControl(serverControl2);
       }
     }
 
@@ -736,9 +741,9 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
     }
 
     if (serverControls != null) {
-      for (int i = 0; i < serverControls.length; i++) {
-        if (serverControls[i].isRunning()) {
-          serverControls[i].shutdown();
+      for (ServerControl serverControl2 : serverControls) {
+        if (serverControl2.isRunning()) {
+          serverControl2.shutdown();
         }
       }
     }

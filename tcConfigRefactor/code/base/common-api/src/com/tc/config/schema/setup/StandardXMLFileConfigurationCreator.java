@@ -49,20 +49,20 @@ import javax.xml.parsers.ParserConfigurationException;
  */
 public class StandardXMLFileConfigurationCreator implements ConfigurationCreator {
 
-  private static final TCLogger      consoleLogger                         = CustomerLogging.getConsoleLogger();
-  private static final long          GET_CONFIGURATION_TOTAL_TIMEOUT       = 5 * 60 * 1000;
-  private static final long          MIN_RETRY_TIMEOUT                     = 5 * 1000;
-  private static final Pattern       SERVER_PATTERN                        = Pattern.compile("(.*):(.*)",
-                                                                                             Pattern.CASE_INSENSITIVE);
-  private static final Pattern       RESOURCE_PATTERN                      = Pattern.compile("resource://(.*)",
-                                                                                             Pattern.CASE_INSENSITIVE);
+  private static final TCLogger      consoleLogger                        = CustomerLogging.getConsoleLogger();
+  private static final long          GET_CONFIGURATION_TOTAL_TIMEOUT      = 5 * 60 * 1000;
+  private static final long          MIN_RETRY_TIMEOUT                    = 5 * 1000;
+  private static final Pattern       SERVER_PATTERN                       = Pattern.compile("(.*):(.*)",
+                                                                                            Pattern.CASE_INSENSITIVE);
+  private static final Pattern       RESOURCE_PATTERN                     = Pattern.compile("resource://(.*)",
+                                                                                            Pattern.CASE_INSENSITIVE);
   // We require more than one character before the colon so that we don't mistake Windows-style directory paths as URLs.
-  private static final Pattern       URL_PATTERN                           = Pattern.compile("[A-Za-z][A-Za-z]+://.*");
-  private static final long          GET_CONFIGURATION_ONE_SOURCE_TIMEOUT  = TCPropertiesImpl
-                                                                               .getProperties()
-                                                                               .getLong(
-                                                                                        TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT,
-                                                                                        30000);
+  private static final Pattern       URL_PATTERN                          = Pattern.compile("[A-Za-z][A-Za-z]+://.*");
+  private static final long          GET_CONFIGURATION_ONE_SOURCE_TIMEOUT = TCPropertiesImpl
+                                                                              .getProperties()
+                                                                              .getLong(
+                                                                                       TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT,
+                                                                                       30000);
 
   private final ConfigurationSpec    configurationSpec;
   private final ConfigBeanFactory    beanFactory;
@@ -72,9 +72,9 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private String                     serverOverrideConfigDescription;
   private boolean                    serverOverrideConfigLoadedFromTrustedSource;
   private File                       directoryLoadedFrom;
-  private String                     baseConfigDescription                 = "";
+  private String                     baseConfigDescription                = "";
   private TcConfigDocument           tcConfigDocument;
-  private final DefaultValueProvider defaultValueProvider                  = new SchemaDefaultValueProvider();
+  private final DefaultValueProvider defaultValueProvider                 = new SchemaDefaultValueProvider();
 
   public StandardXMLFileConfigurationCreator(final ConfigurationSpec configurationSpec,
                                              final ConfigBeanFactory beanFactory) {
@@ -90,6 +90,17 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   }
 
   public void createConfigurationIntoRepositories(MutableBeanRepository l1BeanRepository,
+                                                  MutableBeanRepository l2sBeanRepository,
+                                                  MutableBeanRepository systemBeanRepository,
+                                                  MutableBeanRepository tcPropertiesRepository,
+                                                  ApplicationsRepository applicationsRepository)
+      throws ConfigurationSetupException {
+    loadConfigAndSetIntoRepositories(l1BeanRepository, l2sBeanRepository, systemBeanRepository, tcPropertiesRepository,
+                                     applicationsRepository);
+    logCopyOfConfig();
+  }
+
+  protected void loadConfigAndSetIntoRepositories(MutableBeanRepository l1BeanRepository,
                                                   MutableBeanRepository l2sBeanRepository,
                                                   MutableBeanRepository systemBeanRepository,
                                                   MutableBeanRepository tcPropertiesRepository,
@@ -118,7 +129,6 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       serverOverrideConfigLoadedFromTrustedSource = serverOverrideConfigDataSourceStream.isTrustedSource();
       serverOverrideConfigDescription = serverOverrideConfigDataSourceStream.getDescription();
     }
-    logCopyOfConfig();
   }
 
   public void reloadServersConfiguration(MutableBeanRepository l2sBeanRepository, boolean shouldLogTcConfig,
@@ -381,7 +391,6 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
       TcConfig fromConfig = configDocument.getTcConfig();
       if (toConfig.getServers() != null) toConfig.setServers(fromConfig.getServers());
     }
-//    rawConfigText = this.tcConfigDocument.toString();
   }
 
   private void logCopyOfConfig() {

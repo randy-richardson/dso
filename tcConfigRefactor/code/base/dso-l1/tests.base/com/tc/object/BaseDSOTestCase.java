@@ -7,7 +7,6 @@ package com.tc.object;
 import org.apache.commons.lang.ArrayUtils;
 
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
-import com.tc.config.schema.SettableConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
@@ -19,7 +18,6 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.test.TCTestCase;
 import com.terracottatech.config.AdditionalBootJarClasses;
-import com.terracottatech.config.BindPort;
 
 import java.io.IOException;
 
@@ -139,10 +137,8 @@ public class BaseDSOTestCase extends TCTestCase implements TestClientConfigHelpe
   }
 
   // TODO: fix this
-  protected synchronized final void makeClientUsePort(int whichPort) throws ConfigurationSetupException {
-    BindPort bindPort = BindPort.Factory.newInstance();
-    bindPort.setIntValue(whichPort);
-    ((SettableConfigItem) configFactory().l2DSOConfig().dsoPort()).setValue(bindPort);
+  protected synchronized final void makeClientUsePort(int whichPort) {
+    configFactory.l2DSOConfig().dsoPort().setIntValue(whichPort);
   }
 
   public BaseDSOTestCase() {
