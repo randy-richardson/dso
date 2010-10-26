@@ -1,4 +1,4 @@
-Terracotta 3.2.1-ee-patch-5 - Simple Scale for Enterprise Java
+Terracotta 3.2.1-ee-patch-5a - Simple Scale for Enterprise Java
 ===================================================
 
 Release Notes: http://www.terracotta.org/kit/reflector?kitID=3.2.1&pageID=ReleaseNotes
@@ -62,9 +62,14 @@ Patch Level 5
 
 - DEV-3901
 - If Zapped node connects, resend Zap request to force restart other node
-==============================================
-Copyright Terracotta, Inc. All rights reserved. 
-http://www.terracotta.org
+------------------------------------------------------
+
+Patch Level Dev5a
+- DEV-4891/CDV-1518
+- Not synchronized access to WeakHashMap in JavaClassInfoRepository cause 
+  infinite loop
+===============================================
+
 
 All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
 http://www.terracotta.org
