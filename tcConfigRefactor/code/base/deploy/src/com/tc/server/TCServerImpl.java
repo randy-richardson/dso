@@ -441,11 +441,11 @@ public class TCServerImpl extends SEDA implements TCServer {
   private boolean updateCheckEnabled() {
     String s = System.getenv("TC_UPDATE_CHECK_ENABLED");
     boolean checkEnabled = (s == null) || Boolean.parseBoolean(s);
-    return checkEnabled && this.configurationSetupManager.updateCheckConfig().isEnabled();
+    return checkEnabled && this.configurationSetupManager.updateCheckConfig().getUpdateCheck().getEnabled();
   }
 
   private int updateCheckPeriodDays() {
-    return this.configurationSetupManager.updateCheckConfig().periodDays();
+    return this.configurationSetupManager.updateCheckConfig().getUpdateCheck().getPeriodDays();
   }
 
   protected void startServer() throws Exception {

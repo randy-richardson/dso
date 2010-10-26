@@ -4,9 +4,8 @@
  */
 package com.tc.config.schema;
 
+import com.terracottatech.config.UpdateCheck;
 
 public interface UpdateCheckConfig extends NewConfig {
-  boolean isEnabled();
-
-  int periodDays();
+  UpdateCheck getUpdateCheck();
 }

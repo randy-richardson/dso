@@ -8,23 +8,14 @@ import com.tc.config.schema.context.ConfigContext;
 import com.terracottatech.config.UpdateCheck;
 
 public class UpdateCheckConfigObject extends BaseNewConfigObject implements UpdateCheckConfig {
-  private final boolean isEnabled;
-  private final int     periodDays;
 
   public UpdateCheckConfigObject(ConfigContext context) {
     super(context);
-
     context.ensureRepositoryProvides(UpdateCheck.class);
-    UpdateCheck updateCheck = (UpdateCheck) this.context.bean();
-    this.isEnabled = updateCheck.getEnabled();
-    this.periodDays = updateCheck.getPeriodDays();
   }
 
-  public boolean isEnabled() {
-    return isEnabled;
+  public UpdateCheck getUpdateCheck() {
+    return (UpdateCheck) this.context.bean();
   }
 
-  public int periodDays() {
-    return periodDays;
-  }
 }

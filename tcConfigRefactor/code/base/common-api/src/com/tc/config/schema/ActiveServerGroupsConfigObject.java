@@ -19,8 +19,6 @@ import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
 import com.terracottatech.config.Servers;
 
-import java.util.Comparator;
-
 public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implements ActiveServerGroupsConfig {
   private final ActiveServerGroupConfig[] groupConfigArray;
   private final int                       activeServerGroupCount;
@@ -43,8 +41,9 @@ public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implemen
 
     ActiveServerGroupConfigObject[] tempGroupConfigArray = new ActiveServerGroupConfigObject[groupArray.length];
 
-    for(int i = 0; i < tempGroupConfigArray.length; i++){
-      tempGroupConfigArray[i] = new ActiveServerGroupConfigObject(createContext(setupManager, groupArray[i]), setupManager);
+    for (int i = 0; i < tempGroupConfigArray.length; i++) {
+      tempGroupConfigArray[i] = new ActiveServerGroupConfigObject(createContext(setupManager, groupArray[i]),
+                                                                  setupManager);
     }
     this.groupConfigArray = ActiveCoordinatorHelper.generateGroupInfo(tempGroupConfigArray);
   }
@@ -63,13 +62,6 @@ public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implemen
     }
     return null;
   }
-
-  public static class ActiveGroupNameComparator implements Comparator<ActiveServerGroupConfig> {
-    public int compare(ActiveServerGroupConfig obj1, ActiveServerGroupConfig obj2) {
-      return obj1.getGroupName().compareTo(obj2.getGroupName());
-    }
-  }
-  
 
   private final ConfigContext createContext(StandardL2TVSConfigurationSetupManager setupManager, final MirrorGroup group) {
     ChildBeanRepository beanRepository = new ChildBeanRepository(setupManager.serversBeanRepository(),

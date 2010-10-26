@@ -54,7 +54,7 @@ public class NewHaConfigObject extends BaseNewConfigObject implements NewHaConfi
         .defaultFor(servers.schemaType(), "ha/networked-active-passive/election-time")).getBigIntegerValue().intValue();
     final String defaultHaModeString = ((XmlString) defaultValueProvider.defaultFor(servers.schemaType(), "ha/mode"))
         .getStringValue();
-    final com.terracottatech.config.HaMode.Enum defaultHaMode;
+    final HaMode.Enum defaultHaMode;
     if (HaMode.DISK_BASED_ACTIVE_PASSIVE.toString().equals(defaultHaModeString)) {
       defaultHaMode = HaMode.DISK_BASED_ACTIVE_PASSIVE;
     } else {
