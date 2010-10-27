@@ -16,33 +16,16 @@ import com.terracottatech.config.NetworkedActivePassive;
 import com.terracottatech.config.Servers;
 
 public class NewHaConfigObject extends BaseNewConfigObject implements NewHaConfig {
-  private final String haMode;
-  private final int    electionTime;
-  private final Ha     ha;
+  private final Ha ha;
 
   public NewHaConfigObject(ConfigContext context) {
     super(context);
     context.ensureRepositoryProvides(Ha.class);
     ha = (Ha) context.bean();
-    haMode = ha.getMode().toString();
-    checkHaModeSet(haMode);
-    electionTime = ha.getNetworkedActivePassive().getElectionTime();
-  }
-
-  private void checkHaModeSet(String mode) {
-    if (mode == null) { throw new AssertionError("no default set for ha mode"); }
-  }
-
-  public String haMode() {
-    return haMode;
-  }
-
-  public int electionTime() {
-    return electionTime;
   }
 
   public boolean isNetworkedActivePassive() {
-    return haMode.equals(HaMode.NETWORKED_ACTIVE_PASSIVE.toString());
+    return this.ha.getMode().equals(HaMode.NETWORKED_ACTIVE_PASSIVE);
   }
 
   public Ha getHa() {

@@ -289,8 +289,7 @@ public class TCServerImpl extends SEDA implements TCServer {
 
   public String getFailoverMode() {
     NewHaConfig haConfig = this.configurationSetupManager.haConfig();
-    String haMode = haConfig != null ? haConfig.haMode() : null;
-    return haMode != null ? haMode : "no failover";
+    return haConfig.getHa().getMode().toString();
   }
 
   public int getDSOListenPort() {

@@ -235,6 +235,22 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       }
       if (!found) { throw new ConfigurationSetupException("Server{" + serverName + "} is not part of any mirror-group."); }
     }
+
+    Set<String> allServers = new HashSet<String>();
+    for (Server server : serverArray) {
+      java.lang.System.out.println("XXXX adding server " + server);
+      allServers.add(server.getName());
+    }
+
+    for (ActiveServerGroupConfig element : groupArray) {
+      for (String member : element.getMembers().getMemberArray()) {
+        if (!allServers.contains(member)) { throw new ConfigurationSetupException(
+                                                                                  "Server{"
+                                                                                      + member
+                                                                                      + "} is not defined but has been added as a memeber in the group "
+                                                                                      + element.getGroupName()); }
+      }
+    }
   }
 
   private void validateGroupNames(ActiveServerGroupConfig[] groupArray) throws ConfigurationSetupException {
@@ -481,6 +497,7 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   private void validateDSOClusterPersistenceMode() throws ConfigurationSetupException {
+    validatePersistenceModeInGroups();
     ActiveServerGroupConfig[] groupArray = this.activeServerGroupsConfig.getActiveServerGroupArray();
 
     Map<String, Boolean> serversToMode = new HashMap<String, Boolean>();
@@ -499,8 +516,8 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
       if (servers != null && servers.length > 1) {
         // We have clustered DSO; they must all be in permanent-store
         // mode
-        for (int i = 0; i < servers.length; ++i) {
-          String name = servers[i].getName();
+        for (Server server : servers) {
+          String name = server.getName();
           L2ConfigData data = configDataFor(name);
 
           Assert.assertNotNull(data);
@@ -528,6 +545,32 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
                                                   + "See the Terracotta documentation for more details.");
       }
     }
+  }
+
+  private void validatePersistenceModeInGroups() throws ConfigurationSetupException {
+    ActiveServerGroupConfig[] groupArray = this.activeServerGroupsConfig.getActiveServerGroupArray();
+
+    for (ActiveServerGroupConfig group : groupArray) {
+      String[] members = group.getMembers().getMemberArray();
+      if (members.length > 1) {
+        PersistenceMode.Enum baseMode = configDataFor(members[0]).dsoL2Config.getPersistence().getMode();
+        for (int i = 1; i < members.length; i++) {
+          L2ConfigData memberData = configDataFor(members[i]);
+          if (memberData.dsoL2Config.getPersistence().getMode() != baseMode) {
+            StringBuilder msg = new StringBuilder();
+            msg.append("The persistence mode of the servers in the group ").append(group.getGroupName())
+                .append(" with servers {");
+            for (String member : members) {
+              msg.append(member).append(" ");
+            }
+            msg
+                .append("} are not equal. To maintain consitency all the servers in a group need to have same persistence mode");
+            throw new ConfigurationSetupException(msg.toString());
+          }
+        }
+      }
+    }
+
   }
 
   public void validateLicenseCapabilities() {
