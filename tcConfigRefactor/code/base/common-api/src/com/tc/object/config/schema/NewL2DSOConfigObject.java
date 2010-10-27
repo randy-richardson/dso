@@ -396,11 +396,18 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       ActiveServerGroupsConfigObject.createDefaultServerMirrorGroups(servers, defaultValueProvider);
     } else {
       MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
-      Ha ha;
+      Ha ha, defaultHa;
       try {
-        ha = servers.isSetHa() ? servers.getHa() : NewHaConfigObject.getDefaultCommonHa(servers, defaultValueProvider);
+        defaultHa = NewHaConfigObject.getDefaultCommonHa(servers, defaultValueProvider);
       } catch (XmlException e) {
         throw new ConfigurationSetupException(e);
+      }
+
+      if (servers.isSetHa()) {
+        NewHaConfigObject.checkAndInitializeHa(servers.getHa(), defaultHa);
+        ha = servers.getHa();
+      } else {
+        ha = defaultHa;
       }
       if (mirrorGroups.length == 0) {
         ActiveServerGroupConfigObject.createDefaultMirrorGroup(servers, ha);
@@ -409,6 +416,8 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       for (MirrorGroup mirrorGroup : mirrorGroups) {
         if (!mirrorGroup.isSetHa()) {
           mirrorGroup.setHa(ha);
+        } else {
+          NewHaConfigObject.checkAndInitializeHa(mirrorGroup.getHa(), defaultHa);
         }
       }
     }

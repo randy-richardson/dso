@@ -160,7 +160,7 @@ public class TwoDisconnectEventsTest extends BaseDSOTestCase {
 
   protected DistributedObjectClient startupClient(final int dsoPort, final int jmxPort)
       throws ConfigurationSetupException {
-    configFactory().addServerToL1Config(null, dsoPort, jmxPort);
+    configFactory().addServerToL1Config("127.0.0.1", dsoPort, jmxPort);
     L1TVSConfigurationSetupManager manager = super.createL1ConfigManager();
 
     DistributedObjectClient client = new DistributedObjectClient(new StandardDSOClientConfigHelperImpl(manager),
@@ -204,11 +204,11 @@ public class TwoDisconnectEventsTest extends BaseDSOTestCase {
       ManagedObjectStateFactory.disableSingleton(true);
       TestTVSConfigurationSetupManagerFactory factory = configFactory();
       L2TVSConfigurationSetupManager manager = factory.createL2TVSConfigurationSetupManager(null);
-      factory.l2DSOConfig().dsoPort().setIntValue(dsoPort);
-      factory.l2DSOConfig().dsoPort().setBind("127.0.0.1");
+      manager.dsoL2Config().dsoPort().setIntValue(dsoPort);
+      manager.dsoL2Config().dsoPort().setBind("127.0.0.1");
 
-      factory.l2CommonConfig().jmxPort().setIntValue(jmxPort);
-      factory.l2CommonConfig().jmxPort().setBind("127.0.0.1");
+      manager.commonl2Config().jmxPort().setIntValue(jmxPort);
+      manager.commonl2Config().jmxPort().setBind("127.0.0.1");
 
       server = new TCServerImpl(manager);
       server.start();

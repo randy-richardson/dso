@@ -37,11 +37,11 @@ import java.util.Map;
  */
 public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfigurationSetupManager implements
     L1TVSConfigurationSetupManager {
-  private final NewCommonL1Config    commonL1Config;
-  private final NewL1DSOConfig       dsoL1Config;
-  private final ConfigTCProperties   configTCProperties;
-  private final boolean              loadedFromTrustedSource;
-  private volatile L2ConfigForL1     l2ConfigForL1;
+  private final NewCommonL1Config  commonL1Config;
+  private final NewL1DSOConfig     dsoL1Config;
+  private final ConfigTCProperties configTCProperties;
+  private final boolean            loadedFromTrustedSource;
+  private volatile L2ConfigForL1   l2ConfigForL1;
 
   public StandardL1TVSConfigurationSetupManager(ConfigurationCreator configurationCreator,
                                                 DefaultValueProvider defaultValueProvider,
@@ -85,8 +85,8 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
   }
 
   public L2ConfigForL1 l2Config() {
-    return new L2ConfigForL1Object(createContext(serversBeanRepository(), null),
-                                   createContext(systemBeanRepository(), null));
+    return new L2ConfigForL1Object(createContext(serversBeanRepository(), null), createContext(systemBeanRepository(),
+                                                                                               null));
   }
 
   public NewCommonL1Config commonL1Config() {

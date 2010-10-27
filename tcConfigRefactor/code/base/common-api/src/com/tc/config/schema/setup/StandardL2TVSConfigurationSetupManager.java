@@ -238,7 +238,6 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
 
     Set<String> allServers = new HashSet<String>();
     for (Server server : serverArray) {
-      java.lang.System.out.println("XXXX adding server " + server);
       allServers.add(server.getName());
     }
 

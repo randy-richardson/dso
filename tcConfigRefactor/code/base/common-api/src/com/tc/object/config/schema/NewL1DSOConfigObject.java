@@ -28,7 +28,7 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
 
   public static final String                     DSO_INSTRUMENTATION_LOGGING_OPTIONS_SUB_XPATH = "";
 
-  private final int                    faultCount;
+  private final int                              faultCount;
 
   private final DSOInstrumentationLoggingOptions instrumentationLoggingOptions;
   private final DSORuntimeLoggingOptions         runtimeLoggingOptions;
@@ -114,6 +114,7 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
         DsoClientDebugging debugging = dsoClientData.addNewDebugging();
         addDefaultInstrumentationLogging(client, debugging, defaultValueProvider);
         addDefaultRuntimeLogging(client, debugging, defaultValueProvider);
+        addDefaultRuntimeOutputOptions(client, debugging, defaultValueProvider);
       } else {
         DsoClientDebugging debugging = dsoClientData.getDebugging();
         if (!debugging.isSetInstrumentationLogging()) {

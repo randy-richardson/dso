@@ -193,6 +193,14 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     // existing config-setup managers here.
 
     sampleL2Manager = this.createL2TVSConfigurationSetupManager(null);
+    if (this.sampleL2Manager.tcPropertiesRepository().bean() == null) {
+      try {
+        this.sampleL2Manager.tcPropertiesRepository()
+            .setBean(TcProperties.Factory.newInstance(), "from test framework");
+      } catch (XmlException e) {
+        throw new RuntimeException(e);
+      }
+    }
     this.sampleSystem = sampleL2Manager.systemConfig();
     this.sampleL2Common = sampleL2Manager.commonl2Config();
     this.sampleL2DSO = sampleL2Manager.dsoL2Config();
@@ -203,6 +211,10 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     try {
       this.sampleL1Manager.serversBeanRepository().setBean(this.sampleL2Manager.serversBeanRepository().bean(),
                                                            "from L2");
+      if (this.sampleL1Manager.tcPropertiesRepository().bean() == null) {
+        this.sampleL1Manager.tcPropertiesRepository()
+            .setBean(TcProperties.Factory.newInstance(), "from test framework");
+      }
     } catch (XmlException e) {
       throw new RuntimeException(e);
     }
@@ -395,25 +407,6 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     cleanBeanSetServersIfNeeded(l2s);
 
     l2s.setServerArray(((Servers) this.sampleL2Manager.serversBeanRepository().bean()).getServerArray());
-
-    if (name == null || name.equals("")) {
-      name = DEFAULT_HOST;
-    }
-    // newL2.setName(name);
-    // newL2.setHost(DEFAULT_HOST);
-    //
-    // newL2.addNewDsoPort();
-    // newL2.getDsoPort().setIntValue(dsoPort);
-    //
-    // if (jmxPort >= 0) {
-    // newL2.addNewJmxPort();
-    // newL2.getJmxPort().setIntValue(jmxPort);
-    // }
-    //
-    // newL2.setData(BOGUS_FILENAME);
-    // newL2.setLogs(BOGUS_FILENAME);
-    // newL2.setDataBackup(BOGUS_FILENAME);
-    // newL2.setStatistics(BOGUS_FILENAME);
 
     if (cleanGroupsBeanSet) cleanBeanSetServerGroupsIfNeeded(l2s);
   }

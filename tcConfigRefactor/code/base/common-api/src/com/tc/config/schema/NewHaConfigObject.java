@@ -10,6 +10,7 @@ import org.apache.xmlbeans.XmlString;
 
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
+import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.HaMode;
 import com.terracottatech.config.NetworkedActivePassive;
@@ -50,5 +51,21 @@ public class NewHaConfigObject extends BaseNewConfigObject implements NewHaConfi
     nap.setElectionTime(defaultElectionTime);
     ha.setNetworkedActivePassive(nap);
     return ha;
+  }
+
+  public static void checkAndInitializeHa(Ha definedHa, Ha defaultHa) throws ConfigurationSetupException {
+    if (!definedHa.isSetMode()) {
+      definedHa.setMode(defaultHa.getMode());
+    }
+
+    if (definedHa.getMode().equals(HaMode.DISK_BASED_ACTIVE_PASSIVE)) {
+      throw new ConfigurationSetupException(HaMode.NETWORKED_ACTIVE_PASSIVE + " can not be if ha mode is set to "
+                                            + HaMode.DISK_BASED_ACTIVE_PASSIVE);
+    } else if (!definedHa.isSetNetworkedActivePassive()) {
+      definedHa.addNewNetworkedActivePassive().setElectionTime(defaultHa.getNetworkedActivePassive().getElectionTime());
+    } else if (!definedHa.getNetworkedActivePassive().isSetElectionTime()) {
+      definedHa.getNetworkedActivePassive().setElectionTime(defaultHa.getNetworkedActivePassive().getElectionTime());
+    }
+
   }
 }
