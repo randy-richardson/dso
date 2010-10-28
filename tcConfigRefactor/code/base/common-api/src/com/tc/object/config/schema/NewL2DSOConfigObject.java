@@ -14,6 +14,7 @@ import com.tc.config.schema.ActiveServerGroupConfigObject;
 import com.tc.config.schema.ActiveServerGroupsConfigObject;
 import com.tc.config.schema.BaseNewConfigObject;
 import com.tc.config.schema.NewHaConfigObject;
+import com.tc.config.schema.UpdateCheckConfigObject;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
@@ -22,14 +23,12 @@ import com.tc.util.Assert;
 import com.terracottatech.config.BindPort;
 import com.terracottatech.config.DsoServerData;
 import com.terracottatech.config.GarbageCollection;
-import com.terracottatech.config.Ha;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.Offheap;
 import com.terracottatech.config.Persistence;
 import com.terracottatech.config.PersistenceMode;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
-import com.terracottatech.config.UpdateCheck;
 import com.terracottatech.config.PersistenceMode.Enum;
 import com.terracottatech.config.TcConfigDocument.TcConfig;
 
@@ -139,8 +138,9 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       initializeDso(server, defaultValueProvider);
     }
 
+    NewHaConfigObject.initializeHa(servers, defaultValueProvider);
     initializeMirrorGroups(servers, defaultValueProvider);
-    initializeUpdateCheck(servers, defaultValueProvider);
+    UpdateCheckConfigObject.initializeUpdateCheck(servers, defaultValueProvider);
   }
 
   private static void initializeServerBind(Server server, DefaultValueProvider defaultValueProvider) {
@@ -392,60 +392,23 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
 
   private static void initializeMirrorGroups(Servers servers, DefaultValueProvider defaultValueProvider)
       throws ConfigurationSetupException {
+    Assert.assertTrue(servers.isSetHa());
     if (!servers.isSetMirrorGroups()) {
       ActiveServerGroupsConfigObject.createDefaultServerMirrorGroups(servers, defaultValueProvider);
     } else {
       MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
-      Ha ha, defaultHa;
-      try {
-        defaultHa = NewHaConfigObject.getDefaultCommonHa(servers, defaultValueProvider);
-      } catch (XmlException e) {
-        throw new ConfigurationSetupException(e);
-      }
-
-      if (servers.isSetHa()) {
-        NewHaConfigObject.checkAndInitializeHa(servers.getHa(), defaultHa);
-        ha = servers.getHa();
-      } else {
-        ha = defaultHa;
-      }
       if (mirrorGroups.length == 0) {
-        ActiveServerGroupConfigObject.createDefaultMirrorGroup(servers, ha);
+        ActiveServerGroupConfigObject.createDefaultMirrorGroup(servers, servers.getHa());
       }
 
       for (MirrorGroup mirrorGroup : mirrorGroups) {
         if (!mirrorGroup.isSetHa()) {
-          mirrorGroup.setHa(ha);
+          mirrorGroup.setHa(servers.getHa());
         } else {
-          NewHaConfigObject.checkAndInitializeHa(mirrorGroup.getHa(), defaultHa);
+          NewHaConfigObject.checkAndInitializeHa(mirrorGroup.getHa(), servers.getHa());
         }
       }
     }
-  }
-
-  private static void initializeUpdateCheck(Servers servers, DefaultValueProvider defaultValueProvider)
-      throws ConfigurationSetupException {
-    if (!servers.isSetUpdateCheck()) {
-      try {
-        servers.setUpdateCheck(getDefaultUpdateCheck(servers, defaultValueProvider));
-      } catch (XmlException e) {
-        throw new ConfigurationSetupException(e);
-      }
-    }
-  }
-
-  private static UpdateCheck getDefaultUpdateCheck(Servers servers, DefaultValueProvider defaultValueProvider)
-      throws XmlException {
-    final int defaultPeriodDays = ((XmlInteger) defaultValueProvider.defaultFor(servers.schemaType(),
-                                                                                "update-check/period-days"))
-        .getBigIntegerValue().intValue();
-    final boolean defaultEnabled = ((XmlBoolean) defaultValueProvider.defaultFor(servers.schemaType(),
-                                                                                 "update-check/enabled"))
-        .getBooleanValue();
-    UpdateCheck uc = UpdateCheck.Factory.newInstance();
-    uc.setEnabled(defaultEnabled);
-    uc.setPeriodDays(defaultPeriodDays);
-    return uc;
   }
 
 }

@@ -11,6 +11,7 @@ import org.apache.xmlbeans.XmlString;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.util.Assert;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.HaMode;
 import com.terracottatech.config.NetworkedActivePassive;
@@ -36,6 +37,7 @@ public class NewHaConfigObject extends BaseNewConfigObject implements NewHaConfi
   public static Ha getDefaultCommonHa(Servers servers, DefaultValueProvider defaultValueProvider) throws XmlException {
     final int defaultElectionTime = ((XmlInteger) defaultValueProvider
         .defaultFor(servers.schemaType(), "ha/networked-active-passive/election-time")).getBigIntegerValue().intValue();
+    Assert.assertTrue(defaultElectionTime > 0);
     final String defaultHaModeString = ((XmlString) defaultValueProvider.defaultFor(servers.schemaType(), "ha/mode"))
         .getStringValue();
     final HaMode.Enum defaultHaMode;
@@ -53,13 +55,24 @@ public class NewHaConfigObject extends BaseNewConfigObject implements NewHaConfi
     return ha;
   }
 
+  public static void initializeHa(Servers servers, DefaultValueProvider defaultValueProvider)
+      throws ConfigurationSetupException, XmlException {
+    Ha defaultHa = NewHaConfigObject.getDefaultCommonHa(servers, defaultValueProvider);
+    if (servers.isSetHa()) {
+      checkAndInitializeHa(servers.getHa(), defaultHa);
+    } else {
+      servers.setHa(defaultHa);
+    }
+  }
+
   public static void checkAndInitializeHa(Ha definedHa, Ha defaultHa) throws ConfigurationSetupException {
     if (!definedHa.isSetMode()) {
       definedHa.setMode(defaultHa.getMode());
     }
 
-    if (definedHa.getMode().equals(HaMode.DISK_BASED_ACTIVE_PASSIVE)) {
-      throw new ConfigurationSetupException(HaMode.NETWORKED_ACTIVE_PASSIVE + " can not be if ha mode is set to "
+    if (definedHa.getMode().equals(HaMode.DISK_BASED_ACTIVE_PASSIVE) && definedHa.isSetNetworkedActivePassive()) {
+      throw new ConfigurationSetupException(HaMode.NETWORKED_ACTIVE_PASSIVE
+                                            + " can not be provided if ha mode is set to "
                                             + HaMode.DISK_BASED_ACTIVE_PASSIVE);
     } else if (!definedHa.isSetNetworkedActivePassive()) {
       definedHa.addNewNetworkedActivePassive().setElectionTime(defaultHa.getNetworkedActivePassive().getElectionTime());

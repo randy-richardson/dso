@@ -10,8 +10,6 @@ import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.config.schema.setup.sources.ConfigurationSource;
 import com.tc.logging.TCLogging;
 
-import java.io.File;
-
 /**
  * A {@link ConfigurationCreator} that creates config appropriate for tests only.
  */
@@ -51,11 +49,6 @@ public class TestConfigurationCreator extends StandardXMLFileConfigurationCreato
   @Override
   public boolean loadedFromTrustedSource() {
     return this.trustedSource;
-  }
-
-  @Override
-  public File directoryConfigurationLoadedFrom() {
-    return null;
   }
 
   @Override

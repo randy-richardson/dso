@@ -23,6 +23,7 @@ import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory.Co
 import com.tc.object.config.schema.NewDSOApplicationConfig;
 import com.tc.object.config.schema.NewL1DSOConfig;
 import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.object.config.schema.NewL2DSOConfigObject;
 import com.tc.test.GroupData;
 import com.tc.util.Assert;
 import com.terracottatech.config.Application;
@@ -35,6 +36,7 @@ import com.terracottatech.config.Property;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.TcProperties;
+import com.terracottatech.config.TcConfigDocument.TcConfig;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -209,8 +211,7 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
     sampleL1Manager = this.createL1TVSConfigurationSetupManager(this.configurationCreator);// new
     try {
-      this.sampleL1Manager.serversBeanRepository().setBean(this.sampleL2Manager.serversBeanRepository().bean(),
-                                                           "from L2");
+      setServersBeanForL1s((Servers) this.sampleL2Manager.serversBeanRepository().bean(), "from L2");
       if (this.sampleL1Manager.tcPropertiesRepository().bean() == null) {
         this.sampleL1Manager.tcPropertiesRepository()
             .setBean(TcProperties.Factory.newInstance(), "from test framework");
@@ -336,8 +337,10 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
   }
 
   // This function will add servers and groups to L1 config
-  public void addServersAndGroupsToL1Config(GroupData[] grpData) {
+  public void addServersAndGroupsToL1Config(GroupData[] grpData) throws ConfigurationSetupException, XmlException {
     assertIfCalledBefore();
+    cleanServersForL1s();
+    Servers servers = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
 
     // One by one add all the servers of a group and then add the group
     for (int i = 0; i < grpData.length; i++) {
@@ -348,7 +351,28 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
       addServerGroupToL1Config(i, grpData[i].getGroupName(), grpData[i].getServerNames());
     }
 
+    TcConfig config = TcConfig.Factory.newInstance();
+    config.setServers(servers);
+    NewL2DSOConfigObject.initializeServers(config, this.defaultValueProvider, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
+
+    setServersBeanForL1s(config.getServers(), "From test froamework");
     isConfigDone = true;
+  }
+
+  private void cleanServersForL1s() {
+    Servers servers = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
+    for (int i = 0; i < servers.getServerArray().length; i++) {
+      servers.removeServer(i);
+    }
+
+    for (int i = 0; i < servers.getMirrorGroups().getMirrorGroupArray().length; i++) {
+      servers.getMirrorGroups().removeMirrorGroup(i);
+    }
+  }
+
+  private void setServersBeanForL1s(Servers servers, String descp) throws XmlException {
+    this.sampleL1Manager.serversBeanRepository().setBean(servers, descp);
   }
 
   // This function will add all the servers in a group in L1 config. Ideally should be used when only 1 group contains
@@ -365,13 +389,22 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
 
   // This is needed for add-new-stripe test.
   // Allowing a new stripe be added to existing L1 config. Refer DEV-3989.
-  public void appendNewServersAndGroupToL1Config(int gn, String groupName, String[] name, int[] dsoPorts, int[] jmxPorts) {
+  public void appendNewServersAndGroupToL1Config(int gn, String groupName, String[] name, int[] dsoPorts, int[] jmxPorts)
+      throws ConfigurationSetupException, XmlException {
+
+    cleanServersForL1s();
 
     for (int i = 0; i < name.length; i++) {
       addServerToL1Config(name[i], dsoPorts[i], jmxPorts[i], false);
     }
 
     addServerGroupToL1Config(gn, groupName, name);
+
+    TcConfig config = TcConfig.Factory.newInstance();
+    Servers servers = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
+    config.setServers(servers);
+    NewL2DSOConfigObject.initializeServers(config, this.defaultValueProvider, this.configurationCreator
+        .directoryConfigurationLoadedFrom());
   }
 
   private void assertIfCalledBefore() throws AssertionError {
@@ -405,8 +438,11 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     Assert.assertTrue(dsoPort >= 0);
     Servers l2s = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
     cleanBeanSetServersIfNeeded(l2s);
-
-    l2s.setServerArray(((Servers) this.sampleL2Manager.serversBeanRepository().bean()).getServerArray());
+    Server server = l2s.addNewServer();
+    server.setName(name);
+    server.setHost("%i");
+    server.addNewDsoPort().setIntValue(dsoPort);
+    server.addNewJmxPort().setIntValue(jmxPort);
 
     if (cleanGroupsBeanSet) cleanBeanSetServerGroupsIfNeeded(l2s);
   }
@@ -433,7 +469,12 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     Servers l2s = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
     cleanBeanSetServerGroupsIfNeeded(l2s);
 
-    MirrorGroups groups = l2s.getMirrorGroups();
+    MirrorGroups groups;
+    if (!l2s.isSetMirrorGroups()) {
+      groups = l2s.addNewMirrorGroups();
+    } else {
+      groups = l2s.getMirrorGroups();
+    }
     if (groups != null) {
       MirrorGroup group = groups.addNewMirrorGroup();
       group.setGroupName(groupName);
@@ -446,6 +487,7 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
         newMembers.addMember(member);
       }
     }
+
   }
 
   public void setOffHeapConfigObject(boolean enabled, String maxDataSize) {
