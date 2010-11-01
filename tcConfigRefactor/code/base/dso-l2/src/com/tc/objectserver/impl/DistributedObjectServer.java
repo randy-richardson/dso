@@ -153,9 +153,9 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.core.impl.ServerManagementContext;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.dgc.api.GarbageCollector;
+import com.tc.objectserver.dgc.impl.DGCEventStatsProvider;
 import com.tc.objectserver.dgc.impl.GCComptrollerImpl;
 import com.tc.objectserver.dgc.impl.GCStatisticsAgentSubSystemEventListener;
-import com.tc.objectserver.dgc.impl.DGCEventStatsProvider;
 import com.tc.objectserver.dgc.impl.GarbageCollectionInfoPublisherImpl;
 import com.tc.objectserver.dgc.impl.GarbageCollectorThread;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
@@ -332,7 +332,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   private final DSOServerBuilder                 serverBuilder;
   protected final L2TVSConfigurationSetupManager configSetupManager;
   private final Sink                             httpSink;
-  protected final HaConfig                       haConfig;
+  protected final HaConfigImpl                   haConfig;
 
   private static final TCLogger                  logger           = CustomerLogging.getDSOGenericLogger();
   private static final TCLogger                  consoleLogger    = CustomerLogging.getConsoleLogger();
@@ -1059,7 +1059,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                                                                                  persistent,
                                                                                                  consoleLogger);
 
-    final boolean networkedHA = this.haConfig.isNetworkedActivePassive();
+    final boolean networkedHA = this.haConfig.isNetworkedActivePassive()
+                                && this.haConfig.getNodesStore().getAllNodes().length > 1;
     this.groupCommManager = this.serverBuilder.createGroupCommManager(networkedHA, this.configSetupManager,
                                                                       stageManager, this.thisServerNodeID,
                                                                       this.httpSink, this.stripeIDStateManager, gtxm);
