@@ -90,6 +90,7 @@ public class PassiveSmoothStartTest extends TransparentTestBase {
     for (int i = 0; i < SERVERS; i++) {
       Server server = servers.addNewServer();
       server.setName(serverNames[i]);
+      server.setHost("localhost");
       server.addNewDsoPort().setIntValue(dsoPorts[i]);
       server.addNewJmxPort().setIntValue(jmxPorts[i]);
     }
@@ -98,6 +99,7 @@ public class PassiveSmoothStartTest extends TransparentTestBase {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+    servers.getMirrorGroups().getMirrorGroupArray(0).setGroupName("passive-smooth-start");
     factory.addServersAndGroupToL1Config(servers);
   }
 
