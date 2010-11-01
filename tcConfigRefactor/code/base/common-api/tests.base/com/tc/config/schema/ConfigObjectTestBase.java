@@ -4,6 +4,7 @@
  */
 package com.tc.config.schema;
 
+import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.beanfactory.TerracottaDomainConfigurationDocumentBeanFactory;
@@ -36,6 +37,7 @@ public abstract class ConfigObjectTestBase extends TCTestCase {
   private MockConfigItemListener  listener1;
   private MockConfigItemListener  listener2;
 
+  @Override
   public void setUp() throws Exception {
     throw Assert.failure("You must specify the repository bean class via a call to super.setUp(Class).");
   }
@@ -79,6 +81,10 @@ public abstract class ConfigObjectTestBase extends TCTestCase {
     TcConfigDocument bean = (TcConfigDocument) new TerracottaDomainConfigurationDocumentBeanFactory()
         .createBean(new ByteArrayInputStream(this.builder.toString().getBytes()), "for test").bean();
     this.repository.setBean(getBeanFromTcConfig(bean.getTcConfig()), "from test config builder");
+  }
+
+  protected final void setBean(XmlObject bean) throws XmlException {
+    this.repository.setBean(bean, "from test");
   }
 
   protected final ConfigContext context() throws Exception {
