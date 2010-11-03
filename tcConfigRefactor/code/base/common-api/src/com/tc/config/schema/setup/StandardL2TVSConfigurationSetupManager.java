@@ -161,9 +161,17 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     configurationCreator().reloadServersConfiguration(serversBeanRepository(), true, true);
     this.l2ConfigData.clear();
 
+    ChildBeanRepository mirrorGroupsRepository = new ChildBeanRepository(serversBeanRepository(), MirrorGroups.class,
+                                                                         new ChildBeanFetcher() {
+                                                                           public XmlObject getChild(XmlObject parent) {
+                                                                             return ((Servers) serversBeanRepository()
+                                                                                 .bean()).getMirrorGroups();
+                                                                           }
+                                                                         });
+
     this.activeServerGroupsConfig = new ActiveServerGroupsConfigObject(
                                                                        createContext(
-                                                                                     serversBeanRepository(),
+                                                                                     mirrorGroupsRepository,
                                                                                      configurationCreator()
                                                                                          .directoryConfigurationLoadedFrom()),
                                                                        this);

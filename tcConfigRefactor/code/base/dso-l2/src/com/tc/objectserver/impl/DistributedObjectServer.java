@@ -1059,8 +1059,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                                                                                  persistent,
                                                                                                  consoleLogger);
 
-    final boolean networkedHA = this.haConfig.isNetworkedActivePassive()
-                                && this.haConfig.getNodesStore().getAllNodes().length > 1;
+    final boolean networkedHA = this.haConfig.isNetworkedActivePassive();
     this.groupCommManager = this.serverBuilder.createGroupCommManager(networkedHA, this.configSetupManager,
                                                                       stageManager, this.thisServerNodeID,
                                                                       this.httpSink, this.stripeIDStateManager, gtxm);

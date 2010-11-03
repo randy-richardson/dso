@@ -378,10 +378,6 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     updateTcConfig(configDocument, description, false);
   }
 
-  private void updateTcConfigServerElements(TcConfigDocument configDocument, String description) {
-    updateTcConfig(configDocument, description, true);
-  }
-
   private void updateTcConfig(TcConfigDocument configDocument, String description, boolean serverElementsOnly) {
     if (!serverElementsOnly) {
       this.tcConfigDocument = configDocument;
@@ -425,7 +421,6 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
     try {
       TcConfigDocument configDocument = getConfigFromSourceStream(in, trustedSource, descrip);
       Assert.assertNotNull(configDocument);
-      updateTcConfigServerElements(configDocument, descrip);
       setServerBean(serversBeanRepository, configDocument.getTcConfig(), descrip);
     } catch (XmlException xmle) {
       throw new ConfigurationSetupException("The configuration data in the " + descrip + " does not obey the "
