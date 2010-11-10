@@ -41,8 +41,8 @@ abstract public class AbstractAgentSRACorrectnessTestCase extends BaseDSOTestCas
     }
   }
 
-  protected TCServer startupServer(final int dsoPort, final int jmxPort) {
-    StartAction start_action = new StartAction(dsoPort, jmxPort);
+  protected TCServer startupServer(final int dsoPort, final int jmxPort, int l2GroupPort) {
+    StartAction start_action = new StartAction(dsoPort, jmxPort, l2GroupPort);
     new StartupHelper(group, start_action).startUp();
     final TCServer server = start_action.getServer();
     return server;
@@ -71,11 +71,13 @@ abstract public class AbstractAgentSRACorrectnessTestCase extends BaseDSOTestCas
   protected class StartAction implements StartupHelper.StartupAction {
     private final int dsoPort;
     private final int jmxPort;
+    private final int l2groupPort;
     private TCServer  server = null;
 
-    private StartAction(final int dsoPort, final int jmxPort) {
+    private StartAction(final int dsoPort, final int jmxPort, int l2groupPort) {
       this.dsoPort = dsoPort;
       this.jmxPort = jmxPort;
+      this.l2groupPort = l2groupPort;
     }
 
     public int getDsoPort() {
@@ -84,6 +86,10 @@ abstract public class AbstractAgentSRACorrectnessTestCase extends BaseDSOTestCas
 
     public int getJmxPort() {
       return jmxPort;
+    }
+
+    public int getL2groupPort() {
+      return l2groupPort;
     }
 
     public TCServer getServer() {
@@ -100,6 +106,9 @@ abstract public class AbstractAgentSRACorrectnessTestCase extends BaseDSOTestCas
 
       manager.commonl2Config().jmxPort().setIntValue(jmxPort);
       manager.commonl2Config().jmxPort().setBind("127.0.0.1");
+
+      manager.dsoL2Config().l2GroupPort().setIntValue(l2groupPort);
+      manager.dsoL2Config().l2GroupPort().setBind("127.0.0.1");
 
       server = new TCServerImpl(manager);
       server.start();
