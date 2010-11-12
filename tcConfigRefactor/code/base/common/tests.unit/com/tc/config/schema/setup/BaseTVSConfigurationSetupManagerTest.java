@@ -660,9 +660,6 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
                     + "</mirror-groups>" 
                     + "<ha>"
                     +     "<mode>disk-based-active-passive</mode>" 
-                    +     "<networked-active-passive>"
-                    +         "<election-time>25</election-time>" 
-                    +     "</networked-active-passive>" 
                     + "</ha>" 
                     + "</servers>"
                     + "</tc:tc-config>";
@@ -690,7 +687,6 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertTrue(mirrorGroup.isSetHa());
     Ha ha = mirrorGroup.getHa();
     Assert.assertEquals(HaMode.DISK_BASED_ACTIVE_PASSIVE, ha.getMode());
-    Assert.assertEquals(25, ha.getNetworkedActivePassive().getElectionTime());
 
     mirrorGroup = mirrorGroups.getMirrorGroupArray(1);
     Assert.assertEquals(2, mirrorGroup.getMembers().sizeOfMemberArray());

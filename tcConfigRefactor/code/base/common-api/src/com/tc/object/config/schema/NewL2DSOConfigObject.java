@@ -10,7 +10,6 @@ import org.apache.xmlbeans.XmlInteger;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlString;
 
-import com.tc.config.schema.ActiveServerGroupConfigObject;
 import com.tc.config.schema.ActiveServerGroupsConfigObject;
 import com.tc.config.schema.BaseNewConfigObject;
 import com.tc.config.schema.NewHaConfigObject;
@@ -24,7 +23,6 @@ import com.tc.util.Assert;
 import com.terracottatech.config.BindPort;
 import com.terracottatech.config.DsoServerData;
 import com.terracottatech.config.GarbageCollection;
-import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.Offheap;
 import com.terracottatech.config.Persistence;
 import com.terracottatech.config.PersistenceMode;
@@ -143,7 +141,7 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
     }
 
     NewHaConfigObject.initializeHa(servers, defaultValueProvider);
-    initializeMirrorGroups(servers, defaultValueProvider);
+    ActiveServerGroupsConfigObject.initializeMirrorGroups(servers, defaultValueProvider);
     UpdateCheckConfigObject.initializeUpdateCheck(servers, defaultValueProvider);
   }
 
@@ -265,78 +263,92 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
 
   private static void initializeDso(Server server, DefaultValueProvider defaultValueProvider) throws XmlException {
     if (!server.isSetDso()) {
-      DsoServerData dso = server.addNewDso();
-      initializeDefaultPersistence(server, defaultValueProvider);
+      server.addNewDso();
+    }
+
+    initializeClientReconnectWindow(server, defaultValueProvider);
+    initializePersisitence(server, defaultValueProvider);
+    initializeGarbageCollection(server, defaultValueProvider);
+  }
+
+  private static void initializeClientReconnectWindow(Server server, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    DsoServerData dso = server.getDso();
+    Assert.assertNotNull(dso);
+
+    if (!dso.isSetClientReconnectWindow()) {
       dso.setClientReconnectWindow(getDefaultReconnectWindow(server, defaultValueProvider));
-      initializeDefaultGarbageCollection(server, defaultValueProvider);
-    } else {
-      DsoServerData dso = server.getDso();
-
-      if (!dso.isSetPersistence()) {
-        dso.addNewPersistence().setMode(getDefaultPersistence(server, defaultValueProvider));
-        initializeDefaultOffHeap(server, defaultValueProvider);
-      } else {
-        Persistence persistence = dso.getPersistence();
-        if (!persistence.isSetMode()) {
-          persistence.setMode(getDefaultPersistence(server, defaultValueProvider));
-        }
-
-        if (!persistence.isSetOffheap()) {
-          initializeDefaultOffHeap(server, defaultValueProvider);
-        } else {
-          Offheap offHeap = persistence.getOffheap();
-          if (!offHeap.isSetEnabled()) {
-            offHeap.setEnabled(getDefaultOffHeapEnabled(server, defaultValueProvider));
-          }
-
-          if (!offHeap.isSetMaxDataSize()) {
-            offHeap.setMaxDataSize(getDefaultOffHeapMaxDataSize(server, defaultValueProvider));
-          }
-        }
-      }
-
-      if (!dso.isSetClientReconnectWindow()) {
-        dso.setClientReconnectWindow(getDefaultReconnectWindow(server, defaultValueProvider));
-      }
-
-      if (!dso.isSetGarbageCollection()) {
-        initializeDefaultGarbageCollection(server, defaultValueProvider);
-      } else {
-        GarbageCollection gc = dso.getGarbageCollection();
-        if (!gc.isSetEnabled()) {
-          gc.setEnabled(getDefaultGarbageCollectionEnabled(server, defaultValueProvider));
-        }
-
-        if (!gc.isSetVerbose()) {
-          gc.setVerbose(getDefaultGarbageCollectionVerbose(server, defaultValueProvider));
-        }
-
-        if (!gc.isSetInterval()) {
-          gc.setInterval(getDefaultGarbageCollectionInterval(server, defaultValueProvider));
-        }
-      }
     }
   }
 
-  private static void initializeDefaultPersistence(Server server, DefaultValueProvider defaultValueProvider)
+  private static void initializePersisitence(Server server, DefaultValueProvider defaultValueProvider)
       throws XmlException {
-    Assert.assertTrue(server.isSetDso());
-    Assert.assertFalse(server.getDso().isSetPersistence());
-    Persistence persistence = server.getDso().addNewPersistence();
+    DsoServerData dso = server.getDso();
+    Assert.assertNotNull(dso);
 
-    persistence.setMode(getDefaultPersistence(server, defaultValueProvider));
-    initializeDefaultOffHeap(server, defaultValueProvider);
+    initializePersistenceMode(server, defaultValueProvider);
+    initializeOffHeap(server, defaultValueProvider);
   }
 
-  private static void initializeDefaultGarbageCollection(Server server, DefaultValueProvider defaultValueProvider)
+  private static void initializePersistenceMode(Server server, DefaultValueProvider defaultValueProvider)
       throws XmlException {
-    Assert.assertTrue(server.isSetDso());
-    Assert.assertFalse(server.getDso().isSetGarbageCollection());
+    DsoServerData dso = server.getDso();
+    Assert.assertNotNull(dso);
 
-    GarbageCollection gc = server.getDso().addNewGarbageCollection();
-    gc.setEnabled(getDefaultGarbageCollectionEnabled(server, defaultValueProvider));
-    gc.setVerbose(getDefaultGarbageCollectionVerbose(server, defaultValueProvider));
-    gc.setInterval(getDefaultGarbageCollectionInterval(server, defaultValueProvider));
+    if (!dso.isSetPersistence()) {
+      dso.addNewPersistence();
+    }
+
+    Persistence persistence = dso.getPersistence();
+    Assert.assertNotNull(persistence);
+
+    if (!persistence.isSetMode()) {
+      persistence.setMode(getDefaultPersistence(server, defaultValueProvider));
+    }
+  }
+
+  private static void initializeOffHeap(Server server, DefaultValueProvider defaultValueProvider) throws XmlException {
+    Persistence persistence = server.getDso().getPersistence();
+    Assert.assertNotNull(persistence);
+
+    if (!persistence.isSetOffheap()) {
+      persistence.addNewOffheap();
+    }
+
+    Offheap offHeap = persistence.getOffheap();
+    Assert.assertNotNull(offHeap);
+
+    if (!offHeap.isSetEnabled()) {
+      offHeap.setEnabled(getDefaultOffHeapEnabled(server, defaultValueProvider));
+    }
+
+    if (!offHeap.isSetMaxDataSize()) {
+      offHeap.setMaxDataSize(getDefaultOffHeapMaxDataSize(server, defaultValueProvider));
+    }
+  }
+
+  private static void initializeGarbageCollection(Server server, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    DsoServerData dso = server.getDso();
+    Assert.assertNotNull(dso);
+
+    if (!dso.isSetGarbageCollection()) {
+      dso.addNewGarbageCollection();
+    }
+
+    GarbageCollection gc = dso.getGarbageCollection();
+    Assert.assertNotNull(gc);
+    if (!gc.isSetEnabled()) {
+      gc.setEnabled(getDefaultGarbageCollectionEnabled(server, defaultValueProvider));
+    }
+
+    if (!gc.isSetVerbose()) {
+      gc.setVerbose(getDefaultGarbageCollectionVerbose(server, defaultValueProvider));
+    }
+
+    if (!gc.isSetInterval()) {
+      gc.setInterval(getDefaultGarbageCollectionInterval(server, defaultValueProvider));
+    }
   }
 
   private static Enum getDefaultPersistence(Server server, DefaultValueProvider defaultValueProvider)
@@ -347,15 +359,6 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
                       || xmlObject.getStringValue().equals(PersistenceMode.TEMPORARY_SWAP_ONLY.toString()));
     if (xmlObject.getStringValue().equals(PersistenceMode.PERMANENT_STORE.toString())) return PersistenceMode.PERMANENT_STORE;
     return PersistenceMode.TEMPORARY_SWAP_ONLY;
-  }
-
-  private static void initializeDefaultOffHeap(Server server, DefaultValueProvider defaultValueProvider)
-      throws XmlException {
-    Assert.assertTrue(server.isSetDso());
-    Assert.assertTrue(server.getDso().isSetPersistence());
-    Offheap offHeap = server.getDso().getPersistence().addNewOffheap();
-    offHeap.setEnabled(getDefaultOffHeapEnabled(server, defaultValueProvider));
-    offHeap.setMaxDataSize(getDefaultOffHeapMaxDataSize(server, defaultValueProvider));
   }
 
   private static boolean getDefaultOffHeapEnabled(Server server, DefaultValueProvider defaultValueProvider)
@@ -392,27 +395,6 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       throws XmlException {
     return ((XmlInteger) defaultValueProvider.defaultFor(server.schemaType(), "dso/garbage-collection/interval"))
         .getBigIntegerValue().intValue();
-  }
-
-  private static void initializeMirrorGroups(Servers servers, DefaultValueProvider defaultValueProvider)
-      throws ConfigurationSetupException {
-    Assert.assertTrue(servers.isSetHa());
-    if (!servers.isSetMirrorGroups()) {
-      ActiveServerGroupsConfigObject.createDefaultServerMirrorGroups(servers, defaultValueProvider);
-    } else {
-      MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
-      if (mirrorGroups.length == 0) {
-        ActiveServerGroupConfigObject.createDefaultMirrorGroup(servers, servers.getHa());
-      }
-
-      for (MirrorGroup mirrorGroup : mirrorGroups) {
-        if (!mirrorGroup.isSetHa()) {
-          mirrorGroup.setHa(servers.getHa());
-        } else {
-          NewHaConfigObject.checkAndInitializeHa(mirrorGroup.getHa(), servers.getHa());
-        }
-      }
-    }
   }
 
 }

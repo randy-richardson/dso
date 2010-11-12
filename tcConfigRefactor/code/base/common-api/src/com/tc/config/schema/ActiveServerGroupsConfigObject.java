@@ -4,7 +4,6 @@
  */
 package com.tc.config.schema;
 
-import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.context.ConfigContext;
@@ -14,6 +13,7 @@ import com.tc.config.schema.repository.ChildBeanRepository;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.StandardL2TVSConfigurationSetupManager;
 import com.tc.util.ActiveCoordinatorHelper;
+import com.tc.util.Assert;
 import com.terracottatech.config.Ha;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
@@ -75,13 +75,30 @@ public class ActiveServerGroupsConfigObject extends BaseNewConfigObject implemen
 
   public static void createDefaultServerMirrorGroups(Servers servers, DefaultValueProvider defaultValueProvider)
       throws ConfigurationSetupException {
-    Ha ha;
-    try {
-      ha = servers.isSetHa() ? servers.getHa() : NewHaConfigObject.getDefaultCommonHa(servers, defaultValueProvider);
-    } catch (XmlException e) {
-      throw new ConfigurationSetupException(e);
-    }
+    Ha ha = servers.getHa();
+    Assert.assertNotNull(ha);
     servers.addNewMirrorGroups();
     ActiveServerGroupConfigObject.createDefaultMirrorGroup(servers, ha);
+  }
+
+  public static void initializeMirrorGroups(Servers servers, DefaultValueProvider defaultValueProvider)
+      throws ConfigurationSetupException {
+    Assert.assertTrue(servers.isSetHa());
+    if (!servers.isSetMirrorGroups()) {
+      createDefaultServerMirrorGroups(servers, defaultValueProvider);
+    } else {
+      MirrorGroup[] mirrorGroups = servers.getMirrorGroups().getMirrorGroupArray();
+      if (mirrorGroups.length == 0) {
+        ActiveServerGroupConfigObject.createDefaultMirrorGroup(servers, servers.getHa());
+      }
+
+      for (MirrorGroup mirrorGroup : mirrorGroups) {
+        if (!mirrorGroup.isSetHa()) {
+          mirrorGroup.setHa(servers.getHa());
+        } else {
+          NewHaConfigObject.checkAndInitializeHa(mirrorGroup.getHa(), servers.getHa());
+        }
+      }
+    }
   }
 }

@@ -13,6 +13,7 @@ import com.tc.config.schema.BaseNewConfigObject;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
+import com.tc.util.Assert;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoClientData;
 import com.terracottatech.config.DsoClientDebugging;
@@ -97,70 +98,52 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
   private static void initiailizeDsoClient(Client client, DefaultValueProvider defaultValueProvider)
       throws XmlException {
     if (!client.isSetDso()) {
-      DsoClientData dsoClientData = client.addNewDso();
-      dsoClientData.setFaultCount(getDefaultFaultCount(client, defaultValueProvider));
-
-      DsoClientDebugging debugging = dsoClientData.addNewDebugging();
-      addDefaultInstrumentationLogging(client, debugging, defaultValueProvider);
-      addDefaultRuntimeLogging(client, debugging, defaultValueProvider);
-      addDefaultRuntimeOutputOptions(client, debugging, defaultValueProvider);
-    } else {
-      DsoClientData dsoClientData = client.getDso();
-      if (!dsoClientData.isSetFaultCount()) {
-        dsoClientData.setFaultCount(getDefaultFaultCount(client, defaultValueProvider));
-      }
-
-      if (!dsoClientData.isSetDebugging()) {
-        DsoClientDebugging debugging = dsoClientData.addNewDebugging();
-        addDefaultInstrumentationLogging(client, debugging, defaultValueProvider);
-        addDefaultRuntimeLogging(client, debugging, defaultValueProvider);
-        addDefaultRuntimeOutputOptions(client, debugging, defaultValueProvider);
-      } else {
-        DsoClientDebugging debugging = dsoClientData.getDebugging();
-        if (!debugging.isSetInstrumentationLogging()) {
-          addDefaultInstrumentationLogging(client, debugging, defaultValueProvider);
-        } else {
-          checkAndSetInstrumentationLogging(client, debugging.getInstrumentationLogging(), defaultValueProvider);
-        }
-
-        if (!debugging.isSetRuntimeLogging()) {
-          addDefaultRuntimeLogging(client, debugging, defaultValueProvider);
-        } else {
-          checkAndSetRuntimeLogging(client, debugging.getRuntimeLogging(), defaultValueProvider);
-        }
-
-        if (!debugging.isSetRuntimeOutputOptions()) {
-          addDefaultRuntimeOutputOptions(client, debugging, defaultValueProvider);
-        } else {
-          checkAndSetRuntimeOutputOptions(client, debugging.getRuntimeOutputOptions(), defaultValueProvider);
-        }
-      }
+      client.addNewDso();
     }
+
+    initializeFaultCount(client, defaultValueProvider);
+    initializeDebugging(client, defaultValueProvider);
   }
 
-  private static int getDefaultFaultCount(Client client, DefaultValueProvider defaultValueProvider) throws XmlException {
-    return ((XmlInteger) defaultValueProvider.defaultFor(client.schemaType(), "dso/fault-count")).getBigIntegerValue()
-        .intValue();
-  }
+  private static void initializeFaultCount(Client client, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    DsoClientData dso = client.getDso();
+    Assert.assertNotNull(dso);
 
-  private static void addDefaultInstrumentationLogging(Client client, DsoClientDebugging debugging,
-                                                       DefaultValueProvider defaultValueProvider) throws XmlException {
-    checkAndSetInstrumentationLogging(client, debugging.addNewInstrumentationLogging(), defaultValueProvider);
-  }
-
-  private static void addDefaultRuntimeLogging(Client client, DsoClientDebugging debugging,
-                                               DefaultValueProvider defaultValueProvider) throws XmlException {
-    checkAndSetRuntimeLogging(client, debugging.addNewRuntimeLogging(), defaultValueProvider);
-  }
-
-  private static void addDefaultRuntimeOutputOptions(Client client, DsoClientDebugging debugging,
-                                                     DefaultValueProvider defaultValueProvider) throws XmlException {
-    checkAndSetRuntimeOutputOptions(client, debugging.addNewRuntimeOutputOptions(), defaultValueProvider);
+    if (!dso.isSetFaultCount()) {
+      dso.setFaultCount(getDefaultFaultCount(client, defaultValueProvider));
+    }
 
   }
 
-  private static void checkAndSetInstrumentationLogging(Client client, InstrumentationLogging instrumentationLogging,
-                                                        DefaultValueProvider defaultValueProvider) throws XmlException {
+  private static void initializeDebugging(Client client, DefaultValueProvider defaultValueProvider) throws XmlException {
+    DsoClientData dso = client.getDso();
+    Assert.assertNotNull(dso);
+
+    if (!dso.isSetDebugging()) {
+      dso.addNewDebugging();
+    }
+
+    DsoClientDebugging debugging = dso.getDebugging();
+    Assert.assertNotNull(debugging);
+
+    initializeInstrumentationLogging(client, defaultValueProvider);
+    initializeRunTimeLogging(client, defaultValueProvider);
+    initailizeRunTimeOutputOptions(client, defaultValueProvider);
+  }
+
+  private static void initializeInstrumentationLogging(Client client, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    DsoClientDebugging debugging = client.getDso().getDebugging();
+    Assert.assertNotNull(debugging);
+
+    if (!debugging.isSetInstrumentationLogging()) {
+      debugging.addNewInstrumentationLogging();
+    }
+
+    InstrumentationLogging instrumentationLogging = debugging.getInstrumentationLogging();
+    Assert.assertNotNull(instrumentationLogging);
+
     if (!instrumentationLogging.isSetClass1()) {
       instrumentationLogging.setClass1(getDefaultClassInstrumentationLogging(client, defaultValueProvider));
     }
@@ -186,11 +169,20 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
       instrumentationLogging
           .setDistributedMethods(getDefaultDistributedMethodInstrumentationLogging(client, defaultValueProvider));
     }
-
   }
 
-  private static void checkAndSetRuntimeLogging(Client client, RuntimeLogging runtimeLogging,
-                                                DefaultValueProvider defaultValueProvider) throws XmlException {
+  private static void initializeRunTimeLogging(Client client, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    DsoClientDebugging debugging = client.getDso().getDebugging();
+    Assert.assertNotNull(debugging);
+
+    if (!debugging.isSetRuntimeLogging()) {
+      debugging.addNewRuntimeLogging();
+    }
+
+    RuntimeLogging runtimeLogging = debugging.getRuntimeLogging();
+    Assert.assertNotNull(runtimeLogging);
+
     if (!runtimeLogging.isSetNonPortableDump()) {
       runtimeLogging.setNonPortableDump(getDefaultNonPortableDumpRuntimeLogging(client, defaultValueProvider));
     }
@@ -221,8 +213,18 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
     }
   }
 
-  private static void checkAndSetRuntimeOutputOptions(Client client, RuntimeOutputOptions runtimeOutputOptions,
-                                                      DefaultValueProvider defaultValueProvider) throws XmlException {
+  private static void initailizeRunTimeOutputOptions(Client client, DefaultValueProvider defaultValueProvider)
+      throws XmlException {
+    DsoClientDebugging debugging = client.getDso().getDebugging();
+    Assert.assertNotNull(debugging);
+
+    if (!debugging.isSetRuntimeOutputOptions()) {
+      debugging.addNewRuntimeOutputOptions();
+    }
+
+    RuntimeOutputOptions runtimeOutputOptions = debugging.getRuntimeOutputOptions();
+    Assert.assertNotNull(runtimeOutputOptions);
+
     if (!runtimeOutputOptions.isSetAutoLockDetails()) {
       runtimeOutputOptions
           .setAutoLockDetails(getDefaultAutoLockDetailsRuntimeOutputOption(client, defaultValueProvider));
@@ -235,6 +237,12 @@ public class NewL1DSOConfigObject extends BaseNewConfigObject implements NewL1DS
     if (!runtimeOutputOptions.isSetFullStack()) {
       runtimeOutputOptions.setFullStack(getDefaultFullStackRuntimeOutputOption(client, defaultValueProvider));
     }
+
+  }
+
+  private static int getDefaultFaultCount(Client client, DefaultValueProvider defaultValueProvider) throws XmlException {
+    return ((XmlInteger) defaultValueProvider.defaultFor(client.schemaType(), "dso/fault-count")).getBigIntegerValue()
+        .intValue();
   }
 
   private static boolean getDefaultClassInstrumentationLogging(Client client, DefaultValueProvider defaultValueProvider)
