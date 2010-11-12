@@ -34,6 +34,7 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
   private final String   accessFile;
   private final boolean  httpAuthentication;
   private final String   userRealmFile;
+  private final File     indexPath;
 
   public NewCommonL2ConfigObject(ConfigContext context) {
     super(context);
@@ -43,6 +44,7 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
 
     this.dataPath = new File(server.getData());
     this.logsPath = new File(server.getLogs());
+    this.indexPath = new File(server.getIndex());
 
     this.serverDbBackupPath = new File(server.getDataBackup());
 
@@ -106,9 +108,13 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
   public File serverDbBackupPath() {
     return this.serverDbBackupPath;
   }
-  
+
   public File statisticsPath() {
     return this.statisticsPath;
+  }
+
+  public File indexPath() {
+    return this.indexPath;
   }
 
   public BindPort jmxPort() {
@@ -143,7 +149,7 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
     return userRealmFile;
   }
 
-  //all setters used STRICTLY in test
+  // all setters used STRICTLY in test
 
   public void setDataPath(String dataPath) {
     Server server = (Server) getBean();

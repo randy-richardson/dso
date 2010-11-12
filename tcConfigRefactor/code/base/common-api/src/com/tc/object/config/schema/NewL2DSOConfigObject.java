@@ -136,6 +136,7 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       initializeDataDirectory(server, defaultValueProvider, directoryLoadedFrom);
       initializeLogsDirectory(server, defaultValueProvider, directoryLoadedFrom);
       initializeDataBackupDirectory(server, defaultValueProvider, directoryLoadedFrom);
+      initializeIndexDiretory(server, defaultValueProvider, directoryLoadedFrom);
       initializeStatisticsDirectory(server, defaultValueProvider, directoryLoadedFrom);
       initializeDso(server, defaultValueProvider);
     }
@@ -225,6 +226,15 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       server.setData(new File(directoryLoadedFrom, substitutedString).getAbsolutePath());
     } else {
       server.setData(ParameterSubstituter.substitute(server.getData()));
+    }
+  }
+
+  private static void initializeIndexDiretory(Server server, DefaultValueProvider defaultValueProvider,
+                                              File directoryLoadedFrom) {
+    if (!server.isSetIndex()) {
+      server.setIndex(new File(server.getData(), "index").getAbsolutePath());
+    } else {
+      server.setIndex(ParameterSubstituter.substitute(server.getIndex()));
     }
   }
 

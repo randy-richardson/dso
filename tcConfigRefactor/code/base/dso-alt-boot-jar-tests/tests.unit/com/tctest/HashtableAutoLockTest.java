@@ -8,6 +8,7 @@ import org.apache.xmlbeans.XmlObject;
 
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.exception.ImplementMe;
+import com.tc.object.MockRemoteSearchRequestManager;
 import com.tc.object.PortabilityImpl;
 import com.tc.object.TestClientObjectManager;
 import com.tc.object.bytecode.Clearable;
@@ -31,10 +32,11 @@ import java.util.Hashtable;
 import java.util.Map;
 
 public class HashtableAutoLockTest extends TCTestCase {
-  private ClassLoader             origThreadContextClassLoader;
-  private TestClientObjectManager testClientObjectManager;
-  private MockTransactionManager  testTransactionManager;
-  private MockClientLockManager   testClientLockManager;
+  private ClassLoader                    origThreadContextClassLoader;
+  private TestClientObjectManager        testClientObjectManager;
+  private MockTransactionManager         testTransactionManager;
+  private MockClientLockManager          testClientLockManager;
+  private MockRemoteSearchRequestManager testSearchRequestManager;
 
   @Override
   protected void setUp() throws Exception {
@@ -84,8 +86,10 @@ public class HashtableAutoLockTest extends TCTestCase {
     testClientObjectManager = new TestClientObjectManager();
     testTransactionManager = new MockTransactionManager();
     testClientLockManager = new MockClientLockManager();
+    testSearchRequestManager = new MockRemoteSearchRequestManager();
+    
     IsolationClassLoader classLoader = new IsolationClassLoader((DSOClientConfigHelper) proxy, testClientObjectManager,
-                                                                testTransactionManager, testClientLockManager);
+                                                                testTransactionManager, testClientLockManager, testSearchRequestManager);
     classLoader.init();
 
     this.origThreadContextClassLoader = Thread.currentThread().getContextClassLoader();

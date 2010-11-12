@@ -18,19 +18,21 @@ public interface NewCommonL2Config extends NewConfig, NewStatisticsConfig {
   public static final int   MAX_PORTNUMBER                      = 0xFFFF;
 
   File dataPath();
-  
+
   void setDataPath(String dataPath);
 
   File logsPath();
-  
+
   void setLogsPath(String logsPath);
 
   File serverDbBackupPath();
 
   void setServerDbBackupPath(String dbBackupPath);
-  
+
+  File indexPath();
+
   BindPort jmxPort();
-  
+
   String host();
 
   boolean authentication();
