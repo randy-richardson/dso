@@ -926,7 +926,7 @@
     </xs:annotation>
     <xs:all>
       <xs:element name="members" type="members" minOccurs="0" />
-      <xs:element name="ha" type="ha" minOccurs="0" />
+      <xs:element name="ha" type="ha" minOccurs="0" maxOccurs="1"/>
     </xs:all>
     <xs:attribute name="group-name" type="xs:string"/>
   </xs:complexType>

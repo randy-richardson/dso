@@ -447,21 +447,6 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     if (cleanGroupsBeanSet) cleanBeanSetServerGroupsIfNeeded(l2s);
   }
 
-  // should be called after all servers have been added to l1_beanset
-  private void addServerGroupToL1Config(String groupName) {
-    Servers l2s = (Servers) this.sampleL1Manager.serversBeanRepository().bean();
-    Server[] serverArray = l2s.getServerArray();
-    Assert.assertNotNull(serverArray);
-    Assert.assertTrue(serverArray.length > 0);
-    String[] memberNames = new String[serverArray.length];
-
-    for (int i = 0; i < serverArray.length; i++) {
-      memberNames[i] = serverArray[i].getName();
-    }
-
-    addServerGroupToL1Config(0, groupName, memberNames);
-  }
-
   private void addServerGroupToL1Config(int groupId, String groupName, String[] members) {
     Assert.assertNotNull(members);
     Assert.assertTrue(members.length > 0);
