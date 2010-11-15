@@ -230,9 +230,12 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
   }
 
   private static void initializeIndexDiretory(Server server, DefaultValueProvider defaultValueProvider,
-                                              File directoryLoadedFrom) {
+                                              File directoryLoadedFrom) throws XmlException {
     if (!server.isSetIndex()) {
-      server.setIndex(new File(server.getData(), "index").getAbsolutePath());
+      final XmlString defaultValue = (XmlString) defaultValueProvider.defaultFor(server.schemaType(), "index");
+      String substitutedString = ParameterSubstituter.substitute(defaultValue.getStringValue());
+
+      server.setIndex(new File(directoryLoadedFrom, substitutedString).getAbsolutePath());
     } else {
       server.setIndex(ParameterSubstituter.substitute(server.getIndex()));
     }

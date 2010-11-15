@@ -56,8 +56,12 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
 
   public void testServerDefaults1() throws IOException, ConfigurationSetupException {
     this.tcConfig = getTempFile("default-config.xml");
-    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" + "<servers>" + "<server>"
-                    + "</server>" + "</servers>" + "</tc:tc-config>";
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "<servers>" 
+                    +   "<server>"
+                    +   "</server>" 
+                    + "</servers>" 
+                    + "</tc:tc-config>";
 
     writeConfigFile(config);
 
@@ -231,10 +235,13 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
                     + "<servers>" 
                     +   "<server>"
-                    +     "<dso-port bind=\"1.2.3.4\">8513</dso-port>" + "<jmx-port bind=\"4.3.2.1\">9513</jmx-port>"
-                    +     "<l2-group-port bind=\"5.6.7.8\">7513</l2-group-port>" + "</server>"
+                    +     "<dso-port bind=\"1.2.3.4\">8513</dso-port>" 
+                    +     "<jmx-port bind=\"4.3.2.1\">9513</jmx-port>"
+                    +     "<l2-group-port bind=\"5.6.7.8\">7513</l2-group-port>" 
+                    +   "</server>"
                     +     "<server host=\"testHost2\" name=\"server2\" bind=\"4.5.6.7\">"
-                    +     "<dso-port bind=\"1.2.3.4\">8513</dso-port>" + "<jmx-port bind=\"4.3.2.1\">9513</jmx-port>"
+                    +     "<dso-port bind=\"1.2.3.4\">8513</dso-port>" 
+                    +     "<jmx-port bind=\"4.3.2.1\">9513</jmx-port>"
                     +     "<l2-group-port bind=\"5.6.7.8\">7513</l2-group-port>" 
                     +   "</server>" 
                     + "</servers>"
@@ -316,6 +323,8 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
                                  + "data-backup").getAbsolutePath(), server.getDataBackup());
     Assert.assertEquals(new File(BaseTVSConfigurationSetupManagerTest.class.getSimpleName() + File.separator
                                  + "statistics").getAbsolutePath(), server.getStatistics());
+    Assert.assertEquals(new File(BaseTVSConfigurationSetupManagerTest.class.getSimpleName() + File.separator
+                                 + "index").getAbsolutePath(), server.getIndex());
   }
 
   public void testServerDirtctoryPaths() throws IOException, ConfigurationSetupException {
@@ -323,8 +332,11 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
                     + "<servers>" 
                     +   "<server>"
-                    +     "<data>abc/xyz/123</data>" + "<logs>xyz/abc/451</logs>"
-                    +     "<data-backup>/qrt/opt/pqr</data-backup>" + "<statistics>/opq/pqr/123/or</statistics>"
+                    +     "<data>abc/xyz/123</data>" 
+                    +     "<logs>xyz/abc/451</logs>"
+                    +     "<data-backup>/qrt/opt/pqr</data-backup>" 
+                    +     "<statistics>/opq/pqr/123/or</statistics>"
+                    +     "<index>/rta/try/456</index>"
                     +   "</server>" 
                     + "</servers>" 
                     + "</tc:tc-config>";
@@ -342,6 +354,7 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals("xyz/abc/451", server.getLogs());
     Assert.assertEquals("/qrt/opt/pqr", server.getDataBackup());
     Assert.assertEquals("/opq/pqr/123/or", server.getStatistics());
+    Assert.assertEquals("/rta/try/456", server.getIndex());
   }
 
   public void testServerSubsitutedDirtctoryPaths() throws IOException, ConfigurationSetupException {

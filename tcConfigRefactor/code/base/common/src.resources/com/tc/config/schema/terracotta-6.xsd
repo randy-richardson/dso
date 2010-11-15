@@ -596,7 +596,8 @@
         </xs:annotation>
       </xs:element>
 
-      <xs:element name="index" type="path" minOccurs="0" maxOccurs="1" >
+      <xs:element name="index" type="path" minOccurs="0" maxOccurs="1" 
+      default="index">
         <xs:annotation>
           <xs:documentation>
             Where should the server store its search index

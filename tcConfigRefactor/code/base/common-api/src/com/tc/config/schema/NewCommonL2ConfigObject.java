@@ -22,10 +22,6 @@ import javax.xml.namespace.QName;
  */
 public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewCommonL2Config {
 
-  private final File     dataPath;
-  private final File     logsPath;
-  private final File     serverDbBackupPath;
-  private final File     statisticsPath;
   private final BindPort jmxPort;
   private final String   host;
   private final boolean  authentication;
@@ -34,7 +30,6 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
   private final String   accessFile;
   private final boolean  httpAuthentication;
   private final String   userRealmFile;
-  private final File     indexPath;
 
   public NewCommonL2ConfigObject(ConfigContext context) {
     super(context);
@@ -42,13 +37,6 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
 
     Server server = (Server) context.bean();
 
-    this.dataPath = new File(server.getData());
-    this.logsPath = new File(server.getLogs());
-    this.indexPath = new File(server.getIndex());
-
-    this.serverDbBackupPath = new File(server.getDataBackup());
-
-    this.statisticsPath = new File(server.getStatistics());
     this.host = server.getHost();
 
     // JMX authentication
@@ -98,23 +86,28 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
   }
 
   public File dataPath() {
-    return this.dataPath;
+    Server server = (Server) getBean();
+    return new File(server.getData());
   }
 
   public File logsPath() {
-    return this.logsPath;
+    Server server = (Server) getBean();
+    return new File(server.getLogs());
   }
 
   public File serverDbBackupPath() {
-    return this.serverDbBackupPath;
+    Server server = (Server) getBean();
+    return new File(server.getDataBackup());
   }
 
   public File statisticsPath() {
-    return this.statisticsPath;
+    Server server = (Server) getBean();
+    return new File(server.getStatistics());
   }
 
   public File indexPath() {
-    return this.indexPath;
+    Server server = (Server) getBean();
+    return new File(server.getIndex());
   }
 
   public BindPort jmxPort() {

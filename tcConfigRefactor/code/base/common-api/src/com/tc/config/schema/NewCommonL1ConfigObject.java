@@ -17,8 +17,7 @@ import java.io.File;
  */
 public class NewCommonL1ConfigObject extends BaseNewConfigObject implements NewCommonL1Config {
 
-  private final File logsPath;
-  private final Modules        modules;
+  private final Modules modules;
 
   public NewCommonL1ConfigObject(ConfigContext context) {
     super(context);
@@ -26,14 +25,12 @@ public class NewCommonL1ConfigObject extends BaseNewConfigObject implements NewC
 
     this.context.ensureRepositoryProvides(Client.class);
 
-    
     final Client client = (Client) this.context.bean();
-    this.logsPath = new File(client.getLogs());
-    
+
     modules = client.isSetModules() ? client.getModules() : null;
-    
-    if(modules != null) {
-      for(int i = 0; i < modules.sizeOfRepositoryArray(); i++) {
+
+    if (modules != null) {
+      for (int i = 0; i < modules.sizeOfRepositoryArray(); i++) {
         String location = modules.getRepositoryArray(i);
         modules.setRepositoryArray(i, ParameterSubstituter.substitute(location));
       }
@@ -41,14 +38,15 @@ public class NewCommonL1ConfigObject extends BaseNewConfigObject implements NewC
   }
 
   public File logsPath() {
-    return this.logsPath;
+    final Client client = (Client) this.context.bean();
+    return new File(client.getLogs());
   }
 
   public Modules modules() {
     return modules;
   }
 
-  //Used STRICTLY for test
+  // Used STRICTLY for test
   public void setLogsPath(String logPath) {
     Client client = (Client) getBean();
     client.setLogs(logPath);
