@@ -25,6 +25,7 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
     // this.disableAllUntil(new Date(Long.MAX_VALUE));
   }
 
+  @Override
   public void setUp() throws Exception {
     this.factory = new TestTVSConfigurationSetupManagerFactory(
                                                                TestTVSConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
@@ -39,22 +40,22 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
 
   public void testSettingValues() throws Exception {
     // A string array value
-    factory.dsoApplicationConfig().transientFields().setFieldNameArray(new String[] { "Foo.foo", "Bar.bar" });
+    this.l1Manager.dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME)
+        .transientFields().setFieldNameArray(new String[] { "Foo.foo", "Bar.bar" });
 
     // Hit the remaining top-level config objects
-    factory.l2DSOConfig().garbageCollection().setInterval(142);
-    factory.l1CommonConfig().setLogsPath("whatever");
-    factory.l2CommonConfig().setDataPath("marph");
+    this.l2Manager.dsoL2Config().garbageCollection().setInterval(142);
+    this.l1Manager.commonL1Config().setLogsPath("whatever");
+    this.l2Manager.commonl2Config().setDataPath("marph");
 
     // A complex value (locks)
-    factory.dsoApplicationConfig().setLocks(
-                                            new Lock[] {
-                                                new AutoLock("* Foo.foo(..)", LockLevel.CONCURRENT),
-                                                new com.tc.object.config.schema.NamedLock("bar", "* Baz.baz(..)",
-                                                                                          LockLevel.READ) });
+    this.l1Manager.dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME)
+        .setLocks(
+                  new Lock[] { new AutoLock("* Foo.foo(..)", LockLevel.CONCURRENT),
+                      new com.tc.object.config.schema.NamedLock("bar", "* Baz.baz(..)", LockLevel.READ) });
 
     // A sub-config object
-    factory.l1DSOConfig().instrumentationLoggingOptions().setLogDistributedMethods(true);
+    this.l1Manager.dsoL1Config().instrumentationLoggingOptions().setLogDistributedMethods(true);
 
     this.factory.activateConfigurationChange();
 
@@ -67,7 +68,7 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
     assertEquals(new File("whatever"), this.l1Manager.commonL1Config().logsPath());
     assertEquals(new File("marph"), this.l2Manager.commonl2Config().dataPath());
     assertEqualsUnordered(new Lock[] { new AutoLock("* Foo.foo(..)", LockLevel.CONCURRENT),
-        new com.tc.object.config.schema.NamedLock("bar", "* Baz.baz(..)", LockLevel.READ) }, this.l2Manager
+        new com.tc.object.config.schema.NamedLock("bar", "* Baz.baz(..)", LockLevel.READ) }, this.l1Manager
         .dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME).locks());
     assertTrue(this.l1Manager.dsoL1Config().instrumentationLoggingOptions().logDistributedMethods());
   }

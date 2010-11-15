@@ -21,6 +21,7 @@ import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.server.NullTCServerInfo;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
+import com.terracottatech.config.HaMode;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -160,6 +161,8 @@ public class DSOServerBindAddressTest extends BaseDSOTestCase {
 
     manager.commonl2Config().jmxPort().setIntValue(jmxPort);
     manager.commonl2Config().jmxPort().setBind(bindAddress);
+
+    manager.haConfig().getHa().setMode(HaMode.DISK_BASED_ACTIVE_PASSIVE);
     return manager;
   }
 }

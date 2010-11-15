@@ -208,6 +208,8 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
       groupPort = helper.getGroupPort();
 
       setPortsInConfig();
+      this.transparentAppConfig.setAttribute(ApplicationConfig.JMXPORT_KEY, String.valueOf(configFactory()
+          .l2CommonConfig().jmxPort().getIntValue()));
 
       if (!canRunL1ProxyConnect()) configFactory().addServerToL1Config(null, dsoPort, adminPort);
       serverControl = helper.getServerControl();
@@ -219,6 +221,8 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
       groupPort = portChooser.chooseRandomPort();
 
       setPortsInConfig();
+      this.transparentAppConfig.setAttribute(ApplicationConfig.JMXPORT_KEY, String.valueOf(configFactory()
+          .l2CommonConfig().jmxPort().getIntValue()));
 
       if (!canRunL1ProxyConnect()) configFactory().addServerToL1Config(null, dsoPort, -1);
     }
@@ -248,9 +252,6 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
 
     configFactory().l2DSOConfig().l2GroupPort().setIntValue(groupPort);
     configFactory().l2DSOConfig().l2GroupPort().setBind("0.0.0.0");
-
-    this.transparentAppConfig.setAttribute(ApplicationConfig.JMXPORT_KEY, String.valueOf(configFactory()
-        .l2CommonConfig().jmxPort().getIntValue()));
   }
 
   // provide a way to change crash interval
@@ -334,17 +335,8 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
     proxyMgr.setProxyPort(dsoProxyPort);
     proxyMgr.setupProxy();
     setupL1ProxyConnectTest(proxyMgr);
-
-    configFactory().l2DSOConfig().dsoPort().setIntValue(dsoPort);
-    configFactory().l2DSOConfig().dsoPort().setBind("0.0.0.0");
-
-    configFactory().l2CommonConfig().jmxPort().setIntValue(adminPort);
-    configFactory().l2CommonConfig().jmxPort().setBind("0.0.0.0");
-
-    configFactory().l2DSOConfig().l2GroupPort().setIntValue(groupPort);
-    configFactory().l2DSOConfig().l2GroupPort().setBind("0.0.0.0");
-
     configFactory().addServerToL1Config(null, dsoProxyPort, -1);
+    setPortsInConfig();
     disableL1L2ConfigValidationCheck();
   }
 
@@ -445,14 +437,7 @@ public abstract class TransparentTestBase extends BaseDSOTestCase implements Tra
                                                   jvmArgs);
     setUpTransparent(factory, helper);
 
-    configFactory().l2DSOConfig().dsoPort().setIntValue(dsoPort);
-    configFactory().l2DSOConfig().dsoPort().setBind("0.0.0.0");
-
-    configFactory().l2CommonConfig().jmxPort().setIntValue(adminPort);
-    configFactory().l2CommonConfig().jmxPort().setBind("0.0.0.0");
-
-    configFactory().l2DSOConfig().l2GroupPort().setIntValue(groupPort);
-    configFactory().l2DSOConfig().l2GroupPort().setBind("0.0.0.0");
+    setPortsInConfig();
 
     configFactory().addServerToL1Config(null, serverPort, adminPort);
   }
