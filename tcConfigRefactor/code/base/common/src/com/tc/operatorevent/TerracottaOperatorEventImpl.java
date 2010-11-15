@@ -22,22 +22,21 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
 
   public TerracottaOperatorEventImpl(EventType eventType, EventSubsystem subSystem, String message,
                                      String collapseString) {
-    this.eventType = eventType;
-    this.subSystem = subSystem;
-    this.time = System.currentTimeMillis();
-    this.eventMessage = message;
-    this.collapseString = collapseString;
-    this.nodes = new HashMap<String, Integer>();
+    this(eventType, subSystem, System.currentTimeMillis(), message, collapseString, new HashMap<String, Integer>());
   }
 
   private TerracottaOperatorEventImpl(EventType eventType, EventSubsystem subsystem, long time, String message,
                                       String collapseString, Map<String, Integer> nodes) {
+    // Using a CHM here can trigger CDV-1377 if event sent/serialized from a custom mode L1
+    if (nodes instanceof ConcurrentHashMap) { throw new AssertionError("CHM not allowed here"); }
+
     this.eventType = eventType;
     this.subSystem = subsystem;
     this.time = time;
     this.eventMessage = message;
     this.collapseString = collapseString;
     this.nodes = nodes;
+
   }
 
   public String getEventMessage() {
@@ -139,7 +138,7 @@ public class TerracottaOperatorEventImpl implements TerracottaOperatorEvent, Com
 
   @Override
   public synchronized TerracottaOperatorEvent clone() {
-    Map<String, Integer> nodesCopy = new ConcurrentHashMap<String, Integer>();
+    Map<String, Integer> nodesCopy = new HashMap<String, Integer>();
     nodesCopy.putAll(this.nodes);
     return new TerracottaOperatorEventImpl(this.eventType, this.subSystem, this.time, this.eventMessage,
                                            this.collapseString, nodesCopy);
