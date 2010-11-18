@@ -19,15 +19,9 @@ public interface NewCommonL2Config extends NewConfig, NewStatisticsConfig {
 
   File dataPath();
 
-  void setDataPath(String dataPath);
-
   File logsPath();
 
-  void setLogsPath(String logsPath);
-
   File serverDbBackupPath();
-
-  void setServerDbBackupPath(String dbBackupPath);
 
   File indexPath();
 
@@ -46,6 +40,4 @@ public interface NewCommonL2Config extends NewConfig, NewStatisticsConfig {
   boolean httpAuthentication();
 
   String httpAuthenticationUserRealmFile();
-
-  void setStatisticsPath(String statisticsPath);
 }

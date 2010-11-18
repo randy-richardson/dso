@@ -27,6 +27,7 @@ import com.tc.object.config.schema.NewL2DSOConfigObject;
 import com.tc.test.GroupData;
 import com.tc.util.Assert;
 import com.terracottatech.config.Application;
+import com.terracottatech.config.Client;
 import com.terracottatech.config.Members;
 import com.terracottatech.config.MirrorGroup;
 import com.terracottatech.config.MirrorGroups;
@@ -247,11 +248,14 @@ public class TestTVSConfigurationSetupManagerFactory extends BaseTVSConfiguratio
     // We also set the data and log directories to strings that shouldn't be valid on any platform: you need to set
     // these yourself before you use this config. If you don't, you'll write all over the place as we create 'data' and
     // 'logs' directories willy-nilly. Don't do that.
-    l1CommonConfig().setLogsPath(BOGUS_FILENAME);
-    l2CommonConfig().setDataPath(BOGUS_FILENAME);
-    l2CommonConfig().setLogsPath(BOGUS_FILENAME);
-    l2CommonConfig().setServerDbBackupPath(BOGUS_FILENAME);
-    l2CommonConfig().setStatisticsPath(BOGUS_FILENAME);
+    Client client = (Client) l1CommonConfig().getBean();
+    client.setLogs(BOGUS_FILENAME);
+
+    Server server = (Server) l2CommonConfig().getBean();
+    server.setData(BOGUS_FILENAME);
+    server.setLogs(BOGUS_FILENAME);
+    server.setStatistics(BOGUS_FILENAME);
+    server.setStatistics(BOGUS_FILENAME);
   }
 
   public void activateConfigurationChange() throws ConfigurationSetupException {

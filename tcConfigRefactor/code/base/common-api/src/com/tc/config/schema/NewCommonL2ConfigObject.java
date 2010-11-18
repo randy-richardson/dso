@@ -142,26 +142,4 @@ public class NewCommonL2ConfigObject extends BaseNewConfigObject implements NewC
     return userRealmFile;
   }
 
-  // all setters used STRICTLY in test
-
-  public void setDataPath(String dataPath) {
-    Server server = (Server) getBean();
-    server.setData(dataPath);
-  }
-
-  public void setLogsPath(String logsPath) {
-    Server server = (Server) getBean();
-    server.setLogs(logsPath);
-  }
-
-  public void setServerDbBackupPath(String dbBackupPath) {
-    Server server = (Server) getBean();
-    server.setDataBackup(dbBackupPath);
-  }
-
-  public void setStatisticsPath(String statisticsPath) {
-    Server server = (Server) getBean();
-    server.setStatistics(statisticsPath);
-  }
-
 }

@@ -15,8 +15,6 @@ public interface NewCommonL1Config extends NewConfig {
 
   File logsPath();
 
-  void setLogsPath(String logPath);
-  
   Modules modules();
 
 }

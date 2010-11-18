@@ -386,7 +386,7 @@
   <xs:complexType name="offheap">
     <xs:all>
       <xs:element name="enabled" type="xs:boolean" minOccurs="0" maxOccurs="1" default="false" />
-      <xs:element name="maxDataSize" type="xs:string" minOccurs="0" maxOccurs="1" default="100m" />
+      <xs:element name="maxDataSize" type="xs:string" minOccurs="1" maxOccurs="1" />
     </xs:all>
   </xs:complexType>
 

@@ -72,9 +72,11 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
 
     this.dsoPort = server.getDsoPort();
     this.l2GroupPort = server.getL2GroupPort();
-    this.offHeapConfig = server.getDso().getPersistence().getOffheap();
-    if (offHeapConfig.getEnabled()) {
+    if (server.getDso().getPersistence().isSetOffheap()) {
+      this.offHeapConfig = server.getDso().getPersistence().getOffheap();
       LicenseManager.verifyServerArrayOffheapCapability(offHeapConfig.getMaxDataSize());
+    } else {
+      this.offHeapConfig = Offheap.Factory.newInstance();
     }
   }
 
@@ -324,9 +326,7 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
     Persistence persistence = server.getDso().getPersistence();
     Assert.assertNotNull(persistence);
 
-    if (!persistence.isSetOffheap()) {
-      persistence.addNewOffheap();
-    }
+    if (!persistence.isSetOffheap()) return;
 
     Offheap offHeap = persistence.getOffheap();
     Assert.assertNotNull(offHeap);
@@ -335,9 +335,6 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       offHeap.setEnabled(getDefaultOffHeapEnabled(server, defaultValueProvider));
     }
 
-    if (!offHeap.isSetMaxDataSize()) {
-      offHeap.setMaxDataSize(getDefaultOffHeapMaxDataSize(server, defaultValueProvider));
-    }
   }
 
   private static void initializeGarbageCollection(Server server, DefaultValueProvider defaultValueProvider)
@@ -378,12 +375,6 @@ public class NewL2DSOConfigObject extends BaseNewConfigObject implements NewL2DS
       throws XmlException {
     return ((XmlBoolean) defaultValueProvider.defaultFor(server.schemaType(), "dso/persistence/offheap/enabled"))
         .getBooleanValue();
-  }
-
-  private static String getDefaultOffHeapMaxDataSize(Server server, DefaultValueProvider defaultValueProvider)
-      throws XmlException {
-    return ((XmlString) defaultValueProvider.defaultFor(server.schemaType(), "dso/persistence/offheap/maxDataSize"))
-        .getStringValue();
   }
 
   private static int getDefaultReconnectWindow(Server server, DefaultValueProvider defaultValueProvider)

@@ -8,6 +8,8 @@ import com.tc.object.config.schema.AutoLock;
 import com.tc.object.config.schema.Lock;
 import com.tc.object.config.schema.LockLevel;
 import com.tc.test.TCTestCase;
+import com.terracottatech.config.Client;
+import com.terracottatech.config.Server;
 
 import java.io.File;
 
@@ -31,8 +33,8 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
                                                                TestTVSConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
                                                                null, new FatalIllegalConfigurationChangeHandler());
 
-    this.factory.l2CommonConfig().setLogsPath(getTempFile("l2-logs").toString());
-    this.factory.l1CommonConfig().setLogsPath(getTempFile("l1-logs").toString());
+    ((Server) this.factory.l2CommonConfig().getBean()).setLogs(getTempFile("l2-logs").toString());
+    ((Client) this.factory.l1CommonConfig().getBean()).setLogs(getTempFile("l1-logs").toString());
 
     this.l2Manager = this.factory.createL2TVSConfigurationSetupManager(null);
     this.l1Manager = this.factory.getL1TVSConfigurationSetupManager();
@@ -45,8 +47,8 @@ public class TestTVSConfigurationSetupManagerFactoryTest extends TCTestCase {
 
     // Hit the remaining top-level config objects
     this.l2Manager.dsoL2Config().garbageCollection().setInterval(142);
-    this.l1Manager.commonL1Config().setLogsPath("whatever");
-    this.l2Manager.commonl2Config().setDataPath("marph");
+    ((Client) this.l1Manager.commonL1Config().getBean()).setLogs("whatever");
+    ((Server) this.l2Manager.commonl2Config().getBean()).setData("marph");
 
     // A complex value (locks)
     this.l1Manager.dsoApplicationConfigFor(TVSConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME)

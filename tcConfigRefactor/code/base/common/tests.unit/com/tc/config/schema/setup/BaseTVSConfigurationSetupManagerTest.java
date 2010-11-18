@@ -428,9 +428,7 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(PersistenceMode.TEMPORARY_SWAP_ONLY, dsoServerData.getPersistence().getMode());
     Persistence persistence = dsoServerData.getPersistence();
     Assert.assertTrue(persistence.isSetMode());
-    Assert.assertTrue(persistence.isSetOffheap());
-    Assert.assertEquals(false, persistence.getOffheap().getEnabled());
-    Assert.assertEquals("100m", persistence.getOffheap().getMaxDataSize());
+    Assert.assertFalse(persistence.isSetOffheap());
   }
 
   public void testDefaultOffHeap() throws IOException, ConfigurationSetupException {
@@ -468,12 +466,10 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertEquals(true, server.getDso().getGarbageCollection().getVerbose());
     Assert.assertEquals(1234, server.getDso().getGarbageCollection().getInterval());
 
-    Assert.assertTrue(server.getDso().getPersistence().isSetOffheap());
-    Assert.assertEquals(false, server.getDso().getPersistence().getOffheap().getEnabled());
-    Assert.assertEquals("100m", server.getDso().getPersistence().getOffheap().getMaxDataSize());
+    Assert.assertFalse(server.getDso().getPersistence().isSetOffheap());
   }
 
-  public void testOffHeap() throws IOException, ConfigurationSetupException {
+  public void testOffHeap1() throws IOException, ConfigurationSetupException {
     this.tcConfig = getTempFile("default-config.xml");
     String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
                     + "<servers>" 
@@ -515,6 +511,40 @@ public class BaseTVSConfigurationSetupManagerTest extends TCTestCase {
     Assert.assertTrue(server.getDso().getPersistence().isSetOffheap());
     Assert.assertEquals(true, server.getDso().getPersistence().getOffheap().getEnabled());
     Assert.assertEquals("5628m", server.getDso().getPersistence().getOffheap().getMaxDataSize());
+  }
+  
+  public void testOffHeap2() throws IOException {
+    this.tcConfig = getTempFile("default-config.xml");
+    String config = "<tc:tc-config xmlns:tc=\"http://www.terracotta.org/config\">" 
+                    + "<servers>" 
+                    +   "<server>" 
+                    +     "<dso>"
+                    +         "<persistence>" 
+                    +             "<mode>permanent-store</mode>" 
+                    +              "<offheap>" 
+                    +                 "<enabled>true</enabled>"
+                    +              "</offheap>" 
+                    +         "</persistence>"
+                    +         "<client-reconnect-window>9876</client-reconnect-window>" 
+                    +         "<garbage-collection>"
+                    +           "<enabled>false</enabled>" 
+                    +           "<verbose>true</verbose>" 
+                    +           "<interval>1234</interval>"
+                    +         "</garbage-collection>" 
+                    +     "</dso>" 
+                    +   "</server>" 
+                    + "</servers>" 
+                    + "</tc:tc-config>";
+
+    writeConfigFile(config);
+
+    try{
+    initializeAndGetBaseTVSConfigSetupManager();
+    Assert.fail("parsing should fail since maxDataSize was missing");
+    
+    }catch (ConfigurationSetupException e) {
+      // do noting expected exception
+    }
   }
 
   public void testDso() throws IOException, ConfigurationSetupException {

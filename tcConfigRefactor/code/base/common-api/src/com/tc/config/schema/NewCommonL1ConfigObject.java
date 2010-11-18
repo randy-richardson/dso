@@ -46,10 +46,4 @@ public class NewCommonL1ConfigObject extends BaseNewConfigObject implements NewC
     return modules;
   }
 
-  // Used STRICTLY for test
-  public void setLogsPath(String logPath) {
-    Client client = (Client) getBean();
-    client.setLogs(logPath);
-  }
-
 }

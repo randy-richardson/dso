@@ -497,9 +497,8 @@ public class StandardL2TVSConfigurationSetupManager extends BaseTVSConfiguration
     this.systemConfig = new NewSystemConfigObject(createContext(systemBeanRepository(), configurationCreator()
         .directoryConfigurationLoadedFrom()));
     L2ConfigData serverConfigData = configDataFor(this.thisL2Identifier);
-    // LogSettingConfigItemListener listener = new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L2);
-    // serverConfigData.commonL2Config().logsPath().addListener(listener);
-    // listener.valueChanged(null, serverConfigData.commonL2Config().logsPath().getObject());
+    LogSettingConfigItemListener listener = new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L2);
+    listener.valueChanged(null, serverConfigData.commonL2Config().logsPath());
     return serverConfigData;
   }
 

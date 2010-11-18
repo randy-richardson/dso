@@ -18,6 +18,8 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.test.TCTestCase;
 import com.terracottatech.config.AdditionalBootJarClasses;
+import com.terracottatech.config.Client;
+import com.terracottatech.config.Server;
 
 import java.io.IOException;
 
@@ -99,10 +101,11 @@ public class BaseDSOTestCase extends TCTestCase implements TestClientConfigHelpe
   protected synchronized void setupConfigLogDataStatisticsPaths(TestTVSConfigurationSetupManagerFactory out)
       throws ConfigurationSetupException {
     try {
-      out.l2CommonConfig().setDataPath(getTempFile("l2-data").toString());
-      out.l2CommonConfig().setLogsPath(getTempFile("l2-logs").toString());
-      out.l2CommonConfig().setStatisticsPath(getTempFile("l2-statistics").toString());
-      out.l1CommonConfig().setLogsPath(getTempFile("l1-logs").toString());
+      Server server = (Server) out.l2CommonConfig().getBean();
+      server.setData(getTempFile("l2-date").toString());
+      server.setLogs(getTempFile("l2-logs").toString());
+      server.setStatistics(getTempFile("l2-statistics").toString());
+      ((Client) out.l1CommonConfig().getBean()).setLogs(getTempFile("l1-logs").toString());
     } catch (IOException ioe) {
       throw new ConfigurationSetupException("Can't set up log, data and statistics paths", ioe);
     }

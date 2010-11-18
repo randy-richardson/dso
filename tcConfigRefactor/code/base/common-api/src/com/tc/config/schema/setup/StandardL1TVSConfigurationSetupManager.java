@@ -41,7 +41,6 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
   private final NewL1DSOConfig     dsoL1Config;
   private final ConfigTCProperties configTCProperties;
   private final boolean            loadedFromTrustedSource;
-  private volatile L2ConfigForL1   l2ConfigForL1;
 
   public StandardL1TVSConfigurationSetupManager(ConfigurationCreator configurationCreator,
                                                 DefaultValueProvider defaultValueProvider,
@@ -56,8 +55,6 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
     loadedFromTrustedSource = configurationCreator().loadedFromTrustedSource();
 
     commonL1Config = new NewCommonL1ConfigObject(createContext(clientBeanRepository(), null));
-    l2ConfigForL1 = new L2ConfigForL1Object(createContext(serversBeanRepository(), null),
-                                            createContext(systemBeanRepository(), null));
     configTCProperties = new ConfigTCPropertiesFromObject((TcProperties) tcPropertiesRepository().bean());
     dsoL1Config = new NewL1DSOConfigObject(createContext(new ChildBeanRepository(clientBeanRepository(),
                                                                                  DsoClientData.class,
@@ -110,9 +107,5 @@ public class StandardL1TVSConfigurationSetupManager extends BaseTVSConfiguration
 
   public void reloadServersConfiguration() throws ConfigurationSetupException {
     configurationCreator().reloadServersConfiguration(serversBeanRepository(), true, false);
-    // reload L2 config here as well
-    L2ConfigForL1 tempL2ConfigForL1 = new L2ConfigForL1Object(createContext(serversBeanRepository(), null),
-                                                              createContext(systemBeanRepository(), null));
-    this.l2ConfigForL1 = tempL2ConfigForL1;
   }
 }
