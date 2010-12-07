@@ -114,13 +114,13 @@ artifacts:
   - maven_artifact: false
     name: CHANGELOG.txt
     destination: ehcache
-    url: http://svn.terracotta.org/svn/ehcache/branches/magnum/core/src/assemble/CHANGELOG.txt
+    url: http://svn.terracotta.org/svn/ehcache/branches/ehcache-core-2.3.x/src/assemble/CHANGELOG.txt
     kit_edition: opensource
     
   - maven_artifact: false
     name: EHCACHE-CORE-LICENSE.txt
     destination: ehcache/licenses
-    url: http://svn.terracotta.org/svn/ehcache/trunk/core/src/assemble/EHCACHE-CORE-LICENSE.txt
+    url: http://svn.terracotta.org/svn/ehcache/branches/ehcache-core-2.3.x/src/assemble/EHCACHE-CORE-LICENSE.txt
     kit_edition: opensource
 
   - maven_artifact: false
