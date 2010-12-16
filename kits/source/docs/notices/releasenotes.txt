@@ -54,8 +54,11 @@ Patch Level 7
 - DEV-3880: Analyse and Fix SleepycatPersistableMap and SleepycatCollectionsPersistor's use of CursorConfig.READ_COMMITTED while committing to database.
 ------------------------------------------------
 
+Patch Level 8
+- DEV-5105: Cluster freeze on failover due to split brain
+- DEV-4245: Fixed Election won message after timeout
 
-
+------------------------------------------------
 
 All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
 http://www.terracotta.org
