@@ -8,13 +8,14 @@ Mailing Lists: http://lists.terracotta.org
 Support:       http://www.terracotta.org/kit/reflector?kitID=default&pageID=SupportServices
 ------------------------------------------------------------------
 Patch Level 1 
+
 To install this patch
-Make a copy of ~/lib/tc.jar
-Unpack terracotta-ee-3.4.0.tar.gz 
-Copy tc.jar to the /lib directory 
-Remove the existing  terracotta-toolkit-runtime* from the /common directory
-Copy terracotta-toolkit-runtime.2.0.0-ee-patch*.jar to the /common directory
-Make sure that classpath no longer refers to the old runtime jar
+1. Inside the original terracotta-ee-3.4.0 kit
+2. Remove common/terracotta-toolkit-1.1-runtime-ee-2.0.0.jar
+3. Copy terracotta-ee-3.4.0-patch-1.tar.gz into folder terracotta-ee-3.4.0
+4. Untar the patch: tar zxvf terracotta-ee-3.4.0-patch-1.tar.gz
+5. Make sure that application classpath (or WAR files) no longer refers to the old toolkit runtime jar
+   Update it to terracotta-toolkit-1.1-runtime-ee-2.0.0-patch-1.jar
 
 ------------------------------
 DEV-5053 
