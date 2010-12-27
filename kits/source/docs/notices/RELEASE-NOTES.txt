@@ -13,7 +13,7 @@ This patch contains the patched toolkit runtime jar that will replace the curren
 It can be found under "common" folder after you apply the patch:
 
 Old: terracotta-toolkit-1.1-runtime-ee-2.0.0.jar
-New: terracotta-toolkit-1.1-runtime-ee-2.0.0-patch-1.jar
+New: terracotta-toolkit-1.1-runtime-ee-2.0.0-patch1.jar
 
 Make sure that application classpath (or WAR files) no longer refers to the old toolkit runtime jar
 and update it to the new one.
