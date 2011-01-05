@@ -22,16 +22,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
     @no_demo = true
     $patch = true
     
-    # Do error checking first, before going through the lengthy dist target
-    descriptor_file = self.patch_descriptor_file.to_s
-    unless File.readable?(descriptor_file)
-      raise("Patch descriptor file does not exist: #{descriptor_file}")
-    end
-
-    patch_descriptor = YAML.load_file(descriptor_file)
-    unless patch_descriptor['level'] && patch_descriptor['files'].is_a?(Array)
-      raise("Invalid patch descriptor file")
-    end
+    patch_descriptor = get_patch_descriptor
 
     patch_level = config_source['level'] || patch_descriptor['level']
     $XXX_patch_level = patch_level
@@ -76,7 +67,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
         end
       end
 
-      patch_file_name = File.basename(Dir.pwd) + "-patch-#{patch_level}.tar.gz"
+      patch_file_name = File.basename(Dir.pwd) + "-patch#{patch_level}.tar.gz"
       patch_file = FilePath.new(self.dist_directory, patch_file_name)
       ant.tar(:destfile => patch_file.to_s, :compression => 'gzip', :longfile => 'gnu') do
         ant.tarfileset(:dir => Dir.pwd, :includes => patch_files.join(','))
@@ -108,17 +99,14 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
   end
 
   def dist_maven
-    @internal_config_source['dev_dist'] = 'true'
     mvn_install(OPENSOURCE)
   end
 
   def dist_maven_ee
-    @internal_config_source['dev_dist'] = 'true'
     mvn_install(ENTERPRISE)
   end
 
   def dist_maven_all
-    @internal_config_source['dev_dist'] = 'true'
     mvn_install(OPENSOURCE)
     @flavor = ENTERPRISE
     load_config
@@ -126,6 +114,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
   end
 
   def dist_dev(product_code = 'DSO', flavor = OPENSOURCE)
+    @internal_config_source[MAVEN_USE_LOCAL_REPO_KEY] = 'true'
     if flavor == ENTERPRISE then dist_maven_all else dist_maven end
     build_external
     
@@ -212,15 +201,20 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
     check_if_type_supplied(product_code, flavor)
 
     depends :init, :compile, :load_config
-
+    @flavor = flavor.downcase
     component = get_spec(:bundled_components, []).find { |component| /^#{component_name}$/i =~ component[:name] }
     libdir    = FilePath.new(@build_results.build_dir, 'tmp').ensure_directory
-    destdir   = @build_results.artifacts_directory
+    destdir   = FilePath.new(@build_results.artifacts_directory, @flavor)
     add_binaries(component, libdir, destdir, false)
     libdir.delete
 
     add_module_packages(component, destdir)
-    create_build_data(@config_source, File.join(destdir.to_s, 'resources'))
+    create_data_file(@config_source, File.join(destdir.to_s, 'resources'), :build_data, @build_environment.edition(flavor))
+    if @config_source[MAVEN_CLASSIFIER_CONFIG_KEY]
+      patch_descriptor = get_patch_descriptor
+      patch_level = @config_source['level'] || patch_descriptor['level']
+      create_patch_data(patch_level, @config_source, File.join(destdir.to_s, 'resources'))
+    end
   end
 
   def mvn_install(flavor=OPENSOURCE)
@@ -231,7 +225,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
     end
     puts "Maven install #{flavor.upcase} artifacts to #{@internal_config_source[MAVEN_REPO_CONFIG_KEY]}"
     dist_jars(product_code, 'common', flavor)
-    package_sources_artifacts(@config['package_sources']) if flavor.upcase == OPENSOURCE && @config_source['dev_dist'] != 'true'
+    package_sources_artifacts(@config['package_sources']) if @config_source['include_sources'] == 'true' && @config['package_sources']
     deploy_maven_artifacts(@config['maven_deploy'])
   end
 
@@ -316,6 +310,7 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
   end
 
   def package_sources_artifacts(args)
+    return unless args
     args.each do |arg|
       destdir = FilePath.new(arg['dest']).ensure_directory
       puts "packaging #{arg['artifact']} to #{destdir.to_s}"
@@ -336,29 +331,32 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
       fail("Expecting to deploy #{expected_count} TC maven artifacts but found only #{args.size}") unless args.size == expected_count
 
       args.each do |arg|
-        next if arg['dev_dist'] != true && @config_source['dev_dist'] == 'true'
+        next if arg['classifier'] =~ /sources/ && @config_source['include_sources'] != 'true'
         if arg['file']
           file = FilePath.new(@basedir, interpolate(arg['file']))
         else
           file = FilePath.new(arg['srcfile'])
         end
 
-        if arg['inject']
-          # Copy jar to tmp jar in same dir
-          replacement_file = FilePath.new(file.directoryname) << file.filename + '.tmp'
-          @ant.copy(:tofile => replacement_file.to_s, :file => file.to_s)
-          file = replacement_file
+        %w(inject inject_optional).each do |step|
+          if arg[step]
+            # Copy jar to tmp jar in same dir
+            replacement_file = FilePath.new(file.directoryname) << file.filename + '.tmp'
+            @ant.copy(:tofile => replacement_file.to_s, :file => file.to_s)
+            file = replacement_file
 
-          arg['inject'].each do |inject|
-            # Inject resource into jar
-            inject_file = FilePath.new(@basedir, interpolate(inject))
-            @ant.create_jar(replacement_file,
-              :update => 'true',
-              :basedir => inject_file.directoryname,
-              :includes => inject_file.filename)
+            arg[step].each do |inject|
+              # Inject resource into jar
+              inject_file = FilePath.new(@basedir, interpolate(inject))
+              next if step == 'inject_optional' && !inject_file.exist?
+              @ant.create_jar(replacement_file,
+                :update => 'true',
+                :basedir => inject_file.directoryname,
+                :includes => inject_file.filename)
+            end
           end
         end
-
+        
         group = arg['groupId']
         artifact = arg['artifact']
         classifier = arg['classifier']
@@ -383,5 +381,18 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
         end
       end
     end
+  end
+  
+  def get_patch_descriptor
+    descriptor_file = self.patch_descriptor_file.to_s
+    unless File.readable?(descriptor_file)
+      raise("Patch descriptor file does not exist: #{descriptor_file}")
+    end
+
+    patch_descriptor = YAML.load_file(descriptor_file)
+    unless patch_descriptor['level'] && patch_descriptor['files'].is_a?(Array)
+      raise("Invalid patch descriptor file")
+    end
+    patch_descriptor
   end
 end

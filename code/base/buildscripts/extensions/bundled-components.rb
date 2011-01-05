@@ -35,9 +35,10 @@ module BundledComponents
   end
 
   def add_binaries(component, libdir=libpath(component), destdir=libpath(component), include_runtime=true)
-    runtime_classes_dir = FilePath.new(@build_results.artifacts_classes_directory, 'tc')
+    runtime_classes_dir = FilePath.new(@build_results.artifacts_classes_directory, @flavor, 'tc')
+    start_from_scratch = false
     if !runtime_classes_dir.exist?
-      @internal_config_source['fresh_dist_jars'] = 'true'
+      start_from_scratch = true
       runtime_classes_dir.ensure_directory
     end
 
@@ -61,7 +62,7 @@ module BundledComponents
 
       kit_resource_files = kit_resources.join(',')
 
-      if build_module.source_updated? || @internal_config_source['fresh_dist_jars'] == 'true'
+      if build_module.source_updated? || start_from_scratch
         build_module.subtree('src').copy_classes(@build_results, runtime_classes_dir, ant,
           :excludes => kit_resource_files)
       end
@@ -108,9 +109,10 @@ module BundledComponents
   def add_module_packages(component, destdir=libpath(component))
     (component[:module_packages] || []).each do |module_package|
       module_package.keys.each do |name|
-        runtime_classes_dir = FilePath.new(@build_results.artifacts_classes_directory, name)
+        runtime_classes_dir = FilePath.new(@build_results.artifacts_classes_directory, @flavor.downcase, name)
+        start_from_scratch = false
         if !runtime_classes_dir.exist?
-          @internal_config_source['fresh_dist_jars'] = 'true'
+          start_from_scratch = true
           runtime_classes_dir.ensure_directory
         end
         src      = module_package[name]['source'] || 'src'
@@ -119,7 +121,7 @@ module BundledComponents
         module_package[name]['modules'].each do |module_name|
           a_module = @module_set[module_name]
 
-          if a_module.source_updated? || @internal_config_source['fresh_dist_jars'] == 'true'
+          if a_module.source_updated? || start_from_scratch
             a_module.subtree(src).copy_classes(@build_results, runtime_classes_dir, ant, :excludes => excludes)
           end
           
@@ -128,29 +130,13 @@ module BundledComponents
             puts "pacaking dependencies for #{a_module.name}"
             a_module.dependent_modules.each do |dependent_module|
               puts " .. #{dependent_module.name}"
-              if dependent_module.source_updated? || @internal_config_source['fresh_dist_jars'] == 'true'
+              if dependent_module.source_updated? || start_from_scratch
                 dependent_module.subtree(src).copy_classes(@build_results, runtime_classes_dir, ant, :excludes => excludes)
               end
             end
           end
-          
-          if javadoc
-            puts "Generating javadoc for #{a_module.name}"
-            javadoc_destdir = FilePath.new(File.dirname(destdir.to_s), "platform", "docs", "javadoc").ensure_directory
-            title = "Terracotta version #{build_environment.version}"
-            ant.javadoc(:destdir => javadoc_destdir.to_s,
-              :author => true, :version => true, :use => true, :defaultexcludes => "true",
-              :header => title,
-              :bottom => "<i>All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.</i>",
-              :doctitle => title, :windowtitle => title) do
-              ant.packageset(:dir => a_module.name + '/src', :defaultexcludes => true) do
-                ant.include(:name => '**/**')
-              end
-            end
-            puts "Done javadoc"
-          end
         end
-        install_directory = module_package[name]['install_directory'] || @build_results.artifacts_directory
+        install_directory = module_package[name]['install_directory'] || destdir
         jarfile = FilePath.new(install_directory, interpolate("#{name}.jar"))
         ant.create_jar(jarfile, :basedir => runtime_classes_dir.to_s, :excludes => '**/build-data.txt') do
           ant.manifest do
@@ -190,6 +176,7 @@ module BundledComponents
     ant.attribute(:name => 'BuildInfo-Timestamp', :value => @build_environment.build_timestamp_string)
     ant.attribute(:name => 'BuildInfo-Revision-OSS', :value => @build_environment.os_revision)
     ant.attribute(:name => 'BuildInfo-Branch', :value => @build_environment.current_branch)
+    ant.attribute(:name => 'BuildInfo-Edition', :value => @build_environment.edition(@config_source['flavor']))
     if @build_environment.is_ee_branch?
       ant.attribute(:name => 'BuildInfo-Revision-EE', :value => @build_environment.ee_revision)
     end

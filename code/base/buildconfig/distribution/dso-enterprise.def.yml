@@ -132,33 +132,30 @@ maven_deploy:
     artifact: parent
     srcfile: pom.xml
     pom: pom.xml
-    dev_dist: true
 
   - groupId: org.terracotta
     artifact: terracotta-core-parent
     srcfile: poms/terracotta-core-parent-pom.xml
     pom: poms/terracotta-core-parent-pom.xml
-    dev_dist: true
 
   - groupId: org.terracotta
     artifact: terracotta-ee
-    file: build/artifacts/tc.jar
+    file: build/artifacts/enterprise/tc.jar
     pom: poms/terracotta-ee-pom.xml
     inject: 
-      - build/artifacts/resources/build-data.txt
-      - build/artifacts/resources/tim-get.properties
-    dev_dist: true
+      - build/artifacts/enterprise/resources/build-data.txt
+      - build/artifacts/enterprise/resources/tim-get.properties
 
   - groupId: org.terracotta
     artifact: terracotta-l1-parent
     srcfile: poms/terracotta-l1-parent-pom.xml
     pom: poms/terracotta-l1-parent-pom.xml            
-    dev_dist: true
     
   - groupId: org.terracotta
     artifact: terracotta-l1-ee
-    file: build/artifacts/terracotta-l1.jar
+    file: build/artifacts/enterprise/terracotta-l1.jar
     pom: poms/terracotta-l1-ee-pom.xml
     inject: 
-      - build/artifacts/resources/build-data.txt
-    dev_dist: true
+      - build/artifacts/enterprise/resources/build-data.txt
+    inject_optional:
+      - build/artifacts/enterprise/resources/patch-data.txt      
