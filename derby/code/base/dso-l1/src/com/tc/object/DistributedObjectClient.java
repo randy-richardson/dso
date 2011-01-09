@@ -13,13 +13,12 @@ import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
 import com.tc.async.api.StageManager;
 import com.tc.bytes.TCByteBuffer;
-import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.handler.CallbackDumpAdapter;
 import com.tc.handler.CallbackDumpHandler;
 import com.tc.io.TCByteBufferOutputStream;
 import com.tc.lang.TCThreadGroup;
-import com.tc.license.LicenseCheck;
+import com.tc.license.LicenseManager;
 import com.tc.logging.ClientIDLogger;
 import com.tc.logging.ClientIDLoggerProvider;
 import com.tc.logging.CustomerLogging;
@@ -44,9 +43,9 @@ import com.tc.net.core.ClusterTopologyChangedListener;
 import com.tc.net.core.ConnectionInfo;
 import com.tc.net.protocol.NetworkStackHarnessFactory;
 import com.tc.net.protocol.PlainNetworkStackHarnessFactory;
-import com.tc.net.protocol.delivery.OOOEventHandler;
 import com.tc.net.protocol.delivery.OOONetworkStackHarnessFactory;
 import com.tc.net.protocol.delivery.OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl;
+import com.tc.net.protocol.tcm.ChannelEventListener;
 import com.tc.net.protocol.tcm.CommunicationsManager;
 import com.tc.net.protocol.tcm.GeneratedMessageFactory;
 import com.tc.net.protocol.tcm.HydrateHandler;
@@ -63,7 +62,7 @@ import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.object.cache.CacheConfig;
 import com.tc.object.cache.CacheConfigImpl;
 import com.tc.object.cache.CacheManager;
-import com.tc.object.cache.ClockEvictionPolicy;
+import com.tc.object.config.ConnectionInfoConfig;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.SRASpec;
 import com.tc.object.dna.api.DNAEncoding;
@@ -73,6 +72,7 @@ import com.tc.object.gtx.ClientGlobalTransactionManager;
 import com.tc.object.handler.BatchTransactionAckHandler;
 import com.tc.object.handler.CapacityEvictionHandler;
 import com.tc.object.handler.ClientCoordinationHandler;
+import com.tc.object.handler.ClusterInternalEventsHandler;
 import com.tc.object.handler.ClusterMemberShipEventsHandler;
 import com.tc.object.handler.ClusterMetaDataHandler;
 import com.tc.object.handler.DmiHandler;
@@ -80,8 +80,11 @@ import com.tc.object.handler.LockRecallHandler;
 import com.tc.object.handler.LockResponseHandler;
 import com.tc.object.handler.LockStatisticsEnableDisableHandler;
 import com.tc.object.handler.LockStatisticsResponseHandler;
+import com.tc.object.handler.ReceiveInvalidationHandler;
 import com.tc.object.handler.ReceiveObjectHandler;
 import com.tc.object.handler.ReceiveRootIDHandler;
+import com.tc.object.handler.ReceiveSearchQueryResponseHandler;
+import com.tc.object.handler.ReceiveServerMapEvictionBroadcastHandler;
 import com.tc.object.handler.ReceiveServerMapResponseHandler;
 import com.tc.object.handler.ReceiveSyncWriteTransactionAckHandler;
 import com.tc.object.handler.ReceiveTransactionCompleteHandler;
@@ -102,13 +105,17 @@ import com.tc.object.msg.BatchTransactionAcknowledgeMessageImpl;
 import com.tc.object.msg.BroadcastTransactionMessageImpl;
 import com.tc.object.msg.ClientHandshakeAckMessageImpl;
 import com.tc.object.msg.ClientHandshakeMessageImpl;
+import com.tc.object.msg.ClientHandshakeRejectedMessageImpl;
 import com.tc.object.msg.ClusterMembershipMessage;
 import com.tc.object.msg.CommitTransactionMessageImpl;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessage;
-import com.tc.object.msg.GetSizeServerMapRequestMessageImpl;
-import com.tc.object.msg.GetSizeServerMapResponseMessageImpl;
+import com.tc.object.msg.GetAllKeysServerMapRequestMessageImpl;
+import com.tc.object.msg.GetAllKeysServerMapResponseMessageImpl;
+import com.tc.object.msg.GetAllSizeServerMapRequestMessageImpl;
+import com.tc.object.msg.GetAllSizeServerMapResponseMessageImpl;
 import com.tc.object.msg.GetValueServerMapRequestMessageImpl;
 import com.tc.object.msg.GetValueServerMapResponseMessageImpl;
+import com.tc.object.msg.InvalidateObjectsMessage;
 import com.tc.object.msg.JMXMessage;
 import com.tc.object.msg.KeysForOrphanedValuesMessageImpl;
 import com.tc.object.msg.KeysForOrphanedValuesResponseMessageImpl;
@@ -116,6 +123,8 @@ import com.tc.object.msg.LockRequestMessage;
 import com.tc.object.msg.LockResponseMessage;
 import com.tc.object.msg.NodeMetaDataMessageImpl;
 import com.tc.object.msg.NodeMetaDataResponseMessageImpl;
+import com.tc.object.msg.NodesWithKeysMessageImpl;
+import com.tc.object.msg.NodesWithKeysResponseMessageImpl;
 import com.tc.object.msg.NodesWithObjectsMessageImpl;
 import com.tc.object.msg.NodesWithObjectsResponseMessageImpl;
 import com.tc.object.msg.ObjectIDBatchRequestMessage;
@@ -126,6 +135,9 @@ import com.tc.object.msg.RequestManagedObjectMessageImpl;
 import com.tc.object.msg.RequestManagedObjectResponseMessageImpl;
 import com.tc.object.msg.RequestRootMessageImpl;
 import com.tc.object.msg.RequestRootResponseMessage;
+import com.tc.object.msg.SearchQueryRequestMessageImpl;
+import com.tc.object.msg.SearchQueryResponseMessageImpl;
+import com.tc.object.msg.ServerMapEvictionBroadcastMessageImpl;
 import com.tc.object.msg.SyncWriteTransactionReceivedMessage;
 import com.tc.object.net.DSOClientMessageChannel;
 import com.tc.object.session.SessionID;
@@ -138,7 +150,7 @@ import com.tc.object.tx.ClientTransactionManager;
 import com.tc.object.tx.ClientTransactionManagerImpl;
 import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.TransactionIDGenerator;
-import com.tc.object.tx.TransactionBatchWriter.FoldingConfig;
+import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
 import com.tc.properties.ReconnectConfig;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
@@ -196,6 +208,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This is the main point of entry into the DSO client.
@@ -224,6 +238,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
   private DSOClientMessageChannel                    channel;
   private ClientLockManager                          lockManager;
   private ClientObjectManagerImpl                    objectManager;
+  private RemoteSearchRequestManager                 searchRequestManager;
   private ClientTransactionManagerImpl               txManager;
   private CommunicationsManager                      communicationsManager;
   private RemoteTransactionManager                   rtxManager;
@@ -245,7 +260,17 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                  final PreparedComponentsFromL2Connection connectionComponents, final Manager manager,
                                  final StatisticsAgentSubSystem statisticsAgentSubSystem,
                                  final DsoClusterInternal dsoCluster, final RuntimeLogger runtimeLogger) {
-    super(threadGroup, BoundedLinkedQueue.class.getName());
+    this(config, threadGroup, classProvider, connectionComponents, manager, statisticsAgentSubSystem, dsoCluster,
+         runtimeLogger, BoundedLinkedQueue.class.getName());
+  }
+
+  public DistributedObjectClient(final DSOClientConfigHelper config, final TCThreadGroup threadGroup,
+                                 final ClassProvider classProvider,
+                                 final PreparedComponentsFromL2Connection connectionComponents, final Manager manager,
+                                 final StatisticsAgentSubSystem statisticsAgentSubSystem,
+                                 final DsoClusterInternal dsoCluster, final RuntimeLogger runtimeLogger,
+                                 final String sedaStageQueueClassName) {
+    super(threadGroup, sedaStageQueueClassName);
     Assert.assertNotNull(config);
     this.config = config;
     this.classProvider = classProvider;
@@ -386,6 +411,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.threadGroup.addCallbackOnExitDefaultHandler(new ThreadDumpHandler(this));
     final StageManager stageManager = getStageManager();
 
+    this.dumpHandler.registerForDump(new CallbackDumpAdapter(stageManager));
+
     // stageManager.turnTracingOn();
 
     // //////////////////////////////////
@@ -394,13 +421,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final boolean useOOOLayer = l1ReconnectConfig.getReconnectEnabled();
     final NetworkStackHarnessFactory networkStackHarnessFactory;
     if (useOOOLayer) {
-      final Stage oooSendStage = stageManager.createStage(ClientConfigurationContext.OOO_NET_SEND_STAGE,
-                                                          new OOOEventHandler(), 1, maxSize);
-      final Stage oooReceiveStage = stageManager.createStage(ClientConfigurationContext.OOO_NET_RECEIVE_STAGE,
-                                                             new OOOEventHandler(), 1, maxSize);
       networkStackHarnessFactory = new OOONetworkStackHarnessFactory(
                                                                      new OnceAndOnlyOnceProtocolNetworkLayerFactoryImpl(),
-                                                                     oooSendStage.getSink(), oooReceiveStage.getSink(),
                                                                      l1ReconnectConfig);
     } else {
       networkStackHarnessFactory = new PlainNetworkStackHarnessFactory();
@@ -419,24 +441,32 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
     DSO_LOGGER.debug("Created CommunicationsManager.");
 
-    final ConfigItem[] connectionInfoItems = this.connectionComponents.createConnectionInfoConfigItemByGroup();
-    final ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItems[0].getObject();
+    final ConnectionInfoConfig[] connectionInfoItems = this.connectionComponents
+        .createConnectionInfoConfigItemByGroup();
+    final ConnectionInfo[] connectionInfo = connectionInfoItems[0].getConnectionInfos();
     final String serverHost = connectionInfo[0].getHostname();
     final int serverPort = connectionInfo[0].getPort();
+
+    final Stage clusterInternalEventsStage = stageManager
+        .createStage(ClientConfigurationContext.CLUSTER_INTERNAL_EVENTS_STAGE,
+                     new ClusterInternalEventsHandler(this.dsoCluster), 1, maxSize);
 
     final int socketConnectTimeout = tcProperties.getInt(TCPropertiesConsts.L1_SOCKET_CONNECT_TIMEOUT);
     final int maxConnectRetries = tcProperties.getInt(TCPropertiesConsts.L1_MAX_CONNECT_RETRIES);
     if (socketConnectTimeout < 0) { throw new IllegalArgumentException("invalid socket time value: "
                                                                        + socketConnectTimeout); }
+    ChannelEventListener reconnectionRejectedListener = new ReconnectionRejectedListenerImpl(clusterInternalEventsStage
+        .getSink());
     this.channel = this.dsoClientBuilder.createDSOClientMessageChannel(this.communicationsManager,
                                                                        this.connectionComponents, sessionProvider,
                                                                        maxConnectRetries, socketConnectTimeout, this);
+    this.channel.addListener(reconnectionRejectedListener);
     final ClientIDLoggerProvider cidLoggerProvider = new ClientIDLoggerProvider(this.channel.getClientIDProvider());
     stageManager.setLoggerProvider(cidLoggerProvider);
 
     DSO_LOGGER.debug("Created channel.");
 
-    TerracottaOperatorEventLogging.setNodeNameProvider(new ClientNameProvider(this.channel));
+    TerracottaOperatorEventLogging.setNodeNameProvider(new ClientNameProvider(this.dsoCluster));
 
     final ClientTransactionFactory txFactory = new ClientTransactionFactoryImpl(this.runtimeLogger);
 
@@ -496,6 +526,9 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final Stage ttiTTLEvictionStage = stageManager.createStage(ClientConfigurationContext.TTI_TTL_EVICTION_STAGE,
                                                                new TimeBasedEvictionHandler(), 8, maxSize);
 
+    searchRequestManager = this.dsoClientBuilder.createRemoteSearchRequestManager(new ClientIDLogger(this.channel
+        .getClientIDProvider(), TCLogging.getLogger(RemoteObjectManager.class)), this.channel, sessionManager);
+
     final RemoteServerMapManager remoteServerMapManager = this.dsoClientBuilder
         .createRemoteServerMapManager(new ClientIDLogger(this.channel.getClientIDProvider(), TCLogging
             .getLogger(RemoteObjectManager.class)), this.channel, sessionManager, lockRecallStage.getSink(),
@@ -510,11 +543,10 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final TCObjectFactory objectFactory = new TCObjectFactoryImpl(classFactory);
 
     this.objectManager = this.dsoClientBuilder.createObjectManager(remoteObjectManager, this.config, idProvider,
-                                                                   new ClockEvictionPolicy(-1), this.runtimeLogger,
-                                                                   this.channel.getClientIDProvider(),
-                                                                   this.classProvider, classFactory, objectFactory,
-                                                                   this.config.getPortability(), this.channel,
-                                                                   toggleRefMgr);
+                                                                   this.runtimeLogger, this.channel
+                                                                       .getClientIDProvider(), this.classProvider,
+                                                                   classFactory, objectFactory, this.config
+                                                                       .getPortability(), this.channel, toggleRefMgr);
     this.threadGroup.addCallbackOnExitDefaultHandler(new CallbackDumpAdapter(this.objectManager));
     this.dumpHandler.registerForDump(new CallbackDumpAdapter(this.objectManager));
 
@@ -523,7 +555,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.tcMemManager = new TCMemoryManagerImpl(cacheConfig.getSleepInterval(), cacheConfig.getLeastCount(),
                                                 cacheConfig.isOnlyOldGenMonitored(), getThreadGroup());
     final long timeOut = TCPropertiesImpl.getProperties().getLong(TCPropertiesConsts.LOGGING_LONG_GC_THRESHOLD);
-    final LongGCLogger gcLogger = new LongGCLogger(timeOut);
+    final LongGCLogger gcLogger = this.dsoClientBuilder.createLongGCLogger(timeOut);
     this.tcMemManager.registerForMemoryEvents(gcLogger);
     // CDV-1181 warn if using CMS
     this.tcMemManager.checkGarbageCollectors();
@@ -545,7 +577,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.clusterMetaDataManager = this.dsoClientBuilder
         .createClusterMetaDataManager(this.channel, encoding, this.threadIDManager, this.channel
             .getNodesWithObjectsMessageFactory(), this.channel.getKeysForOrphanedValuesMessageFactory(), this.channel
-            .getNodeMetaDataMessageFactory());
+            .getNodeMetaDataMessageFactory(), this.channel.getNodesWithKeysMessageFactory());
 
     // Set up the JMX management stuff
     final TunnelingEventHandler teh = this.dsoClientBuilder.createTunnelingEventHandler(this.channel.channel(),
@@ -617,6 +649,13 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final Stage receiveServerMapStage = stageManager
         .createStage(ClientConfigurationContext.RECEIVE_SERVER_MAP_RESPONSE_STAGE,
                      new ReceiveServerMapResponseHandler(remoteServerMapManager), 1, maxSize);
+    final Stage receiveSearchQueryStage = stageManager
+        .createStage(ClientConfigurationContext.RECEIVE_SEARCH_QUERY_RESPONSE_STAGE,
+                     new ReceiveSearchQueryResponseHandler(searchRequestManager), 1, maxSize);
+
+    final Stage receiveServerMapEvictionBroadcastStage = stageManager
+        .createStage(ClientConfigurationContext.RECEIVE_SERVER_MAP_EVICTION_BROADCAST_STAGE,
+                     new ReceiveServerMapEvictionBroadcastHandler(this.objectManager), 1, maxSize);
 
     // By design this stage needs to be single threaded. If it wasn't then cluster membership messages could get
     // processed before the client handshake ack, and this client would get a faulty view of the cluster at best, or
@@ -626,7 +665,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
     final Stage clusterMembershipEventStage = stageManager
         .createStage(ClientConfigurationContext.CLUSTER_MEMBERSHIP_EVENT_STAGE,
-                     new ClusterMemberShipEventsHandler(this.dsoCluster), 1, maxSize);
+                     new ClusterMemberShipEventsHandler(clusterInternalEventsStage.getSink()), 1, maxSize);
 
     final Stage clusterMetaDataStage = stageManager.createStage(ClientConfigurationContext.CLUSTER_METADATA_STAGE,
                                                                 new ClusterMetaDataHandler(), 1, maxSize);
@@ -647,12 +686,16 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
     final Stage jmxRemoteTunnelStage = stageManager.createStage(ClientConfigurationContext.JMXREMOTE_TUNNEL_STAGE, teh,
                                                                 1, maxSize);
+    final Stage receiveInvalidationStage = stageManager
+        .createStage(ClientConfigurationContext.RECEIVE_INVALIDATE_OBJECTS_STAGE,
+                     new ReceiveInvalidationHandler(remoteServerMapManager), 1, maxSize);
 
     final List<ClientHandshakeCallback> clientHandshakeCallbacks = new ArrayList<ClientHandshakeCallback>();
     clientHandshakeCallbacks.add(this.lockManager);
     clientHandshakeCallbacks.add(this.objectManager);
     clientHandshakeCallbacks.add(remoteObjectManager);
     clientHandshakeCallbacks.add(remoteServerMapManager);
+    clientHandshakeCallbacks.add(searchRequestManager);
     clientHandshakeCallbacks.add(this.rtxManager);
     clientHandshakeCallbacks.add(this.dsoClientBuilder.getObjectIDClientHandshakeRequester(batchSequenceReceiver));
     clientHandshakeCallbacks.add(this.clusterMetaDataManager);
@@ -661,8 +704,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.clientHandshakeManager = this.dsoClientBuilder
         .createClientHandshakeManager(new ClientIDLogger(this.channel.getClientIDProvider(), TCLogging
             .getLogger(ClientHandshakeManagerImpl.class)), this.channel, this.channel
-            .getClientHandshakeMessageFactory(), pauseStage.getSink(), sessionManager, this.dsoCluster,
-                                      pInfo.version(), Collections.unmodifiableCollection(clientHandshakeCallbacks));
+            .getClientHandshakeMessageFactory(), pauseStage.getSink(), sessionManager, clusterInternalEventsStage
+            .getSink(), pInfo.version(), Collections.unmodifiableCollection(clientHandshakeCallbacks));
     this.channel.addListener(this.clientHandshakeManager);
 
     final ClientConfigurationContext cc = new ClientConfigurationContext(stageManager, this.lockManager,
@@ -695,6 +738,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         .addClassMapping(TCMessageType.ACKNOWLEDGE_TRANSACTION_MESSAGE, AcknowledgeTransactionMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.CLIENT_HANDSHAKE_MESSAGE, ClientHandshakeMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.CLIENT_HANDSHAKE_ACK_MESSAGE, ClientHandshakeAckMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.CLIENT_HANDSHAKE_REJECTED_MESSAGE,
+                                 ClientHandshakeRejectedMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.JMX_MESSAGE, JMXMessage.class);
     this.channel.addClassMapping(TCMessageType.JMXREMOTE_MESSAGE_CONNECTION_MESSAGE, JmxRemoteTunnelMessage.class);
     this.channel.addClassMapping(TCMessageType.CLUSTER_MEMBERSHIP_EVENT_MESSAGE, ClusterMembershipMessage.class);
@@ -702,6 +747,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.channel.addClassMapping(TCMessageType.COMPLETED_TRANSACTION_LOWWATERMARK_MESSAGE,
                                  CompletedTransactionLowWaterMarkMessage.class);
     this.channel.addClassMapping(TCMessageType.NODES_WITH_OBJECTS_MESSAGE, NodesWithObjectsMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.NODES_WITH_KEYS_MESSAGE, NodesWithKeysMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.NODES_WITH_KEYS_RESPONSE_MESSAGE, NodesWithKeysResponseMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.NODES_WITH_OBJECTS_RESPONSE_MESSAGE,
                                  NodesWithObjectsResponseMessageImpl.class);
     this.channel
@@ -712,10 +759,12 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     this.channel.addClassMapping(TCMessageType.NODE_META_DATA_RESPONSE_MESSAGE, NodeMetaDataResponseMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.SYNC_WRITE_TRANSACTION_RECEIVED_MESSAGE,
                                  SyncWriteTransactionReceivedMessage.class);
-    this.channel.addClassMapping(TCMessageType.GET_SIZE_SERVER_MAP_REQUEST_MESSAGE,
-                                 GetSizeServerMapRequestMessageImpl.class);
-    this.channel.addClassMapping(TCMessageType.GET_SIZE_SERVER_MAP_RESPONSE_MESSAGE,
-                                 GetSizeServerMapResponseMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.GET_ALL_SIZE_SERVER_MAP_REQUEST_MESSAGE,
+                                 GetAllSizeServerMapRequestMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.GET_ALL_SIZE_SERVER_MAP_RESPONSE_MESSAGE,
+                                 GetAllSizeServerMapResponseMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.SEARCH_QUERY_REQUEST_MESSAGE, SearchQueryRequestMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.SEARCH_QUERY_RESPONSE_MESSAGE, SearchQueryResponseMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.GET_VALUE_SERVER_MAP_REQUEST_MESSAGE,
                                  GetValueServerMapRequestMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.OBJECT_NOT_FOUND_SERVER_MAP_RESPONSE_MESSAGE,
@@ -741,7 +790,52 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                                                   + " shouldn't be created using this constructor at the client.");
                                    }
                                  });
+    this.channel.addClassMapping(TCMessageType.GET_ALL_KEYS_SERVER_MAP_REQUEST_MESSAGE,
+                                 GetAllKeysServerMapRequestMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.GET_ALL_KEYS_SERVER_MAP_RESPONSE_MESSAGE,
+    // Special handling to get the applicator encoding
+                                 new GeneratedMessageFactory() {
+
+                                   public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                  final MessageChannel mChannel,
+                                                                  final TCMessageHeader msgHeader,
+                                                                  final TCByteBuffer[] data) {
+                                     return new GetAllKeysServerMapResponseMessageImpl(sid, monitor, mChannel,
+                                                                                       msgHeader, data, encoding);
+                                   }
+
+                                   public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                  final TCByteBufferOutputStream output,
+                                                                  final MessageChannel mChannel,
+                                                                  final TCMessageType type) {
+                                     throw new AssertionError(
+                                                              GetAllKeysServerMapRequestMessageImpl.class.getName()
+                                                                  + " shouldn't be created using this constructor at the client.");
+                                   }
+                                 });
+    this.channel.addClassMapping(TCMessageType.EVICTION_SERVER_MAP_BROADCAST_MESSAGE,
+    // Special handling to get the applicator encoding
+                                 new GeneratedMessageFactory() {
+
+                                   public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                  final MessageChannel mChannel,
+                                                                  final TCMessageHeader msgHeader,
+                                                                  final TCByteBuffer[] data) {
+                                     return new ServerMapEvictionBroadcastMessageImpl(sid, monitor, mChannel,
+                                                                                      msgHeader, data, encoding);
+                                   }
+
+                                   public TCMessage createMessage(final SessionID sid, final MessageMonitor monitor,
+                                                                  final TCByteBufferOutputStream output,
+                                                                  final MessageChannel mChannel,
+                                                                  final TCMessageType type) {
+                                     throw new AssertionError(
+                                                              ServerMapEvictionBroadcastMessageImpl.class.getName()
+                                                                  + " shouldn't be created using this constructor at the client.");
+                                   }
+                                 });
     this.channel.addClassMapping(TCMessageType.TUNNELED_DOMAINS_CHANGED_MESSAGE, TunneledDomainsChanged.class);
+    this.channel.addClassMapping(TCMessageType.INVALIDATE_OBJECTS_MESSAGE, InvalidateObjectsMessage.class);
 
     DSO_LOGGER.debug("Added class mappings.");
 
@@ -764,11 +858,14 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                   hydrateSink);
     this.channel.routeMessageType(TCMessageType.BATCH_TRANSACTION_ACK_MESSAGE, batchTxnAckStage.getSink(), hydrateSink);
     this.channel.routeMessageType(TCMessageType.CLIENT_HANDSHAKE_ACK_MESSAGE, pauseStage.getSink(), hydrateSink);
+    this.channel.routeMessageType(TCMessageType.CLIENT_HANDSHAKE_REJECTED_MESSAGE, pauseStage.getSink(), hydrateSink);
     this.channel.routeMessageType(TCMessageType.JMXREMOTE_MESSAGE_CONNECTION_MESSAGE, jmxRemoteTunnelStage.getSink(),
                                   hydrateSink);
     this.channel.routeMessageType(TCMessageType.CLUSTER_MEMBERSHIP_EVENT_MESSAGE,
                                   clusterMembershipEventStage.getSink(), hydrateSink);
     this.channel.routeMessageType(TCMessageType.NODES_WITH_OBJECTS_RESPONSE_MESSAGE, clusterMetaDataStage.getSink(),
+                                  hydrateSink);
+    this.channel.routeMessageType(TCMessageType.NODES_WITH_KEYS_RESPONSE_MESSAGE, clusterMetaDataStage.getSink(),
                                   hydrateSink);
     this.channel.routeMessageType(TCMessageType.KEYS_FOR_ORPHANED_VALUES_RESPONSE_MESSAGE, clusterMetaDataStage
         .getSink(), hydrateSink);
@@ -778,10 +875,18 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         .getSink(), hydrateSink);
     this.channel.routeMessageType(TCMessageType.GET_VALUE_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage.getSink(),
                                   hydrateSink);
-    this.channel.routeMessageType(TCMessageType.GET_SIZE_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage.getSink(),
-                                  hydrateSink);
+    this.channel.routeMessageType(TCMessageType.GET_ALL_SIZE_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage
+        .getSink(), hydrateSink);
+    this.channel.routeMessageType(TCMessageType.GET_ALL_KEYS_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage
+        .getSink(), hydrateSink);
     this.channel.routeMessageType(TCMessageType.OBJECT_NOT_FOUND_SERVER_MAP_RESPONSE_MESSAGE, receiveServerMapStage
         .getSink(), hydrateSink);
+    this.channel.routeMessageType(TCMessageType.EVICTION_SERVER_MAP_BROADCAST_MESSAGE,
+                                  receiveServerMapEvictionBroadcastStage.getSink(), hydrateSink);
+    this.channel.routeMessageType(TCMessageType.SEARCH_QUERY_RESPONSE_MESSAGE, receiveSearchQueryStage.getSink(),
+                                  hydrateSink);
+    this.channel.routeMessageType(TCMessageType.INVALIDATE_OBJECTS_MESSAGE, receiveInvalidationStage.getSink(),
+                                  hydrateSink);
 
     int i = 0;
     while (maxConnectRetries <= 0 || i < maxConnectRetries) {
@@ -799,7 +904,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
       } catch (final MaxConnectionsExceededException e) {
         DSO_LOGGER.fatal(e.getMessage());
         CONSOLE_LOGGER.fatal(e.getMessage());
-        CONSOLE_LOGGER.fatal(LicenseCheck.EXIT_MESSAGE);
+        CONSOLE_LOGGER.fatal(LicenseManager.EXIT_MESSAGE);
         System.exit(1);
       } catch (final CommStackMismatchException e) {
         DSO_LOGGER.fatal(e.getMessage());
@@ -863,6 +968,10 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
   public ClientObjectManager getObjectManager() {
     return this.objectManager;
+  }
+
+  public RemoteSearchRequestManager getSearchRequestManager() {
+    return this.searchRequestManager;
   }
 
   public RemoteTransactionManager getRemoteTransactionManager() {
@@ -1014,5 +1123,64 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     }
 
     CommonShutDownHook.shutdown();
+    if (this.threadGroup != null) {
+      boolean interrupted = false;
+
+      try {
+        final long end = System.currentTimeMillis()
+                         + TCPropertiesImpl.getProperties()
+                             .getLong(TCPropertiesConsts.L1_SHUTDOWN_THREADGROUP_GRACETIME);
+
+        while (this.threadGroup.activeCount() > 0 && System.currentTimeMillis() < end) {
+          try {
+            Thread.sleep(1000);
+          } catch (final InterruptedException e) {
+            interrupted = true;
+          }
+        }
+        if (this.threadGroup.activeCount() > 0) {
+          logger.warn("Timed out waiting for TC thread group threads to die - probable shutdown memory leak\n"
+                      + "Live threads: " + getLiveThreads(this.threadGroup));
+        } else {
+          logger.info("Destroying TC thread group");
+          this.threadGroup.destroy();
+        }
+      } catch (final Throwable t) {
+        logger.error("Error destroying TC thread group", t);
+      } finally {
+        if (interrupted) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+
+    try {
+      TCLogging.closeFileAppender();
+      TCLogging.disableLocking();
+    } catch (final Throwable t) {
+      Logger.getAnonymousLogger().log(Level.WARNING, "Error shutting down TC logging system", t);
+    }
+  }
+
+  private static List<Thread> getLiveThreads(final ThreadGroup group) {
+    final int estimate = group.activeCount();
+
+    Thread[] threads = new Thread[estimate + 1];
+
+    while (true) {
+      final int count = group.enumerate(threads);
+
+      if (count < threads.length) {
+        final List<Thread> l = new ArrayList<Thread>(count);
+        for (final Thread t : threads) {
+          if (t != null) {
+            l.add(t);
+          }
+        }
+        return l;
+      } else {
+        threads = new Thread[threads.length * 2];
+      }
+    }
   }
 }

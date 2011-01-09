@@ -127,6 +127,10 @@ public class ClientLockManagerGroupImpl implements ClientLockManager {
     getClientLockManagerFor(lock).recall(lock, level, lease);
   }
 
+  public void recall(LockID lock, ServerLockLevel level, int lease, boolean batch) {
+    getClientLockManagerFor(lock).recall(lock, level, lease, batch);
+  }
+
   public void award(NodeID node, SessionID session, LockID lock, ThreadID thread, ServerLockLevel level) {
     getClientLockManagerFor(lock).award(node, session, lock, thread, level);
   }
@@ -148,6 +152,10 @@ public class ClientLockManagerGroupImpl implements ClientLockManager {
   }
 
   public LockID generateLockIdentifier(String str) {
+    throw new AssertionError(getClass().getSimpleName() + " does not generate lock identifiers");
+  }
+  
+  public LockID generateLockIdentifier(long l) {
     throw new AssertionError(getClass().getSimpleName() + " does not generate lock identifiers");
   }
 
@@ -210,5 +218,4 @@ public class ClientLockManagerGroupImpl implements ClientLockManager {
     }
     return out;
   }
-  
 }

@@ -7,14 +7,14 @@ package com.tc.test.restart;
 import org.apache.commons.io.FileUtils;
 
 import com.tc.config.schema.MockIllegalConfigurationChangeHandler;
-import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory;
-import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.StandardConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
 import com.tc.config.schema.test.L2ConfigBuilder;
 import com.tc.config.schema.test.L2SConfigBuilder;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.object.config.schema.L2DSOConfig;
 import com.tc.objectserver.control.ExtraProcessServerControl;
 import com.tc.objectserver.control.NullServerControl;
 import com.tc.objectserver.control.ServerControl;
@@ -39,7 +39,7 @@ public class RestartTestEnvironment {
   private static TCLogger                               logger            = TCLogging
                                                                               .getTestingLogger(RestartTestEnvironment.class);
   private final PortChooser                             portChooser;
-  private StandardTVSConfigurationSetupManagerFactory   config;
+  private StandardConfigurationSetupManagerFactory   config;
   private File                                          configFile;
 
   private File                                          dbhome;
@@ -56,14 +56,14 @@ public class RestartTestEnvironment {
   private int                                           adminPort;
   private int                                           groupPort;
   private final OperatingMode                           operatingMode;
-  private final TestTVSConfigurationSetupManagerFactory configFactory;
+  private final TestConfigurationSetupManagerFactory configFactory;
 
   public RestartTestEnvironment(File tempDirectory, PortChooser portChooser, OperatingMode operatingMode) {
     this(tempDirectory, portChooser, operatingMode, null);
   }
 
   public RestartTestEnvironment(File tempDirectory, PortChooser portChooser, OperatingMode operatingMode,
-                                TestTVSConfigurationSetupManagerFactory configFactory) {
+                                TestConfigurationSetupManagerFactory configFactory) {
     this.tempDirectory = tempDirectory;
     this.portChooser = portChooser;
     this.operatingMode = operatingMode;
@@ -75,7 +75,7 @@ public class RestartTestEnvironment {
     this.configFile = new File(this.tempDirectory, "restart-test-config.xml");
   }
 
-  public StandardTVSConfigurationSetupManagerFactory getConfig() {
+  public StandardConfigurationSetupManagerFactory getConfig() {
     return config;
   }
 
@@ -91,7 +91,7 @@ public class RestartTestEnvironment {
     writeL2Config();
     initConfig();
 
-    dbhome = new File(this.tempDirectory, "l2-data/" + NewL2DSOConfig.OBJECTDB_DIRNAME);
+    dbhome = new File(this.tempDirectory, "l2-data/" + L2DSOConfig.OBJECTDB_DIRNAME);
     System.err.println("DBHome: " + dbhome.getAbsolutePath());
     System.out.println("dbhome: " + dbhome);
     if (dbhome.exists()) FileUtils.cleanDirectory(dbhome);
@@ -113,9 +113,9 @@ public class RestartTestEnvironment {
   private void initConfig() throws Exception {
     // FIXME 2005-12-01 andrew -- This MockIllegalConfigurationChangeHandler probably isn't right. We should fix it.
 
-    config = new StandardTVSConfigurationSetupManagerFactory(new String[] {
-        StandardTVSConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFile.getAbsolutePath() },
-                                                             StandardTVSConfigurationSetupManagerFactory.ConfigMode.L2,
+    config = new StandardConfigurationSetupManagerFactory(new String[] {
+        StandardConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFile.getAbsolutePath() },
+                                                             StandardConfigurationSetupManagerFactory.ConfigMode.L2,
                                                              new MockIllegalConfigurationChangeHandler());
   }
 
@@ -161,6 +161,10 @@ public class RestartTestEnvironment {
       l2.setGCEnabled(configFactory.getGCEnabled());
       l2.setGCVerbose(configFactory.getGCVerbose());
       l2.setGCInterval(configFactory.getGCIntervalInSec());
+      if (configFactory.isOffHeapEnabled()) {
+        l2.setOffHeapEnabled(configFactory.isOffHeapEnabled());
+        l2.setOffHeapMaxDataSize(configFactory.getOffHeapMaxDataSize());
+      }
     }
     L2ConfigBuilder[] l2s = new L2ConfigBuilder[] { l2 };
     L2SConfigBuilder servers = new L2SConfigBuilder();
@@ -225,8 +229,8 @@ public class RestartTestEnvironment {
     } catch (Exception e) {
       // ignore, leaving javaHome as null
     }
-    this.server = new ExtraProcessServerControl(new DebugParams(), "localhost", serverPort, adminPort, this.configFile
-        .getAbsolutePath(), mergeServerOutput, javaHome, jvmArgs);
+    this.server = new ExtraProcessServerControl(new DebugParams(), "localhost", serverPort, adminPort,
+                                                this.configFile.getAbsolutePath(), mergeServerOutput, javaHome, jvmArgs);
     return serverWrapper;
   }
 
@@ -275,7 +279,7 @@ public class RestartTestEnvironment {
   public void setAdminPort(int i) {
     this.adminPort = i;
   }
-  
+
   public void setGroupPort(int groupPort) {
     this.groupPort = groupPort;
   }
@@ -289,8 +293,8 @@ public class RestartTestEnvironment {
     this.adminPort = portChooser.chooseRandomPort();
     return this.adminPort;
   }
-  
-  public int chooseGroupPort(){
+
+  public int chooseGroupPort() {
     this.groupPort = portChooser.chooseRandomPort();
     return this.groupPort;
   }
@@ -308,7 +312,7 @@ public class RestartTestEnvironment {
   public int getAdminPort() {
     return this.adminPort;
   }
-  
+
   public int getGroupPort() {
     return this.groupPort;
   }

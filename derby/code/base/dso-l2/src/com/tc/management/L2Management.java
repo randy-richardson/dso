@@ -11,7 +11,7 @@ import com.sun.jmx.remote.generic.SynchroMessageConnectionServer;
 import com.sun.jmx.remote.generic.SynchroMessageConnectionServerImpl;
 import com.sun.jmx.remote.socket.SocketConnectionServer;
 import com.tc.async.api.Sink;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.exception.TCRuntimeException;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.JMXLogging;
@@ -24,7 +24,8 @@ import com.tc.management.beans.TCDumper;
 import com.tc.management.beans.TCServerInfoMBean;
 import com.tc.management.beans.object.ObjectManagementMonitor;
 import com.tc.net.protocol.tcm.ChannelID;
-import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
+import com.tc.objectserver.persistence.db.TCDatabaseException;
+import com.tc.objectserver.storage.api.DBEnvironment;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.beans.StatisticsMBeanNames;
 import com.tc.statistics.beans.impl.StatisticsGatewayMBeanImpl;
@@ -57,7 +58,7 @@ public class L2Management extends TerracottaManagement {
 
   protected MBeanServer                          mBeanServer;
   protected JMXConnectorServer                   jmxConnectorServer;
-  protected final L2TVSConfigurationSetupManager configurationSetupManager;
+  protected final L2ConfigurationSetupManager configurationSetupManager;
   private final TCServerInfoMBean                tcServerInfo;
   private final TCDumper                         tcDumper;
   private final ObjectManagementMonitor          objectManagementBean;
@@ -70,7 +71,7 @@ public class L2Management extends TerracottaManagement {
 
   public L2Management(TCServerInfoMBean tcServerInfo, LockStatisticsMonitorMBean lockStatistics,
                       StatisticsAgentSubSystem statisticsAgentSubSystem, StatisticsGatewayMBeanImpl statisticsGateway,
-                      L2TVSConfigurationSetupManager configurationSetupManager, TCDumper tcDumper,
+                      L2ConfigurationSetupManager configurationSetupManager, TCDumper tcDumper,
                       InetAddress bindAddr, int port, Sink remoteEventsSink) throws MBeanRegistrationException,
       NotCompliantMBeanException, InstanceAlreadyExistsException {
     this.tcServerInfo = tcServerInfo;
@@ -106,10 +107,6 @@ public class L2Management extends TerracottaManagement {
     }
     registerMBeans();
     statisticsGateway.addStatisticsAgent(ChannelID.NULL_ID, mBeanServer);
-  }
-  
-  public void init(BerkeleyDBEnvironment dbEnv) {
-    // NOP
   }
 
   /**
@@ -288,6 +285,7 @@ public class L2Management extends TerracottaManagement {
           return (Message) future.get();
         } catch (InterruptedException e) {
           logger.debug("remote JMX call interrupted");
+          Thread.currentThread().interrupt();
           return null;
         } catch (TCExceptionResultException e) {
           throw new RuntimeException(e.getCause());
@@ -296,5 +294,9 @@ public class L2Management extends TerracottaManagement {
 
       return callback.execute(request);
     }
+  }
+
+  public void initBackupMbean(DBEnvironment dbenv) throws TCDatabaseException {
+    if (false) { throw new TCDatabaseException(""); }
   }
 }

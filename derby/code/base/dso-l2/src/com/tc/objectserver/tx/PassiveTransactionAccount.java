@@ -12,72 +12,76 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Maintains the transaction accounting on a passive server. It primaries keeps track of incoming transactions and those
+ * transactions being applied on the passive server.
+ * 
+ * @author Saravanan Subbiah
+ * @author Nabib El-Rahman
+ */
 public class PassiveTransactionAccount implements TransactionAccount {
 
   private final NodeID       nodeID;
   private final Set          txnIDs = Collections.synchronizedSet(new HashSet());
   private CallBackOnComplete callback;
-  private boolean            dead = false;
+  private boolean            dead   = false;
 
-  public PassiveTransactionAccount(NodeID source) {
+  public PassiveTransactionAccount(final NodeID source) {
     this.nodeID = source;
   }
 
-  public void addWaitee(NodeID waitee, TransactionID requestID) {
-    throw new AssertionError("Transactions should never be broadcasted in Passive Server : " + waitee + " , "
-                             + requestID);
-  }
-
-  public boolean applyCommitted(TransactionID requestID) {
-    synchronized (txnIDs) {
-      txnIDs.remove(new ServerTransactionID(nodeID, requestID));
-      invokeCallBackOnCompleteIfNecessary();
-    }
-    return true;
-  }
-
-  public boolean broadcastCompleted(TransactionID requestID) {
-    throw new AssertionError("Transactions should never be broadcasted in Passive Server");
-  }
-
+  /**
+   * {@inheritDoc}
+   */
   public NodeID getNodeID() {
     return nodeID;
   }
 
-  public boolean hasWaitees(TransactionID requestID) {
-    return false;
-  }
-
-  public boolean removeWaitee(NodeID waitee, TransactionID requestID) {
-    throw new AssertionError("Transactions should never be ACKED to Passive Server");
-  }
-
-  public Set requestersWaitingFor(NodeID waitee) {
-    return Collections.EMPTY_SET;
-  }
-
-  public boolean skipApplyAndCommit(TransactionID requestID) {
-    synchronized (txnIDs) {
-      txnIDs.remove(new ServerTransactionID(nodeID, requestID));
+  /**
+   * {@inheritDoc}
+   */
+  public boolean applyCommitted(final TransactionID requestID) {
+    synchronized (this.txnIDs) {
+      this.txnIDs.remove(new ServerTransactionID(this.nodeID, requestID));
       invokeCallBackOnCompleteIfNecessary();
     }
     return true;
   }
 
-  public boolean relayTransactionComplete(TransactionID requestID) {
-    throw new AssertionError("Transactions should never be relayed from Passive Server");
+  /**
+   * {@inheritDoc}
+   */
+  public boolean skipApplyAndCommit(final TransactionID requestID) {
+    synchronized (this.txnIDs) {
+      this.txnIDs.remove(new ServerTransactionID(this.nodeID, requestID));
+      invokeCallBackOnCompleteIfNecessary();
+    }
+    return true;
   }
 
-  public void addAllPendingServerTransactionIDsTo(Set txnsInSystem) {
+  /**
+   * {@inheritDoc}
+   */
+  public void addAllPendingServerTransactionIDsTo(Set<ServerTransactionID> txnsInSystem) {
     synchronized (txnIDs) {
       txnsInSystem.addAll(txnIDs);
     }
   }
 
-  public void incommingTransactions(Set serverTxnsIDs) {
+  public void addObjectsSyncedTo(final NodeID to, final TransactionID txnID) {
+    throw new AssertionError("Objects can't be synced from Passive Server");
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void incomingTransactions(Set<ServerTransactionID> serverTxnsIDs) {
     txnIDs.addAll(serverTxnsIDs);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void nodeDead(CallBackOnComplete callBack) {
     synchronized (txnIDs) {
       this.callback = callBack;
@@ -86,14 +90,81 @@ public class PassiveTransactionAccount implements TransactionAccount {
     }
   }
 
+  /**
+   * Always returns first since {@link PassiveTransactionAccount} doesn't support waitee accounting.
+   * 
+   * @param TransactionID requestID
+   * @return boolean
+   */
+  public boolean hasWaitees(TransactionID requestID) {
+    return false;
+  }
+
+  /**
+   * @param NodeID waitee
+   * @param TransactionID requestID
+   * @throws AssertionError always, should not be called.
+   */
+  public void addWaitee(NodeID waitee, TransactionID requestID) {
+    throw new AssertionError("Transactions should never be broadcasted in Passive Server : " + waitee + " , "
+                             + requestID);
+  }
+
+  /**
+   * @param TransactionID requestID
+   * @return boolean
+   * @throws AssertionError always, should not be called.
+   */
+  public boolean broadcastCompleted(TransactionID requestID) {
+    throw new AssertionError("Transactions should never be broadcasted in Passive Server");
+  }
+
+  /**
+   * @param TransactionID requestID
+   * @return boolean
+   * @throws AssertionError always, should not be called.
+   */
+  public boolean processMetaDataCompleted(TransactionID requestID) {
+    throw new AssertionError("Transactions should never be processMetaData with a transaction in Passive Server");
+  }
+
+  /**
+   * @param TransactionID requestID
+   * @return boolean
+   * @throws AssertionError always, should not be called.
+   */
+  public boolean removeWaitee(NodeID waitee, TransactionID requestID) {
+    throw new AssertionError("Transactions should never be ACKED to Passive Server");
+  }
+
+  /**
+   * @param TransactionID requestID
+   * @return boolean
+   * @throws AssertionError always, should not be called.
+   */
+  public boolean relayTransactionComplete(TransactionID requestID) {
+    throw new AssertionError("Transactions should never be relayed from Passive Server");
+  }
+
+  /**
+   * Returns empty collection since {@link PassiveTransactionAccount} does not do waitee accounting.
+   * 
+   * @param NodeID waitee
+   * @return Set set
+   */
+  public Set requestersWaitingFor(NodeID waitee) {
+    return Collections.EMPTY_SET;
+  }
+
+  @Override
+  public String toString() {
+    return "PassiveTransactionAccount [ " + this.nodeID + " ] = " + this.txnIDs;
+  }
+
   private void invokeCallBackOnCompleteIfNecessary() {
     if (dead && txnIDs.isEmpty()) {
       callback.onComplete(nodeID);
     }
   }
-  
-  @Override
-  public String toString() {
-    return "PassiveTransactionAccount [ " + nodeID + " ] = " + txnIDs;
-  }
+
 }

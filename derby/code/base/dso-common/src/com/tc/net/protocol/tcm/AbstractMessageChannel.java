@@ -224,6 +224,10 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     return;
   }
 
+  public void notifyTransportReconnectionRejected(MessageTransport transport) {
+    fireEvent(new ChannelEventImpl(ChannelEventType.TRANSPORT_RECONNECTION_REJECTED_EVENT, AbstractMessageChannel.this));
+  }
+
   public TCSocketAddress getLocalAddress() {
     NetworkLayer sendLyr = this.sendLayer;
     if (sendLyr != null) {
@@ -264,8 +268,10 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     return NAME_CHANNEL_LAYER;
   }
 
+  @Override
   public String toString() {
-    return ((isOpen() ? getChannelID() : "ChannelID[NULL_ID]") + ":" + getLocalAddress() + " <--> " + getRemoteAddress());
+    return ((isOpen() ? getChannelID() : "ChannelID[NULL_ID, " + getStatus() + "]") + ":" + getLocalAddress()
+            + " <--> " + getRemoteAddress());
   }
 
   class ChannelStatus {
@@ -281,8 +287,12 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
     }
 
     synchronized boolean getAndSetIsClosed() {
-      // must not in INIT state
-      Assert.assertFalse("Wrong to be in init state to switch to close state", ChannelState.INIT.equals(state));
+      if (ChannelState.INIT.equals(state)) {
+        logger.warn("Ignoring state switch to " + ChannelState.CLOSED + "; Current State : " + state + "; "
+                    + AbstractMessageChannel.this);
+        return false;
+      }
+
       if (ChannelState.CLOSED.equals(state)) {
         return true;
       } else {
@@ -297,6 +307,11 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
 
     synchronized boolean isClosed() {
       return ChannelState.CLOSED.equals(state);
+    }
+
+    @Override
+    public String toString() {
+      return "Status:" + this.state.toString();
     }
 
   }
@@ -316,6 +331,7 @@ abstract class AbstractMessageChannel implements MessageChannel, MessageChannelI
       this.state = state;
     }
 
+    @Override
     public String toString() {
       switch (state) {
         case STATE_INIT:

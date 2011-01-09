@@ -3,6 +3,8 @@
  */
 package com.tc.objectserver.handler;
 
+import org.mockito.Mockito;
+
 import com.tc.async.api.AddPredicate;
 import com.tc.async.api.ConfigurationContext;
 import com.tc.async.api.EventContext;
@@ -25,6 +27,7 @@ import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.object.ObjectID;
 import com.tc.object.dmi.DmiDescriptor;
 import com.tc.object.dna.api.DNA;
+import com.tc.object.dna.api.MetaDataReader;
 import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.object.locks.LockID;
@@ -50,25 +53,30 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.handshakemanager.ServerClientHandshakeManager;
 import com.tc.objectserver.l1.api.ClientStateManager;
+import com.tc.objectserver.l1.api.InvalidateObjectManager;
 import com.tc.objectserver.locks.LockManager;
 import com.tc.objectserver.locks.NotifiedWaiters;
 import com.tc.objectserver.managedobject.ApplyTransactionInfo;
+import com.tc.objectserver.metadata.MetaDataManager;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
-import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
+import com.tc.objectserver.search.IndexManager;
+import com.tc.objectserver.search.SearchRequestManager;
+import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
 import com.tc.objectserver.tx.ServerTransaction;
 import com.tc.objectserver.tx.ServerTransactionListener;
 import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManager;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
 import com.tc.objectserver.tx.TransactionalObjectManager;
-import com.tc.objectserver.tx.TxnsInSystemCompletionLister;
+import com.tc.objectserver.tx.TxnsInSystemCompletionListener;
 import com.tc.stats.Stats;
 import com.tc.stats.counter.sampled.SampledCounterConfig;
 import com.tc.stats.counter.sampled.SampledCounterImpl;
 import com.tc.stats.counter.sampled.derived.SampledRateCounterConfig;
 import com.tc.stats.counter.sampled.derived.SampledRateCounterImpl;
 import com.tc.test.TCTestCase;
+import com.tc.text.PrettyPrinter;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.SequenceID;
 
@@ -95,7 +103,8 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
     super.setUp();
     final SampledCounterImpl sci = new SampledCounterImpl(new SampledCounterConfig(5, 10, true, 0));
     final SampledRateCounterImpl srci = new SampledRateCounterImpl(new SampledRateCounterConfig(5, 10, true));
-    this.handler = new BroadcastChangeHandler(sci, new ObjectStatsRecorder(), srci);
+    this.handler = new BroadcastChangeHandler(sci, new ObjectStatsRecorder(), srci, Mockito
+        .mock(InvalidateObjectManager.class));
     this.serverCfgCxt = new TestServerConfigurationContext(NO_OF_CLIENTS, DISCONNECTED_CLIENT);
     this.handler.initialize(this.serverCfgCxt);
   }
@@ -132,6 +141,10 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
 
     public DmiDescriptor[] getDmiDescriptors() {
       return new DmiDescriptor[0];
+    }
+
+    public MetaDataReader[] getMetaDataReaders() {
+      return new MetaDataReader[0];
     }
 
     public long[] getHighWaterMarks() {
@@ -182,7 +195,7 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       return TxnType.CONCURRENT;
     }
 
-    public boolean needsBroadcast() {
+    public boolean isActiveTxn() {
       return false;
     }
 
@@ -283,6 +296,18 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       throw new ImplementMe();
     }
 
+    public IndexManager getIndexManager() {
+      throw new ImplementMe();
+    }
+
+    public MetaDataManager getMetaDataManager() {
+      throw new ImplementMe();
+    }
+
+    public SearchRequestManager getSearchRequestManager() {
+      throw new ImplementMe();
+    }
+
   }
 
   private class TestStage implements Stage {
@@ -297,6 +322,10 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
     }
 
     public void start(final ConfigurationContext context) {
+      throw new ImplementMe();
+    }
+
+    public PrettyPrinter prettyPrint(PrettyPrinter out) {
       throw new ImplementMe();
     }
 
@@ -415,6 +444,11 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
 
     public BatchTransactionAcknowledgeMessage newBatchTransactionAcknowledgeMessage(final NodeID nid) {
       throw new ImplementMe();
+    }
+
+    public void notifyConnectionRefused(ClientID clientID, String message) {
+      throw new ImplementMe();
+
     }
   }
 
@@ -602,9 +636,9 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       return null;
     }
 
-    public List<DNA> createPrunedChangesAndAddObjectIDTo(final Collection<DNA> changes,
-                                                         final ApplyTransactionInfo references, final NodeID clientID,
-                                                         final Set<ObjectID> objectIDs) {
+    public List<DNA> createPrunedChangesAndAddObjectIDTo(Collection<DNA> changes, ApplyTransactionInfo references,
+                                                         NodeID clientID, Set<ObjectID> objectIDs,
+                                                         Set<ObjectID> invalidateObjectIDs) {
       final ArrayList<DNA> list = new ArrayList<DNA>();
       final ObjectID dateID = new ObjectID(1);
       list.add(new TestDateDNA("java.util.Date", dateID));
@@ -672,11 +706,11 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       //
     }
 
-    public void callBackOnResentTxnsInSystemCompletion(final TxnsInSystemCompletionLister l) {
+    public void callBackOnResentTxnsInSystemCompletion(final TxnsInSystemCompletionListener l) {
       throw new ImplementMe();
     }
 
-    public void callBackOnTxnsInSystemCompletion(final TxnsInSystemCompletionLister l) {
+    public void callBackOnTxnsInSystemCompletion(final TxnsInSystemCompletionListener l) {
       throw new ImplementMe();
     }
 
@@ -735,6 +769,10 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
 
     public long getTotalNumOfActiveTransactions() {
       throw new ImplementMe();
+    }
+
+    public void processingMetaDataCompleted(NodeID sourceID, TransactionID txnID) {
+      //
     }
   }
 }

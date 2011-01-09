@@ -8,8 +8,8 @@ import com.tc.config.schema.builder.InstrumentedClassConfigBuilder;
 import com.tc.config.schema.builder.LockConfigBuilder;
 import com.tc.config.schema.builder.RootConfigBuilder;
 import com.tc.config.schema.setup.FatalIllegalConfigurationChangeHandler;
-import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
-import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.L1ConfigurationSetupManager;
+import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
 import com.tc.config.schema.test.InstrumentedClassConfigBuilderImpl;
 import com.tc.config.schema.test.L2ConfigBuilder;
 import com.tc.config.schema.test.LockConfigBuilderImpl;
@@ -36,30 +36,34 @@ public class LockInfoThreadDumpTest extends TransparentTestBase {
   private int              adminPort;
   private File             configFile;
 
+  @Override
   public void doSetUp(TransparentTestIface t) throws Exception {
     t.getTransparentAppConfig().setClientCount(NODE_COUNT);
     t.initializeTestRunner();
     t.getTransparentAppConfig().setAttribute(LockInfoThreadDumpTestApp.JMXPORT, String.valueOf(adminPort));
   }
 
+  @Override
   protected Class getApplicationClass() {
     return LockInfoThreadDumpTestApp.class;
   }
 
+  @Override
   public void setUp() throws Exception {
     PortChooser pc = new PortChooser();
     port = pc.chooseRandomPort();
     adminPort = pc.chooseRandomPort();
+    int groupPort = pc.chooseRandomPort();
     configFile = getTempFile("tc-config.xml");
     writeConfigFile();
-    TestTVSConfigurationSetupManagerFactory factory = new TestTVSConfigurationSetupManagerFactory(
-                                                                                                  TestTVSConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
+    TestConfigurationSetupManagerFactory factory = new TestConfigurationSetupManagerFactory(
+                                                                                                  TestConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
                                                                                                   null,
                                                                                                   new FatalIllegalConfigurationChangeHandler());
 
-    L1TVSConfigurationSetupManager manager = factory.createL1TVSConfigurationSetupManager();
-    setUpControlledServer(factory, new StandardDSOClientConfigHelperImpl(manager), port, adminPort, configFile
-        .getAbsolutePath());
+    L1ConfigurationSetupManager manager = factory.getL1TVSConfigurationSetupManager();
+    setUpControlledServer(factory, new StandardDSOClientConfigHelperImpl(manager), port, adminPort, groupPort,
+                          configFile.getAbsolutePath());
     doSetUp(this);
   }
 

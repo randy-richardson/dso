@@ -4,8 +4,11 @@
  */
 package com.tc.object.bytecode.hook.impl;
 
+import static org.terracotta.license.LicenseConstants.LICENSE_KEY_FILENAME;
+
 import org.apache.commons.io.CopyUtils;
 
+import com.google.common.collect.MapMaker;
 import com.tc.aspectwerkz.transform.InstrumentationContext;
 import com.tc.aspectwerkz.transform.WeavingStrategy;
 import com.tc.bundles.EmbeddedOSGiRuntime;
@@ -14,8 +17,9 @@ import com.tc.bundles.VirtualTimRepository;
 import com.tc.config.schema.L2ConfigForL1.L2Data;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.FatalIllegalConfigurationChangeHandler;
-import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
-import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.L1ConfigurationSetupManager;
+import com.tc.config.schema.setup.StandardConfigurationSetupManagerFactory;
+import com.tc.license.LicenseManager;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -32,12 +36,14 @@ import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.SingleLoaderClassProvider;
 import com.tc.object.logging.InstrumentationLogger;
 import com.tc.object.logging.RuntimeLoggerImpl;
+import com.tc.object.tools.BootJar;
 import com.tc.object.tools.BootJarException;
 import com.tc.plugins.ModulesLoader;
 import com.tc.timapi.Version;
 import com.tc.util.Assert;
 import com.tc.util.ProductInfo;
 import com.tc.util.TCTimeoutException;
+import com.tc.util.Util;
 import com.terracottatech.config.ConfigurationModel;
 
 import java.io.ByteArrayOutputStream;
@@ -93,13 +99,13 @@ public class DSOContextImpl implements DSOContext {
   }
 
   public static DSOContext createContext(String configSpec) throws ConfigurationSetupException {
-    StandardTVSConfigurationSetupManagerFactory factory = new StandardTVSConfigurationSetupManagerFactory(
-                                                                                                          (String[]) null,
-                                                                                                          StandardTVSConfigurationSetupManagerFactory.ConfigMode.CUSTOM_L1,
-                                                                                                          new FatalIllegalConfigurationChangeHandler(),
-                                                                                                          configSpec);
+    StandardConfigurationSetupManagerFactory factory = new StandardConfigurationSetupManagerFactory(
+                                                                                                    (String[]) null,
+                                                                                                    StandardConfigurationSetupManagerFactory.ConfigMode.CUSTOM_L1,
+                                                                                                    new FatalIllegalConfigurationChangeHandler(),
+                                                                                                    configSpec);
 
-    L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();
+    L1ConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager();
     config.setupLogging();
     PreparedComponentsFromL2Connection l2Connection;
     try {
@@ -116,16 +122,29 @@ public class DSOContextImpl implements DSOContext {
   }
 
   public static DSOContext createStandaloneContext(String configSpec, ClassLoader loader,
-                                                   Map<String, URL> virtualTimJars, Collection<URL> additionalModules)
-      throws ConfigurationSetupException {
-    // XXX: refactor this to not duplicate createContext() so much
-    StandardTVSConfigurationSetupManagerFactory factory = new StandardTVSConfigurationSetupManagerFactory(
-                                                                                                          (String[]) null,
-                                                                                                          StandardTVSConfigurationSetupManagerFactory.ConfigMode.EXPRESS_L1,
-                                                                                                          new FatalIllegalConfigurationChangeHandler(),
-                                                                                                          configSpec);
+                                                   Map<String, URL> virtualTimJars, Collection<URL> additionalModules,
+                                                   URL bootJarURL) throws ConfigurationSetupException {
+    // XXX: refactor this method to not duplicate createContext() so much
 
-    L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();
+    // load license via normal methods before attempt to load it from application resource
+    if (LicenseManager.getLicense() == null) {
+      String licenseLocation = "/" + LICENSE_KEY_FILENAME;
+      LicenseManager.loadLicenseFromStream(loader.getResourceAsStream(licenseLocation), licenseLocation);
+    }
+
+    try {
+      BootJar.verifyTCVersion(bootJarURL);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    StandardConfigurationSetupManagerFactory factory = new StandardConfigurationSetupManagerFactory(
+                                                                                                    (String[]) null,
+                                                                                                    StandardConfigurationSetupManagerFactory.ConfigMode.EXPRESS_L1,
+                                                                                                    new FatalIllegalConfigurationChangeHandler(),
+                                                                                                    configSpec);
+
+    L1ConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager();
     config.setupLogging();
     PreparedComponentsFromL2Connection l2Connection;
     try {
@@ -141,8 +160,8 @@ public class DSOContextImpl implements DSOContext {
     // XXX: what should the appGroup and loaderDesc be? In theory we might want "regular" clients to access this shared
     // state too
     ClassProvider classProvider = new SingleLoaderClassProvider(null, "standalone", loader);
-    Manager manager = new ManagerImpl(true, null, null, null, configHelper, l2Connection, true, runtimeLogger,
-                                      classProvider);
+    Manager manager = new ManagerImpl(true, null, null, null, null, configHelper, l2Connection, true, runtimeLogger,
+                                      classProvider, true);
 
     Collection<Repository> repos = new ArrayList<Repository>();
     repos.add(new VirtualTimRepository(virtualTimJars));
@@ -155,6 +174,7 @@ public class DSOContextImpl implements DSOContext {
       }
     }
     manager.init();
+
     return context;
   }
 
@@ -174,6 +194,8 @@ public class DSOContextImpl implements DSOContext {
   private DSOContextImpl(DSOClientConfigHelper configHelper, ClassProvider classProvider, Manager manager,
                          Collection<Repository> repos) {
     Assert.assertNotNull(configHelper);
+
+    resolveClasses();
 
     this.configHelper = configHelper;
     this.manager = manager;
@@ -206,6 +228,11 @@ public class DSOContextImpl implements DSOContext {
       }
     }
     getClassResource("non.existent.Class", getClass().getClassLoader(), true);
+  }
+
+  private void resolveClasses() {
+    // This fixes a class circularity error in JavaClassInfoRepository
+    new MapMaker().weakKeys().weakValues().makeMap().put("foo", "bar");
   }
 
   /**
@@ -274,12 +301,12 @@ public class DSOContextImpl implements DSOContext {
 
   private synchronized static DSOClientConfigHelper getGlobalConfigHelper() throws ConfigurationSetupException {
     if (staticConfigHelper == null) {
-      StandardTVSConfigurationSetupManagerFactory factory = new StandardTVSConfigurationSetupManagerFactory(
-                                                                                                            StandardTVSConfigurationSetupManagerFactory.ConfigMode.CUSTOM_L1,
-                                                                                                            new FatalIllegalConfigurationChangeHandler());
+      StandardConfigurationSetupManagerFactory factory = new StandardConfigurationSetupManagerFactory(
+                                                                                                      StandardConfigurationSetupManagerFactory.ConfigMode.CUSTOM_L1,
+                                                                                                      new FatalIllegalConfigurationChangeHandler());
 
       logger.debug("Created StandardTVSConfigurationSetupManagerFactory.");
-      L1TVSConfigurationSetupManager config = factory.createL1TVSConfigurationSetupManager();
+      L1ConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager();
       config.setupLogging();
       logger.debug("Created L1TVSConfigurationSetupManager.");
 
@@ -294,9 +321,9 @@ public class DSOContextImpl implements DSOContext {
     return staticConfigHelper;
   }
 
-  private static PreparedComponentsFromL2Connection validateMakeL2Connection(L1TVSConfigurationSetupManager config)
+  private static PreparedComponentsFromL2Connection validateMakeL2Connection(L1ConfigurationSetupManager config)
       throws UnknownHostException, IOException, TCTimeoutException {
-    L2Data[] l2Data = (L2Data[]) config.l2Config().l2Data().getObjects();
+    L2Data[] l2Data = config.l2Config().l2Data();
     Assert.assertNotNull(l2Data);
 
     String serverHost = l2Data[0].host();
@@ -323,33 +350,38 @@ public class DSOContextImpl implements DSOContext {
     long startTime = System.currentTimeMillis();
     long lastTrial = 0;
 
-    while (System.currentTimeMillis() < (startTime + MAX_HTTP_FETCH_TIME)) {
-      try {
-        long untilNextTrial = HTTP_FETCH_RETRY_INTERVAL - (System.currentTimeMillis() - lastTrial);
+    boolean interrupted = false;
+    try {
+      while (System.currentTimeMillis() < (startTime + MAX_HTTP_FETCH_TIME)) {
+        try {
+          long untilNextTrial = HTTP_FETCH_RETRY_INTERVAL - (System.currentTimeMillis() - lastTrial);
 
-        if (untilNextTrial > 0) {
-          try {
-            Thread.sleep(untilNextTrial);
-          } catch (InterruptedException ie) {
-            // whatever; just try again now
+          if (untilNextTrial > 0) {
+            try {
+              Thread.sleep(untilNextTrial);
+            } catch (InterruptedException ie) {
+              interrupted = true;
+            }
           }
+
+          logger.debug("Opening connection to: " + theURL + " to fetch server configuration.");
+
+          lastTrial = System.currentTimeMillis();
+          InputStream in = theURL.openStream();
+          logger.debug("Got input stream to: " + theURL);
+          ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+          CopyUtils.copy(in, baos);
+
+          return baos.toString();
+        } catch (ConnectException ce) {
+          logger.warn("Unable to fetch configuration mode from L2 at '" + theURL + "'; trying again. "
+                      + "(Is an L2 running at that address?): " + ce.getLocalizedMessage());
+          // oops -- try again
         }
-
-        logger.debug("Opening connection to: " + theURL + " to fetch server configuration.");
-
-        lastTrial = System.currentTimeMillis();
-        InputStream in = theURL.openStream();
-        logger.debug("Got input stream to: " + theURL);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        CopyUtils.copy(in, baos);
-
-        return baos.toString();
-      } catch (ConnectException ce) {
-        logger.warn("Unable to fetch configuration mode from L2 at '" + theURL + "'; trying again. "
-                    + "(Is an L2 running at that address?): " + ce.getLocalizedMessage());
-        // oops -- try again
       }
+    } finally {
+      Util.selfInterruptIfNeeded(interrupted);
     }
 
     throw new TCTimeoutException("We tried for " + (int) ((System.currentTimeMillis() - startTime) / 1000)
@@ -367,8 +399,8 @@ public class DSOContextImpl implements DSOContext {
   }
 
   public void addModules(URL[] modules) throws Exception {
-    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(), manager
-        .getTunneledDomainUpdater(), false, modules);
+    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(),
+                                         manager.getTunneledDomainUpdater(), false, modules);
   }
 
   public void shutdown() {

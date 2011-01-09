@@ -7,7 +7,7 @@ package com.tc.test;
 import org.apache.commons.io.FileUtils;
 
 import com.tc.config.schema.builder.DSOApplicationConfigBuilder;
-import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
 import com.tc.config.schema.test.ApplicationConfigBuilder;
 import com.tc.config.schema.test.GroupConfigBuilder;
 import com.tc.config.schema.test.GroupsConfigBuilder;
@@ -27,28 +27,28 @@ import java.io.PrintWriter;
 
 public class MultipleServersConfigCreator {
 
-  public static final String                              DEV_MODE  = "development";
-  public static final String                              PROD_MODE = "production";
+  public static final String                           DEV_MODE  = "development";
+  public static final String                           PROD_MODE = "production";
 
-  protected final int                                     serverCount;
+  protected final int                                  serverCount;
 
-  protected final String                                  serverPersistence;
-  protected final boolean                                 serverDiskless;
-  protected final String                                  configModel;
-  protected final File                                    configFile;
-  protected final File                                    tempDir;
-  protected final TestTVSConfigurationSetupManagerFactory configFactory;
-  protected final String[]                                dataLocations;
-  protected final DSOApplicationConfigBuilder             dsoApplicationBuilder;
-  protected static TCLogger                               logger    = TCLogging
-                                                                        .getTestingLogger(MultipleServersConfigCreator.class);
+  protected final String                               serverPersistence;
+  protected final boolean                              serverDiskless;
+  protected final String                               configModel;
+  protected final File                                 configFile;
+  protected final File                                 tempDir;
+  protected final TestConfigurationSetupManagerFactory configFactory;
+  protected final String[]                             dataLocations;
+  protected final DSOApplicationConfigBuilder          dsoApplicationBuilder;
+  protected static TCLogger                            logger    = TCLogging
+                                                                     .getTestingLogger(MultipleServersConfigCreator.class);
 
-  private final MultipleServersTestSetupManager           setupManager;
-  private final GroupData[]                               groupData;
+  private final MultipleServersTestSetupManager        setupManager;
+  private final GroupData[]                            groupData;
 
   public MultipleServersConfigCreator(MultipleServersTestSetupManager setupManager, GroupData[] groupData,
                                       String configModel, File configFile, File tempDir,
-                                      TestTVSConfigurationSetupManagerFactory configFactory,
+                                      TestConfigurationSetupManagerFactory configFactory,
                                       DSOApplicationConfigBuilder dsoApplicationBuilder) {
 
     this.setupManager = setupManager;
@@ -120,11 +120,15 @@ public class MultipleServersConfigCreator {
     boolean gcVerbose = configFactory.getGCVerbose();
     int gcIntervalInSec = configFactory.getGCIntervalInSec();
 
+    boolean offHeapEnabled = configFactory.isOffHeapEnabled();
+    String offHeapMaxSize = configFactory.getOffHeapMaxDataSize();
+
     L2ConfigBuilder[] l2s = new L2ConfigBuilder[serverCount];
     int serverIndex = 0;
     for (int i = 0; i < groupData.length; i++) {
       for (int j = 0; j < groupData[i].getServerCount(); j++) {
         L2ConfigBuilder l2 = new L2ConfigBuilder();
+        l2.setReconnectWindowForPrevConnectedClients(setupManager.getReconnectWindow());
         String mode = setupManager.getGroupServerShareDataMode(i);
         boolean isServerDiskless = !mode.equals(MultipleServersSharedDataMode.DISK) ? true : false;
         if (isServerDiskless) {
@@ -146,6 +150,10 @@ public class MultipleServersConfigCreator {
         l2.setPersistenceMode(serverPersistence);
         l2.setGCEnabled(gcEnabled);
         l2.setGCVerbose(gcVerbose);
+        if (configFactory.isOffHeapEnabled()) {
+          l2.setOffHeapEnabled(offHeapEnabled);
+          l2.setOffHeapMaxDataSize(offHeapMaxSize);
+        }
         l2.setGCInterval(gcIntervalInSec);
         l2s[serverIndex] = l2;
         serverIndex++;

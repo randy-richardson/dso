@@ -11,10 +11,10 @@ import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.util.DbBackup;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.object.config.schema.L2DSOConfig;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.stats.AbstractNotifyingMBean;
@@ -50,16 +50,16 @@ public class ServerDBBackup extends AbstractNotifyingMBean implements ServerDBBa
     isBackupRunning = new SynchronizedBoolean(false);
   }
 
-  public ServerDBBackup(L2TVSConfigurationSetupManager configSetupManager) throws NotCompliantMBeanException {
+  public ServerDBBackup(L2ConfigurationSetupManager configSetupManager) throws NotCompliantMBeanException {
     super(ServerDBBackupMBean.class);
 
     isBackupRunning = new SynchronizedBoolean(false);
 
-    String destDir = safeFilePath(configSetupManager.commonl2Config().serverDbBackupPath().getFile());
+    String destDir = safeFilePath(configSetupManager.commonl2Config().serverDbBackupPath());
     throttleTime = TCPropertiesImpl.getProperties().getLong(TCPropertiesConsts.L2_DATA_BACKUP_THROTTLE_TIME, 0);
 
     if (destDir == null) {
-      destDir = safeFilePath(configSetupManager.commonl2Config().dataPath().getFile());
+      destDir = safeFilePath(configSetupManager.commonl2Config().dataPath());
       destDir = destDir + File.separator + "backup";
     }
 
@@ -104,7 +104,7 @@ public class ServerDBBackup extends AbstractNotifyingMBean implements ServerDBBa
 
     backupFileLogger = new FileLoggerForBackup(destinationDir);
 
-    destinationDir = destinationDir + File.separator + NewL2DSOConfig.OBJECTDB_DIRNAME;
+    destinationDir = destinationDir + File.separator + L2DSOConfig.OBJECTDB_DIRNAME;
     backupFileLogger.logStartMessage();
     logger.info("Starting backup");
 
@@ -231,9 +231,9 @@ public class ServerDBBackup extends AbstractNotifyingMBean implements ServerDBBa
     }
   }
 
-  public void setDbEnvironment(Environment environment, File environmentHome) {
-    this.env = environment;
-    if (environmentHome != null) this.envHome = environmentHome.getAbsolutePath();
+  public void setDbEnvironment(Environment bdbEnv, File bdbEnvHome) {
+    this.env = bdbEnv;
+    if (bdbEnvHome != null) this.envHome = bdbEnvHome.getAbsolutePath();
     setBackupEnabled(env != null && envHome != null);
   }
 

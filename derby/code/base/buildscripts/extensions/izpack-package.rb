@@ -41,7 +41,9 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
 #     files    = Dir.entries(srcdir.to_s).delete_if { |entry| entry =~ /^\./ }
 #     scripts  = scriptfiles(srcdir.to_s) { |entry| entry =~ /\.(sh|bat)$/ }
 #     scripts.collect! { |entry| FilePath.new(entry).relative_path_from(srcdir) }
-    
+
+    license_file = enterprise? ? 'TERRACOTTA-TRIAL-LICENSE.txt' : 'LICENSE.txt'
+
     template = ERB.new(template, 0, "%<>").result(binding)
     config   = File.join(izpack_dir.to_s, 'installer.xml')
     File.open(config, 'w') { |out| out << template }
@@ -66,6 +68,9 @@ class BaseCodeTerracottaBuilder <  TerracottaBuilder
       :basedir          => srcdir.to_s, 
       :input            => config, 
       :output           => installer_package_name)
+    
+    izpack_dir.delete
+    installer_package_name
   end
   
   private

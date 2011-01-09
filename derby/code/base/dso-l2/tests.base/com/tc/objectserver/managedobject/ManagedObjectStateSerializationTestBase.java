@@ -16,15 +16,17 @@ import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.api.ManagedObjectState;
 import com.tc.objectserver.core.api.TestDNA;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
-import com.tc.objectserver.persistence.api.PersistenceTransaction;
+import com.tc.objectserver.persistence.db.CustomSerializationAdapterFactory;
+import com.tc.objectserver.persistence.db.DBPersistorImpl;
+import com.tc.objectserver.persistence.db.HashMapBackingMapFactory;
+import com.tc.objectserver.persistence.db.ManagedObjectPersistorImpl;
+import com.tc.objectserver.persistence.db.PersistableCollectionFactory;
+import com.tc.objectserver.persistence.db.TCCollectionsPersistor;
+import com.tc.objectserver.persistence.db.TCCollectionsSerializerImpl;
 import com.tc.objectserver.persistence.impl.TestMutableSequence;
 import com.tc.objectserver.persistence.impl.TestPersistenceTransactionProvider;
-import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
-import com.tc.objectserver.persistence.sleepycat.CustomSerializationAdapterFactory;
-import com.tc.objectserver.persistence.sleepycat.ManagedObjectPersistorImpl;
-import com.tc.objectserver.persistence.sleepycat.SleepycatCollectionFactory;
-import com.tc.objectserver.persistence.sleepycat.SleepycatCollectionsPersistor;
-import com.tc.objectserver.persistence.sleepycat.SleepycatPersistor;
+import com.tc.objectserver.storage.api.PersistenceTransaction;
+import com.tc.objectserver.storage.berkeleydb.BerkeleyDBEnvironment;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 
@@ -44,16 +46,18 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
 
     this.env = newDBEnvironment();
     final CustomSerializationAdapterFactory sleepycatSerializationAdapterFactory = new CustomSerializationAdapterFactory();
-    final SleepycatPersistor persistor = new SleepycatPersistor(this.logger, this.env,
-                                                                sleepycatSerializationAdapterFactory);
+    final DBPersistorImpl persistor = new DBPersistorImpl(this.logger, this.env,
+                                                          sleepycatSerializationAdapterFactory);
 
     this.ptp = new TestPersistenceTransactionProvider();
-    final SleepycatCollectionFactory sleepycatCollectionFactory = new SleepycatCollectionFactory();
-    final SleepycatCollectionsPersistor sleepycatCollectionsPersistor = new SleepycatCollectionsPersistor(logger, env
-        .getMapsDatabase(), sleepycatCollectionFactory);
-    this.managedObjectPersistor = new ManagedObjectPersistorImpl(logger, sleepycatSerializationAdapterFactory, env,
-                                                                 new TestMutableSequence(), env.getRootDatabase(), ptp,
-                                                                 sleepycatCollectionsPersistor, env.isParanoidMode(),
+    final PersistableCollectionFactory sleepycatCollectionFactory = new PersistableCollectionFactory(new HashMapBackingMapFactory(),
+                                                                                                     this.env.isParanoidMode());
+    final TCCollectionsPersistor sleepycatCollectionsPersistor = new TCCollectionsPersistor(this.logger, this.env
+                                                                                            .getMapsDatabase(), sleepycatCollectionFactory,
+                                                                                            new TCCollectionsSerializerImpl());
+    this.managedObjectPersistor = new ManagedObjectPersistorImpl(this.logger, sleepycatSerializationAdapterFactory, this.env,
+                                                                 new TestMutableSequence(), this.env.getRootDatabase(), this.ptp,
+                                                                 sleepycatCollectionsPersistor, this.env.isParanoidMode(),
                                                                  new ObjectStatsRecorder());
     final NullManagedObjectChangeListenerProvider listenerProvider = new NullManagedObjectChangeListenerProvider();
     ManagedObjectStateFactory.disableSingleton(true);
@@ -96,7 +100,7 @@ public class ManagedObjectStateSerializationTestBase extends TCTestCase {
   }
 
   protected void serializationValidation(final ManagedObjectState state, final DNACursor dnaCursor, final byte type)
-      throws Exception {
+  throws Exception {
     final ManagedObject loaded = this.managedObjectPersistor.loadObjectByID(this.objectID);
     final TestDNAWriter dnaWriter = dehydrate(loaded.getManagedObjectState());
     validate(dnaCursor, dnaWriter);

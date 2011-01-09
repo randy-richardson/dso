@@ -70,10 +70,19 @@ public final class TCMessageType {
   public static final int           TYPE_SYNC_WRITE_TRANSACTION_RECEIVED_MESSAGE      = 55;
   public static final int           TYPE_GET_VALUE_SERVER_MAP_REQUEST_MESSAGE         = 56;
   public static final int           TYPE_GET_VALUE_SERVER_MAP_RESPONSE_MESSAGE        = 57;
-  public static final int           TYPE_GET_SIZE_SERVER_MAP_REQUEST_MESSAGE          = 58;
-  public static final int           TYPE_GET_SIZE_SERVER_MAP_RESPONSE_MESSAGE         = 59;
+  public static final int           TYPE_GET_ALL_SIZE_SERVER_MAP_REQUEST_MESSAGE      = 58;
+  public static final int           TYPE_GET_ALL_SIZE_SERVER_MAP_RESPONSE_MESSAGE     = 59;
   public static final int           TYPE_TUNNELED_DOMAINS_CHANGED_MESSAGE             = 60;
   public static final int           TYPE_OBJECT_NOT_FOUND_SERVER_MAP_RESPONSE_MESSAGE = 61;
+  public static final int           TYPE_EVICTION_SERVER_MAP_BROADCAST_MESSAGE        = 62;
+  public static final int           TYPE_GET_ALL_KEYS_SERVER_MAP_REQUEST_MESSAGE      = 63;
+  public static final int           TYPE_GET_ALL_KEYS_SERVER_MAP_RESPONSE_MESSAGE     = 64;
+  public static final int           TYPE_SEARCH_QUERY_REQUEST_MESSAGE                 = 65;
+  public static final int           TYPE_SEARCH_QUERY_RESPONSE_MESSAGE                = 66;
+  public static final int           TYPE_NODES_WITH_KEYS_MESSAGE                      = 67;
+  public static final int           TYPE_NODES_WITH_KEYS_RESPONSE_MESSAGE             = 68;
+  public static final int           TYPE_INVALIDATE_OBJECTS_MESSAGE                   = 69;
+  public static final int           TYPE_CLIENT_HANDSHAKE_REJECTED_MESSAGE            = 70;
 
   public static final TCMessageType PING_MESSAGE                                      = new TCMessageType();
   public static final TCMessageType PONG_MESSAGE                                      = new TCMessageType();
@@ -94,6 +103,7 @@ public final class TCMessageType {
   public static final TCMessageType ACKNOWLEDGE_TRANSACTION_MESSAGE                   = new TCMessageType();
   public static final TCMessageType CLIENT_HANDSHAKE_MESSAGE                          = new TCMessageType();
   public static final TCMessageType CLIENT_HANDSHAKE_ACK_MESSAGE                      = new TCMessageType();
+  public static final TCMessageType CLIENT_HANDSHAKE_REJECTED_MESSAGE                 = new TCMessageType();
   public static final TCMessageType BATCH_TRANSACTION_ACK_MESSAGE                     = new TCMessageType();
   public static final TCMessageType CONFIG_PUSH_MESSAGE                               = new TCMessageType();
   public static final TCMessageType OVERRIDE_APPLICATION_CONFIG_MESSAGE               = new TCMessageType();
@@ -110,6 +120,8 @@ public final class TCMessageType {
   public static final TCMessageType GROUP_HANDSHAKE_MESSAGE                           = new TCMessageType();
   public static final TCMessageType NODES_WITH_OBJECTS_MESSAGE                        = new TCMessageType();
   public static final TCMessageType NODES_WITH_OBJECTS_RESPONSE_MESSAGE               = new TCMessageType();
+  public static final TCMessageType NODES_WITH_KEYS_MESSAGE                           = new TCMessageType();
+  public static final TCMessageType NODES_WITH_KEYS_RESPONSE_MESSAGE                  = new TCMessageType();
   public static final TCMessageType KEYS_FOR_ORPHANED_VALUES_MESSAGE                  = new TCMessageType();
   public static final TCMessageType KEYS_FOR_ORPHANED_VALUES_RESPONSE_MESSAGE         = new TCMessageType();
   public static final TCMessageType NODE_META_DATA_MESSAGE                            = new TCMessageType();
@@ -118,10 +130,16 @@ public final class TCMessageType {
   public static final TCMessageType SYNC_WRITE_TRANSACTION_RECEIVED_MESSAGE           = new TCMessageType();
   public static final TCMessageType GET_VALUE_SERVER_MAP_REQUEST_MESSAGE              = new TCMessageType();
   public static final TCMessageType GET_VALUE_SERVER_MAP_RESPONSE_MESSAGE             = new TCMessageType();
-  public static final TCMessageType GET_SIZE_SERVER_MAP_REQUEST_MESSAGE               = new TCMessageType();
-  public static final TCMessageType GET_SIZE_SERVER_MAP_RESPONSE_MESSAGE              = new TCMessageType();
   public static final TCMessageType TUNNELED_DOMAINS_CHANGED_MESSAGE                  = new TCMessageType();
   public static final TCMessageType OBJECT_NOT_FOUND_SERVER_MAP_RESPONSE_MESSAGE      = new TCMessageType();
+  public static final TCMessageType EVICTION_SERVER_MAP_BROADCAST_MESSAGE             = new TCMessageType();
+  public static final TCMessageType GET_ALL_KEYS_SERVER_MAP_REQUEST_MESSAGE           = new TCMessageType();
+  public static final TCMessageType GET_ALL_KEYS_SERVER_MAP_RESPONSE_MESSAGE          = new TCMessageType();
+  public static final TCMessageType SEARCH_QUERY_REQUEST_MESSAGE                      = new TCMessageType();
+  public static final TCMessageType SEARCH_QUERY_RESPONSE_MESSAGE                     = new TCMessageType();
+  public static final TCMessageType GET_ALL_SIZE_SERVER_MAP_REQUEST_MESSAGE           = new TCMessageType();
+  public static final TCMessageType GET_ALL_SIZE_SERVER_MAP_RESPONSE_MESSAGE          = new TCMessageType();
+  public static final TCMessageType INVALIDATE_OBJECTS_MESSAGE                        = new TCMessageType();
 
   public static TCMessageType getInstance(final int i) {
     return (TCMessageType) typeMap.get(i);

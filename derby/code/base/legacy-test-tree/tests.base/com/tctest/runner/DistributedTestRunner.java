@@ -6,13 +6,12 @@ package com.tctest.runner;
 
 import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 
-import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
-import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.L1ConfigurationSetupManager;
+import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
 import com.tc.lang.TCThreadGroup;
 import com.tc.lang.ThrowableHandler;
 import com.tc.logging.TCLogging;
 import com.tc.object.TestClientConfigHelperFactory;
-import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.server.AbstractServerFactory;
 import com.tc.server.TCServer;
 import com.tc.simulator.app.ApplicationBuilder;
@@ -57,7 +56,7 @@ public class DistributedTestRunner implements ResultsListener {
   private final List                                    errors      = new ArrayList();
   private final List                                    results     = new ArrayList();
   private final DistributedTestRunnerConfig             config;
-  private final TestTVSConfigurationSetupManagerFactory configFactory;
+  private final TestConfigurationSetupManagerFactory configFactory;
   private Control                                       control;
   private boolean                                       startTimedOut;
   private boolean                                       executionTimedOut;
@@ -91,7 +90,7 @@ public class DistributedTestRunner implements ResultsListener {
    *        threads per classloader.
    */
   public DistributedTestRunner(DistributedTestRunnerConfig config,
-                               TestTVSConfigurationSetupManagerFactory configFactory,
+                               TestConfigurationSetupManagerFactory configFactory,
                                TestClientConfigHelperFactory configHelperFactory, Class applicationClass,
                                Map optionalAttributes, ApplicationConfig applicationConfig, boolean startServer,
                                boolean isMutatorValidatorTest, boolean isMultipleServerTest,
@@ -141,7 +140,7 @@ public class DistributedTestRunner implements ResultsListener {
   protected TCServer instantiateTCServer() {
     try {
       AbstractServerFactory serverFactory = AbstractServerFactory.getFactory();
-      return serverFactory.createServer(configFactory.createL2TVSConfigurationSetupManager(null),
+      return serverFactory.createServer(configFactory.getL2TVSConfigurationSetupManager(),
                                         new TCThreadGroup(new ThrowableHandler(TCLogging.getLogger(TCServer.class))));
 
     } catch (Exception e) {
@@ -207,8 +206,8 @@ public class DistributedTestRunner implements ResultsListener {
     try {
       debugPrintln("***** control=[" + control.toString() + "]");
 
-      for (int i = 0; i < containers.length; i++) {
-        new Thread(containers[i]).start();
+      for (Container container : containers) {
+        new Thread(container).start();
       }
 
       // wait for all mutators to finish before starting the validators
@@ -223,8 +222,8 @@ public class DistributedTestRunner implements ResultsListener {
           checkForErrors();
         }
 
-        for (int i = 0; i < validatorContainers.length; i++) {
-          new Thread(validatorContainers[i]).start();
+        for (Container validatorContainer : validatorContainers) {
+          new Thread(validatorContainer).start();
         }
 
         if (isMultipleServerTest && shouldCrashActiveServersAfterMutate()) {
@@ -270,8 +269,8 @@ public class DistributedTestRunner implements ResultsListener {
     try {
       debugPrintln("***** control=[" + control.toString() + "]");
 
-      for (int i = 0; i < containers.length; i++) {
-        new Thread(containers[i]).start();
+      for (Container container : containers) {
+        new Thread(container).start();
       }
 
       // wait for all mutators to finish before starting the validators
@@ -286,8 +285,8 @@ public class DistributedTestRunner implements ResultsListener {
           checkForErrors();
         }
 
-        for (int i = 0; i < validatorContainers.length; i++) {
-          new Thread(validatorContainers[i]).start();
+        for (Container validatorContainer : validatorContainers) {
+          new Thread(validatorContainer).start();
         }
 
         if (isMultipleServerTest && shouldCrashActiveServersAfterMutate()) {
@@ -438,16 +437,16 @@ public class DistributedTestRunner implements ResultsListener {
     ApplicationBuilder[] rv = new ApplicationBuilder[totalClientCount];
 
     for (int i = 0; i < rv.length; i++) {
-      L1TVSConfigurationSetupManager l1ConfigManager;
-      l1ConfigManager = this.configFactory.createL1TVSConfigurationSetupManager();
+      L1ConfigurationSetupManager l1ConfigManager;
+      l1ConfigManager = this.configFactory.getL1TVSConfigurationSetupManager();
       l1ConfigManager.setupLogging();
-      PreparedComponentsFromL2Connection components = new PreparedComponentsFromL2Connection(l1ConfigManager);
       if (adapterMap != null
           && ((i < clientCount && i < adaptedMutatorCount) || (i >= clientCount && i < (adaptedValidatorCount + clientCount)))) {
         IsolationClassLoaderFactory configHelperFactoryData = new IsolationClassLoaderFactory(configHelperFactory,
                                                                                               applicationClass,
                                                                                               optionalAttributes,
-                                                                                              components, adapterMap);
+                                                                                              l1ConfigManager,
+                                                                                              adapterMap);
         rv[i] = new DSOApplicationBuilder(configHelperFactoryData, this.applicationConfig);
 
         for (Iterator iter = adapterMap.keySet().iterator(); iter.hasNext();) {
@@ -460,7 +459,7 @@ public class DistributedTestRunner implements ResultsListener {
         IsolationClassLoaderFactory configHelperFactoryData = new IsolationClassLoaderFactory(configHelperFactory,
                                                                                               applicationClass,
                                                                                               optionalAttributes,
-                                                                                              components, null);
+                                                                                              l1ConfigManager, null);
         rv[i] = new DSOApplicationBuilder(configHelperFactoryData, this.applicationConfig);
         debugPrintln("***** Creating normal DSOApplicationBuilder: i=[" + i + "]");
       }

@@ -50,15 +50,18 @@ public class ServerTransactionID implements Comparable {
     return sourceID.isNull() && txnID.isNull();
   }
 
+  @Override
   public String toString() {
     return new StringBuffer().append("ServerTransactionID{").append(sourceID).append(',').append(txnID).append('}')
         .toString();
   }
 
+  @Override
   public int hashCode() {
     return this.hashCode;
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof ServerTransactionID) {
       ServerTransactionID other = (ServerTransactionID) obj;
@@ -103,6 +106,6 @@ public class ServerTransactionID implements Comparable {
     } else {
       return cmp;
     }
-
   }
+
 }

@@ -3,9 +3,7 @@
  */
 package com.tctest.statistics;
 
-import com.tc.config.schema.NewStatisticsConfig;
-import com.tc.config.schema.dynamic.ConfigItemListener;
-import com.tc.config.schema.dynamic.FileConfigItem;
+import com.tc.config.schema.StatisticsConfig;
 import com.tc.statistics.AgentStatisticsManager;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.StatisticsAgentSubSystem;
@@ -49,29 +47,33 @@ public class AgentStatisticsManagerTest extends TCTestCase {
 
   protected void setUp() throws Exception {
     agentSubSystem = new StatisticsAgentSubSystemImpl();
-    agentSubSystem.setup(StatisticsSystemType.CLIENT, new NewStatisticsConfig() {
-      public FileConfigItem statisticsPath() {
-        return new FileConfigItem() {
-          public File getFile() {
-            try {
-              return AgentStatisticsManagerTest.this.getTempDirectory();
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          }
-
-          public Object getObject() {
-            return null;
-          }
-
-          public void addListener(ConfigItemListener changeListener) {
-            //
-          }
-
-          public void removeListener(ConfigItemListener changeListener) {
-            //
-          }
-        };
+    agentSubSystem.setup(StatisticsSystemType.CLIENT, new StatisticsConfig() {
+      public File statisticsPath() {
+        try {
+          return AgentStatisticsManagerTest.this.getTempDirectory();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+//        return new FileConfigItem() {
+//          public File getFile() {
+//            try {
+//            } catch (IOException e) {
+//              throw new RuntimeException(e);
+//            }
+//          }
+//
+//          public Object getObject() {
+//            return null;
+//          }
+//
+//          public void addListener(ConfigItemListener changeListener) {
+//            //
+//          }
+//
+//          public void removeListener(ConfigItemListener changeListener) {
+//            //
+//          }
+//        };
       }
     });
     populateStatisticsRegistry(agentSubSystem.getStatisticsRetrievalRegistry());

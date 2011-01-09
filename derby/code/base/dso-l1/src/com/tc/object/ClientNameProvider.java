@@ -3,19 +3,20 @@
  */
 package com.tc.object;
 
+import com.tc.cluster.DsoCluster;
 import com.tc.net.NodeNameProvider;
-import com.tc.object.net.DSOClientMessageChannel;
 
 public class ClientNameProvider implements NodeNameProvider {
-  
-  private final DSOClientMessageChannel channel;
 
-  public ClientNameProvider(DSOClientMessageChannel channel) {
-    this.channel = channel;
+  private final DsoCluster dsoCluster;
+
+  public ClientNameProvider(DsoCluster dsoCluster) {
+    this.dsoCluster = dsoCluster;
   }
 
   public String getNodeName() {
-    return this.channel.channel().getLocalNodeID().toString();
+    this.dsoCluster.waitUntilNodeJoinsCluster();
+    return this.dsoCluster.getCurrentNode().getId();
   }
 
 }

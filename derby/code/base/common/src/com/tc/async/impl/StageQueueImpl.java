@@ -15,7 +15,6 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLoggerProvider;
 import com.tc.stats.Stats;
 import com.tc.util.Assert;
-import com.tc.util.Util;
 import com.tc.util.concurrent.QueueFactory;
 import com.tc.util.concurrent.TCQueue;
 
@@ -63,6 +62,13 @@ public class StageQueueImpl implements Sink {
     StageQueueStatsCollector statsCollector = new NullStageQueueStatsCollector(stage);
     TCQueue q = null;
     int queueCount = -1;
+
+    if (queueSize != Integer.MAX_VALUE) {
+      int totalQueueToBeConstructed = (int) Math.ceil(((double) threads) / threadsToQueueRatio);
+      queueSize = (int) Math.ceil(((double) queueSize) / totalQueueToBeConstructed);
+    }
+    Assert.eval(queueSize > 0);
+
     for (int i = 0; i < threads; i++) {
       if (threadsToQueueRatio > 0) {
         if (i % threadsToQueueRatio == 0) {
@@ -144,9 +150,8 @@ public class StageQueueImpl implements Sink {
     }
 
     if (interrupted) {
-      Util.selfInterruptIfNeeded(interrupted);
+      Thread.currentThread().interrupt();
     }
-
   }
 
   private SourceQueueImpl getSourceQueueFor(MultiThreadedEventContext context) {

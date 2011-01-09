@@ -8,16 +8,21 @@ import com.tc.async.api.PostInit;
 import com.tc.async.api.Sink;
 import com.tc.async.api.StageManager;
 import com.tc.config.HaConfig;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.l2.api.L2Coordinator;
 import com.tc.l2.ha.L2HACoordinator;
 import com.tc.l2.ha.WeightGeneratorFactory;
+import com.tc.l2.objectserver.L2IndexStateManager;
+import com.tc.l2.objectserver.NullL2IndexStateManager;
+import com.tc.l2.objectserver.ServerTransactionFactory;
+import com.tc.l2.state.StateSyncManager;
 import com.tc.logging.DumpHandlerStore;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.L2Management;
 import com.tc.management.beans.LockStatisticsMonitor;
 import com.tc.management.beans.TCServerInfoMBean;
+import com.tc.management.beans.object.ServerDBBackupMBean;
 import com.tc.net.GroupID;
 import com.tc.net.ServerID;
 import com.tc.net.groups.GroupManager;
@@ -26,6 +31,7 @@ import com.tc.net.groups.StripeIDStateManager;
 import com.tc.net.groups.TCGroupManagerImpl;
 import com.tc.net.protocol.tcm.ChannelManager;
 import com.tc.net.protocol.transport.ConnectionIDFactory;
+import com.tc.object.config.schema.L2DSOConfig;
 import com.tc.object.msg.MessageRecycler;
 import com.tc.object.net.ChannelStatsImpl;
 import com.tc.object.net.DSOChannelManager;
@@ -46,8 +52,17 @@ import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.handshakemanager.ServerClientHandshakeManager;
 import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.locks.LockManager;
+import com.tc.objectserver.metadata.MetaDataManager;
+import com.tc.objectserver.metadata.NullMetaDataManager;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
+import com.tc.objectserver.search.IndexHACoordinator;
+import com.tc.objectserver.search.IndexManager;
+import com.tc.objectserver.search.NullIndexHACoordinator;
+import com.tc.objectserver.search.NullSearchRequestManager;
+import com.tc.objectserver.search.SearchRequestManager;
+import com.tc.objectserver.storage.api.DBEnvironment;
+import com.tc.objectserver.storage.api.DBFactory;
 import com.tc.objectserver.tx.CommitTransactionMessageToTransactionBatchReader;
 import com.tc.objectserver.tx.PassThruTransactionFilter;
 import com.tc.objectserver.tx.ServerTransactionManager;
@@ -55,13 +70,18 @@ import com.tc.objectserver.tx.TransactionBatchManagerImpl;
 import com.tc.objectserver.tx.TransactionFilter;
 import com.tc.objectserver.tx.TransactionalObjectManager;
 import com.tc.operatorevent.TerracottaOperatorEventHistoryProvider;
+import com.tc.runtime.logging.LongGCLogger;
 import com.tc.server.ServerConnectionValidator;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
 import com.tc.statistics.beans.impl.StatisticsGatewayMBeanImpl;
 import com.tc.statistics.retrieval.StatisticsRetrievalRegistry;
+import com.tc.stats.counter.sampled.SampledCounter;
 import com.tc.util.runtime.ThreadDumpUtil;
+import com.tc.util.sequence.DGCSequenceProvider;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.List;
 
@@ -72,36 +92,60 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
   private final GroupID    thisGroupID;
   protected final TCLogger logger;
 
-  public StandardDSOServerBuilder(HaConfig haConfig, TCLogger logger) {
+  public StandardDSOServerBuilder(final HaConfig haConfig, final TCLogger logger) {
     this.logger = logger;
     this.logger.info("Standard DSO Server created");
     this.haConfig = haConfig;
     this.thisGroupID = this.haConfig.getThisGroupID();
   }
 
-  public GarbageCollector createGarbageCollector(List<PostInit> toInit, ObjectManagerConfig objectManagerConfig,
-                                                 ObjectManager objectMgr, ClientStateManager stateManager,
-                                                 StageManager stageManager, int maxStageSize,
-                                                 GarbageCollectionInfoPublisher gcPublisher,
-                                                 ObjectManager objectManager, ClientStateManager clientStateManger,
-                                                 GCStatsEventPublisher gcEventListener,
-                                                 StatisticsAgentSubSystem statsAgentSubSystem) {
-    MarkAndSweepGarbageCollector gc = new MarkAndSweepGarbageCollector(objectManagerConfig, objectMgr, stateManager,
-                                                                       gcPublisher);
+  public GarbageCollector createGarbageCollector(final List<PostInit> toInit,
+                                                 final ObjectManagerConfig objectManagerConfig,
+                                                 final ObjectManager objectMgr, final ClientStateManager stateManager,
+                                                 final StageManager stageManager, final int maxStageSize,
+                                                 final GarbageCollectionInfoPublisher gcPublisher,
+                                                 final ObjectManager objectManager,
+                                                 final ClientStateManager clientStateManger,
+                                                 final GCStatsEventPublisher gcEventListener,
+                                                 final StatisticsAgentSubSystem statsAgentSubSystem,
+                                                 final DGCSequenceProvider dgcSequenceProvider) {
+    final MarkAndSweepGarbageCollector gc = new MarkAndSweepGarbageCollector(objectManagerConfig, objectMgr,
+                                                                             stateManager, gcPublisher,
+                                                                             dgcSequenceProvider);
     gc.addListener(gcEventListener);
     gc.addListener(new DGCOperatorEventPublisher());
     return gc;
   }
 
-  public GroupManager createGroupCommManager(boolean networkedHA, L2TVSConfigurationSetupManager configManager,
-                                             StageManager stageManager, ServerID serverNodeID, Sink httpSink,
-                                             StripeIDStateManager stripeStateManager,
-                                             ServerGlobalTransactionManager gtxm) {
+  public GroupManager createGroupCommManager(final boolean networkedHA,
+                                             final L2ConfigurationSetupManager configManager,
+                                             final StageManager stageManager, final ServerID serverNodeID,
+                                             final Sink httpSink, final StripeIDStateManager stripeStateManager,
+                                             final ServerGlobalTransactionManager gtxm) {
     if (networkedHA) {
       return new TCGroupManagerImpl(configManager, stageManager, serverNodeID, httpSink, this.haConfig.getNodesStore());
     } else {
       return new SingleNodeGroupManager();
     }
+  }
+
+  public MetaDataManager createMetaDataManager(Sink sink) {
+    return new NullMetaDataManager();
+  }
+
+  @SuppressWarnings("unused")
+  public IndexHACoordinator createIndexHACoordinator(L2ConfigurationSetupManager configSetupManager, Sink sink)
+      throws IOException {
+    return new NullIndexHACoordinator();
+  }
+
+  public L2IndexStateManager createL2IndexStateManager(IndexHACoordinator indexHACoordinator,
+                                                       ServerTransactionManager transactionManager) {
+    return new NullL2IndexStateManager();
+  }
+
+  public SearchRequestManager createSearchRequestManager(DSOChannelManager channelManager, Sink searchEventSink) {
+    return new NullSearchRequestManager();
   }
 
   public ObjectRequestManager createObjectRequestManager(ObjectManager objectMgr, DSOChannelManager channelManager,
@@ -117,10 +161,10 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
     return new ObjectRequestManagerRestartImpl(objectMgr, transactionMgr, orm);
   }
 
-  public ServerMapRequestManager createServerMapRequestManager(ObjectManager objectMgr,
-                                                               DSOChannelManager channelManager,
-                                                               Sink respondToServerTCMapSink,
-                                                               Sink managedObjectRequestSink) {
+  public ServerMapRequestManager createServerMapRequestManager(final ObjectManager objectMgr,
+                                                               final DSOChannelManager channelManager,
+                                                               final Sink respondToServerTCMapSink,
+                                                               final Sink managedObjectRequestSink) {
     return new ServerMapRequestManagerImpl(objectMgr, channelManager, respondToServerTCMapSink,
                                            managedObjectRequestSink);
   }
@@ -146,21 +190,26 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                                                      ConnectionIDFactory connectionIdFactory,
                                                                      int maxStageSize,
                                                                      ChannelManager genericChannelManager,
-                                                                     DumpHandlerStore dumpHandlerStore) {
+                                                                     DumpHandlerStore dumpHandlerStore,
+                                                                     MetaDataManager metaDataManager,
+                                                                     IndexManager indexManager,
+                                                                     SearchRequestManager searchRequestManager) {
     return new ServerConfigurationContextImpl(stageManager, objMgr, objRequestMgr, serverTCMapRequestManager, objStore,
                                               lockMgr, channelManager, clientStateMgr, txnMgr, txnObjectMgr,
                                               clientHandshakeManager, channelStats, coordinator,
                                               new CommitTransactionMessageToTransactionBatchReader(serverStats),
-                                              transactionBatchManager, gtxm, clusterMetaDataManager);
+                                              transactionBatchManager, gtxm, clusterMetaDataManager, metaDataManager,
+                                              indexManager, searchRequestManager);
   }
 
-  public TransactionFilter getTransactionFilter(List<PostInit> toInit, StageManager stageManager, int maxStageSize) {
-    PassThruTransactionFilter txnFilter = new PassThruTransactionFilter();
+  public TransactionFilter getTransactionFilter(final List<PostInit> toInit, final StageManager stageManager,
+                                                final int maxStageSize) {
+    final PassThruTransactionFilter txnFilter = new PassThruTransactionFilter();
     toInit.add(txnFilter);
     return txnFilter;
   }
 
-  public void populateAdditionalStatisticsRetrivalRegistry(StatisticsRetrievalRegistry registry) {
+  public void populateAdditionalStatisticsRetrivalRegistry(final StatisticsRetrievalRegistry registry) {
     // Add any additional Statistics here
   }
 
@@ -176,38 +225,60 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
     TCLogging.getDumpLogger().info(ThreadDumpUtil.getThreadDump());
   }
 
-  public void initializeContext(ConfigurationContext context) {
+  public void initializeContext(final ConfigurationContext context) {
     // Nothing to initialize here
   }
 
-  public L2Coordinator createL2HACoordinator(TCLogger consoleLogger, DistributedObjectServer server,
-                                             StageManager stageManager, GroupManager groupCommsManager,
-                                             PersistentMapStore persistentMapStore, ObjectManager objectManager,
-                                             ServerTransactionManager transactionManager,
-                                             ServerGlobalTransactionManager gtxm,
-                                             WeightGeneratorFactory weightGeneratorFactory,
-                                             L2TVSConfigurationSetupManager configurationSetupManager,
-                                             MessageRecycler recycler, StripeIDStateManager stripeStateManager) {
+  public L2Coordinator createL2HACoordinator(final TCLogger consoleLogger, final DistributedObjectServer server,
+                                             final StageManager stageManager, final GroupManager groupCommsManager,
+                                             final PersistentMapStore persistentMapStore,
+                                             final L2IndexStateManager l2IndexStateManager,
+                                             final ObjectManager objectManager,
+                                             final IndexHACoordinator indexHACoordinator,
+                                             final ServerTransactionManager transactionManager,
+                                             final ServerGlobalTransactionManager gtxm,
+                                             final WeightGeneratorFactory weightGeneratorFactory,
+                                             final L2ConfigurationSetupManager configurationSetupManager,
+                                             final MessageRecycler recycler,
+                                             final StripeIDStateManager stripeStateManager,
+                                             final ServerTransactionFactory serverTransactionFactory,
+                                             final DGCSequenceProvider dgcSequenceProvider,
+                                             final StateSyncManager stateSyncManager) {
     return new L2HACoordinator(consoleLogger, server, stageManager, groupCommsManager, persistentMapStore,
-                               objectManager, transactionManager, gtxm, weightGeneratorFactory,
-                               configurationSetupManager, recycler, thisGroupID, stripeStateManager);
+                               objectManager, indexHACoordinator, l2IndexStateManager, transactionManager, gtxm,
+                               weightGeneratorFactory, configurationSetupManager, recycler, this.thisGroupID,
+                               stripeStateManager, serverTransactionFactory, dgcSequenceProvider, stateSyncManager);
   }
 
-  public L2Management createL2Management(TCServerInfoMBean tcServerInfoMBean,
-                                         LockStatisticsMonitor lockStatisticsMBean,
-                                         StatisticsAgentSubSystemImpl statisticsAgentSubSystem,
-                                         StatisticsGatewayMBeanImpl statisticsGateway,
-                                         L2TVSConfigurationSetupManager configSetupManager,
-                                         DistributedObjectServer distributedObjectServer, InetAddress bind,
-                                         int jmxPort, Sink remoteEventsSink,
-                                         ServerConnectionValidator serverConnectionValidator) throws Exception {
+  public L2Management createL2Management(final TCServerInfoMBean tcServerInfoMBean,
+                                         final LockStatisticsMonitor lockStatisticsMBean,
+                                         final StatisticsAgentSubSystemImpl statisticsAgentSubSystem,
+                                         final StatisticsGatewayMBeanImpl statisticsGateway,
+                                         final L2ConfigurationSetupManager configSetupManager,
+                                         final DistributedObjectServer distributedObjectServer, final InetAddress bind,
+                                         final int jmxPort, final Sink remoteEventsSink,
+                                         final ServerConnectionValidator serverConnectionValidator,
+                                         final ServerDBBackupMBean serverDBBackupMBean) throws Exception {
     return new L2Management(tcServerInfoMBean, lockStatisticsMBean, statisticsAgentSubSystem, statisticsGateway,
                             configSetupManager, distributedObjectServer, bind, jmxPort, remoteEventsSink);
   }
 
-  public void registerForOperatorEvents(L2Management l2Management,
-                                        TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider,
-                                        MBeanServer l2MbeanServer) {
+  public void registerForOperatorEvents(final L2Management l2Management,
+                                        final TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider,
+                                        final MBeanServer l2MbeanServer) {
     // NOP
+  }
+
+  public DBEnvironment createDBEnvironment(final boolean persistent, final File dbhome, final L2DSOConfig l2DSOCofig,
+                                           final DumpHandlerStore dumpHandlerStore, final StageManager stageManager,
+                                           final SampledCounter l2FaultFromDisk,
+                                           final SampledCounter l2FaultFromOffheap,
+                                           final SampledCounter l2FlushFromOffheap, final DBFactory factory)
+      throws IOException {
+    return factory.createEnvironment(persistent, dbhome, l2FaultFromDisk);
+  }
+
+  public LongGCLogger createLongGCLogger(long gcTimeOut) {
+    return new LongGCLogger(gcTimeOut);
   }
 }

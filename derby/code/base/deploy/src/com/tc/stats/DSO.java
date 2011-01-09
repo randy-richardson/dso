@@ -27,6 +27,7 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.locks.LockMBean;
 import com.tc.objectserver.locks.LockManagerMBean;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
+import com.tc.objectserver.storage.api.OffheapStats;
 import com.tc.objectserver.tx.ServerTransactionManagerEventListener;
 import com.tc.objectserver.tx.ServerTransactionManagerMBean;
 import com.tc.operatorevent.TerracottaOperatorEvent;
@@ -80,10 +81,12 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
   private final ObjectInstanceMonitorMBean             instanceMonitor;
   private final ClientStateManager                     clientStateManager;
   private final TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider;
+  private final OffheapStats                           offheapStats;
 
   public DSO(final ServerManagementContext managementContext, final ServerConfigurationContext configContext,
              final MBeanServer mbeanServer, final GCStatsEventPublisher gcStatsPublisher,
-             TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider) throws NotCompliantMBeanException {
+             TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider, OffheapStats offheapStats)
+      throws NotCompliantMBeanException {
     super(DSOMBean.class);
     try {
       // TraceImplementation.init(TraceTags.LEVEL_TRACE);
@@ -100,6 +103,7 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
     this.instanceMonitor = managementContext.getInstanceMonitor();
     this.clientStateManager = configContext.getClientStateManager();
     this.operatorEventHistoryProvider = operatorEventHistoryProvider;
+    this.offheapStats = offheapStats;
 
     // add various listeners (do this before the setupXXX() methods below so we don't ever miss anything)
     txnMgr.addRootListener(new TransactionManagerListener());
@@ -126,12 +130,12 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
     return getStats().getCacheHitRatio();
   }
 
-  public long getCacheMissRate() {
-    return getStats().getCacheMissRate();
+  public long getOnHeapFaultRate() {
+    return getStats().getOnHeapFaultRate();
   }
 
-  public long getFlushedRate() {
-    return getStats().getFlushedRate();
+  public long getOnHeapFlushRate() {
+    return getStats().getOnHeapFlushRate();
   }
 
   public long getTransactionRate() {
@@ -161,7 +165,7 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
   public GCStats[] getGarbageCollectorStats() {
     return gcStatsPublisher.getGarbageCollectorStats();
   }
-  
+
   public List<TerracottaOperatorEvent> getOperatorEvents() {
     return this.operatorEventHistoryProvider.getOperatorEvents();
   }
@@ -698,4 +702,39 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
     return result;
   }
 
+  public long getOffHeapFaultRate() {
+    return offheapStats.getOffHeapFaultRate();
+  }
+
+  public long getOffHeapFlushRate() {
+    return offheapStats.getOffHeapFlushRate();
+  }
+
+  public long getOffheapMaxDataSize() {
+    return offheapStats.getOffheapMaxDataSize();
+  }
+
+  public long getOffheapObjectCachedCount() {
+    return offheapStats.getOffheapObjectCachedCount();
+  }
+
+  public long getL2DiskFaultRate() {
+    return getStats().getL2DiskFaultRate();
+  }
+
+  public long getExactOffheapObjectCachedCount() {
+    return offheapStats.getExactOffheapObjectCachedCount();
+  }
+
+  public long getOffheapTotalAllocatedSize() {
+    return offheapStats.getOffheapTotalAllocatedSize();
+  }
+
+  public long getOffheapMapAllocatedMemory() {
+    return offheapStats.getOffheapMapAllocatedMemory();
+  }
+
+  public long getOffheapObjectAllocatedMemory() {
+    return offheapStats.getOffheapObjectAllocatedMemory();
+  }
 }

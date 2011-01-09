@@ -6,10 +6,9 @@ package com.tctest;
 
 import org.apache.xmlbeans.XmlObject;
 
-import com.tc.config.schema.dynamic.BooleanConfigItem;
 import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.ConfigItemListener;
 import com.tc.exception.ImplementMe;
+import com.tc.object.MockRemoteSearchRequestManager;
 import com.tc.object.PortabilityImpl;
 import com.tc.object.TestClientObjectManager;
 import com.tc.object.bytecode.Clearable;
@@ -33,10 +32,11 @@ import java.util.Hashtable;
 import java.util.Map;
 
 public class HashtableAutoLockTest extends TCTestCase {
-  private ClassLoader             origThreadContextClassLoader;
-  private TestClientObjectManager testClientObjectManager;
-  private MockTransactionManager  testTransactionManager;
-  private MockClientLockManager   testClientLockManager;
+  private ClassLoader                    origThreadContextClassLoader;
+  private TestClientObjectManager        testClientObjectManager;
+  private MockTransactionManager         testTransactionManager;
+  private MockClientLockManager          testClientLockManager;
+  private MockRemoteSearchRequestManager testSearchRequestManager;
 
   @Override
   protected void setUp() throws Exception {
@@ -86,8 +86,10 @@ public class HashtableAutoLockTest extends TCTestCase {
     testClientObjectManager = new TestClientObjectManager();
     testTransactionManager = new MockTransactionManager();
     testClientLockManager = new MockClientLockManager();
+    testSearchRequestManager = new MockRemoteSearchRequestManager();
+    
     IsolationClassLoader classLoader = new IsolationClassLoader((DSOClientConfigHelper) proxy, testClientObjectManager,
-                                                                testTransactionManager, testClientLockManager);
+                                                                testTransactionManager, testClientLockManager, testSearchRequestManager);
     classLoader.init();
 
     this.origThreadContextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -117,54 +119,34 @@ public class HashtableAutoLockTest extends TCTestCase {
     return (Map) constructor.newInstance(new Object[0]);
   }
 
-  private static class BooleanItem implements BooleanConfigItem {
+  private static class MockRuntimeOptions implements DSORuntimeLoggingOptions {
 
-    public boolean getBoolean() {
+    public boolean logDistributedMethodDebug() {
       return false;
     }
 
-    public void addListener(ConfigItemListener changeListener) {
-      //
+    public boolean logFieldChangeDebug() {
+      return false;
     }
 
-    public Object getObject() {
-      return null;
+    public boolean logLockDebug() {
+      return false;
     }
 
-    public void removeListener(ConfigItemListener changeListener) {
-      //
+    public boolean logNamedLoaderDebug() {
+      return false;
     }
 
-  }
-
-  private static class MockRuntimeOptions implements DSORuntimeLoggingOptions {
-
-    public BooleanConfigItem logDistributedMethodDebug() {
-      return new BooleanItem();
+    public boolean logNewObjectDebug() {
+      return false;
     }
 
-    public BooleanConfigItem logFieldChangeDebug() {
-      return new BooleanItem();
+    public boolean logNonPortableDump() {
+      return false;
     }
 
-    public BooleanConfigItem logLockDebug() {
-      return new BooleanItem();
-    }
-
-    public BooleanConfigItem logNamedLoaderDebug() {
-      return new BooleanItem();
-    }
-
-    public BooleanConfigItem logNewObjectDebug() {
-      return new BooleanItem();
-    }
-
-    public BooleanConfigItem logNonPortableDump() {
-      return new BooleanItem();
-    }
-
-    public BooleanConfigItem logWaitNotifyDebug() {
-      return new BooleanItem();
+    public boolean logWaitNotifyDebug() {
+      return false;
     }
 
     public void changesInItemForbidden(ConfigItem item) {
@@ -183,16 +165,16 @@ public class HashtableAutoLockTest extends TCTestCase {
 
   private static class MockOutputOptions implements DSORuntimeOutputOptions {
 
-    public BooleanConfigItem doAutoLockDetails() {
-      return new BooleanItem();
+    public boolean doAutoLockDetails() {
+      return false;
     }
 
-    public BooleanConfigItem doCaller() {
-      return new BooleanItem();
+    public boolean doCaller() {
+      return false;
     }
 
-    public BooleanConfigItem doFullStack() {
-      return new BooleanItem();
+    public boolean doFullStack() {
+      return false;
     }
 
     public void changesInItemForbidden(ConfigItem item) {

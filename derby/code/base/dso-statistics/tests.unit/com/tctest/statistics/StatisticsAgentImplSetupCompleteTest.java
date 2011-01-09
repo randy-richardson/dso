@@ -4,16 +4,16 @@
  */
 package com.tctest.statistics;
 
-import com.tc.config.schema.NewStatisticsConfig;
-import com.tc.config.schema.dynamic.ConfigItemListener;
-import com.tc.config.schema.dynamic.FileConfigItem;
+import com.tc.config.schema.StatisticsConfig;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
 import com.tc.statistics.StatisticsSystemType;
+
 import java.io.File;
+
 import junit.framework.TestCase;
 
 public class StatisticsAgentImplSetupCompleteTest extends TestCase {
@@ -23,14 +23,14 @@ public class StatisticsAgentImplSetupCompleteTest extends TestCase {
   }
 
   public void testSetupCompleteSuccess() throws Exception {
-    NewStatisticsConfig config1 = new TestStatisticsConfig("child1");
+    StatisticsConfig config1 = new TestStatisticsConfig("child1");
 
     StatisticsAgentSubSystem agent1 = new StatisticsAgentSubSystemImpl();
     agent1.setup(StatisticsSystemType.CLIENT, config1);
     agent1.waitUntilSetupComplete();
     assertTrue(agent1.isActive());
 
-    NewStatisticsConfig config2 = new TestStatisticsConfig("child2");
+    StatisticsConfig config2 = new TestStatisticsConfig("child2");
 
     StatisticsAgentSubSystem agent2 = new StatisticsAgentSubSystemImpl();
     agent2.setup(StatisticsSystemType.CLIENT, config2);
@@ -39,7 +39,7 @@ public class StatisticsAgentImplSetupCompleteTest extends TestCase {
   }
 
   public void testSetupCompleteFailure() throws Exception {
-    NewStatisticsConfig config = new TestStatisticsConfig("child");
+    StatisticsConfig config = new TestStatisticsConfig("child");
 
     StatisticsAgentSubSystem agent1 = new StatisticsAgentSubSystemImpl();
     agent1.setup(StatisticsSystemType.CLIENT, config);
@@ -60,7 +60,7 @@ public class StatisticsAgentImplSetupCompleteTest extends TestCase {
     setClientFailBufferOpen(false);
   }
 
-  private static class TestStatisticsConfig implements NewStatisticsConfig {
+  private static class TestStatisticsConfig implements StatisticsConfig {
 
     private final String tmpDirChild;
 
@@ -68,25 +68,8 @@ public class StatisticsAgentImplSetupCompleteTest extends TestCase {
       this.tmpDirChild = tmpDirChild;
     }
 
-    public FileConfigItem statisticsPath() {
-      return new FileConfigItem() {
-
-        public void addListener(ConfigItemListener changeListener) {
-          throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        public Object getObject() {
-          throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        public void removeListener(ConfigItemListener changeListener) {
-          throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        public File getFile() {
-          return new File(System.getProperty("java.io.tmpdir"), tmpDirChild);
-        }
-      };
+    public File statisticsPath() {
+      return new File(System.getProperty("java.io.tmpdir"), tmpDirChild);
     }
   }
 

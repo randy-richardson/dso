@@ -2,7 +2,7 @@ package com.tctest;
 
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.FatalIllegalConfigurationChangeHandler;
-import com.tc.config.schema.setup.TestTVSConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
 import com.tc.object.config.ConfigVisitor;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.StandardDSOClientConfigHelperImpl;
@@ -42,8 +42,8 @@ public class L1ReconnectEnabledTestApp extends AbstractTransparentApp {
   }
 
   private void testL1ReconnectConfig() throws ConfigurationSetupException {
-    TestTVSConfigurationSetupManagerFactory factory = new TestTVSConfigurationSetupManagerFactory(
-                                                                                                  TestTVSConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
+    TestConfigurationSetupManagerFactory factory = new TestConfigurationSetupManagerFactory(
+                                                                                                  TestConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
                                                                                                   null,
                                                                                                   new FatalIllegalConfigurationChangeHandler());
     int portNumber = Integer.parseInt(appCfg.getAttribute(PORT_NUMBER));
@@ -51,7 +51,7 @@ public class L1ReconnectEnabledTestApp extends AbstractTransparentApp {
     factory.addServerToL1Config(null, portNumber, jmxPort);
     try {
       DSOClientConfigHelper configHelper = new StandardDSOClientConfigHelperImpl(factory
-          .createL1TVSConfigurationSetupManager());
+          .getL1TVSConfigurationSetupManager());
       ReconnectConfig l1ReconnectConfig = configHelper.getL1ReconnectProperties();
 
       // verify

@@ -13,12 +13,15 @@ import com.tc.cluster.DsoCluster;
 import com.tc.cluster.DsoClusterImpl;
 import com.tc.exception.ExceptionWrapper;
 import com.tc.exception.ExceptionWrapperImpl;
+import com.tc.exception.TCNotRunningException;
 import com.tc.lang.StartupHelper;
 import com.tc.lang.TCThreadGroup;
 import com.tc.lang.ThrowableHandler;
 import com.tc.lang.StartupHelper.StartupAction;
+import com.tc.license.LicenseManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.management.TunneledDomainUpdater;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ClientShutdownManager;
@@ -26,6 +29,7 @@ import com.tc.object.DistributedObjectClient;
 import com.tc.object.LiteralValues;
 import com.tc.object.ObjectID;
 import com.tc.object.Portability;
+import com.tc.object.RemoteSearchRequestManager;
 import com.tc.object.SerializationUtil;
 import com.tc.object.TCObject;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
@@ -46,10 +50,19 @@ import com.tc.object.logging.InstrumentationLogger;
 import com.tc.object.logging.InstrumentationLoggerImpl;
 import com.tc.object.logging.RuntimeLogger;
 import com.tc.object.logging.RuntimeLoggerImpl;
+import com.tc.object.metadata.AbstractNVPair;
+import com.tc.object.metadata.MetaDataDescriptor;
+import com.tc.object.metadata.MetaDataDescriptorImpl;
+import com.tc.object.metadata.NVPair;
 import com.tc.object.tx.ClientTransactionManager;
 import com.tc.object.tx.UnlockedSharedObjectException;
+import com.tc.operatorevent.TerracottaOperatorEvent;
+import com.tc.operatorevent.TerracottaOperatorEventImpl;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventSubsystem;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
+import com.tc.search.SearchQueryResults;
 import com.tc.statistics.StatisticRetrievalAction;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.statistics.StatisticsAgentSubSystemImpl;
@@ -64,11 +77,14 @@ import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.management.MBeanServer;
 
-public class ManagerImpl implements Manager {
+public class ManagerImpl implements ManagerInternal {
   private static final TCLogger                    logger        = TCLogging.getLogger(Manager.class);
   private final SetOnceFlag                        clientStarted = new SetOnceFlag();
   private final DSOClientConfigHelper              config;
@@ -81,6 +97,7 @@ public class ManagerImpl implements Manager {
   private final DsoClusterInternal                 dsoCluster;
   private final RuntimeLogger                      runtimeLogger;
   private final LockIdFactory                      lockIdFactory;
+  private final boolean                            isExpressMode;
 
   private final InstrumentationLogger              instrumentationLogger;
 
@@ -88,6 +105,7 @@ public class ManagerImpl implements Manager {
   private ClientShutdownManager                    shutdownManager;
   private ClientTransactionManager                 txManager;
   private ClientLockManager                        lockManager;
+  private RemoteSearchRequestManager               searchRequestManager;
   private DistributedObjectClient                  dso;
   private DmiManager                               methodCallManager;
 
@@ -95,24 +113,28 @@ public class ManagerImpl implements Manager {
   private final MethodDisplayNames                 methodDisplay = new MethodDisplayNames(this.serializer);
 
   public ManagerImpl(final DSOClientConfigHelper config, final PreparedComponentsFromL2Connection connectionComponents) {
-    this(true, null, null, null, config, connectionComponents, true, null, null);
+    this(true, null, null, null, null, config, connectionComponents, true, null, null, false);
   }
 
   public ManagerImpl(final boolean startClient, final ClientObjectManager objectManager,
                      final ClientTransactionManager txManager, final ClientLockManager lockManager,
-                     final DSOClientConfigHelper config, final PreparedComponentsFromL2Connection connectionComponents) {
-    this(startClient, objectManager, txManager, lockManager, config, connectionComponents, true, null, null);
+                     final RemoteSearchRequestManager searchRequestManager, final DSOClientConfigHelper config,
+                     final PreparedComponentsFromL2Connection connectionComponents) {
+    this(startClient, objectManager, txManager, lockManager, searchRequestManager, config, connectionComponents, true,
+         null, null, false);
   }
 
   public ManagerImpl(final boolean startClient, final ClientObjectManager objectManager,
                      final ClientTransactionManager txManager, final ClientLockManager lockManager,
-                     final DSOClientConfigHelper config, final PreparedComponentsFromL2Connection connectionComponents,
+                     final RemoteSearchRequestManager searchRequestManager, final DSOClientConfigHelper config,
+                     final PreparedComponentsFromL2Connection connectionComponents,
                      final boolean shutdownActionRequired, final RuntimeLogger runtimeLogger,
-                     final ClassProvider classProvider) {
+                     final ClassProvider classProvider, final boolean isExpressMode) {
     this.objectManager = objectManager;
     this.portability = config.getPortability();
     this.txManager = txManager;
     this.lockManager = lockManager;
+    this.searchRequestManager = searchRequestManager;
     this.config = config;
     this.instrumentationLogger = new InstrumentationLoggerImpl(config.instrumentationLoggingOptions());
     this.startClient = startClient;
@@ -132,6 +154,7 @@ public class ManagerImpl implements Manager {
       registerStandardLoaders();
     }
     this.lockIdFactory = new LockIdFactory(this);
+    this.isExpressMode = isExpressMode;
   }
 
   private void registerStandardLoaders() {
@@ -212,8 +235,9 @@ public class ManagerImpl implements Manager {
   }
 
   private void startClient(final boolean forTests) {
-    final TCThreadGroup group = new TCThreadGroup(new ThrowableHandler(TCLogging
-        .getLogger(DistributedObjectClient.class)));
+    final TCThreadGroup group = new TCThreadGroup(new ThrowableHandler(
+                                                                       TCLogging
+                                                                           .getLogger(DistributedObjectClient.class)));
 
     final StartupAction action = new StartupHelper.StartupAction() {
       public void execute() throws Throwable {
@@ -222,7 +246,8 @@ public class ManagerImpl implements Manager {
                                                           ManagerImpl.this.classProvider,
                                                           ManagerImpl.this.connectionComponents, ManagerImpl.this,
                                                           ManagerImpl.this.statisticsAgentSubSystem,
-                                                          ManagerImpl.this.dsoCluster, ManagerImpl.this.runtimeLogger);
+                                                          ManagerImpl.this.dsoCluster, ManagerImpl.this.runtimeLogger,
+                                                          ManagerImpl.this.isExpressMode);
 
         if (forTests) {
           ManagerImpl.this.dso.setCreateDedicatedMBeanServer(true);
@@ -231,6 +256,7 @@ public class ManagerImpl implements Manager {
         ManagerImpl.this.objectManager = ManagerImpl.this.dso.getObjectManager();
         ManagerImpl.this.txManager = ManagerImpl.this.dso.getTransactionManager();
         ManagerImpl.this.lockManager = ManagerImpl.this.dso.getLockManager();
+        ManagerImpl.this.searchRequestManager = ManagerImpl.this.dso.getSearchRequestManager();
         ManagerImpl.this.methodCallManager = ManagerImpl.this.dso.getDmiManager();
 
         ManagerImpl.this.shutdownManager = new ClientShutdownManager(ManagerImpl.this.objectManager,
@@ -288,12 +314,12 @@ public class ManagerImpl implements Manager {
             logicalAddAllInvoke(this.serializer.methodToID(methodSignature), methodSignature, (Collection) params[0],
                                 tco);
           } else if (SerializationUtil.ADD_ALL_AT_SIGNATURE.equals(methodSignature)) {
-            logicalAddAllAtInvoke(this.serializer.methodToID(methodSignature), methodSignature, ((Integer) params[0])
-                .intValue(), (Collection) params[1], tco);
+            logicalAddAllAtInvoke(this.serializer.methodToID(methodSignature), methodSignature,
+                                  ((Integer) params[0]).intValue(), (Collection) params[1], tco);
           } else {
             adjustForJava1ParametersIfNecessary(methodSignature, params);
-            tco.logicalInvoke(this.serializer.methodToID(methodSignature), this.methodDisplay
-                .getDisplayForSignature(methodSignature), params);
+            tco.logicalInvoke(this.serializer.methodToID(methodSignature),
+                              this.methodDisplay.getDisplayForSignature(methodSignature), params);
           }
         }
       } catch (final Throwable t) {
@@ -699,6 +725,10 @@ public class ManagerImpl implements Manager {
     }
   }
 
+  public LockID generateLockIdentifier(final long l) {
+    return this.lockIdFactory.generateLockIdentifier(l);
+  }
+
   public LockID generateLockIdentifier(final String str) {
     return this.lockIdFactory.generateLockIdentifier(str);
   }
@@ -877,6 +907,8 @@ public class ManagerImpl implements Manager {
   public void monitorExit(final LockID lock, final LockLevel level) {
     try {
       unlock(lock, level);
+    } catch (final TCNotRunningException e) {
+      logger.info("Ignoring " + e.getClass().getName() + " in unlock(lockID=" + lock + ", level=" + level + ")");
     } catch (final IllegalMonitorStateException e) {
       final ConsoleParagraphFormatter formatter = new ConsoleParagraphFormatter(60, new StringFormatter());
       final ExceptionWrapper wrapper = new ExceptionWrapperImpl();
@@ -901,5 +933,35 @@ public class ManagerImpl implements Manager {
 
   public void waitForAllCurrentTransactionsToComplete() {
     this.txManager.waitForAllCurrentTransactionsToComplete();
+  }
+
+  public MetaDataDescriptor createMetaDataDescriptor(String category) {
+    return new MetaDataDescriptorImpl(category);
+  }
+
+  public SearchQueryResults executeQuery(String cachename, LinkedList queryStack, boolean includeKeys,
+                                         Set<String> attributeSet, List<NVPair> sortAttributes,
+                                         List<NVPair> aggregators, int maxResults) {
+    waitForAllCurrentTransactionsToComplete();
+    return searchRequestManager.query(cachename, queryStack, includeKeys, attributeSet, sortAttributes, aggregators,
+                                      maxResults);
+  }
+
+  public NVPair createNVPair(String name, Object value) {
+    return AbstractNVPair.createNVPair(name, value);
+  }
+
+  // for testing purpose
+  public DistributedObjectClient getDso() {
+    return this.dso;
+  }
+
+  public void verifyCapability(String capability) {
+    LicenseManager.verifyCapability(capability);
+  }
+
+  public void fireOperatorEvent(EventType eventLevel, EventSubsystem eventSubsystem, String eventMessage) {
+    TerracottaOperatorEvent opEvent = new TerracottaOperatorEventImpl(eventLevel, eventSubsystem, eventMessage, "");
+    TerracottaOperatorEventLogging.getEventLogger().fireOperatorEvent(opEvent);
   }
 }

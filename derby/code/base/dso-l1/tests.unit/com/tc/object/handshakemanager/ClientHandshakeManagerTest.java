@@ -6,7 +6,7 @@ package com.tc.object.handshakemanager;
 
 import com.tc.async.api.Sink;
 import com.tc.async.impl.NullSink;
-import com.tc.cluster.DsoClusterImpl;
+import com.tc.exception.ImplementMe;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
@@ -27,7 +27,6 @@ import com.tc.util.concurrent.NoExceptionLinkedQueue;
 import com.tc.util.concurrent.ThreadUtil;
 import com.tc.util.sequence.BatchSequenceProvider;
 import com.tc.util.sequence.BatchSequenceReceiver;
-import com.tcclient.cluster.DsoClusterInternal;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,10 +47,10 @@ public class ClientHandshakeManagerTest extends TCTestCase {
 
     public TestClientHandshakeManagerImpl(final TCLogger logger, final DSOClientMessageChannel channel,
                                           final ClientHandshakeMessageFactory chmf, final Sink pauseSink,
-                                          final SessionManager sessionManager, final DsoClusterInternal dsoCluster,
+                                          final SessionManager sessionManager, final Sink nullSink,
                                           final String clientVersion,
                                           final Collection<ClientHandshakeCallback> callbacks) {
-      super(logger, channel, chmf, pauseSink, sessionManager, dsoCluster, clientVersion, callbacks);
+      super(logger, channel, chmf, pauseSink, sessionManager, nullSink, clientVersion, callbacks);
     }
 
     @Override
@@ -77,7 +76,7 @@ public class ClientHandshakeManagerTest extends TCTestCase {
     callbacks.add(this.callback);
     this.sessMgr = new TestSessionManager();
     this.mgr = new TestClientHandshakeManagerImpl(TCLogging.getLogger(ClientHandshakeManagerImpl.class), this.channel,
-                                                  this.chmf, new NullSink(), this.sessMgr, new DsoClusterImpl(),
+                                                  this.chmf, new NullSink(), this.sessMgr, new NullSink(),
                                                   clientVersion, callbacks);
   }
 
@@ -177,9 +176,9 @@ public class ClientHandshakeManagerTest extends TCTestCase {
     GroupID group = this.channel.groups[0];
 
     assertEquals(-1L, sessMgr.sessionID.toLong());
-    
+
     this.mgr.connected(group);
-    
+
     assertEquals(-1L, sessMgr.sessionID.toLong());
 
     this.mgr.disconnected(group);
@@ -265,7 +264,8 @@ public class ClientHandshakeManagerTest extends TCTestCase {
     public TestClientHandshakeMessage   message;
     public final NoExceptionLinkedQueue newMessageQueue = new NoExceptionLinkedQueue();
 
-    public ClientHandshakeMessage newClientHandshakeMessage(final NodeID remoteNode) {
+    public ClientHandshakeMessage newClientHandshakeMessage(NodeID remoteNode, String clVersion,
+                                                            boolean isEnterpriseClient) {
       this.newMessageQueue.put(this.message);
       return this.message;
     }
@@ -311,9 +311,9 @@ public class ClientHandshakeManagerTest extends TCTestCase {
   }
 
   private class TestSessionManager implements SessionManager, SessionProvider {
-    private SessionID     sessionID     = SessionID.NULL_ID;
-    private SessionID     nextSessionID = SessionID.NULL_ID;
-    private AtomicInteger counter       = new AtomicInteger(-1);
+    private SessionID           sessionID     = SessionID.NULL_ID;
+    private SessionID           nextSessionID = SessionID.NULL_ID;
+    private final AtomicInteger counter       = new AtomicInteger(-1);
 
     public SessionID getSessionID(NodeID nid) {
       return sessionID;
@@ -341,6 +341,10 @@ public class ClientHandshakeManagerTest extends TCTestCase {
 
     public void initProvider(NodeID nid) {
       return;
+    }
+
+    public void resetSessionProvider() {
+      throw new ImplementMe();
     }
 
   }

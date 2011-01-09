@@ -4,7 +4,6 @@
  */
 package com.tc.net.protocol.delivery;
 
-import com.tc.async.api.Sink;
 import com.tc.net.protocol.TCNetworkMessage;
 import com.tc.properties.ReconnectConfig;
 import com.tc.util.Assert;
@@ -15,18 +14,13 @@ import com.tc.util.Util;
  * come in to the ProtocolMessageDelivery instance.
  */
 class GuaranteedDeliveryProtocol {
-  private final StateMachineRunner  send;
-  private final StateMachineRunner  receive;
   private final SendStateMachine    sender;
   private final ReceiveStateMachine receiver;
 
-  public GuaranteedDeliveryProtocol(OOOProtocolMessageDelivery delivery, Sink sendSink, Sink receiveSink,
-                                    ReconnectConfig reconnectConfig, boolean isClient) {
+  public GuaranteedDeliveryProtocol(OOOProtocolMessageDelivery delivery, ReconnectConfig reconnectConfig,
+                                    boolean isClient) {
     this.sender = new SendStateMachine(delivery, reconnectConfig, isClient);
-    this.send = new StateMachineRunner(sender, sendSink);
-    this.receiver = new ReceiveStateMachine(delivery, reconnectConfig);
-    this.receive = new StateMachineRunner(receiver, receiveSink);
-    receiver.setRunner(receive);
+    this.receiver = new ReceiveStateMachine(delivery, reconnectConfig, isClient);
   }
 
   public void send(TCNetworkMessage message) {
@@ -40,45 +34,45 @@ class GuaranteedDeliveryProtocol {
       }
     } while (true);
 
+    sender.execute(null);
+
     if (interrupted) {
       Util.selfInterruptIfNeeded(interrupted);
     }
-
-    send.addEvent(new OOOProtocolEvent());
   }
 
   public void receive(OOOProtocolMessage msg) {
     if (msg.isSend()) {
-      receive.addEvent(new OOOProtocolEvent(msg));
-    } else if (msg.isAck() || msg.isHandshakeReplyOk() || msg.isHandshakeReplyFail()) {
-      send.addEvent(new OOOProtocolEvent(msg));
+      receiver.execute(msg);
+    } else if (msg.isAck() || msg.isHandshakeReplyOk()) {
+      sender.execute(msg);
     } else {
-      Assert.inv(false);
+      Assert.eval("Unexpected OOO Msg: " + msg, false);
     }
   }
 
-  public void start() {
-    send.start();
-    receive.start();
+  public synchronized void start() {
+    sender.start();
+    receiver.start();
   }
 
-  public void pause() {
-    send.pause();
-    receive.pause();
+  public synchronized void pause() {
+    if (!sender.isPaused()) sender.pause();
+    if (!receiver.isPaused()) receiver.pause();
   }
 
-  public boolean isPaused() {
-    return (send.isPaused() && receive.isPaused());
+  public synchronized boolean isPaused() {
+    return (sender.isPaused() && receiver.isPaused());
   }
 
-  public void resume() {
-    send.resume();
-    receive.resume();
+  public synchronized void resume() {
+    sender.resume();
+    receiver.resume();
   }
 
-  public void reset() {
-    send.reset();
-    receive.reset();
+  public synchronized void reset() {
+    sender.reset();
+    receiver.reset();
   }
 
   public ReceiveStateMachine getReceiver() {
@@ -89,7 +83,8 @@ class GuaranteedDeliveryProtocol {
     return sender;
   }
 
-  public void setDebugId(String debugId) {
-    receiver.setDebugId(debugId);
+  @Override
+  public String toString() {
+    return "SendStateMachine: " + sender + "; ReceiveStateMachine: " + receiver;
   }
 }

@@ -4,10 +4,11 @@
 package com.tc.config;
 
 import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.net.GroupID;
+import com.tc.net.TCSocketAddress;
 import com.tc.net.groups.Node;
-import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.object.config.schema.L2DSOConfig;
 import com.tc.util.Assert;
 
 import java.util.Collections;
@@ -19,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class NodesStoreImpl implements NodesStore, TopologyChangeListener {
   private final Set<Node>                                   nodes;
   private final CopyOnWriteArraySet<TopologyChangeListener> listeners               = new CopyOnWriteArraySet<TopologyChangeListener>();
-  private L2TVSConfigurationSetupManager                    configSetupManager;
+  private L2ConfigurationSetupManager                    configSetupManager;
   private volatile HashMap<String, GroupID>                 serverNameToGidMap      = new HashMap<String, GroupID>();
   private volatile HashSet<String>                          serverNamesForThisGroup = new HashSet<String>();
   private volatile HashMap<String, String>                  nodeNamesToServerNames  = new HashMap<String, String>();
@@ -32,7 +33,7 @@ public class NodesStoreImpl implements NodesStore, TopologyChangeListener {
   }
 
   public NodesStoreImpl(Set<Node> nodes, Set<String> nodeNamesForThisGroup,
-                        HashMap<String, GroupID> serverNameToGidMap, L2TVSConfigurationSetupManager configSetupManager) {
+                        HashMap<String, GroupID> serverNameToGidMap, L2ConfigurationSetupManager configSetupManager) {
     this(nodes);
     serverNamesForThisGroup.addAll(nodeNamesForThisGroup);
     this.serverNameToGidMap = serverNameToGidMap;
@@ -64,8 +65,12 @@ public class NodesStoreImpl implements NodesStore, TopologyChangeListener {
     String[] serverNames = configSetupManager.allCurrentlyKnownServers();
     for (int i = 0; i < serverNames.length; i++) {
       try {
-        NewL2DSOConfig l2Config = configSetupManager.dsoL2ConfigFor(serverNames[i]);
-        tempNodeNamesToServerNames.put(l2Config.host().getString() + ":" + l2Config.dsoPort().getBindPort(), serverNames[i]);
+        L2DSOConfig l2Config = configSetupManager.dsoL2ConfigFor(serverNames[i]);
+        String host = l2Config.l2GroupPort().getBind();
+        if (TCSocketAddress.WILDCARD_IP.equals(host)) {
+          host = l2Config.host();
+        }
+        tempNodeNamesToServerNames.put(host + ":" + l2Config.dsoPort().getIntValue(), serverNames[i]);
       } catch (ConfigurationSetupException e) {
         throw new RuntimeException(e);
       }
@@ -74,6 +79,7 @@ public class NodesStoreImpl implements NodesStore, TopologyChangeListener {
   }
 
   public String getNodeNameFromServerName(String serverName) {
+
     return nodeNamesToServerNames.get(serverName);
   }
 

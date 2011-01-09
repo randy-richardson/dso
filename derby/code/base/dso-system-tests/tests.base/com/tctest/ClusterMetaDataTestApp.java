@@ -6,6 +6,7 @@ package com.tctest;
 
 import com.tc.cluster.DsoCluster;
 import com.tc.cluster.exceptions.UnclusteredObjectException;
+import com.tc.exception.TCRuntimeException;
 import com.tc.injection.annotations.InjectedDsoInstance;
 import com.tc.object.TCObject;
 import com.tc.object.bytecode.Manageable;
@@ -15,11 +16,15 @@ import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
+import com.tcclient.cluster.DsoClusterInternal;
 import com.tcclient.cluster.DsoNode;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -29,13 +34,13 @@ import java.util.concurrent.CyclicBarrier;
 
 public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
 
-  public static final int NODE_COUNT = 3;
+  public static final int     NODE_COUNT = 3;
 
-  private final CyclicBarrier barrier = new CyclicBarrier(NODE_COUNT);
+  private final CyclicBarrier barrier    = new CyclicBarrier(NODE_COUNT);
 
-  private final SomePojo      pojo    = new SomePojo();
-  private final Map           map     = new HashMap();
-  private final Map           treeMap = new TreeMap();
+  private final SomePojo      pojo       = new SomePojo();
+  private final Map           map        = new HashMap();
+  private final Map           treeMap    = new TreeMap();
 
   @InjectedDsoInstance
   private DsoCluster          cluster;
@@ -48,7 +53,13 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
   void testNodeMetaData() {
     Assert.assertNotNull(cluster.getCurrentNode().getIp());
     Assert.assertNotNull(cluster.getCurrentNode().getHostname());
-    Assert.assertEquals("127.0.0.1", cluster.getCurrentNode().getIp());
+    String localIP;
+    try {
+      localIP = InetAddress.getLocalHost().getHostAddress().toString();
+    } catch (UnknownHostException e) {
+      throw new TCRuntimeException(e);
+    }
+    Assert.assertEquals(localIP, cluster.getCurrentNode().getIp());
     Assert.assertNotNull(cluster.getCurrentNode().getHostname());
   }
 
@@ -77,7 +88,7 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
     Assert.assertNotNull(result2);
     Assert.assertEquals(0, result2.size());
   }
-  
+
   void testGetNodesWithObjectsThatMatchHashCodes() throws Exception {
     final int nodeId = barrier.await();
 
@@ -86,7 +97,7 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
     Object bh3 = new BadMojo("ghi");
 
     if (1 == nodeId) {
-      synchronized(map) {
+      synchronized (map) {
         map.put("BH1", bh1);
         map.put("BH2", bh2);
         map.put("BH3", bh3);
@@ -96,23 +107,23 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
     barrier.await();
 
     if (2 == nodeId) {
-      synchronized(map) {
+      synchronized (map) {
         bh1 = map.get("BH1");
         bh2 = map.get("BH2");
       }
     }
 
     barrier.await();
-    
+
     final DsoNode currentNode = cluster.getCurrentNode();
 
-    if(nodeId == 1 || nodeId == 2) {
+    if (nodeId == 1 || nodeId == 2) {
       final Map<?, Set<DsoNode>> nodes = cluster.getNodesWithObjects(bh1, bh2);
       Assert.assertEquals(2, nodes.size());
       Assert.assertTrue(nodes.get(bh1).contains(currentNode));
       Assert.assertTrue(nodes.get(bh2).contains(currentNode));
-      
-      if(nodeId == 1) {
+
+      if (nodeId == 1) {
         final Map<?, Set<DsoNode>> nodes2 = cluster.getNodesWithObjects(bh3);
         Assert.assertEquals(1, nodes2.size());
         Assert.assertTrue(nodes2.get(bh3).contains(currentNode));
@@ -121,21 +132,21 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
 
     barrier.await();
   }
-  
+
   public static class BadMojo extends AbstractMojo {
     public BadMojo(final String mojo) {
       this.mojo = mojo;
     }
-    
-    public String getValue() { return this.mojo; }
+
+    public String getValue() {
+      return this.mojo;
+    }
 
     @Override
     public boolean equals(final Object obj) {
       if (obj == this) {
         return true;
-      } else if (obj instanceof BadMojo) {
-        return true;
-      }
+      } else if (obj instanceof BadMojo) { return true; }
       return false;
     }
 
@@ -179,6 +190,62 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
     }
   }
 
+  /**
+   *
+   */
+  void testGetNodesWithKeys() throws Exception {
+    DsoClusterInternal dsoClusterInternal = (DsoClusterInternal) cluster;
+    final Map<?, Set<DsoNode>> result1 = dsoClusterInternal.getNodesWithKeys(null, new HashSet());
+    Assert.assertNotNull(result1);
+    Assert.assertEquals(0, result1.size());
+
+    final int nodeId = barrier.await();
+
+    if (0 == nodeId) {
+      SomePojo v1 = new SomePojo();
+      SomePojo v2 = new SomePojo();
+      synchronized (map) {
+        map.put("TESTING", v1);
+        map.put("KEY", v2);
+      }
+    }
+
+    barrier.await();
+
+    HashSet<String> keys = new HashSet<String>();
+    keys.add("TESTING");
+    keys.add("NOT HERE!");
+    final Map<String, Set<DsoNode>> result2 = dsoClusterInternal.getNodesWithKeys(map, keys);
+
+    Set<DsoNode> dsoNodes;
+
+    Assert.assertNotNull(result2);
+    Assert.assertNull(result2.get("KEY"));
+    dsoNodes = result2.get("TESTING");
+    Assert.assertNotNull("Failed on node " + nodeId, dsoNodes);
+    Assert.assertEquals("Failed on node " + nodeId, 1, dsoNodes.size());
+    dsoNodes = result2.get("NOT HERE!");
+    Assert.assertNotNull(dsoNodes);
+    Assert.assertEquals(0, dsoNodes.size());
+
+    barrier.await();
+
+    if (1 == nodeId) {
+      synchronized (map) {
+        map.get("TESTING");
+      }
+    }
+
+    barrier.await();
+
+    final Map<String, Set<DsoNode>> result3 = dsoClusterInternal.getNodesWithKeys(map, keys);
+    Assert.assertNotNull("Failed on node " + nodeId, result3);
+    Assert.assertNull("Failed on node " + nodeId, result3.get("KEY"));
+    dsoNodes = result3.get("TESTING");
+    Assert.assertNotNull("Failed on node " + nodeId, dsoNodes);
+    Assert.assertEquals("Failed on node " + nodeId, 2, dsoNodes.size());
+  }
+
   void testGetNodesWithObject() throws InterruptedException, BrokenBarrierException {
     final int nodeId = barrier.await();
 
@@ -192,16 +259,16 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
 
     if (1 == nodeId) {
       Object mojo = pojo.getYourMojo();
-      System.out.println(">>>>>> mojo : "+mojo);
+      System.out.println(">>>>>> mojo : " + mojo);
       if (mojo != null) {
-        System.out.println(">>>>>> mojo manageable : "+(mojo instanceof Manageable));
+        System.out.println(">>>>>> mojo manageable : " + (mojo instanceof Manageable));
       }
       final Set<DsoNode> nodes = cluster.getNodesWithObject(mojo);
-      System.out.println(">>>>>> nodes : "+nodes.size());
+      System.out.println(">>>>>> nodes : " + nodes.size());
       for (DsoNode node : nodes) {
-        System.out.println(">>>>>> node : "+node+", "+node.hashCode());
+        System.out.println(">>>>>> node : " + node + ", " + node.hashCode());
       }
-      System.out.println(">>>>>> currentNode : "+currentNode+", "+currentNode.hashCode());
+      System.out.println(">>>>>> currentNode : " + currentNode + ", " + currentNode.hashCode());
       Assert.assertTrue(nodes.contains(currentNode));
       Assert.assertEquals(1, nodes.size());
     }
@@ -324,8 +391,8 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
 
     if (0 == nodeId) {
       checkGetNodesWithObjectsResult(cluster.getNodesWithObjects(pojo.getYourMojo(), null, pojo.getMyMojo()));
-      checkGetNodesWithObjectsResult(cluster.getNodesWithObjects(Arrays.asList(pojo.getYourMojo(), null, pojo
-          .getMyMojo())));
+      checkGetNodesWithObjectsResult(cluster.getNodesWithObjects(Arrays.asList(pojo.getYourMojo(), null,
+                                                                               pojo.getMyMojo())));
     }
 
     barrier.await();
@@ -510,13 +577,13 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
         treeMap.put("key3", new Object());
       }
     }
-    
+
     barrier.await();
-    
+
     final Set result = cluster.getKeysForLocalValues(treeMap);
     Assert.assertNotNull(result);
     Assert.assertEquals(3, result.size());
-    
+
     barrier.await();
 
     if (0 == nodeId) {
@@ -525,7 +592,7 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
       }
     }
   }
-  
+
   public class ManageableMap extends HashMap implements Manageable {
 
     public boolean __tc_isManaged() {
@@ -629,7 +696,7 @@ public class ClusterMetaDataTestApp extends DedicatedMethodsTestApp {
     config.addWriteAutolock("* " + YourMojo.class.getName() + "*.*(..)");
 
     config.addWriteAutolock("* " + MyMojo.class.getName() + "*.*(..)");
-    
+
     config.addWriteAutolock("* " + BadMojo.class.getName() + "*.*(..)");
   }
 

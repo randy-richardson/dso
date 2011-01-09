@@ -4,8 +4,6 @@
  */
 package com.tc.util;
 
-import com.tc.util.runtime.UnknownJvmVersionException;
-import com.tc.util.runtime.UnknownRuntimeVersionException;
 import com.tc.util.runtime.VmVersion;
 
 import java.util.Properties;
@@ -13,18 +11,23 @@ import java.util.Properties;
 public class VendorVmSignature {
   public static final char    SIGNATURE_SEPARATOR = '_';
 
+  // unfortunately all windows OS will be this (even if 64 bit)
   private static final String OS_WINDOWS          = "win32";
   private static final String OS_LINUX            = "linux";
   private static final String OS_SOLARIS_SPARC    = "solaris";
   private static final String OS_MAC_OSX          = "osx";
   private static final String OS_SOLARIS_X86      = "solaris-x86";
   private static final String OS_SOLARIS_AMD64    = "solaris-amd64";
+  private static final String OS_SOLARIS_UNKNOWN  = "solaris-unknown";
   private static final String OS_AIX              = "aix";
+  private static final String OS_UNKNOWN          = "unknown";
 
   private static final String VM_VENDOR_SUN       = "hotspot";
   private static final String VM_VENDOR_IBM       = "ibm";
   private static final String VM_VENDOR_BEA       = "jrockit";
+  private static final String VM_VENDOR_ORACLE    = "oracle";
   private static final String VM_VENDOR_AZUL      = "azul";
+  private static final String VM_VENDOR_UNKNOWN   = "unknown";
 
   private final String        signature;
 
@@ -58,16 +61,11 @@ public class VendorVmSignature {
     if (vendor.toLowerCase().startsWith("apple ")) { return VM_VENDOR_SUN; }
     if (vendor.toLowerCase().startsWith("ibm ")) { return VM_VENDOR_IBM; }
     if (vendor.toLowerCase().startsWith("azul ")) { return VM_VENDOR_AZUL; }
+    if (vendor.toLowerCase().startsWith("oracle")) { return VM_VENDOR_ORACLE; }
 
     if (vendor.toLowerCase().startsWith("sun ")) {
       final VmVersion vmVersion;
-      try {
-        vmVersion = new VmVersion(source);
-      } catch (UnknownJvmVersionException ujve) {
-        throw new VendorVmSignatureException("Unable to extract the JVM version with properties: " + source, ujve);
-      } catch (UnknownRuntimeVersionException urve) {
-        throw new VendorVmSignatureException("Unable to extract the JVM version with properties: " + source, urve);
-      }
+      vmVersion = new VmVersion(source);
       if (vmVersion.isJRockit()) {
         // In at least one case, jrockit 1.4.2_05 on linux, you get "Sun Microsystems Inc." as the vendor...err
         return VM_VENDOR_BEA;
@@ -75,18 +73,12 @@ public class VendorVmSignature {
       return VM_VENDOR_SUN;
     }
 
-    throw new VendorVmSignatureException("Unknown or unsupported vendor string: " + vendor);
+    return VM_VENDOR_UNKNOWN;
   }
 
-  private static String getVMVersion(final Properties source) throws VendorVmSignatureException {
-    try {
-      final VmVersion vmVersion = new VmVersion(source);
-      return vmVersion.toString().replaceAll("\\.", "");
-    } catch (final UnknownJvmVersionException ujve) {
-      throw new VendorVmSignatureException("Cannot determine VM version", ujve);
-    } catch (final UnknownRuntimeVersionException urve) {
-      throw new VendorVmSignatureException("Cannot determine VM version", urve);
-    }
+  private static String getVMVersion(final Properties source) {
+    final VmVersion vmVersion = new VmVersion(source);
+    return vmVersion.toString().replaceAll("\\.", "");
   }
 
   private static String getOS(final Properties source) throws VendorVmSignatureException {
@@ -110,7 +102,7 @@ public class VendorVmSignature {
         } else if ("amd64".equals(lowerCaseArch)) {
           return OS_SOLARIS_AMD64;
         } else {
-          throw new VendorVmSignatureException("Unknown Solaris architecture: " + "(\"os.arch\" = " + arch + ")");
+          return OS_SOLARIS_UNKNOWN;
         }
       } else {
         throw new VendorVmSignatureException("Cannot determine Solaris architecture: "
@@ -118,7 +110,7 @@ public class VendorVmSignature {
       }
     }
 
-    throw new VendorVmSignatureException("Unknown or unsupported OS detected: " + osProp);
+    return OS_UNKNOWN;
   }
 
   private static void validateComponent(final String component) {
@@ -130,6 +122,7 @@ public class VendorVmSignature {
     return signature;
   }
 
+  @Override
   public String toString() {
     return getSignature();
   }

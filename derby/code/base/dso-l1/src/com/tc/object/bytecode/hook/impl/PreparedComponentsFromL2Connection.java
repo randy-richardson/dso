@@ -1,13 +1,13 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.object.bytecode.hook.impl;
 
-import com.tc.config.schema.dynamic.ConfigItem;
-import com.tc.config.schema.dynamic.ObjectArrayConfigItem;
-import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
+import com.tc.config.schema.L2ConfigForL1.L2Data;
+import com.tc.config.schema.setup.L1ConfigurationSetupManager;
 import com.tc.object.DistributedObjectClient;
-import com.tc.object.config.ConnectionInfoConfigItem;
+import com.tc.object.config.ConnectionInfoConfig;
 import com.tc.util.Assert;
 
 /**
@@ -15,31 +15,36 @@ import com.tc.util.Assert;
  * {@link DistributedObjectClient} eventually.
  */
 public class PreparedComponentsFromL2Connection {
-  private final L1TVSConfigurationSetupManager config;
+  private final L1ConfigurationSetupManager config;
 
-  public PreparedComponentsFromL2Connection(L1TVSConfigurationSetupManager config) {
+  public PreparedComponentsFromL2Connection(L1ConfigurationSetupManager config) {
     Assert.assertNotNull(config);
     this.config = config;
   }
 
-  public ConfigItem createConnectionInfoConfigItem() {
-    return new ConnectionInfoConfigItem(this.config.l2Config().l2Data());
+  public ConnectionInfoConfig createConnectionInfoConfigItem() {
+    return new ConnectionInfoConfig(this.config.l2Config().l2Data());
   }
 
-  public ConfigItem[] createConnectionInfoConfigItemByGroup() {
-    // this initializes the data structures in L2ConfigForL1Object
-    this.config.l2Config().l2Data().getObject();
+  public ConnectionInfoConfig[] createConnectionInfoConfigItemByGroup() {
+    /**
+     * this block is synchronized because of the apache bug https://issues.apache.org/jira/browse/XMLBEANS-328. In multi
+     * threaded environment we used to get ArrayIndexOutOfBoundsException See MNK-1984, 2010, 2013 for more details
+     */
+    synchronized (this.config) {
+      this.config.l2Config().l2Data();
+    }
 
-    ObjectArrayConfigItem[] l2DataByGroup = this.config.l2Config().getL2DataByGroup();
-    ConfigItem[] items = new ConfigItem[l2DataByGroup.length];
+    L2Data[][] l2DataByGroup = this.config.l2Config().getL2DataByGroup();
+    ConnectionInfoConfig[] items = new ConnectionInfoConfig[l2DataByGroup.length];
     for (int i = 0; i < l2DataByGroup.length; i++) {
-      items[i] = new ConnectionInfoConfigItem(l2DataByGroup[i]);
+      items[i] = new ConnectionInfoConfig(l2DataByGroup[i]);
     }
     return items;
   }
-  
+
   public boolean isActiveActive() {
-    ConfigItem[] groups = createConnectionInfoConfigItemByGroup();
+    ConnectionInfoConfig[] groups = createConnectionInfoConfigItemByGroup();
     return (groups.length > 1);
   }
 

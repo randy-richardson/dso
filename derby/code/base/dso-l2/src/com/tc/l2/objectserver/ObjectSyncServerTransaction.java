@@ -6,6 +6,7 @@ package com.tc.l2.objectserver;
 
 import com.tc.net.NodeID;
 import com.tc.object.dmi.DmiDescriptor;
+import com.tc.object.dna.api.MetaDataReader;
 import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.object.locks.LockID;
@@ -34,8 +35,8 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
   private final Map                 rootsMap;
   private final NodeID              serverID;
 
-  public ObjectSyncServerTransaction(ServerTransactionID serverTransactionID, ObjectIDSet oids, int dnaCount,
-                                     List changes, Map rootsMap, NodeID serverID) {
+  public ObjectSyncServerTransaction(final ServerTransactionID serverTransactionID, final ObjectIDSet oids,
+                                     final int dnaCount, final List changes, final Map rootsMap, final NodeID serverID) {
     this.oids = oids;
     this.changes = changes;
     this.rootsMap = rootsMap;
@@ -69,6 +70,13 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
 
   public DmiDescriptor[] getDmiDescriptors() {
     throw new UnsupportedOperationException();
+  }
+
+  /**
+   * TODO SEARCH: COME BACK TO THIS
+   */
+  public MetaDataReader[] getMetaDataReaders() {
+    return new MetaDataReader[] {};
   }
 
   public LockID[] getLockIDs() {
@@ -111,7 +119,7 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
     return GlobalTransactionID.NULL_ID;
   }
 
-  public boolean needsBroadcast() {
+  public boolean isActiveTxn() {
     return false;
   }
 
@@ -119,7 +127,7 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
     return 1;
   }
 
-  public void setGlobalTransactionID(GlobalTransactionID gid) {
+  public void setGlobalTransactionID(final GlobalTransactionID gid) {
     throw new UnsupportedOperationException();
   }
 

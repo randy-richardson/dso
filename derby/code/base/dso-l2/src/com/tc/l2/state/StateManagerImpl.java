@@ -54,6 +54,10 @@ public class StateManagerImpl implements StateManager {
     this.electionMgr = new ElectionManagerImpl(groupManager, stateManagerConfig);
   }
 
+  public State getCurrentState() {
+    return this.state;
+  }
+
   /*
    * XXX:: If ACTIVE went dead before any passive moved to STANDBY state, then the cluster is hung and there is no going
    * around it. If ACTIVE in persistent mode, it can come back and recover the cluster
@@ -107,6 +111,7 @@ public class StateManagerImpl implements StateManager {
         wait(timeout);
       } catch (InterruptedException e) {
         logger.warn("Interrupted while waiting for ACTIVE to declare WON message ! ", e);
+        Thread.currentThread().interrupt();
         break;
       }
       timeout = timeout - (System.currentTimeMillis() - start);
@@ -183,6 +188,10 @@ public class StateManagerImpl implements StateManager {
 
   public boolean isActiveCoordinator() {
     return (state == ACTIVE_COORDINATOR);
+  }
+
+  public boolean isPassiveUnitialized() {
+    return (state == PASSIVE_UNINTIALIZED);
   }
 
   public void moveNodeToPassiveStandby(NodeID nodeID) {
@@ -392,7 +401,7 @@ public class StateManagerImpl implements StateManager {
   public String toString() {
     return StateManagerImpl.class.getSimpleName() + ":" + this.state.toString();
   }
-  
+
   private void fireStateChangedOperatorEvent() {
     operatorEventLogger.fireOperatorEvent(TerracottaOperatorEventFactory
         .createClusterNodeStateChangedEvent(new Object[] { state.getName() }));

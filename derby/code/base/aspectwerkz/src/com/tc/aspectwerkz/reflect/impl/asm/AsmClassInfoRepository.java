@@ -5,6 +5,7 @@
 
 package com.tc.aspectwerkz.reflect.impl.asm;
 
+import com.google.common.collect.MapMaker;
 import com.tc.aspectwerkz.exception.DefinitionException;
 import com.tc.aspectwerkz.reflect.ClassInfo;
 
@@ -13,38 +14,44 @@ import java.io.InputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A repository for the class info hierarchy. Is class loader aware.
- *
+ * 
  * @author <a href="mailto:jboner@codehaus.org">Jonas Bonér </a>
  */
 public class AsmClassInfoRepository {
   /**
    * Map with all the class info repositories mapped to their class loader.
    */
-  private static final HashMap          s_repositories = new HashMap();
+  private static final Map<ClassLoader, Reference<AsmClassInfoRepository>> s_repositories          = new MapMaker()
+                                                                                                       .weakKeys()
+                                                                                                       .makeMap();
+
+  private static final AsmClassInfoRepository                              NULL_LOADER_REPOSITORYU = new AsmClassInfoRepository(
+                                                                                                                                null);
 
   /**
    * Map with all the class info mapped to their class names.
    */
-  private final HashMap                 m_repository   = new HashMap();
+  private final Map<String, Reference<ClassInfo>>                          m_repository            = new ConcurrentHashMap();
 
   /**
    * Class loader for the class repository.
    */
-  private transient final WeakReference m_loaderRef;
+  private transient final WeakReference                                    m_loaderRef;
 
   /**
    * The annotation properties file.
    */
-  private final Properties              m_annotationProperties;
+  private final Properties                                                 m_annotationProperties;
 
   /**
    * Creates a new repository.
-   *
+   * 
    * @param loader
    */
   private AsmClassInfoRepository(final ClassLoader loader) {
@@ -72,45 +79,43 @@ public class AsmClassInfoRepository {
 
   /**
    * Returns the class info repository for the specific class loader
-   *
+   * 
    * @param loader
    * @return
    */
   public static AsmClassInfoRepository getRepository(final ClassLoader loader) {
-    Integer hash = new Integer(loader == null ? 0 : loader.hashCode()); // boot cl
+    if (loader == null) return NULL_LOADER_REPOSITORYU;
 
-    synchronized (s_repositories) {
-      AsmClassInfoRepository repository = lookup(hash);
+    AsmClassInfoRepository repository = lookup(loader);
 
-      // normal return case for existing repositories
-      if (repository != null) { return repository; }
-    }
+    // normal return case for existing repositories
+    if (repository != null) { return repository; }
+
 
     // Construct the repo outside of the lock (see CDV-116)
     AsmClassInfoRepository repo = new AsmClassInfoRepository(loader);
 
-    // check again
     synchronized (s_repositories) {
-      AsmClassInfoRepository repository = lookup(hash);
+      // check again
+      repository = lookup(loader);
 
       // another thread won, don't replace the mapping
       if (repository != null) { return repository; }
 
-      s_repositories.put(hash, new SoftReference(repo));
+      s_repositories.put(loader, new SoftReference(repo));
     }
 
     return repo;
-
   }
 
-  private static AsmClassInfoRepository lookup(Integer hash) {
-    Reference repositoryRef = (Reference) s_repositories.get(hash);
-    return ((repositoryRef == null) ? null : (AsmClassInfoRepository) repositoryRef.get());
+  private static AsmClassInfoRepository lookup(ClassLoader loader) {
+    Reference<AsmClassInfoRepository> ref = s_repositories.get(loader);
+    return ref == null ? null : ref.get();
   }
 
   /**
    * Remove a class from the repository.
-   *
+   * 
    * @param className the name of the class
    */
   public static void removeClassInfoFromAllClassLoaders(final String className) {
@@ -120,12 +125,12 @@ public class AsmClassInfoRepository {
 
   /**
    * Returns the class info.
-   *
+   * 
    * @param className
    * @return
    */
   public ClassInfo getClassInfo(final String className) {
-    Reference classInfoRef = ((Reference) m_repository.get(new Integer(className.hashCode())));
+    Reference classInfoRef = m_repository.get(className);
     ClassInfo info = classInfoRef == null ? null : (ClassInfo) classInfoRef.get();
     if (info == null) { return checkParentClassRepository(className, (ClassLoader) m_loaderRef.get()); }
     return info;
@@ -133,13 +138,13 @@ public class AsmClassInfoRepository {
 
   /**
    * Adds a new class info.
-   *
+   * 
    * @param classInfo
    */
   public void addClassInfo(final ClassInfo classInfo) {
     // is the class loaded by a class loader higher up in the hierarchy?
     if (checkParentClassRepository(classInfo.getName(), (ClassLoader) m_loaderRef.get()) == null) {
-      m_repository.put(new Integer(classInfo.getName().hashCode()), new SoftReference(classInfo));
+      m_repository.put(classInfo.getName(), new SoftReference(classInfo));
     } else {
       // TODO: remove class in child class repository and add it for the
       // current (parent) CL
@@ -148,27 +153,27 @@ public class AsmClassInfoRepository {
 
   /**
    * Checks if the class info for a specific class exists.
-   *
+   * 
    * @param name
    * @return
    */
   public boolean hasClassInfo(final String name) {
-    Reference classInfoRef = (Reference) m_repository.get(new Integer(name.hashCode()));
+    Reference classInfoRef = m_repository.get(name);
     return (classInfoRef == null) ? false : (classInfoRef.get() != null);
   }
 
   /**
    * Removes the class from the repository (since it has been modified and needs to be rebuild).
-   *
+   * 
    * @param className
    */
   public void removeClassInfo(final String className) {
-    m_repository.remove(new Integer(className.hashCode()));
+    m_repository.remove(className);
   }
 
   /**
    * Returns the annotation properties for the specific class loader.
-   *
+   * 
    * @return the annotation properties
    */
   public Properties getAnnotationProperties() {
@@ -177,7 +182,7 @@ public class AsmClassInfoRepository {
 
   /**
    * Searches for a class info up in the class loader hierarchy.
-   *
+   * 
    * @param className
    * @param loader
    * @return the class info
@@ -192,7 +197,7 @@ public class AsmClassInfoRepository {
     } else {
       AsmClassInfoRepository parentRep = AsmClassInfoRepository.getRepository(parent);
 
-      Reference classInfoRef = ((Reference) parentRep.m_repository.get(new Integer(className.hashCode())));
+      Reference classInfoRef = parentRep.m_repository.get(className);
       ClassInfo info = classInfoRef == null ? null : (ClassInfo) classInfoRef.get();
       if (info != null) {
         return info;
@@ -203,8 +208,10 @@ public class AsmClassInfoRepository {
   }
 
   /*
-   * public ClassInfo checkParentClassRepository(final String className, final ClassLoader loader) { if (loader == null) {
-   * return null; } ClassLoader parent = loader.getParent(); if (parent == null) { return null; } else { ClassInfo info =
+   * public ClassInfo checkParentClassRepository(final String className, final ClassLoader loader) { if (loader == null)
+   * {
+   * return null; } ClassLoader parent = loader.getParent(); if (parent == null) { return null; } else { ClassInfo info
+   * =
    * AsmClassInfoRepository.getRepository(parent).getClassInfo(className); if (info != null) { return info; } else {
    * return checkParentClassRepository(className, parent); } } }
    */

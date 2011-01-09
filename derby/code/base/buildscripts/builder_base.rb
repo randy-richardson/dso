@@ -180,6 +180,7 @@ class TerracottaBuilder
     Registry[:basedir] = @basedir
     puts("Building with base directory: '#@basedir'.")
     puts
+    @flavor = OPENSOURCE
     @default_target = default_target
     @ant = TerracottaAnt.new
     Registry[:ant] = @ant
@@ -285,6 +286,13 @@ class TerracottaBuilder
     tim_get_command(subcommand, *flags) do |command|
       %x[#{command.join(' ')}]
     end
+  end
+
+  def maven(goals, *args)
+    mvn_cmd = [FilePath.new('mvn').batch_extension.to_s]
+    mvn_cmd << goals
+    mvn_cmd += args
+    system(*mvn_cmd)
   end
 
   protected

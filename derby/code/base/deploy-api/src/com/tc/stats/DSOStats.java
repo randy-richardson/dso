@@ -10,9 +10,9 @@ public interface DSOStats {
 
   double getCacheHitRatio();
 
-  long getCacheMissRate();
+  long getOnHeapFaultRate();
 
-  long getFlushedRate();
+  long getOnHeapFlushRate();
 
   long getTransactionRate();
 
@@ -25,7 +25,9 @@ public interface DSOStats {
   long getTransactionSizeRate();
 
   long getBroadcastRate();
-  
+
+  long getL2DiskFaultRate();
+
   long getGlobalServerMapGetSizeRequestsCount();
 
   long getGlobalServerMapGetValueRequestsCount();

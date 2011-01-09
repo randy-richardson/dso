@@ -10,10 +10,13 @@ import com.tc.net.NodeID;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.object.ObjectID;
+import com.tc.object.dna.impl.UTF8ByteDataHolder;
 import com.tc.object.msg.KeysForOrphanedValuesMessage;
 import com.tc.object.msg.KeysForOrphanedValuesResponseMessage;
 import com.tc.object.msg.NodeMetaDataMessage;
 import com.tc.object.msg.NodeMetaDataResponseMessage;
+import com.tc.object.msg.NodesWithKeysMessage;
+import com.tc.object.msg.NodesWithKeysResponseMessage;
 import com.tc.object.msg.NodesWithObjectsMessage;
 import com.tc.object.msg.NodesWithObjectsResponseMessage;
 import com.tc.object.net.DSOChannelManager;
@@ -27,6 +30,7 @@ import com.tc.objectserver.managedobject.PartialMapManagedObjectState;
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -64,6 +68,52 @@ public class ServerClusterMetaDataManagerImpl implements ServerClusterMetaDataMa
       response.put(objectID, referencingNodeIDs);
     }
     responseMessage.initialize(message.getThreadID(), response);
+    responseMessage.send();
+  }
+
+  public void handleMessage(final NodesWithKeysMessage message) {
+    NodesWithKeysResponseMessage responseMessage = (NodesWithKeysResponseMessage) message.getChannel()
+        .createMessage(TCMessageType.NODES_WITH_KEYS_RESPONSE_MESSAGE);
+
+    Map<Object, Set<NodeID>> resultMap = new HashMap<Object, Set<NodeID>>();
+
+    if(message.getMapObjectID() != null) {
+      final ManagedObject managedMap = objectManager.getObjectByID(message.getMapObjectID());
+      try {
+        final ManagedObjectState state = managedMap.getManagedObjectState();
+        if (state instanceof PartialMapManagedObjectState) {
+          final Set<NodeID> connectedClients = clientStateManager.getConnectedClientIDs();
+
+          Map realMap = ((PartialMapManagedObjectState) state).getMap();
+          for (Object key : message.getKeys()) {
+            UTF8ByteDataHolder holder = new UTF8ByteDataHolder(key.toString());
+            if(realMap.containsKey(holder)) {
+            Object value = realMap.get(holder);
+              if(value instanceof ObjectID) {
+                Set<NodeID> nodeIDSet = resultMap.get(key);
+                if(nodeIDSet == null) {
+                  nodeIDSet = new HashSet<NodeID>();
+                  resultMap.put(holder, nodeIDSet);
+                }
+                for (NodeID nodeID : connectedClients) {
+                  if (clientStateManager.hasReference(nodeID, (ObjectID) value)) {
+                    nodeIDSet.add(nodeID);
+                  }
+                }
+              }
+            }
+          }
+          responseMessage.initialize(message.getThreadID(), resultMap);
+        } else {
+          logger.error("Received nodes for keys message for object '" + message.getMapObjectID()
+                       + "' whose managed state isn't a partial map, returning an empty set.");
+          responseMessage.initialize(message.getThreadID(), Collections.<Object, Set<NodeID>>emptyMap());
+        }
+      } finally {
+        objectManager.releaseReadOnly(managedMap);
+      }
+    }
+
     responseMessage.send();
   }
 

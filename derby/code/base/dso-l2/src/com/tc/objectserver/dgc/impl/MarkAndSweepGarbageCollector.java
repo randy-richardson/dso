@@ -21,10 +21,10 @@ import com.tc.util.State;
 import com.tc.util.concurrent.LifeCycleState;
 import com.tc.util.concurrent.NullLifeCycleState;
 import com.tc.util.concurrent.StoppableThread;
+import com.tc.util.sequence.DGCSequenceProvider;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  */
@@ -35,13 +35,13 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
   private static final LifeCycleState          NULL_LIFECYCLE_STATE       = new NullLifeCycleState();
 
-  private final AtomicInteger                  gcIterationCounter         = new AtomicInteger(0);
   private final GarbageCollectionInfoPublisher gcPublisher;
   private final ObjectManagerConfig            objectManagerConfig;
   private final ClientStateManager             stateManager;
   private final ObjectManager                  objectManager;
+  private final DGCSequenceProvider            dgcSequenceProvider;
 
-  private State                                state                      = GC_SLEEP;
+  private volatile State                       state                      = GC_SLEEP;
   private volatile ChangeCollector             referenceCollector         = ChangeCollector.NULL_CHANGE_COLLECTOR;
   private volatile YoungGenChangeCollector     youngGenReferenceCollector = YoungGenChangeCollector.NULL_YOUNG_CHANGE_COLLECTOR;
   private volatile LifeCycleState              gcState                    = new NullLifeCycleState();
@@ -49,11 +49,13 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
   public MarkAndSweepGarbageCollector(final ObjectManagerConfig objectManagerConfig, final ObjectManager objectMgr,
                                       final ClientStateManager stateManager,
-                                      final GarbageCollectionInfoPublisher gcPublisher) {
+                                      final GarbageCollectionInfoPublisher gcPublisher,
+                                      DGCSequenceProvider dgcSequenceProvider) {
     this.objectManagerConfig = objectManagerConfig;
     this.objectManager = objectMgr;
     this.stateManager = stateManager;
     this.gcPublisher = gcPublisher;
+    this.dgcSequenceProvider = dgcSequenceProvider;
     addListener(new GCLoggerEventPublisher(new GCLogger(logger, objectManagerConfig.verboseGC())));
   }
 
@@ -68,7 +70,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
         break;
     }
     final MarkAndSweepGCAlgorithm gcAlgo = new MarkAndSweepGCAlgorithm(this, hook, this.gcPublisher, this.gcState,
-                                                                       this.gcIterationCounter.incrementAndGet());
+                                                                       this.dgcSequenceProvider.getNextId());
     gcAlgo.doGC();
   }
 
@@ -126,7 +128,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   ObjectIDSet collect(final GCHook hook, final Filter traverser, final Collection roots,
                       final ObjectIDSet managedObjectIds, final LifeCycleState lstate) {
     final MarkAndSweepGCAlgorithm gcAlgo = new MarkAndSweepGCAlgorithm(this, hook, this.gcPublisher, this.gcState,
-                                                                       this.gcIterationCounter.incrementAndGet());
+                                                                       this.dgcSequenceProvider.getNextId());
     return gcAlgo.collect(traverser, roots, managedObjectIds, lstate);
   }
 
@@ -191,7 +193,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     }
   }
 
-  public synchronized void notifyGCComplete() {
+  public void notifyGCComplete() {
     this.state = GC_SLEEP;
   }
 
@@ -207,19 +209,20 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     return false;
   }
 
-  public synchronized void requestGCPause() {
+  public void requestGCPause() {
     this.state = GC_PAUSING;
   }
 
-  public synchronized boolean isPausingOrPaused() {
-    return GC_PAUSED == this.state || GC_PAUSING == this.state;
+  public boolean isPausingOrPaused() {
+    State localState = this.state;
+    return GC_PAUSED == localState || GC_PAUSING == localState;
   }
 
-  public synchronized boolean isPaused() {
+  public boolean isPaused() {
     return this.state == GC_PAUSED;
   }
 
-  public synchronized boolean isDisabled() {
+  public boolean isDisabled() {
     return GC_DISABLED == this.state;
   }
 

@@ -7,6 +7,7 @@ import org.apache.commons.lang.StringUtils;
 
 import com.tc.admin.common.BrowserLauncher;
 import com.tc.admin.common.ComponentNode;
+import com.tc.admin.common.SyncHTMLEditorKit;
 import com.tc.admin.common.XScrollPane;
 import com.tc.admin.common.XTextPane;
 import com.tc.admin.dso.ClientsNode;
@@ -82,6 +83,15 @@ public class FeaturesNode extends ComponentNode implements NotificationListener,
 
       if (newActive != null) {
         init();
+      }
+    }
+
+    @Override
+    protected void handleUncaughtError(Exception e) {
+      if (adminClientContext != null) {
+        adminClientContext.log(e);
+      } else {
+        super.handleUncaughtError(e);
       }
     }
   }
@@ -291,11 +301,12 @@ public class FeaturesNode extends ComponentNode implements NotificationListener,
   public Component getComponent() {
     if (myApplicationPanel == null) {
       XTextPane textPane = new XTextPane();
+      textPane.setEditorKit(new SyncHTMLEditorKit());
       myApplicationPanel = new XScrollPane(textPane);
       try {
         textPane.setPage(getClass().getResource("MyApplication.html"));
       } catch (Exception e) {
-        e.printStackTrace();
+        adminClientContext.log(e);
       }
       textPane.setEditable(false);
       textPane.addHyperlinkListener(this);

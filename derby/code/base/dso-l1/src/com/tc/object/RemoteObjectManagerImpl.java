@@ -4,6 +4,7 @@
  */
 package com.tc.object;
 
+import com.tc.exception.TCNotRunningException;
 import com.tc.exception.TCObjectNotFoundException;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
@@ -44,6 +45,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
 
   private static final long    RETRIEVE_WAIT_INTERVAL                    = 15000;
   private static final int     REMOVE_OBJECTS_THRESHOLD                  = 10000;
+  private static final long    REMOVED_OBJECTS_SEND_NOW                  = 0;
   private static final long    REMOVED_OBJECTS_SEND_TIMER                = 30000;
   private static final long    CLEANUP_UNUSED_DNA_TIMER                  = 300000;
 
@@ -68,6 +70,10 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
     PAUSED, RUNNING, STARTING, STOPPED
   }
 
+  private static enum RemovedObjectsSendState {
+    NOT_SCHEDULED, SCHEDULED_LATER, SCHEDULED_NOW
+  }
+
   private final HashMap<String, ObjectID>          rootRequests             = new HashMap<String, ObjectID>();
 
   private final Map<ObjectID, DNA>                 dnaCache                 = new HashMap<ObjectID, DNA>();
@@ -89,7 +95,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   private ObjectIDSet                              removeObjects            = new ObjectIDSet();
 
   private boolean                                  pendingSendTaskScheduled = false;
-  private boolean                                  removeTaskScheduled      = false;
+  private RemovedObjectsSendState                  removeTaskScheduled      = RemovedObjectsSendState.NOT_SCHEDULED;
   private long                                     objectRequestIDCounter   = 0;
   private long                                     hit                      = 0;
   private long                                     miss                     = 0;
@@ -111,6 +117,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   public synchronized void shutdown() {
     this.state = State.STOPPED;
     this.objectRequestTimer.cancel();
+    this.notifyAll();
   }
 
   private boolean isStopped() {
@@ -151,14 +158,18 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
 
   private void waitUntilRunning() {
     boolean isInterrupted = false;
-    while (this.state != State.RUNNING) {
-      try {
-        wait();
-      } catch (final InterruptedException e) {
-        isInterrupted = true;
+    try {
+      while (this.state != State.RUNNING) {
+        if (isStopped()) { throw new TCNotRunningException(); }
+        try {
+          wait();
+        } catch (final InterruptedException e) {
+          isInterrupted = true;
+        }
       }
+    } finally {
+      Util.selfInterruptIfNeeded(isInterrupted);
     }
-    Util.selfInterruptIfNeeded(isInterrupted);
   }
 
   private void assertPaused(final String message) {
@@ -189,6 +200,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   }
 
   public synchronized void preFetchObject(final ObjectID id) {
+    waitUntilRunning();
     if (this.dnaCache.containsKey(id) || this.objectLookupStates.containsKey(id)) { return; }
     final ObjectLookupState ols = new ObjectLookupState(getNextRequestID(), id, this.defaultDepth, ObjectID.NULL_ID);
     ols.makePrefetchRequest();
@@ -363,6 +375,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
 
   public synchronized ObjectID retrieveRootID(final String name) {
 
+    waitUntilRunning();
     if (!this.rootRequests.containsKey(name)) {
       final RequestRootMessage rrm = createRootMessage(name);
       this.rootRequests.put(name, ObjectID.NULL_ID);
@@ -469,20 +482,31 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
     }
   }
 
+  /**
+   * Do not wait here for any reason as this method is called under the ClientObjectManager lock and waiting here could
+   * cause deadlocks on restarts. Since you are not allowed to wait here (waitUntilRunning) don't send any messages to
+   * the server from this method too as it can end-up in the server even before the connection is fully handshaked.
+   */
   public synchronized void removed(final ObjectID id) {
+    if (objectLookupStates.containsKey(id)) {
+      logger.warn("Not removing object " + id + " as it is being looked up : " + objectLookupStates.get(id));
+      return;
+    }
     this.dnaCache.remove(id);
     this.removeObjects.add(id);
-    if (this.removeObjects.size() >= REMOVE_OBJECTS_THRESHOLD) {
-      sendRequestNow(getNextRequestID(), TCCollections.EMPTY_OBJECT_ID_SET, -1);
-    } else if (this.removeObjects.size() == 1 && !this.removeTaskScheduled) {
+    if (this.removeObjects.size() >= REMOVE_OBJECTS_THRESHOLD
+        && this.removeTaskScheduled != RemovedObjectsSendState.SCHEDULED_NOW) {
+      this.objectRequestTimer.schedule(new RemovedObjectTimerTask(), REMOVED_OBJECTS_SEND_NOW);
+      this.removeTaskScheduled = RemovedObjectsSendState.SCHEDULED_NOW;
+    } else if (this.removeObjects.size() == 1 && this.removeTaskScheduled == RemovedObjectsSendState.NOT_SCHEDULED) {
       this.objectRequestTimer.schedule(new RemovedObjectTimerTask(), REMOVED_OBJECTS_SEND_TIMER);
-      this.removeTaskScheduled = true;
-
+      this.removeTaskScheduled = RemovedObjectsSendState.SCHEDULED_LATER;
     }
   }
 
   public synchronized void sendRemovedObjects() {
-    this.removeTaskScheduled = false;
+    waitUntilRunning();
+    this.removeTaskScheduled = RemovedObjectsSendState.NOT_SCHEDULED;
     if (!this.removeObjects.isEmpty()) {
       sendRequestNow(getNextRequestID(), TCCollections.EMPTY_OBJECT_ID_SET, -1);
     }
@@ -507,7 +531,11 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   private class RemovedObjectTimerTask extends TimerTask {
     @Override
     public void run() {
-      sendRemovedObjects();
+      try {
+        sendRemovedObjects();
+      } catch (TCNotRunningException e) {
+        logger.info("Ignoring " + e.getMessage() + " in RemovedObjectTimerTask");
+      }
     }
   }
 

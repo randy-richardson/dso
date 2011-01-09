@@ -16,8 +16,6 @@ import com.tc.object.TestClassFactory.MockTCField;
 import com.tc.object.bytecode.Manageable;
 import com.tc.object.bytecode.MockClassProvider;
 import com.tc.object.bytecode.TransparentAccess;
-import com.tc.object.cache.EvictionPolicy;
-import com.tc.object.cache.NullCache;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNACursor;
@@ -44,7 +42,6 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
   private TestRemoteObjectManager remoteObjectManager;
   private DSOClientConfigHelper   clientConfiguration;
   private ObjectIDProvider        idProvider;
-  private EvictionPolicy          cache;
   private RuntimeLogger           runtimeLogger;
   private ClassProvider           classProvider;
   private TCClassFactory          classFactory;
@@ -62,7 +59,6 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     this.clientConfiguration = configHelper();
     this.classFactory = new TestClassFactory();
     this.objectFactory = new TestObjectFactory();
-    this.cache = new NullCache();
     this.runtimeLogger = new NullRuntimeLogger();
 
     this.rootName = "myRoot";
@@ -73,9 +69,8 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     this.objectFactory.tcObject = this.tcObject;
 
     this.mgr = new ClientObjectManagerImpl(this.remoteObjectManager, this.clientConfiguration, this.idProvider,
-                                           this.cache, this.runtimeLogger,
-                                           new ClientIDProviderImpl(new TestChannelIDProvider()), this.classProvider,
-                                           this.classFactory, this.objectFactory,
+                                           this.runtimeLogger, new ClientIDProviderImpl(new TestChannelIDProvider()),
+                                           this.classProvider, this.classFactory, this.objectFactory,
                                            new PortabilityImpl(this.clientConfiguration), null, null);
     this.mgr.setTransactionManager(new MockTransactionManager());
   }
@@ -138,7 +133,6 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
                                                                                     this.remoteObjectManager,
                                                                                     this.clientConfiguration,
                                                                                     this.idProvider,
-                                                                                    this.cache,
                                                                                     this.runtimeLogger,
                                                                                     new ClientIDProviderImpl(
                                                                                                              new TestChannelIDProvider()),
@@ -237,7 +231,7 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     final ClassNotFoundException expect = new ClassNotFoundException();
     this.tcObject.setHydrateException(expect);
 
-    TestDNA dna = newEmptyDNA();
+    final TestDNA dna = newEmptyDNA();
     prepareObjectLookupResults(dna);
 
     try {

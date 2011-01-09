@@ -4,10 +4,10 @@
  */
 package com.tc.server;
 
-import com.tc.config.schema.NewCommonL2Config;
+import com.tc.config.schema.CommonL2Config;
 import com.tc.config.schema.messaging.http.ConfigServlet;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
-import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.config.schema.setup.L2ConfigurationSetupManager;
+import com.tc.object.config.schema.L2DSOConfig;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.StatisticDataCSVParser;
 import com.tc.statistics.StatisticsGathererSubSystem;
@@ -41,14 +41,14 @@ import javax.servlet.http.HttpServletResponse;
 public class StatisticsGathererServlet extends RestfulServlet implements StatisticsGathererListener {
   public static final String             GATHERER_ATTRIBUTE = StatisticsGathererServlet.class.getName() + ".gatherer";
 
-  private L2TVSConfigurationSetupManager configSetupManager;
+  private L2ConfigurationSetupManager configSetupManager;
   private StatisticsGathererSubSystem    system;
 
   private boolean                        connected          = false;
 
   @Override
   public void init() {
-    configSetupManager = (L2TVSConfigurationSetupManager) getServletContext()
+    configSetupManager = (L2ConfigurationSetupManager) getServletContext()
         .getAttribute(ConfigServlet.CONFIG_ATTRIBUTE);
     system = (StatisticsGathererSubSystem) getServletContext().getAttribute(GATHERER_ATTRIBUTE);
     system.getStatisticsGatherer().addListener(this);
@@ -62,13 +62,13 @@ public class StatisticsGathererServlet extends RestfulServlet implements Statist
   private synchronized void startup() throws StatisticsGathererException {
     if (connected) { return; }
 
-    final NewCommonL2Config commonConfig = configSetupManager.commonl2Config();
-    final NewL2DSOConfig dsoConfig = configSetupManager.dsoL2Config();
-    String hostname = configSetupManager.commonl2Config().jmxPort().getBindAddress();
+    final CommonL2Config commonConfig = configSetupManager.commonl2Config();
+    final L2DSOConfig dsoConfig = configSetupManager.dsoL2Config();
+    String hostname = configSetupManager.commonl2Config().jmxPort().getBind();
     if (null == hostname) {
-      hostname = dsoConfig.host().getString();
+      hostname = dsoConfig.host();
     }
-    final int port = commonConfig.jmxPort().getBindPort();
+    final int port = commonConfig.jmxPort().getIntValue();
     system.getStatisticsGatherer().connect(hostname, port);
   }
 

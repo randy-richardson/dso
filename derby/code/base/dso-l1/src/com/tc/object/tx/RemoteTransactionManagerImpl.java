@@ -4,9 +4,10 @@
  */
 package com.tc.object.tx;
 
+import com.tc.exception.TCNotRunningException;
 import com.tc.logging.LossyTCLogger;
-import com.tc.logging.TCLogger;
 import com.tc.logging.LossyTCLogger.LossyTCLoggerType;
+import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.locks.LockFlushCallback;
@@ -37,10 +38,10 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Map.Entry;
 
 /**
  * Sends off committed transactions
@@ -51,12 +52,10 @@ public class RemoteTransactionManagerImpl implements RemoteTransactionManager, P
 
   private static final int                        MAX_OUTSTANDING_BATCHES     = TCPropertiesImpl
                                                                                   .getProperties()
-                                                                                  .getInt(
-                                                                                          TCPropertiesConsts.L1_TRANSACTIONMANAGER_MAXOUTSTANDING_BATCHSIZE);
+                                                                                  .getInt(TCPropertiesConsts.L1_TRANSACTIONMANAGER_MAXOUTSTANDING_BATCHSIZE);
   private static final long                       COMPLETED_ACK_FLUSH_TIMEOUT = TCPropertiesImpl
                                                                                   .getProperties()
-                                                                                  .getLong(
-                                                                                           TCPropertiesConsts.L1_TRANSACTIONMANAGER_COMPLETED_ACK_FLUSH_TIMEOUT);
+                                                                                  .getLong(TCPropertiesConsts.L1_TRANSACTIONMANAGER_COMPLETED_ACK_FLUSH_TIMEOUT);
 
   private static final State                      RUNNING                     = new State("RUNNING");
   private static final State                      PAUSED                      = new State("PAUSED");
@@ -111,6 +110,9 @@ public class RemoteTransactionManagerImpl implements RemoteTransactionManager, P
   public void shutdown() {
     this.isShutdown = true;
     this.timer.cancel();
+    synchronized (lock) {
+      this.lock.notifyAll();
+    }
   }
 
   public void pause(final NodeID remote, final int disconnected) {
@@ -193,6 +195,7 @@ public class RemoteTransactionManagerImpl implements RemoteTransactionManager, P
           }
         } catch (final InterruptedException e) {
           this.logger.warn("stop(): Interrupted " + e);
+          Thread.currentThread().interrupt();
         }
         if (this.status != STOPPED) {
           this.logger.error("stop() : There are still UNACKed Transactions! incompleteBatches.size() = "
@@ -216,8 +219,8 @@ public class RemoteTransactionManagerImpl implements RemoteTransactionManager, P
           final long now = System.currentTimeMillis();
           if ((now - start) > FLUSH_WAIT_INTERVAL && (now - lastPrinted) > FLUSH_WAIT_INTERVAL / 3) {
             this.logger.info("Flush for " + lockID + " took longer than: " + (FLUSH_WAIT_INTERVAL / 1000)
-                             + " sec. Took : " + (now - start) + " ms. # Transactions not yet Acked = " + c.size()
-                             + "\n");
+                             + " sec. Took : " + (now - start) + " ms. # Transactions not yet Acked = "
+                             + (c.size() + (c.size() < 50 ? (". " + c) : "")) + "\n");
             lastPrinted = now;
           }
         } catch (final InterruptedException e) {
@@ -290,8 +293,10 @@ public class RemoteTransactionManagerImpl implements RemoteTransactionManager, P
   }
 
   public void commit(final ClientTransaction txn) {
-    if (!txn.hasChangesOrNotifies() && txn.getDmiDescriptors().isEmpty() && txn.getNewRoots().isEmpty()) { throw new AssertionError(
-                                                                                                                                    "Attempt to commit an empty transaction."); }
+    if (!txn.hasChangesOrNotifies() && txn.getDmiDescriptors().isEmpty() && txn.getNewRoots().isEmpty()) {
+      //
+      throw new AssertionError("Attempt to commit an empty transaction.");
+    }
     if (!txn.getTransactionID().isNull()) { throw new AssertionError(
                                                                      "Transaction already committed as TransactionID is already assigned"); }
     final long start = System.currentTimeMillis();
@@ -505,14 +510,18 @@ public class RemoteTransactionManagerImpl implements RemoteTransactionManager, P
 
   private void waitUntilRunning() {
     boolean isInterrupted = false;
-    while (this.status != RUNNING) {
-      try {
-        this.lock.wait();
-      } catch (final InterruptedException e) {
-        isInterrupted = true;
+    try {
+      while (this.status != RUNNING) {
+        if (isShutdown) { throw new TCNotRunningException(); }
+        try {
+          this.lock.wait();
+        } catch (final InterruptedException e) {
+          isInterrupted = true;
+        }
       }
+    } finally {
+      Util.selfInterruptIfNeeded(isInterrupted);
     }
-    Util.selfInterruptIfNeeded(isInterrupted);
   }
 
   /*
@@ -541,6 +550,8 @@ public class RemoteTransactionManagerImpl implements RemoteTransactionManager, P
             .newCompletedTransactionLowWaterMarkMessage(RemoteTransactionManagerImpl.this.groupID);
         ctm.initialize(lwm);
         ctm.send();
+      } catch (final TCNotRunningException e) {
+        RemoteTransactionManagerImpl.this.logger.info("Ignoring TCNotRunningException while sending Low water mark : ");
       } catch (final Exception e) {
         RemoteTransactionManagerImpl.this.logger.error("Error sending Low water mark : ", e);
         throw new AssertionError(e);

@@ -16,7 +16,10 @@ import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.handshakemanager.ServerClientHandshakeManager;
 import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.locks.LockManager;
+import com.tc.objectserver.metadata.MetaDataManager;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
+import com.tc.objectserver.search.IndexManager;
+import com.tc.objectserver.search.SearchRequestManager;
 import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionBatchManager;
 import com.tc.objectserver.tx.TransactionBatchReaderFactory;
@@ -68,20 +71,25 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public static final String GROUP_DISCOVERY_STAGE                              = "group_discovery_stage";
   public final static String GROUP_HYDRATE_MESSAGE_STAGE                        = "group_hydrate_message_stage";
   public static final String GC_DELETE_FROM_DISK_STAGE                          = "gc_delete_from_disk_stage";
-  public static final String OOO_NET_SEND_STAGE                                 = "ooo_net_send_stage";
-  public static final String OOO_NET_RECEIVE_STAGE                              = "ooo_net_receive_stage";
-  public static final String L2_OOO_NET_SEND_STAGE                              = "l2_ooo_net_send_stage";
-  public static final String L2_OOO_NET_RECEIVE_STAGE                           = "l2_ooo_net_receive_stage";
   public final static String CLUSTER_METADATA_STAGE                             = "cluster_metadata_stage";
   public static final String SERVER_MAP_REQUEST_STAGE                           = "server_map_request_stage";
   public static final String SERVER_MAP_RESPOND_STAGE                           = "server_map_response_stage";
   public static final String SERVER_MAP_CAPACITY_EVICTION_STAGE                 = "server_map_capacity_eviction_stage";
   public static final String SERVER_MAP_EVICTION_PROCESSOR_STAGE                = "server_map_eviction_processor_stage";
+  public static final String SERVER_MAP_EVICTION_BROADCAST_STAGE                = "server_map_eviction_broadcast_stage";
+  public static final String SEARCH_EVENT_STAGE                                 = "search_event_stage";
+  public static final String SEARCH_QUERY_REQUEST_STAGE                         = "search_query_request_stage";
+  public static final String INVALIDATE_OBJECTS_STAGE                           = "invalidate_objects_stage";
+
   // TODO::Move to enterprise
   public static final String AA_TRANSACTION_WATERMARK_BROADCAST_STAGE           = "aa_transaction_watermark_broadcast_stage";
   public static final String AA_TRANSACTION_WATERMARK_RECEIVE_STAGE             = "aa_transaction_watermark_receive_stage";
   public static final String AA_OBJECT_REQUEST_LOOKUP_STAGE                     = "aa_object_request_lookup_stage";
   public static final String AA_CLOSE_CHANNEL_STAGE                             = "aa_close_channel_stage";
+
+  public static final String INDEXES_SYNC_REQUEST_STAGE                         = "indexes_sync_request_stage";
+  public static final String INDEXES_SYNC_SEND_STAGE                            = "indexes_sync_send_stage";
+  public static final String INDEXES_SYNC_STAGE                                 = "indexes_sync_stage";
 
   public L2Coordinator getL2Coordinator();
 
@@ -114,4 +122,10 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public ServerGlobalTransactionManager getServerGlobalTransactionManager();
 
   public ServerClusterMetaDataManager getClusterMetaDataManager();
+
+  public MetaDataManager getMetaDataManager();
+
+  public IndexManager getIndexManager();
+
+  public SearchRequestManager getSearchRequestManager();
 }

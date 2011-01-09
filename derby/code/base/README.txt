@@ -168,6 +168,11 @@ NOTE: Output of binaries are placed under code/base/build/dist
 --no-no
     only build a bare kit and skip ivy also
 
+maven.useLocalRepo=[true|false]
+    If true, tcbuild will first look in the local Maven repository for Maven
+    artifacts that are to be included in the kit.  The dist_dev target sets
+    this variable to true automatically.
+
 dist <product_code> <flavor> [maven.repo=URL] [kit.version=number]
     Create distribution binaries.
     <product_code> may be one of dso (the default), web, or api
@@ -182,6 +187,13 @@ dist <product_code> <flavor> [maven.repo=URL] [kit.version=number]
 dist_jars <product_code> <distribution_type>
     Acts like the dist target but will only build the jar files that will be found
     in a kit.
+
+dist_dev <product_code> <flavor>
+    Create a development kit using local versions of artifacts and external
+    resources to populate the kit.  Specifically, this target will set
+    maven.useLocalRepo=true and build all external projects before constructing
+    the kit.  See build_external for further details about building external
+    projects.
 
 create_package <product_code> [kit.version=number]
     Assembles and packages the kit. Product codes: dso, web
@@ -208,6 +220,13 @@ patch [level=IDENTIFIER] [maven.repo=URL]
     other Maven commands, the maven.repositoryId parameter can also be used to
     link to a server/id element in the Maven settings.xml.
 
+HOW TO CREATE A DEV PATCH
+
+  A "dev" patch is usually built by engineers and has not been verified by QA
+
+./tcbuild patch dso enterprise level=dev
+
+    
 DEPLOYING MAVEN ARTIFACTS
 
 dist_maven [maven.repo=URL args...]
@@ -241,7 +260,11 @@ dist_maven with the --no-ivy and --no-compile options:
     
 dist_maven_ee
   Builds and installs EE artifacts. This only work if you have a EE branch checked out
+  
+dist_maven_all
+  Builds and installs EE + OSS artifacts. This only work if you have a EE branch checked out
 
+  
 RUNNING SERVERS, CLASSES, ETC.
 
 run_class <class_name> [args...]
@@ -256,6 +279,10 @@ NOTE: The jdk= option, described in the JDK SELECTION section below, can be
 used to specify the JDK used by these targets.
 
 MISCELLANEOUS
+
+build_external
+    Build all external projects found in the external directory.
+    See README-EXTERNAL.txt for details.
 
 javadoc
     Generates Javadoc API documentation in build/doc/api.
@@ -277,6 +304,14 @@ show_config
 generate_config_classes
     Generates XMLBeans against the Terracotta schema
 
+findbugs
+    Runs FindBugs analysis. The result find is saved to build/findbugs.xml.
+    If you run 'tcbuild findbugs gui' it will run findbugs analysis first then start the GUI
+
+fingbugs_gui
+    Starts FindBugs GUI. You can use this GUI to read the build/findbugs.xml
+    
+    
 JDK SELECTION
 
 You can override the default JDK used for compiling and/or testing by
@@ -293,6 +328,9 @@ jdk.def.yml, or the path to a Java installation.  For example:
   tests-jdk=1.6               # run tests using JAVASE_16
   jdk=/usr/local/jdk1.6.0     # do everything with JAVASE_16
 
+You could skip JDK enforcement (using JDK16 in place of JDK15) by passing
+skip.jdk.check=true to tcbuild, or put that option in file build-config.local  
+  
 SEE ALSO
 
 Further documentation is available on the following wiki pages:

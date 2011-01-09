@@ -3,6 +3,7 @@
  */
 package com.tc.object;
 
+import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.cache.CachedItem;
 import com.tc.object.locks.LockID;
@@ -30,11 +31,11 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void removeCachedItemForLock(final LockID lockID, final CachedItem item) {
+  public void removeCachedItem(final Object id, final CachedItem item) {
     //
   }
 
-  public int getSize(final ObjectID mapID) {
+  public long getAllSize(final ObjectID[] mapIDs) {
     return -1;
   }
 
@@ -42,7 +43,17 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     return null;
   }
 
-  public void flush(final LockID lockID) {
+  public Set getAllKeys(ObjectID oid) {
+    //
+    return null;
+  }
+
+  public void flush(final Object id) {
+    //
+  }
+
+  public void addResponseForGetAllSize(final SessionID localSessionID, final GroupID groupID,
+                                       final ServerMapRequestID requestID, final Long size, final NodeID sourceNodeID) {
     //
   }
 
@@ -51,17 +62,12 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void addResponseForGetSize(final SessionID localSessionID, final ObjectID mapID,
-                                    final ServerMapRequestID requestID, final Integer size, final NodeID sourceNodeID) {
-    //
-  }
-
   public void objectNotFoundFor(final SessionID sessionID, final ObjectID mapID, final ServerMapRequestID requestID,
                                 final NodeID nodeID) {
     //
   }
 
-  public void addCachedItemForLock(final LockID lockID, final CachedItem item) {
+  public void addCachedItem(final Object id, final CachedItem item) {
     //
   }
 
@@ -76,4 +82,10 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
   public void expired(final TCObjectServerMap serverMap, final CachedItem ci) {
     //
   }
+
+  public void addResponseForGetAllKeys(SessionID localSessionID, ObjectID mapID, ServerMapRequestID requestID,
+                                       Set keys, NodeID nodeID) {
+    //
+  }
+
 }

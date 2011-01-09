@@ -9,7 +9,7 @@ import org.apache.commons.lang.ArrayUtils;
 import com.tc.admin.common.MBeanServerInvocationProxy;
 import com.tc.cli.CommandLineBuilder;
 import com.tc.config.Directories;
-import com.tc.config.schema.setup.StandardTVSConfigurationSetupManagerFactory;
+import com.tc.config.schema.setup.StandardConfigurationSetupManagerFactory;
 import com.tc.lcp.LinkedJavaProcess;
 import com.tc.management.beans.L2DumperMBean;
 import com.tc.management.beans.L2MBeanNames;
@@ -138,7 +138,6 @@ public class ExtraProcessServerControl extends ServerControlBase {
     jvmArgs.add("-Dcom.tc.l1.modules.repositories=" + System.getProperty("com.tc.l1.modules.repositories"));
     jvmArgs.add("-Dtc.base-dir=" + System.getProperty("tc.base-dir"));
     jvmArgs.add("-D" + Directories.TC_INSTALL_ROOT_IGNORE_CHECKS_PROPERTY_NAME + "=true");
-    jvmArgs.add("-Djava.net.preferIPv4Stack=true");
     debugParams.addDebugParamsTo(jvmArgs);
     jvmArgs.add("-D" + TCPropertiesImpl.SYSTEM_PROP_PREFIX + TCPropertiesConsts.TC_MANAGEMENT_TEST_MBEANS_ENABLED
                 + "=true");
@@ -224,10 +223,10 @@ public class ExtraProcessServerControl extends ServerControlBase {
 
   protected List<String> getMainClassArguments() {
     if (serverName != null && !serverName.equals("")) {
-      return Arrays.asList(StandardTVSConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc,
-          StandardTVSConfigurationSetupManagerFactory.SERVER_NAME_ARGUMENT_WORD, serverName);
+      return Arrays.asList(StandardConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc,
+                           StandardConfigurationSetupManagerFactory.SERVER_NAME_ARGUMENT_WORD, serverName);
     } else {
-      return Arrays.asList(StandardTVSConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc);
+      return Arrays.asList(StandardConfigurationSetupManagerFactory.CONFIG_SPEC_ARGUMENT_WORD, this.configFileLoc);
     }
   }
 

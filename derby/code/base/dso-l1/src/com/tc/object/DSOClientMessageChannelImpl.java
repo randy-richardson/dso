@@ -30,6 +30,8 @@ import com.tc.object.msg.LockRequestMessage;
 import com.tc.object.msg.LockRequestMessageFactory;
 import com.tc.object.msg.NodeMetaDataMessage;
 import com.tc.object.msg.NodeMetaDataMessageFactory;
+import com.tc.object.msg.NodesWithKeysMessage;
+import com.tc.object.msg.NodesWithKeysMessageFactory;
 import com.tc.object.msg.NodesWithObjectsMessage;
 import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.msg.ObjectIDBatchRequestMessage;
@@ -38,6 +40,8 @@ import com.tc.object.msg.RequestManagedObjectMessage;
 import com.tc.object.msg.RequestManagedObjectMessageFactory;
 import com.tc.object.msg.RequestRootMessage;
 import com.tc.object.msg.RequestRootMessageFactory;
+import com.tc.object.msg.SearchQueryRequestMessage;
+import com.tc.object.msg.SearchRequestMessageFactory;
 import com.tc.object.msg.ServerMapMessageFactory;
 import com.tc.object.msg.ServerMapRequestMessage;
 import com.tc.object.net.DSOClientMessageChannel;
@@ -50,7 +54,8 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
     RequestRootMessageFactory, RequestManagedObjectMessageFactory, ClientHandshakeMessageFactory,
     ObjectIDBatchRequestMessageFactory, CommitTransactionMessageFactory, AcknowledgeTransactionMessageFactory,
     CompletedTransactionLowWaterMarkMessageFactory, NodesWithObjectsMessageFactory, ServerMapMessageFactory,
-    KeysForOrphanedValuesMessageFactory, NodeMetaDataMessageFactory, LockStatisticsReponseMessageFactory {
+    KeysForOrphanedValuesMessageFactory, NodeMetaDataMessageFactory, LockStatisticsReponseMessageFactory,
+    SearchRequestMessageFactory, NodesWithKeysMessageFactory {
 
   private final ClientMessageChannel channel;
   private final GroupID              groups[];
@@ -124,6 +129,10 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
     return this;
   }
 
+  public SearchRequestMessageFactory getSearchRequestMessageFactory() {
+    return this;
+  }
+
   public AcknowledgeTransactionMessageFactory getAcknowledgeTransactionMessageFactory() {
     return this;
   }
@@ -132,9 +141,12 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
     return (AcknowledgeTransactionMessage) this.channel.createMessage(TCMessageType.ACKNOWLEDGE_TRANSACTION_MESSAGE);
   }
 
-  public ClientHandshakeMessage newClientHandshakeMessage(final NodeID remoteNode) {
+  public ClientHandshakeMessage newClientHandshakeMessage(NodeID remoteNode, String clientVersion,
+                                                          boolean isEnterpriseClient) {
     final ClientHandshakeMessage rv = (ClientHandshakeMessage) this.channel
         .createMessage(TCMessageType.CLIENT_HANDSHAKE_MESSAGE);
+    rv.setClientVersion(clientVersion);
+    rv.setEnterpriseClient(isEnterpriseClient);
     return rv;
   }
 
@@ -151,6 +163,10 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
   }
 
   public NodeMetaDataMessageFactory getNodeMetaDataMessageFactory() {
+    return this;
+  }
+
+  public NodesWithKeysMessageFactory getNodesWithKeysMessageFactory() {
     return this;
   }
 
@@ -187,15 +203,12 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
     return (KeysForOrphanedValuesMessage) this.channel.createMessage(TCMessageType.KEYS_FOR_ORPHANED_VALUES_MESSAGE);
   }
 
-  public ServerMapRequestMessage newServerTCMapRequestMessage(final NodeID nodeID, final ServerMapRequestType type) {
-    switch (type) {
-      case GET_SIZE:
-        return (ServerMapRequestMessage) this.channel.createMessage(TCMessageType.GET_SIZE_SERVER_MAP_REQUEST_MESSAGE);
-      case GET_VALUE_FOR_KEY:
-        return (ServerMapRequestMessage) this.channel.createMessage(TCMessageType.GET_VALUE_SERVER_MAP_REQUEST_MESSAGE);
-      default:
-        throw new AssertionError("Wrong Type : " + type);
-    }
+  public ServerMapRequestMessage newServerMapRequestMessage(final NodeID nodeID, final ServerMapRequestType type) {
+    return type.createRequestMessage(this.channel);
+  }
+
+  public SearchQueryRequestMessage newSearchQueryRequestMessage(final NodeID remoteID) {
+    return (SearchQueryRequestMessage) this.channel.createMessage(TCMessageType.SEARCH_QUERY_REQUEST_MESSAGE);
   }
 
   public NodeMetaDataMessage newNodeMetaDataMessage() {
@@ -220,5 +233,9 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
 
   public GroupID[] getGroupIDs() {
     return this.groups;
+  }
+
+  public NodesWithKeysMessage newNodesWithKeysMessage(final NodeID nodeID) {
+    return (NodesWithKeysMessage) this.channel.createMessage(TCMessageType.NODES_WITH_KEYS_MESSAGE);
   }
 }

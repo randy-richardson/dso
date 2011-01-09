@@ -29,10 +29,11 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.l1.impl.TransactionAcknowledgeAction;
 import com.tc.objectserver.locks.LockManager;
 import com.tc.objectserver.managedobject.ApplyTransactionInfo;
+import com.tc.objectserver.metadata.MetaDataManager;
 import com.tc.objectserver.mgmt.ObjectStatsRecorder;
-import com.tc.objectserver.persistence.api.PersistenceTransaction;
-import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
 import com.tc.objectserver.persistence.api.TransactionStore;
+import com.tc.objectserver.storage.api.PersistenceTransaction;
+import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
 import com.tc.stats.counter.Counter;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
@@ -48,8 +49,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -96,13 +97,16 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
 
   private final ObjectStatsRecorder                     objectStatsRecorder;
 
+  private final MetaDataManager                         metaDataManager;
+
   public ServerTransactionManagerImpl(final ServerGlobalTransactionManager gtxm,
                                       final TransactionStore transactionStore, final LockManager lockManager,
                                       final ClientStateManager stateManager, final ObjectManager objectManager,
                                       final TransactionalObjectManager txnObjectManager,
                                       final TransactionAcknowledgeAction action, final Counter transactionRateCounter,
                                       final ChannelStats channelStats, final ServerTransactionManagerConfig config,
-                                      final ObjectStatsRecorder objectStatsRecorder) {
+                                      final ObjectStatsRecorder objectStatsRecorder,
+                                      final MetaDataManager metaDataManager) {
     this.gtxm = gtxm;
     this.lockManager = lockManager;
     this.objectManager = objectManager;
@@ -119,6 +123,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     this.commitLoggingEnabled = config.isPrintCommitsEnabled();
     this.broadcastStatsLoggingEnabled = config.isPrintBroadcastStatsEnabled();
     this.objectStatsRecorder = objectStatsRecorder;
+    this.metaDataManager = metaDataManager;
   }
 
   public void enableTransactionLogger() {
@@ -182,8 +187,8 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
         if (client == deadClientTA) {
           continue;
         }
-        for (final Iterator it = client.requestersWaitingFor(deadNodeID).iterator(); it.hasNext();) {
-          final TransactionID reqID = (TransactionID) it.next();
+        for (Object element : client.requestersWaitingFor(deadNodeID)) {
+          final TransactionID reqID = (TransactionID) element;
           acknowledgement(client.getNodeID(), reqID, deadNodeID);
         }
       }
@@ -205,10 +210,10 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
 
   public void start(final Set cids) {
     synchronized (this.transactionAccounts) {
-      for (Iterator<NodeID> i = transactionAccounts.keySet().iterator(); i.hasNext();) {
-        NodeID node = i.next();
+      for (final Iterator<NodeID> i = this.transactionAccounts.keySet().iterator(); i.hasNext();) {
+        final NodeID node = i.next();
         if (!cids.contains(node)) {
-          logger.warn("Cleaning up transaction account for " + node + " : " + transactionAccounts.get(node));
+          logger.warn("Cleaning up transaction account for " + node + " : " + this.transactionAccounts.get(node));
           i.remove();
         }
       }
@@ -232,7 +237,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
   private void waitForTxnsToComplete() {
     final Latch latch = new Latch();
     logger.info("Waiting for txns to complete");
-    callBackOnTxnsInSystemCompletion(new TxnsInSystemCompletionLister() {
+    callBackOnTxnsInSystemCompletion(new TxnsInSystemCompletionListener() {
       public void onCompletion() {
         logger.info("No more txns in the system.");
         latch.release();
@@ -265,9 +270,9 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
   // This method is called when objects are sent to sync, this is done to maintain correct booking since things like DGC
   // relies on this to decide when to send the results
   public void objectsSynched(final NodeID to, final ServerTransactionID stid) {
-    final TransactionAccount ci = getOrCreateObjectSyncTransactionAccount(stid.getSourceID()); // Local Node ID
+    final TransactionAccount ci = getOrCreateTransactionAccount(stid.getSourceID()); // Local Node ID
     this.totalPendingTransactions.incrementAndGet();
-    ci.addWaitee(to, stid.getClientTransactionID());
+    ci.addObjectsSyncedTo(to, stid.getClientTransactionID());
   }
 
   // For testing
@@ -313,6 +318,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     final NodeID sourceID = txn.getSourceID();
     final TransactionID txnID = txn.getTransactionID();
     final List changes = txn.getChanges();
+    final boolean isClient = sourceID.getNodeType() == NodeID.CLIENT_NODE_TYPE;
 
     final GlobalTransactionID gtxID = txn.getGlobalTransactionID();
 
@@ -335,9 +341,9 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
         final DNAImpl dnaImpl = (DNAImpl) orgDNA;
         dnaImpl.setTypeClassName(mo.getManagedObjectState().getClassName());
       }
-      if (active && !change.isDelta()) {
+      if (active && !change.isDelta() && isClient) {
         // Only New objects reference are added here
-        this.stateManager.addReference(txn.getSourceID(), mo.getID());
+        this.stateManager.addReference(sourceID, mo.getID());
       }
     }
 
@@ -351,7 +357,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
         this.objectManager.createRoot(rootName, newID);
       }
     }
-    if (active) {
+    if (active && isClient) {
       this.channelStats.notifyTransaction(sourceID, txn.getNumApplicationTxn());
     }
     this.transactionRateCounter.increment(txn.getNumApplicationTxn());
@@ -422,7 +428,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
   public void incomingTransactions(final NodeID source, final Set txnIDs, final Collection txns, final boolean relayed) {
     final boolean active = isActive();
     final TransactionAccount ci = getOrCreateTransactionAccount(source);
-    ci.incommingTransactions(txnIDs);
+    ci.incomingTransactions(txnIDs);
     this.totalPendingTransactions.addAndGet(txnIDs.size());
     if (isActive()) {
       this.totalNumOfActiveTransactions.addAndGet(txnIDs.size());
@@ -431,14 +437,22 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
       final ServerTransaction txn = (ServerTransaction) i.next();
       final ServerTransactionID stxnID = txn.getServerTransactionID();
       final TransactionID txnID = stxnID.getClientTransactionID();
+      processMetaData(txn);
       if (active && !relayed) {
         ci.relayTransactionComplete(txnID);
       } else if (!active) {
         this.gtxm.createGlobalTransactionDescIfNeeded(stxnID, txn.getGlobalTransactionID());
       }
+
     }
     fireIncomingTransactionsEvent(source, txnIDs);
     this.resentTxnSequencer.addTransactions(txns);
+  }
+
+  private void processMetaData(ServerTransaction txn) {
+    if (this.metaDataManager.processMetaDatas(txn, txn.getMetaDataReaders())) {
+      this.processingMetaDataCompleted(txn.getSourceID(), txn.getTransactionID());
+    }
   }
 
   public long getTotalNumOfActiveTransactions() {
@@ -489,27 +503,18 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     }
   }
 
-  private TransactionAccount getOrCreateObjectSyncTransactionAccount(final NodeID localID) {
-    synchronized (this.transactionAccounts) {
-      if (this.state != ACTIVE_MODE) { throw new AssertionError(
-                                                                "ServerTransactionManager is not in ACTIVE_MODE, the current state = "
-                                                                    + this.state); }
-      TransactionAccount ta = this.transactionAccounts.get(localID);
-      if (ta == null) {
-        this.transactionAccounts.put(localID, (ta = new ObjectSynchTransactionAccount(localID)));
+  public void processingMetaDataCompleted(final NodeID sourceID, final TransactionID txnID) {
+    if (isActive()) {
+      final TransactionAccount ci = getTransactionAccount(sourceID);
+      if (ci != null && ci.processMetaDataCompleted(txnID)) {
+        acknowledge(sourceID, txnID);
       }
-      return ta;
     }
   }
 
   private TransactionAccount getOrCreateTransactionAccount(final NodeID source) {
     synchronized (this.transactionAccounts) {
       TransactionAccount ta = this.transactionAccounts.get(source);
-      if (ta != null && ta instanceof ObjectSynchTransactionAccount) { throw new AssertionError(
-                                                                                                "Transaction Account is of type ObjectSyncTransactionAccount : "
-                                                                                                    + ta
-                                                                                                    + " source Id  : "
-                                                                                                    + source); }
       if (this.state == ACTIVE_MODE) {
         if ((ta == null) || (ta instanceof PassiveTransactionAccount)) {
           final Object old = this.transactionAccounts.put(source, (ta = new TransactionAccountImpl(source)));
@@ -563,7 +568,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     this.txnEventListeners.remove(listener);
   }
 
-  public void callBackOnTxnsInSystemCompletion(final TxnsInSystemCompletionLister l) {
+  public void callBackOnTxnsInSystemCompletion(final TxnsInSystemCompletionListener l) {
     final TxnsInSystemCompletionListenerCallback callBack = new TxnsInSystemCompletionListenerCallback(l);
     final Set txnsInSystem = callBack.getTxnsInSystem();
     synchronized (this.transactionAccounts) {
@@ -581,7 +586,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
   /*
    * This method calls back the listener when all the resent TXNs are complete.
    */
-  public void callBackOnResentTxnsInSystemCompletion(final TxnsInSystemCompletionLister l) {
+  public void callBackOnResentTxnsInSystemCompletion(final TxnsInSystemCompletionListener l) {
     this.resentTxnSequencer.callBackOnResentTxnsInSystemCompletion(l);
   }
 
@@ -669,13 +674,13 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
 
   private final class TxnsInSystemCompletionListenerCallback extends AbstractServerTransactionListener {
 
-    private final TxnsInSystemCompletionLister callback;
-    private final Set<ServerTransactionID>     txnsInSystem;
-    private boolean                            initialized = false;
-    private int                                count       = 0;
-    private int                                lastSize    = -1;
+    private final TxnsInSystemCompletionListener callback;
+    private final Set<ServerTransactionID>       txnsInSystem;
+    private boolean                              initialized = false;
+    private int                                  count       = 0;
+    private int                                  lastSize    = -1;
 
-    public TxnsInSystemCompletionListenerCallback(final TxnsInSystemCompletionLister callback) {
+    public TxnsInSystemCompletionListenerCallback(final TxnsInSystemCompletionListener callback) {
       this.callback = callback;
       this.txnsInSystem = Collections.synchronizedSet(new HashSet<ServerTransactionID>());
     }

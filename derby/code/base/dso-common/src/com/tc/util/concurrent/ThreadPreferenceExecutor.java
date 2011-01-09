@@ -70,7 +70,9 @@ public class ThreadPreferenceExecutor implements Executor {
     newThread.start();
     if (newThreadCreateCount % 5 == 0) {
       newThreadCreateCount = 0;
-      logger.info(getName() + " thread count : " + numberOfActiveThreads);
+      if (numberOfActiveThreads > (maxThreads - 10)) {
+        logger.info(getName() + " thread count : " + numberOfActiveThreads);
+      }
     }
     return true;
   }
@@ -133,6 +135,7 @@ public class ThreadPreferenceExecutor implements Executor {
     public Thread newThread(Runnable r) {
       Thread t = new Thread(r, executorName + "-" + sequence.getAndIncrement());
       t.setDaemon(true);
+      t.setPriority(Thread.NORM_PRIORITY + 1);
       return t;
     }
   }

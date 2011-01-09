@@ -76,7 +76,7 @@ public class ClientServerLockManagerGlue implements RemoteLockManager, Runnable 
     }
   }
 
-  public void recallCommit(LockID lockID, Collection<ClientServerExchangeLockContext> contexts) {
+  public void recallCommit(LockID lockID, Collection<ClientServerExchangeLockContext> contexts, boolean batch) {
     serverLockManager.recallCommit(lockID, clientID, contexts);
   }
 
@@ -171,5 +171,9 @@ public class ClientServerLockManagerGlue implements RemoteLockManager, Runnable 
 
   public void waitForServerToReceiveTxnsForThisLock(LockID lock) {
     //
+  }
+
+  public void shutdown() {
+    // no op
   }
 }

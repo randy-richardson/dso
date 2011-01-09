@@ -4,13 +4,13 @@
 package com.tc.l2.operatorevent;
 
 import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.logging.TerracottaOperatorEventLogger;
 import com.tc.logging.TerracottaOperatorEventLogging;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
 import com.tc.net.groups.ZapEventListener;
-import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.object.config.schema.L2DSOConfig;
 import com.tc.operatorevent.TerracottaOperatorEventFactory;
 import com.tc.util.Assert;
 
@@ -22,16 +22,16 @@ public class OperatorEventsZapRequestListener implements ZapEventListener {
   private final Map<String, String>           nodeNameToServerName = new HashMap<String, String>();
   private final TerracottaOperatorEventLogger operatorEventLogger  = TerracottaOperatorEventLogging.getEventLogger();
 
-  public OperatorEventsZapRequestListener(L2TVSConfigurationSetupManager configSetupManager) {
+  public OperatorEventsZapRequestListener(L2ConfigurationSetupManager configSetupManager) {
     initializeServerNameMap(configSetupManager);
   }
 
-  private void initializeServerNameMap(L2TVSConfigurationSetupManager configSetupManager) {
+  private void initializeServerNameMap(L2ConfigurationSetupManager configSetupManager) {
     String[] serverNames = configSetupManager.allCurrentlyKnownServers();
     for (int i = 0; i < serverNames.length; i++) {
       try {
-        NewL2DSOConfig l2Config = configSetupManager.dsoL2ConfigFor(serverNames[i]);
-        this.nodeNameToServerName.put(l2Config.host().getString() + ":" + l2Config.dsoPort().getBindPort(),
+        L2DSOConfig l2Config = configSetupManager.dsoL2ConfigFor(serverNames[i]);
+        this.nodeNameToServerName.put(l2Config.host() + ":" + l2Config.dsoPort().getIntValue(),
                                       serverNames[i]);
       } catch (ConfigurationSetupException e) {
         throw new RuntimeException(e);

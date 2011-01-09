@@ -4,11 +4,12 @@
  */
 package com.tc.object;
 
-import com.tc.config.schema.dynamic.ConfigItem;
+import com.google.common.base.internal.Finalizer;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.core.ConnectionInfo;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
+import com.tc.object.config.ConnectionInfoConfig;
 import com.tc.object.handshakemanager.ClientHandshakeManager;
 import com.tc.object.net.DSOClientMessageChannel;
 import com.tc.object.tx.RemoteTransactionManager;
@@ -75,6 +76,8 @@ public class ClientShutdownManager {
         }
       }
     }
+
+    Finalizer.shutdown();
   }
 
   private void closeStatisticsAgent() {
@@ -116,8 +119,8 @@ public class ClientShutdownManager {
     if (handshakeManager.serverIsPersistent()) { return false; }
 
     // If we think there is more than one server out there, we should try to flush
-    ConfigItem connectionInfoItem = this.connectionComponents.createConnectionInfoConfigItem();
-    ConnectionInfo[] connectionInfo = (ConnectionInfo[]) connectionInfoItem.getObject();
+    ConnectionInfoConfig connectionInfoItem = this.connectionComponents.createConnectionInfoConfigItem();
+    ConnectionInfo[] connectionInfo = connectionInfoItem.getConnectionInfos();
     return connectionInfo.length == 1;
   }
 

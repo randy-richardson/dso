@@ -131,6 +131,18 @@ public class TCTestCase extends TestCase {
     if (false) throw new AssertionError(); // silence compiler warning
   }
 
+  protected boolean isContainerTest() {
+    return false;
+  }
+
+  protected boolean isConfiguredToRunWithAppServer() {
+    return !"unknown".equals(TestConfigObject.getInstance().appServerInfo().getName());
+  }
+
+  protected boolean shouldBeSkipped() {
+    return isContainerTest() ^ isConfiguredToRunWithAppServer();
+  }
+
   @Override
   public void runBare() throws Throwable {
     printOutCurrentJavaProcesses();
@@ -149,6 +161,14 @@ public class TCTestCase extends TestCase {
       System.out.println("NOTE: Test method " + testMethod + "() is disabled until "
                          + this.disabledUntil.get(testMethod));
       System.out.flush();
+      return;
+    }
+
+    if (shouldBeSkipped()) {
+      Banner
+          .warnBanner("Test "
+                      + this.getClass().getName()
+                      + " is skipped because sytem test trying to run with appserver or container test running without an appserver. ");
       return;
     }
 
@@ -542,8 +562,8 @@ public class TCTestCase extends TestCase {
       assertEquals("Object and [de]serialized object failed equals() comparison", obj, deserializedObj);
     }
     if (checkHashCode) {
-      assertEquals("Object and [de]serialized object failed hashCode() comparison", obj.hashCode(), deserializedObj
-          .hashCode());
+      assertEquals("Object and [de]serialized object failed hashCode() comparison", obj.hashCode(),
+                   deserializedObj.hashCode());
     }
   }
 

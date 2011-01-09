@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.0-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
   </parent>
 
   <groupId>org.terracotta</groupId>
@@ -20,6 +20,22 @@
         Version and scope for each dependency is declared in the
         dependencyManagement section of the parent POM.
     -->
+    <dependency>
+      <groupId>org.terracotta.modules</groupId>
+      <artifactId>excludes-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.terracotta.modules</groupId>
+      <artifactId>guimodels-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.terracotta.modules</groupId>
+      <artifactId>jdk15-preinst-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.terracotta.modules</groupId>
+      <artifactId>standard-config</artifactId>
+    </dependency>    
     <dependency>
       <groupId>org.terracotta</groupId>
       <artifactId>tcconfig</artifactId>
@@ -88,15 +104,11 @@
       <groupId>org.apache.xmlbeans</groupId>
       <artifactId>xmlbeans</artifactId>
       <exclusions>
-         <exclusion>
-            <groupId>stax</groupId>
-            <artifactId>stax-api</artifactId>
-         </exclusion>
+        <exclusion>
+          <groupId>stax</groupId>
+          <artifactId>stax-api</artifactId>
+        </exclusion>
       </exclusions>
-   </dependency> 
-    <dependency>
-      <groupId>org.apache.xmlbeans</groupId>
-      <artifactId>xmlbeans-xpath</artifactId>
     </dependency> 
     <dependency>
       <groupId>org.apache.xmlbeans</groupId>
@@ -147,10 +159,13 @@
       <artifactId>h2</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.collections</groupId>
-      <artifactId>google-collections</artifactId>
+      <groupId>org.terracotta</groupId>
+      <artifactId>google-collections-tc</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.terracotta.license</groupId>
+      <artifactId>terracotta-license</artifactId>
+    </dependency> 
     
     <!-- SIGAR dependencies -->
     <dependency>

@@ -39,7 +39,7 @@ public class ManagerImplTest extends BaseDSOTestCase {
     final ClientObjectManager objMgr = new ObjMgr();
     final ClientLockManager lockMgr = new LockMgr();
 
-    final Manager manager = new ManagerImpl(false, objMgr, null, lockMgr, configHelper(), null);
+    final Manager manager = new ManagerImpl(false, objMgr, null, lockMgr, null, configHelper(), null);
 
     final LockID classLock = manager.generateLockIdentifier(getClass());
     manager.lock(classLock, LockLevel.WRITE);
@@ -63,8 +63,13 @@ public class ManagerImplTest extends BaseDSOTestCase {
       throw new ImplementMe();
 
     }
-
+    
     public void recall(final LockID lock, final ServerLockLevel level, final int lease) {
+      throw new ImplementMe();
+
+    }
+
+    public void recall(final LockID lock, final ServerLockLevel level, final int lease, boolean batch) {
       throw new ImplementMe();
 
     }
@@ -76,6 +81,10 @@ public class ManagerImplTest extends BaseDSOTestCase {
     }
 
     public LockID generateLockIdentifier(final String str) {
+      throw new ImplementMe();
+    }
+    
+    public LockID generateLockIdentifier(final long l) {
       throw new ImplementMe();
     }
 

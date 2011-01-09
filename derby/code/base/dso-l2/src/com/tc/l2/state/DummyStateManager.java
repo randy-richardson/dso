@@ -7,8 +7,8 @@ package com.tc.l2.state;
 import com.tc.l2.context.StateChangedEvent;
 import com.tc.l2.msg.L2StateMessage;
 import com.tc.net.NodeID;
+import com.tc.util.State;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -22,14 +22,22 @@ public class DummyStateManager implements StateManager {
   }
 
   public void fireStateChangedEvent(StateChangedEvent sce) {
-    for (Iterator i = stateListeners.iterator(); i.hasNext();) {
-      StateChangeListener listener = (StateChangeListener) i.next();
+    for (StateChangeListener element : stateListeners) {
+      StateChangeListener listener = element;
       listener.l2StateChanged(sce);
     }
   }
 
+  public State getCurrentState() {
+    return new State("NO_STATE");
+  }
+
   public boolean isActiveCoordinator() {
     return true;
+  }
+
+  public boolean isPassiveUnitialized() {
+    return false;
   }
 
   public void moveNodeToPassiveStandby(NodeID nodeID) {

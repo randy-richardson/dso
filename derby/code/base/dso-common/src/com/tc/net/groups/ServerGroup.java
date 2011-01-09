@@ -7,11 +7,11 @@ package com.tc.net.groups;
 import com.tc.config.HaConfigImpl;
 import com.tc.config.ReloadConfigChangeContext;
 import com.tc.config.schema.ActiveServerGroupConfig;
-import com.tc.config.schema.NewHaConfig;
+import com.tc.config.schema.HaConfigSchema;
 import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.L2TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.net.GroupID;
-import com.tc.object.config.schema.NewL2DSOConfig;
+import com.tc.object.config.schema.L2DSOConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +25,7 @@ public class ServerGroup {
 
   private final GroupID     groupId;
   private String[]          members;
-  private final NewHaConfig haMode;
+  private final HaConfigSchema haMode;
   private final Map         nodes;
 
   public ServerGroup(final ActiveServerGroupConfig group) {
@@ -35,7 +35,7 @@ public class ServerGroup {
     this.nodes = new ConcurrentHashMap();
   }
 
-  public ReloadConfigChangeContext reloadGroup(L2TVSConfigurationSetupManager manager,
+  public ReloadConfigChangeContext reloadGroup(L2ConfigurationSetupManager manager,
                                                final ActiveServerGroupConfig group) throws ConfigurationSetupException {
     String[] membersBefore = this.members;
     String[] membersNow = group.getMembers().getMemberArray();
@@ -64,14 +64,14 @@ public class ServerGroup {
     }
   }
 
-  private void addNodes(L2TVSConfigurationSetupManager configSetupManager, ActiveServerGroupConfig group,
+  private void addNodes(L2ConfigurationSetupManager configSetupManager, ActiveServerGroupConfig group,
                         List<Node> nodesAdded, String[] membersNowArray, String[] membersBeforeArray)
       throws ConfigurationSetupException {
     List<String> membersBefore = convertStringToList(membersBeforeArray);
     List<String> membersNow = convertStringToList(membersNowArray);
     membersNow.removeAll(membersBefore);
     for (String member : membersNow) {
-      NewL2DSOConfig l2 = configSetupManager.dsoL2ConfigFor(member);
+      L2DSOConfig l2 = configSetupManager.dsoL2ConfigFor(member);
       Node node = HaConfigImpl.makeNode(l2);
       nodesAdded.add(node);
       this.addNode(node, member);
@@ -107,8 +107,8 @@ public class ServerGroup {
 
   private String getMembersToString() {
     String out = "";
-    for (int i = 0; i < this.members.length; i++) {
-      out += members[i] + " ";
+    for (String member : this.members) {
+      out += member + " ";
     }
     return out;
   }
@@ -128,10 +128,7 @@ public class ServerGroup {
     return this.haMode.isNetworkedActivePassive();
   }
 
-  public int getElectionTime() {
-    return this.haMode.electionTime();
-  }
-
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof ServerGroup) {
       ServerGroup that = (ServerGroup) obj;
@@ -140,17 +137,19 @@ public class ServerGroup {
     return false;
   }
 
+  @Override
   public int hashCode() {
     return groupId.toInt();
   }
 
+  @Override
   public String toString() {
     return "ActiveServerGroup{groupId=" + groupId + "}";
   }
 
   public boolean hasMember(String serverName) {
-    for (int i = 0; i < this.members.length; i++) {
-      if (members[i].equals(serverName)) { return true; }
+    for (String member : this.members) {
+      if (member.equals(serverName)) { return true; }
     }
     return false;
   }

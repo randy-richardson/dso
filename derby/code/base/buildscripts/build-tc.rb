@@ -103,6 +103,10 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
     end
   end
 
+  def enterprise?
+    flavor = (@flavor || OPENSOURCE).downcase
+    flavor == 'enterprise'
+  end
 
   def handle_appserver_overwite()
     appserver = @config_source['tc.build-control.appserver'] || @config_source['appserver']
@@ -149,7 +153,51 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
   def init
     # set flavor property passed in by users
     @internal_config_source['flavor'] = @flavor
+
+    # this setup is for kit packaging naming pattern
+    # it's overwritten by build nightly kits target to add revision to the name
+    unless @internal_config_source['version_string']
+      @internal_config_source['version_string'] = @build_environment.version
+    end
+    
     write_build_info_file if monkey?
+  end
+  
+  def findbugs(with_gui=nil)
+    depends :compile
+    
+    @ant.taskdef(:name => "findbugs",  :classname => "edu.umd.cs.findbugs.anttask.FindBugsTask")
+    findbugs_home = ENV['FINDBUGS_HOME'] || ''
+    raise("FINDBUGS_HOME is not defined or doesn't exist") unless File.exists?(findbugs_home)
+
+    @ant.findbugs( :home => findbugs_home, :output => "xml:withMessages", :outputFile => "build/findbugs.xml",
+                   :jvmargs => "-Xmx512m") do
+      @module_set.each do |build_module|
+        src_subtree = build_module.subtree("src")
+        src_path = src_subtree.source_root.to_s
+        if File.exists?(src_path)
+          build_path = @build_results.classes_directory(src_subtree).to_s
+          @ant.sourcePath(:path => src_path)
+          @ant.class(:location => build_path)
+        end
+      end
+    end
+    
+    if with_gui == 'gui'
+      findbugs_gui
+    end
+    
+  end
+  
+  def findbugs_gui
+    findbugs_home = ENV['FINDBUGS_HOME'] || ''
+    raise("FINDBUGS_HOME is not defined or doesn't exist") unless File.exists?(findbugs_home)
+    params = "-gui -look:native -maxHeap 512"
+    if ENV['OS'] =~ /windows/i
+      `#{findbugs_home.gsub('\\', '/')}/bin/findbugs.bat #{params}`
+    else
+      `#{findbugs_home}/bin/findbugs #{param}`
+    end
   end
 
   # Download and install dependencies as specified by the various ivy*.xml
@@ -259,6 +307,10 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
     end
   end
 
+  def clean_dist
+    FileUtils.rm_rf File.join(@basedir.to_s, "build/dist")
+  end
+
   def clean_cache
     FileUtils.rm_rf '.tc-build-cache'
   end
@@ -278,19 +330,20 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
 
     if @no_compile
       loud_message("--no-compile option found.  Skipping compilation.")
+      return
+    end
+   
+    compile_only = config_source['compile_only']
+    unless compile_only.nil?
+      loud_message("compile_only option found. Only specified modules will be compiled.")
+      module_names = compile_only.split(/,/)
+      module_names.each do |name|
+        build_module = @module_set[name]
+        build_module.compile(@jvm_set, @build_results, ant, config_source, @build_environment)
+      end
     else
-      compile_only = config_source['compile_only']
-      unless compile_only.nil?
-        loud_message("compile_only option found. Only specified modules will be compiled.")
-        module_names = compile_only.split(/,/)
-        module_names.each do |name|
-          build_module = @module_set[name]
-          build_module.compile(@jvm_set, @build_results, ant, config_source, @build_environment)
-        end
-      else
-        @module_set.each do |build_module|
-          build_module.compile(@jvm_set, @build_results, ant, config_source, @build_environment)
-        end
+      @module_set.each do |build_module|
+        build_module.compile(@jvm_set, @build_results, ant, config_source, @build_environment)
       end
     end
   end
@@ -309,6 +362,11 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
       end
       build_module.compile(@jvm_set, @build_results, ant, config_source, @build_environment)
     end
+  end
+
+  def build_external
+    builder = ExternalProjectBuilder.new(@static_resources.external_projects_directory)
+    builder.build_all
   end
 
   # Produces Javadoc documentation in the build/doc/api directory.
@@ -886,18 +944,36 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
   def deploy_ee_releases
     deploy(ENTERPRISE, false, TERRACOTTA_EE_RELEASES_REPO_ID, TERRACOTTA_EE_RELEASES_REPO)
   end
-  
+
+  def build_nightly_kits
+    setup_config_for_nightly_kits()
+    publish_packages(['dso', 'web'], OPENSOURCE)
+  end
+
+  def build_nightly_ee_kits
+    setup_config_for_nightly_kits()
+    publish_packages(['dso'], ENTERPRISE)
+  end
+
   private
+
+  def setup_config_for_nightly_kits
+    @internal_config_source['kit-type'] = 'nightly'
+    if @build_environment.current_branch == 'trunk'
+      version = 'trunk-SNAPSHOT'
+    else
+      version = @build_environment.maven_version
+    end
+    @internal_config_source['version_string'] = version.gsub(/SNAPSHOT/, "nightly-rev#{@build_environment.os_revision}")
+    @internal_config_source['build-archive-dir'] = @config_source['build-archive-dir'] || '/shares/monkeyshare/output/kits'
+  end
 
   def deploy(flavor, snapshot, repo_id, repo_url)
     @internal_config_source[MAVEN_SNAPSHOT_CONFIG_KEY] = snapshot.to_s
     @internal_config_source[MAVEN_REPO_ID_CONFIG_KEY] = repo_id
     @internal_config_source[MAVEN_REPO_CONFIG_KEY] = repo_url
-    if flavor == ENTERPRISE
-      dist_maven_ee
-    else
-      dist_maven
-    end
+    @internal_config_source['include_sources'] = 'true'
+    mvn_install(flavor)
   end
 
   def generate_xmlbeans_class(target)
@@ -1111,19 +1187,24 @@ class BaseCodeTerracottaBuilder < TerracottaBuilder
       'branch' => @build_environment.current_branch,
       'is_ee_branch' => @build_environment.is_ee_branch?,
       'revision' => @build_environment.combo_revision,
-
-      'appserver' => config_source['tc.tests.configuration.appserver.factory.name'] + "-"  +
-        config_source['tc.tests.configuration.appserver.major-version'] + "." +
-        config_source['tc.tests.configuration.appserver.minor-version'],
+      
       'jvmargs'  => config_source['jvmargs'],
 
-      'tests-jdk' => @jvm_set['tests-jdk'].short_description,
       'JAVA_HOME_15' => @jvm_set['1.5'].short_description,
       'JAVA_HOME_16' => @jvm_set['1.6'].short_description
     }
 
-
-
+    if config_source['tc.tests.configuration.appserver.factory.name']
+      name = config_source['tc.tests.configuration.appserver.factory.name']
+      major = config_source['tc.tests.configuration.appserver.major-version']
+      minor = config_source['tc.tests.configuration.appserver.minor-version']
+      configuration_data['appserver'] = "#{name}-#{major}.#{minor}"
+    end
+    
+    if @jvm_set['tests-jdk']
+      configuration_data['tests-jdk'] = @jvm_set['tests-jdk'].short_description
+    end
+    
     # Parameters data.
     parameters_data = {
       # nothing right now

@@ -10,7 +10,7 @@ import com.tc.object.tx.ServerTransactionID;
 import com.tc.object.tx.TransactionID;
 import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.managedobject.ApplyTransactionInfo;
-import com.tc.objectserver.persistence.api.PersistenceTransactionProvider;
+import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
 import com.tc.util.concurrent.NoExceptionLinkedQueue;
 
 import java.util.ArrayList;
@@ -94,7 +94,7 @@ public class TestServerTransactionManager implements ServerTransactionManager {
     throw new ImplementMe();
   }
 
-  public void callBackOnTxnsInSystemCompletion(TxnsInSystemCompletionLister l) {
+  public void callBackOnTxnsInSystemCompletion(TxnsInSystemCompletionListener l) {
     throw new ImplementMe();
   }
 
@@ -110,11 +110,15 @@ public class TestServerTransactionManager implements ServerTransactionManager {
     throw new ImplementMe();
   }
 
-  public void callBackOnResentTxnsInSystemCompletion(TxnsInSystemCompletionLister l) {
+  public void callBackOnResentTxnsInSystemCompletion(TxnsInSystemCompletionListener l) {
     throw new ImplementMe();
   }
 
   public long getTotalNumOfActiveTransactions() {
+    throw new ImplementMe();
+  }
+
+  public void processingMetaDataCompleted(NodeID sourceID, TransactionID txnID) {
     throw new ImplementMe();
   }
 

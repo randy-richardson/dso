@@ -62,7 +62,7 @@ public class ResentTransactionSequencer extends AbstractServerTransactionListene
   private final List                           resentTxns        = new LinkedList();
   private final Map                            pendingTxns       = new LinkedHashMap();
   private final List                           pendingCallBacks  = Collections.synchronizedList(new LinkedList());
-  private State                                state             = PASS_THRU_PASSIVE;
+  private volatile State                       state             = PASS_THRU_PASSIVE;
 
   public ResentTransactionSequencer(ServerTransactionManager transactionManager, ServerGlobalTransactionManager gtxm,
                                     TransactionalObjectManager txnObjectManager) {
@@ -89,7 +89,7 @@ public class ResentTransactionSequencer extends AbstractServerTransactionListene
     }
   }
 
-  public void callBackOnResentTxnsInSystemCompletion(TxnsInSystemCompletionLister l) {
+  public void callBackOnResentTxnsInSystemCompletion(TxnsInSystemCompletionListener l) {
     boolean addCallBack = false;
     synchronized (this) {
       if (this.state == PASS_THRU_ACTIVE) {
@@ -178,8 +178,9 @@ public class ResentTransactionSequencer extends AbstractServerTransactionListene
   }
 
   @Override
-  public synchronized void addResentServerTransactionIDs(Collection stxIDs) {
+  public void addResentServerTransactionIDs(Collection stxIDs) {
     Assert.assertEquals(ADD_RESENT, this.state);
+
     Set clientIDs = new HashSet();
     int newlyAssigned = 0;
     for (Iterator i = stxIDs.iterator(); i.hasNext();) {
@@ -210,7 +211,7 @@ public class ResentTransactionSequencer extends AbstractServerTransactionListene
     }
   }
 
-  private void assertGidsInOrder() {
+  private synchronized void assertGidsInOrder() {
     long last = Long.MIN_VALUE;
     for (Iterator i = this.resentTxns.iterator(); i.hasNext();) {
       TransactionDesc desc = (TransactionDesc) i.next();
@@ -221,7 +222,7 @@ public class ResentTransactionSequencer extends AbstractServerTransactionListene
     }
   }
 
-  private void addOrdered(ServerTransactionID stxID, GlobalTransactionID gid) {
+  private synchronized void addOrdered(ServerTransactionID stxID, GlobalTransactionID gid) {
     TransactionDesc toAdd = new TransactionDesc(stxID, gid);
     ListIterator i;
     // Going from the reverse means less iterations
@@ -254,13 +255,13 @@ public class ResentTransactionSequencer extends AbstractServerTransactionListene
   }
 
   private void addAndClearPendingCallBacks() {
-    TxnsInSystemCompletionLister[] pendingCallBacksCopy;
+    TxnsInSystemCompletionListener[] pendingCallBacksCopy;
     synchronized (this.pendingCallBacks) {
-      pendingCallBacksCopy = (TxnsInSystemCompletionLister[]) this.pendingCallBacks
-          .toArray(new TxnsInSystemCompletionLister[this.pendingCallBacks.size()]);
+      pendingCallBacksCopy = (TxnsInSystemCompletionListener[]) this.pendingCallBacks
+          .toArray(new TxnsInSystemCompletionListener[this.pendingCallBacks.size()]);
       this.pendingCallBacks.clear();
     }
-    for (TxnsInSystemCompletionLister element : pendingCallBacksCopy) {
+    for (TxnsInSystemCompletionListener element : pendingCallBacksCopy) {
       logger.info("Adding Pending resent CallBacks to  TxnMgr : " + element);
       this.transactionManager.callBackOnTxnsInSystemCompletion(element);
     }

@@ -3,22 +3,23 @@
  */
 package com.tc.object.config.schema;
 
-import com.tc.config.schema.NewConfig;
-import com.tc.config.schema.dynamic.BooleanConfigItem;
+import com.tc.config.schema.Config;
 
 /**
  * Represents the instrumentation-logging options for DSO.
  */
-public interface DSOInstrumentationLoggingOptions extends NewConfig {
+public interface DSOInstrumentationLoggingOptions extends Config {
 
-  BooleanConfigItem logClass();
+  boolean logClass();
 
-  BooleanConfigItem logLocks();
+  boolean logLocks();
 
-  BooleanConfigItem logTransientRoot();
+  boolean logTransientRoot();
 
-  BooleanConfigItem logRoots();
+  boolean logRoots();
 
-  BooleanConfigItem logDistributedMethods();
+  boolean logDistributedMethods();
+  
+  void setLogDistributedMethods(boolean val);
 
 }

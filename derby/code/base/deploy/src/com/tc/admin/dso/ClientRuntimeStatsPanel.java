@@ -16,6 +16,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.time.TimeSeries;
 
 import com.tc.admin.common.ApplicationContext;
@@ -43,6 +44,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.management.ObjectName;
 import javax.swing.SwingUtilities;
@@ -65,20 +67,22 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
   private TimeSeries               pendingTxnsSeries;
   private XLabel                   pendingTxnsLabel;
 
-  protected final String           flushRateLabelFormat   = "{0,number,integer} Flushes/sec.";
-  protected final String           faultRateLabelFormat   = "{0,number,integer} Faults/sec.";
-  protected final String           txnRateLabelFormat     = "{0,number,integer} Txns/sec.";
-  protected final String           pendingTxnsLabelFormat = "{0,number,integer} Pending Txns/sec.";
-  protected final String           memoryUsedLabelFormat  = "{0,number,integer} Used";
-  protected final String           memoryMaxLabelFormat   = "{0,number,integer} Max";
+  protected final String           flushRateLabelFormat   = "{0} Flushes/sec.";
+  protected final String           faultRateLabelFormat   = "{0} Faults/sec.";
+  protected final String           txnRateLabelFormat     = "{0} Txns/sec.";
+  protected final String           pendingTxnsLabelFormat = "{0} Pending Txns/sec.";
+  protected final String           memoryUsedLabelFormat  = "{0} Used";
+  protected final String           memoryMaxLabelFormat   = "{0} Max";
 
-  private static final Set<String> POLLED_ATTRIBUTE_SET   = new HashSet(Arrays
-                                                              .asList(POLLED_ATTR_CPU_USAGE, POLLED_ATTR_USED_MEMORY,
-                                                                      POLLED_ATTR_MAX_MEMORY,
-                                                                      POLLED_ATTR_OBJECT_FLUSH_RATE,
-                                                                      POLLED_ATTR_OBJECT_FAULT_RATE,
-                                                                      POLLED_ATTR_TRANSACTION_RATE,
-                                                                      POLLED_ATTR_PENDING_TRANSACTIONS_COUNT));
+  private static final Set<String> POLLED_ATTRIBUTE_SET   = new HashSet(
+                                                                        Arrays
+                                                                            .asList(POLLED_ATTR_CPU_USAGE,
+                                                                                    POLLED_ATTR_USED_MEMORY,
+                                                                                    POLLED_ATTR_MAX_MEMORY,
+                                                                                    POLLED_ATTR_OBJECT_FLUSH_RATE,
+                                                                                    POLLED_ATTR_OBJECT_FAULT_RATE,
+                                                                                    POLLED_ATTR_TRANSACTION_RATE,
+                                                                                    POLLED_ATTR_PENDING_TRANSACTIONS_COUNT));
 
   public ClientRuntimeStatsPanel(ApplicationContext appContext, IClient client) {
     super(appContext);
@@ -122,6 +126,7 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
 
   @Override
   public void attributesPolled(PolledAttributesResult result) {
+    if (tornDown.get()) { return; }
     IClient theClient = getClient();
     if (theClient != null) {
       handleDSOStats(result);
@@ -150,27 +155,27 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
               if (map != null) {
                 n = (Number) map.get(POLLED_ATTR_TRANSACTION_RATE);
                 if (n != null) {
-                  if (txn >= 0) txn += n.longValue();
-                } else {
-                  txn = -1;
+                  if (txn >= 0) {
+                    txn += n.longValue();
+                  }
                 }
                 n = (Number) map.get(POLLED_ATTR_OBJECT_FLUSH_RATE);
                 if (n != null) {
-                  if (flush >= 0) flush += n.longValue();
-                } else {
-                  flush = -1;
+                  if (flush >= 0) {
+                    flush += n.longValue();
+                  }
                 }
                 n = (Number) map.get(POLLED_ATTR_OBJECT_FAULT_RATE);
                 if (n != null) {
-                  if (fault >= 0) fault += n.longValue();
-                } else {
-                  fault = -1;
+                  if (fault >= 0) {
+                    fault += n.longValue();
+                  }
                 }
                 n = (Number) map.get(POLLED_ATTR_PENDING_TRANSACTIONS_COUNT);
                 if (n != null) {
-                  if (pendingTxn >= 0) pendingTxn += n.longValue();
-                } else {
-                  pendingTxn = -1;
+                  if (pendingTxn >= 0) {
+                    pendingTxn += n.longValue();
+                  }
                 }
               }
             }
@@ -183,7 +188,9 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
         final long thePendingTxnRate = pendingTxn;
         SwingUtilities.invokeLater(new Runnable() {
           public void run() {
-            updateAllDSOSeries(theFlushRate, theFaultRate, theTxnRate, thePendingTxnRate);
+            if (!tornDown.get()) {
+              updateAllDSOSeries(theFlushRate, theFaultRate, theTxnRate, thePendingTxnRate);
+            }
           }
         });
       }
@@ -191,21 +198,23 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
   }
 
   private void updateAllDSOSeries(long flush, long fault, long txn, long pendingTxn) {
-    if (flush != -1) {
+    if (tornDown.get()) { return; }
+
+    {
       updateSeries(flushRateSeries, Long.valueOf(flush));
-      flushRateLabel.setText(MessageFormat.format(flushRateLabelFormat, flush));
+      flushRateLabel.setText(MessageFormat.format(flushRateLabelFormat, convert(flush)));
     }
-    if (fault != -1) {
+    {
       updateSeries(faultRateSeries, Long.valueOf(fault));
-      faultRateLabel.setText(MessageFormat.format(faultRateLabelFormat, fault));
+      faultRateLabel.setText(MessageFormat.format(faultRateLabelFormat, convert(fault)));
     }
-    if (txn != -1) {
+    {
       updateSeries(txnRateSeries, Long.valueOf(txn));
-      txnRateLabel.setText(MessageFormat.format(txnRateLabelFormat, txn));
+      txnRateLabel.setText(MessageFormat.format(txnRateLabelFormat, convert(txn)));
     }
-    if (pendingTxn != -1) {
+    {
       updateSeries(pendingTxnsSeries, Long.valueOf(pendingTxn));
-      pendingTxnsLabel.setText(MessageFormat.format(pendingTxnsLabelFormat, pendingTxn));
+      pendingTxnsLabel.setText(MessageFormat.format(pendingTxnsLabelFormat, convert(pendingTxn)));
     }
   }
 
@@ -219,13 +228,13 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
           n = (Number) result.getPolledAttribute(theClient, POLLED_ATTR_MAX_MEMORY);
           updateSeries(memoryMaxSeries, n);
           if (n != null) {
-            memoryMaxLabel.setText(MessageFormat.format(memoryMaxLabelFormat, n));
+            memoryMaxLabel.setText(MessageFormat.format(memoryMaxLabelFormat, convert(n.longValue())));
           }
 
           n = (Number) result.getPolledAttribute(theClient, POLLED_ATTR_USED_MEMORY);
           updateSeries(memoryUsedSeries, n);
           if (n != null) {
-            memoryUsedLabel.setText(MessageFormat.format(memoryUsedLabelFormat, n));
+            memoryUsedLabel.setText(MessageFormat.format(memoryUsedLabelFormat, convert(n.longValue())));
           }
 
           if (cpuTimeSeries != null) {
@@ -312,6 +321,10 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
     labelHolder.add(memoryUsedLabel = createStatusLabel(Color.blue));
     labelHolder.setOpaque(false);
     memoryPanel.add(labelHolder, gbc);
+
+    XYItemRenderer renderer = plot.getRenderer();
+    renderer.setSeriesPaint(0, Color.red);
+    renderer.setSeriesPaint(1, Color.blue);
   }
 
   private synchronized void setupCpuSeries(TimeSeries[] cpuTimeSeries) {
@@ -338,8 +351,10 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
 
     @Override
     protected void finished() {
+      if (tornDown.get()) { return; }
       Exception e = getException();
       if (e != null) {
+        appContext.log(e);
         setupInstructions();
       } else {
         TimeSeries[] cpu = getResult();
@@ -402,8 +417,12 @@ public class ClientRuntimeStatsPanel extends BaseRuntimeStatsPanel {
     }
   }
 
+  private final AtomicBoolean tornDown = new AtomicBoolean(false);
+
   @Override
   public synchronized void tearDown() {
+    if (!tornDown.compareAndSet(false, true)) { return; }
+
     stopMonitoringRuntimeStats();
     client = null;
 

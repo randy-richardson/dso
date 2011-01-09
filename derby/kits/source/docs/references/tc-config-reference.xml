@@ -55,7 +55,7 @@ All content copyright Terracotta, Inc., unless otherwise indicated. All rights r
     instead allow you to designate the intended use of a configuration file
     using one of two recommended modes.
 
-    In development, you may want each client might have its own configuration,
+    In development, you may want each client to have its own configuration,
     independent of the server or any other client. This approach is useful for
     development, but should not be used in production as it can result in shared
     data being corrupted or lost if, for instance, two different clients specify
@@ -133,6 +133,20 @@ All content copyright Terracotta, Inc., unless otherwise indicated. All rights r
       -->
       <logs>/opt/terracotta/server-logs</logs>
 
+      <!-- Where should the server store its search index data? This value
+         undergoes parameter substitution like <data> and <logs>
+
+         If this is a relative path, then it is interpreted relative to
+         the current working directory of the server (that is, the directory
+         you were in when you started the server). It is thus recommended that
+         you specify an absolute path here.
+
+         Default: (none); the index will be stored in the same directory
+         as the configured <data> location
+      -->
+      <index>/opt/terracotta/server-index</index>
+
+
       <!-- In which directory should the server store statistics data that is
          being buffered? Again, this value undergoes parameter substitution
          before being used; thus, a value like 'statistics-data-%h' would
@@ -150,30 +164,33 @@ All content copyright Terracotta, Inc., unless otherwise indicated. All rights r
       <!-- On what port should the DSO server listen for connections from DSO
          clients? This can be any port you like, but note that
          ports below 1024 typically require 'root' privileges to use
-         on Un*x-style systems (Linux, Solaris).
+         on Un*x-style systems (Linux, Solaris). Optionally, you can bind
+         the port to a specific interface.
 
          Default: 9510
       -->
-      <dso-port>9510</dso-port>
+      <dso-port bind="12.345.678.9">9510</dso-port>
 
       <!-- On what port should the server listen for connections from the
          Terracotta administration console? This can be any port you
          like, but note that ports below 1024 typically require 'root'
          privileges to use on Un*x-style systems (Linux, Solaris).
+         Optionally, you can bind the port to a specific interface.
 
          Default: 9520
       -->
-      <jmx-port>9520</jmx-port>
+      <jmx-port bind="12.345.678.9">9520</jmx-port>
 
       <!-- On what port should the server listen for communication from
          other servers participating in an networked-active-passive setup.
          This can be any port you like, but note that ports below 1024
          typically require 'root' privileges to use on Un*x-style systems
-         (Linux, Solaris).
+         (Linux, Solaris). Optionally, you can bind the port to a specific
+         interface.
 
          Default: 9530
       -->
-      <l2-group-port>9530</l2-group-port>
+      <l2-group-port bind="12.345.678.9">9530</l2-group-port>
       
       <!-- Turn on authentication for the Terracotta server. An empty tag
          <authentication> defaults to the standard Java JMX authentication
@@ -253,6 +270,27 @@ All content copyright Terracotta, Inc., unless otherwise indicated. All rights r
              Default: 'temporary-swap-only'
           -->
           <mode>temporary-swap-only</mode>
+
+          <!-- Information about how servers use off-heap memory.  Note: This is an Enterprise only feature. -->
+          <offheap>
+          
+           	<!-- If 'true', active servers spill cached data to off-heap memory
+           	     before persisting it to disk. Data that is cached  off-heap 
+           	     provides faster access than data stored on disk.
+           	 
+          	     Default: false
+          	-->
+          	<enabled>false</enabled>
+          	
+          	<!-- Sets the maximum amount of off-heap memory that a server
+          	     can use. Values are given in k (Kilobytes), m (Megabytes)
+          	     or g (Gigabytes). 
+          	
+          	     Default: none
+          	-->
+          	<maxDataSize>5g</maxDataSize>
+          </offheap>
+
         </persistence>
 
         <!-- Information about how DSO should perform distributed

@@ -22,6 +22,7 @@ import com.tc.admin.common.BrowserLauncher;
 import com.tc.admin.common.DemoChartFactory;
 import com.tc.admin.common.LinkButton;
 import com.tc.admin.common.StatusView;
+import com.tc.admin.common.SyncHTMLEditorKit;
 import com.tc.admin.common.XButton;
 import com.tc.admin.common.XContainer;
 import com.tc.admin.common.XLabel;
@@ -33,6 +34,8 @@ import com.tc.admin.options.RuntimeStatsOption;
 import com.tc.management.RuntimeStatisticConstants;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.retrieval.actions.SRAMemoryUsage;
+import com.tc.util.Conversion;
+import com.tc.util.Conversion.MemorySizeUnits;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -94,8 +97,8 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
   private static final ImageIcon        fStopIcon;
   private static final ImageIcon        fClearIcon;
 
-  protected static final Font           labelFont                               = new Font("DialogInput", Font.ITALIC,
-                                                                                           20);
+  protected static final Font           labelFont                               = new Font("DialogInput", Font.PLAIN,
+                                                                                           12);
 
   static {
     fStartIcon = new ImageIcon(BaseRuntimeStatsPanel.class.getResource("/com/tc/admin/icons/resume_co.gif"));
@@ -158,6 +161,10 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
     runtimeStatsPrefs.addPreferenceChangeListener(this);
 
     addHierarchyListener(this);
+  }
+
+  public XContainer getChartsPanel() {
+    return chartsPanel;
   }
 
   public static ChartPanel createChartPanel(JFreeChart chart) {
@@ -370,18 +377,19 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
     }
   }
 
-  @Override
-  public void addNotify() {
-    super.addNotify();
-
+  protected void updateFixedRangeAxisSpace(XContainer theChartsPanel) {
     double fixedRangeAxisSpace = 0;
     List<XYPlot> plotList = new ArrayList<XYPlot>();
-    java.awt.Component[] chartPanels = chartsPanel.getComponents();
+    java.awt.Component[] chartPanels = theChartsPanel.getComponents();
     for (java.awt.Component comp : chartPanels) {
-      if (!(comp instanceof ChartPanel)) continue;
+      if (!(comp instanceof ChartPanel)) {
+        continue;
+      }
       ChartPanel chartPanel = (ChartPanel) comp;
       JFreeChart chart = chartPanel.getChart();
-      if (chart == null) continue;
+      if (chart == null) {
+        continue;
+      }
       Plot plot = chart.getPlot();
       if (plot instanceof XYPlot) {
         XYPlot xyPlot = ((XYPlot) chart.getPlot());
@@ -395,7 +403,7 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
 
     rangeAxisSpace = new AxisSpace();
     rangeAxisSpace.setLeft(fixedRangeAxisSpace);
-    rangeAxisSpace.setRight(5);
+    // rangeAxisSpace.setRight(fixedRangeAxisSpace);
 
     if (plotList.size() > 0) {
       Iterator<XYPlot> plotIter = plotList.iterator();
@@ -404,6 +412,12 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
         plot.setFixedRangeAxisSpace(rangeAxisSpace);
       }
     }
+  }
+
+  @Override
+  public void addNotify() {
+    super.addNotify();
+    updateFixedRangeAxisSpace(chartsPanel);
   }
 
   private double getRangeAxisTickWidth(Graphics graphics, XYPlot plot) {
@@ -457,9 +471,10 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
   }
 
   private void clearAllRuntimeStatsSamples() {
-    Iterator<TimeSeries> iter = allSeries.iterator();
-    while (iter.hasNext()) {
-      iter.next().clear();
+    if (allSeries != null) {
+      for (TimeSeries ts : allSeries.toArray(new TimeSeries[0])) {
+        ts.clear();
+      }
     }
   }
 
@@ -512,6 +527,18 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
 
   protected void updateSeries(TimeSeries series, Number value) {
     series.addOrUpdate(new Second(tmpDate), getValueOrMissing(series, value));
+  }
+
+  public static String convert(long value) {
+    try {
+      if (value < MemorySizeUnits.KILO.getInBytes()) {
+        return Long.toString(value);
+      } else {
+        return Conversion.memoryBytesAsSize(value);
+      }
+    } catch (Exception e) {
+      return Long.toString(value);
+    }
   }
 
   private static final boolean SHOW_LAST_ON_MISSING = true;
@@ -573,6 +600,7 @@ public class BaseRuntimeStatsPanel extends XContainer implements RuntimeStatisti
   protected void setupHypericInstructions(JComponent comp) {
     comp.removeAll();
     XTextPane textPane = new XTextPane();
+    textPane.setEditorKit(new SyncHTMLEditorKit());
     textPane.setEditable(false);
     textPane.setBackground(Color.WHITE);
     textPane.addHyperlinkListener(new HypericInstructionsLinkListener());

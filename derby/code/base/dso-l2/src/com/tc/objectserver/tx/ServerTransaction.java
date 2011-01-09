@@ -6,6 +6,7 @@ package com.tc.objectserver.tx;
 
 import com.tc.net.NodeID;
 import com.tc.object.dmi.DmiDescriptor;
+import com.tc.object.dna.api.MetaDataReader;
 import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.gtx.GlobalTransaction;
 import com.tc.object.locks.LockID;
@@ -50,8 +51,10 @@ public interface ServerTransaction extends GlobalTransaction {
   public Collection getNotifies();
 
   public DmiDescriptor[] getDmiDescriptors();
+  
+  public MetaDataReader[] getMetaDataReaders();
 
-  public boolean needsBroadcast();
+  public boolean isActiveTxn();
 
   /**
    * Number of actual client/application transactions that this server transaction contains. Txn folding on the client

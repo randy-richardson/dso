@@ -4,6 +4,7 @@
  */
 package com.tc.object;
 
+import com.tc.exception.TCNotRunningException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
@@ -20,6 +21,8 @@ import com.tc.object.msg.KeysForOrphanedValuesMessage;
 import com.tc.object.msg.KeysForOrphanedValuesMessageFactory;
 import com.tc.object.msg.NodeMetaDataMessage;
 import com.tc.object.msg.NodeMetaDataMessageFactory;
+import com.tc.object.msg.NodesWithKeysMessage;
+import com.tc.object.msg.NodesWithKeysMessageFactory;
 import com.tc.object.msg.NodesWithObjectsMessage;
 import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.util.Assert;
@@ -38,13 +41,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
 
-  private static final TCLogger                             LOGGER                                   = TCLogging.getLogger(ClusterMetaDataManagerImpl.class);
+  private static final TCLogger                             LOGGER                                   = TCLogging
+                                                                                                         .getLogger(ClusterMetaDataManagerImpl.class);
 
   private static final long                                 RETRIEVE_WAIT_INTERVAL                   = 15000;
 
-  private static final State                                PAUSED                                   = new State("PAUSED");
-  private static final State                                RUNNING                                  = new State("RUNNING");
-  private static final State                                STARTING                                 = new State("STARTING");
+  private static final State                                PAUSED                                   = new State(
+                                                                                                                 "PAUSED");
+  private static final State                                RUNNING                                  = new State(
+                                                                                                                 "RUNNING");
+  private static final State                                STARTING                                 = new State(
+                                                                                                                 "STARTING");
 
   private State                                             state                                    = RUNNING;
 
@@ -54,10 +61,12 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
   private final NodesWithObjectsMessageFactory              nwoFactory;
   private final KeysForOrphanedValuesMessageFactory         kfovFactory;
   private final NodeMetaDataMessageFactory                  nmdmFactory;
+  private final NodesWithKeysMessageFactory                 nwkmFactory;
 
   private final Map<ThreadID, NodesWithObjectsMessage>      outstandingNodesWithObjectsRequests      = new ConcurrentHashMap<ThreadID, NodesWithObjectsMessage>();
   private final Map<ThreadID, KeysForOrphanedValuesMessage> outstandingKeysForOrphanedValuesRequests = new ConcurrentHashMap<ThreadID, KeysForOrphanedValuesMessage>();
   private final Map<ThreadID, NodeMetaDataMessage>          outstandingNodeMetaDataRequests          = new ConcurrentHashMap<ThreadID, NodeMetaDataMessage>();
+  private final Map<ThreadID, NodesWithKeysMessage>         outstandingNodesWithKeysRequests         = new ConcurrentHashMap<ThreadID, NodesWithKeysMessage>();
 
   private final Map<ThreadID, WaitForResponse>              waitObjects                              = new HashMap<ThreadID, WaitForResponse>();
   private final Map<ThreadID, Object>                       responses                                = new HashMap<ThreadID, Object>();
@@ -67,13 +76,15 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
                                     final ThreadIDManager threadIDManager,
                                     final NodesWithObjectsMessageFactory nwoFactory,
                                     final KeysForOrphanedValuesMessageFactory kfovFactory,
-                                    final NodeMetaDataMessageFactory nmdmFactory) {
+                                    final NodeMetaDataMessageFactory nmdmFactory,
+                                    final NodesWithKeysMessageFactory nwkmFactory) {
     this.groupID = groupID;
     this.encoding = encoding;
     this.threadIDManager = threadIDManager;
     this.nwoFactory = nwoFactory;
     this.kfovFactory = kfovFactory;
     this.nmdmFactory = nmdmFactory;
+    this.nwkmFactory = nwkmFactory;
   }
 
   public DNAEncoding getEncoding() {
@@ -90,7 +101,8 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
 
     // no response arrived in time, returning an empty set
     if (null == response) {
-      LOGGER.warn("No response arrived in time for getNodesWithObject for object '" + objectID + "', returning empty set");
+      LOGGER.warn("No response arrived in time for getNodesWithObject for object '" + objectID
+                  + "', returning empty set");
       return Collections.emptySet();
     }
 
@@ -128,7 +140,8 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
 
     // no response arrived in time, returning an empty set
     if (null == response) {
-      LOGGER.warn("No response arrived in time for getKeysForOrphanedValues for map with object ID '" + mapObjectID + "', returning empty set");
+      LOGGER.warn("No response arrived in time for getKeysForOrphanedValues for map with object ID '" + mapObjectID
+                  + "', returning empty set");
       return Collections.emptySet();
     }
 
@@ -162,6 +175,16 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
       return sendMessageAndWait(thisThread, message);
     } finally {
       outstandingKeysForOrphanedValuesRequests.remove(thisThread);
+    }
+  }
+
+  public <K> Map<K, Set<NodeID>> sendNodesWithKeysMessageAndWait(final NodesWithKeysMessage message) {
+    final ThreadID thisThread = threadIDManager.getThreadID();
+    outstandingNodesWithKeysRequests.put(thisThread, message);
+    try {
+      return sendMessageAndWait(thisThread, message);
+    } finally {
+      outstandingNodesWithKeysRequests.remove(thisThread);
     }
   }
 
@@ -230,6 +253,22 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
     }
   }
 
+  public <K> Map<K, Set<NodeID>> getNodesWithKeys(final TCMap tcMap, final Collection<? extends K> keys) {
+    waitUntilRunning();
+
+    final ObjectID mapObjectID = ((Manageable) tcMap).__tc_managed().getObjectID();
+    NodesWithKeysMessage message = nwkmFactory.newNodesWithKeysMessage(groupID);
+    message.setMapObjectID(mapObjectID);
+    message.setKeys((Set<Object>)keys);
+    Map<K, Set<NodeID>> result = sendMessageAndWait(threadIDManager.getThreadID(), message);
+    for (K key : keys) {
+      if(!result.containsKey(key)) {
+        result.put(key, Collections.<NodeID>emptySet());
+      }
+    }
+    return result;
+  }
+
   private void resendOutstanding() {
     synchronized (this) {
       for (NodesWithObjectsMessage oldMessage : outstandingNodesWithObjectsRequests.values()) {
@@ -259,6 +298,9 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
 
   public void shutdown() {
     isShutdown = true;
+    synchronized (this) {
+      this.notifyAll();
+    }
   }
 
   public void pause(final NodeID remote, final int disconnected) {
@@ -291,16 +333,20 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
 
   private void waitUntilRunning() {
     boolean isInterrupted = false;
-    synchronized (this) {
-      while (this.state != RUNNING) {
-        try {
-          this.wait();
-        } catch (InterruptedException e) {
-          isInterrupted = true;
+    try {
+      synchronized (this) {
+        while (this.state != RUNNING) {
+          if (isShutdown) { throw new TCNotRunningException(); }
+          try {
+            this.wait();
+          } catch (InterruptedException e) {
+            isInterrupted = true;
+          }
         }
       }
+    } finally {
+      Util.selfInterruptIfNeeded(isInterrupted);
     }
-    Util.selfInterruptIfNeeded(isInterrupted);
   }
 
   private void assertPaused(final Object message) {
@@ -310,7 +356,7 @@ public class ClusterMetaDataManagerImpl implements ClusterMetaDataManager {
   private void assertNotPaused(final Object message) {
     if (this.state == PAUSED) { throw new AssertionError(message + ": " + this.state); }
   }
-  
+
   private void assertNotRunning(final Object message) {
     if (this.state == RUNNING) { throw new AssertionError(message + ": " + this.state); }
   }

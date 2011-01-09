@@ -12,9 +12,9 @@ import com.tc.asm.ClassWriter;
 import com.tc.aspectwerkz.reflect.ClassInfo;
 import com.tc.aspectwerkz.reflect.FieldInfo;
 import com.tc.aspectwerkz.reflect.MemberInfo;
-import com.tc.config.schema.NewCommonL1Config;
+import com.tc.config.schema.CommonL1Config;
 import com.tc.config.schema.builder.DSOApplicationConfigBuilder;
-import com.tc.config.schema.setup.L1TVSConfigurationSetupManager;
+import com.tc.config.schema.setup.L1ConfigurationSetupManager;
 import com.tc.exception.ImplementMe;
 import com.tc.object.Portability;
 import com.tc.object.bytecode.ClassAdapterFactory;
@@ -50,8 +50,10 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper, DSOClientConfigHelper {
+  private final Map<Bundle, URL> bundleURLs = new ConcurrentHashMap<Bundle, URL>();
 
   public String rawConfigText() {
     return null;
@@ -99,11 +101,12 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
                                 final boolean oldStyleCallConstructorOnLoad, final boolean honorVolatile) {
     /**/
   }
-  
-  public void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad, boolean honorVolatile) {
+
+  public void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad,
+                                boolean honorVolatile) {
     /**/
   }
-  
+
   public void addLock(final String methodPattern, final LockDefinition lockDefinition) {
     /**/
   }
@@ -238,7 +241,7 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
     return null;
   }
 
-  public NewCommonL1Config getNewCommonL1Config() {
+  public CommonL1Config getNewCommonL1Config() {
     return null;
   }
 
@@ -484,12 +487,12 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
     return false;
   }
 
-  public void recordBundleURLs(final Map<Bundle, URL> bundleURLs) {
-    //
+  public void recordBundleURLs(final Map<Bundle, URL> toAdd) {
+    this.bundleURLs.putAll(toAdd);
   }
 
   public URL getBundleURL(final Bundle bundle) {
-    return null;
+    return this.bundleURLs.get(bundle);
   }
 
   public UUID getUUID() {
@@ -508,7 +511,7 @@ public class FakeDSOClientConfigHelper implements StandardDSOClientConfigHelper,
     //
   }
 
-  public L1TVSConfigurationSetupManager reloadServersConfiguration() {
+  public L1ConfigurationSetupManager reloadServersConfiguration() {
     return null;
   }
 }

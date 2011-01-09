@@ -32,26 +32,22 @@ import java.lang.ref.WeakReference;
 
 /**
  * Implementation of TCObject interface.
- * <p>
  */
 public abstract class TCObjectImpl implements TCObject {
-  private static final TCLogger logger                      = TCLogging.getLogger(TCObjectImpl.class);
+  private static final TCLogger logger                    = TCLogging.getLogger(TCObjectImpl.class);
 
-  private static final int      ACCESSED_OFFSET             = 1 << 0;
-  private static final int      IS_NEW_OFFSET               = 1 << 1;
-  private static final int      AUTOLOCKS_DISABLED_OFFSET   = 1 << 2;
-  private static final int      EVICTION_IN_PROGRESS_OFFSET = 1 << 3;
+  private static final int      ACCESSED_OFFSET           = 1 << 0;
+  private static final int      IS_NEW_OFFSET             = 1 << 1;
+  private static final int      AUTOLOCKS_DISABLED_OFFSET = 1 << 2;
 
-  // XXX::This initial negative version number is important since GID is assigned in the server from 0.
-  private long                  version                     = -1;
+  // This initial negative version number is important since GID is assigned in the server from 0.
+  private long                  version                   = -1;
 
   private final ObjectID        objectID;
   protected final TCClass       tcClazz;
   private WeakReference         peerObject;
-  private TLinkable             next;
-  private TLinkable             previous;
-  private byte                  flags                       = 0;
-  private static final TCLogger consoleLogger               = CustomerLogging.getConsoleLogger();
+  private byte                  flags                     = 0;
+  private static final TCLogger consoleLogger             = CustomerLogging.getConsoleLogger();
 
   protected TCObjectImpl(final ObjectID id, final Object peer, final TCClass clazz, final boolean isNew) {
     this.objectID = id;
@@ -211,7 +207,6 @@ public abstract class TCObjectImpl implements TCObject {
 
   private void createPeerObjectIfNecessary(final DNA from) {
     if (isNull()) {
-      // TODO: set created and modified version id
       setPeerObject(getObjectManager().createNewPeer(this.tcClazz, from));
     }
   }
@@ -261,14 +256,10 @@ public abstract class TCObjectImpl implements TCObject {
   }
 
   private int basicClearReferences(final int toClear) {
-    try {
-      final Object po = getPeerObject();
-      Assert.assertFalse(isNew()); // Shouldn't clear new Objects
-      if (po == null) { return 0; }
-      return clearReferences(po, toClear);
-    } finally {
-      setEvictionInProgress(false);
-    }
+    final Object po = getPeerObject();
+    Assert.assertFalse(isNew()); // Shouldn't clear new Objects
+    if (po == null) { return 0; }
+    return clearReferences(po, toClear);
   }
 
   protected abstract int clearReferences(Object pojo, int toClear);
@@ -395,19 +386,19 @@ public abstract class TCObjectImpl implements TCObject {
   }
 
   public void setNext(final TLinkable link) {
-    this.next = link;
+    throw new UnsupportedOperationException();
   }
 
   public void setPrevious(final TLinkable link) {
-    this.previous = link;
+    throw new UnsupportedOperationException();
   }
 
   public TLinkable getNext() {
-    return this.next;
+    throw new UnsupportedOperationException();
   }
 
   public TLinkable getPrevious() {
-    return this.previous;
+    throw new UnsupportedOperationException();
   }
 
   public void markAccessed() {
@@ -423,7 +414,6 @@ public abstract class TCObjectImpl implements TCObject {
   }
 
   public int accessCount(final int factor) {
-    // TODO:: Implement when needed
     throw new UnsupportedOperationException();
   }
 
@@ -448,20 +438,12 @@ public abstract class TCObjectImpl implements TCObject {
     return getFlag(AUTOLOCKS_DISABLED_OFFSET);
   }
 
-  private void setEvictionInProgress(final boolean value) {
-    setFlag(EVICTION_IN_PROGRESS_OFFSET, value);
-  }
-
-  private boolean isEvictionInProgress() {
-    return getFlag(EVICTION_IN_PROGRESS_OFFSET);
-  }
-
   public final synchronized boolean canEvict() {
-    final boolean canEvict = isEvictable() && !this.tcClazz.isNotClearable() && !(isNew() || isEvictionInProgress());
-    if (canEvict) {
-      setEvictionInProgress(true);
-    }
-    return canEvict;
+    return isEvictable() && !this.tcClazz.isNotClearable() && !isNew();
+  }
+
+  public boolean isCacheManaged() {
+    return !this.tcClazz.isNotClearable();
   }
 
   protected abstract boolean isEvictable();

@@ -3,7 +3,7 @@
  */
 package com.tc.statistics.retrieval.actions;
 
-import com.tc.objectserver.persistence.sleepycat.BerkeleyDBEnvironment;
+import com.tc.objectserver.storage.berkeleydb.BerkeleyDBEnvironment;
 import com.tc.statistics.StatisticData;
 import com.tc.statistics.StatisticRetrievalAction;
 import com.tc.test.TCTestCase;
@@ -15,10 +15,12 @@ import java.io.IOException;
 
 public class BDBSRATest extends TCTestCase {
 
-  public void test() throws IOException {
+  public void test() throws Exception {
     File dbHome = newDBHome();
     BerkeleyDBEnvironment env = new BerkeleyDBEnvironment(true, dbHome);
-    SRABerkeleyDB sras = new SRABerkeleyDB(env);
+    env.open();
+
+    SRAForBerkeleyDB sras = new SRAForBerkeleyDB(env);
     sras.retrieveStatisticData();
     ThreadUtil.reallySleep(10 * 1000);
     // check for SRAs to be 0

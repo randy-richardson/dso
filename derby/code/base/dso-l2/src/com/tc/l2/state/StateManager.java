@@ -22,6 +22,8 @@ public interface StateManager {
 
   public void startElection();
 
+  public State getCurrentState();
+
   public void startElectionIfNecessary(NodeID disconnectedNode);
 
   public void registerForStateChangeEvents(StateChangeListener listener);

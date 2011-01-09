@@ -4,13 +4,13 @@
  */
 package com.tc.l2.state;
 
-import com.tc.config.schema.NewHaConfig;
+import com.tc.config.schema.HaConfigSchema;
 
 public class StateManagerConfigImpl implements StateManagerConfig {
 
-  private final NewHaConfig haConfig;
+  private final HaConfigSchema haConfig;
 
-  public StateManagerConfigImpl(NewHaConfig haConfig) {
+  public StateManagerConfigImpl(HaConfigSchema haConfig) {
     this.haConfig = haConfig;
   }
 
@@ -18,7 +18,7 @@ public class StateManagerConfigImpl implements StateManagerConfig {
     int electionTime = -1;
 
     if (haConfig.isNetworkedActivePassive()) {
-      electionTime = haConfig.electionTime();
+      electionTime = haConfig.getHa().getNetworkedActivePassive().getElectionTime();
     } else {
       throw new AssertionError("Networked Active Passive is not enabled in config");
     }

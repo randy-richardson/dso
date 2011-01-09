@@ -12,32 +12,37 @@ import com.tc.logging.TCLogging;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
+import com.tc.util.VicariousThreadLocal;
 
 /**
  * TCByteBuffer source that hides JDK dependencies and that can pool instances. Instance pooling is likely to be a good
- * idea for fixed size buffers and definitely a good idea for java 1.4 direct buffers (since their
- * allocation/deallocation is more expensive than regular java objects).
+ * idea for fixed size buffers and definitely a good idea for java direct buffers (since their allocation/deallocation
+ * is more expensive than regular java objects).
  * 
  * @author teck
  */
 public class TCByteBufferFactory {
-  // 10485760 == 10MB
-  private static final int                WARN_THRESHOLD          = 10485760;
 
+  public static final int                 FIXED_BUFFER_SIZE       = 4 * 1024;                                                        // 4KiB
+  private static final int                WARN_THRESHOLD          = 10 * 1024 * 1024;                                                // 10MiB
+  private static final TCByteBuffer[]     EMPTY_BB_ARRAY          = new TCByteBuffer[0];
+  private static final TCByteBuffer       ZERO_BYTE_BUFFER        = TCByteBufferImpl.wrap(new byte[0]);
+  private static final TCLogger           logger                  = TCLogging.getLogger(TCByteBufferFactory.class);
+
+  private static final boolean            disablePooling          = !(TCPropertiesImpl.getProperties()
+                                                                      .getBoolean(TCPropertiesConsts.TC_BYTEBUFFER_POOLING_ENABLED));
   private static final int                poolMaxBufCount         = (TCPropertiesImpl.getProperties()
-                                                                      .getInt(
-                                                                              TCPropertiesConsts.TC_BYTEBUFFER_THREADLOCAL_POOL_MAXCOUNT,
+                                                                      .getInt(TCPropertiesConsts.TC_BYTEBUFFER_THREADLOCAL_POOL_MAXCOUNT,
                                                                               2000));
   private static final int                commonPoolMaxBufCount   = (TCPropertiesImpl.getProperties()
-                                                                      .getInt(
-                                                                              TCPropertiesConsts.TC_BYTEBUFFER_COMMON_POOL_MAXCOUNT,
+                                                                      .getInt(TCPropertiesConsts.TC_BYTEBUFFER_COMMON_POOL_MAXCOUNT,
                                                                               3000));
 
   // always use ThreadLocal variables for accessing the buffer pools.
   private static final BoundedLinkedQueue directCommonFreePool    = new BoundedLinkedQueue(commonPoolMaxBufCount);
   private static final BoundedLinkedQueue nonDirectCommonFreePool = new BoundedLinkedQueue(commonPoolMaxBufCount);
 
-  private static final ThreadLocal        directFreePool          = new ThreadLocal() {
+  private static final ThreadLocal        directFreePool          = new VicariousThreadLocal() {
                                                                     @Override
                                                                     protected Object initialValue() {
                                                                       if (TCThreadGroup.currentThreadInTCThreadGroup()) {
@@ -50,7 +55,7 @@ public class TCByteBufferFactory {
                                                                       }
                                                                     }
                                                                   };
-  private static final ThreadLocal        nonDirectFreePool       = new ThreadLocal() {
+  private static final ThreadLocal        nonDirectFreePool       = new VicariousThreadLocal() {
                                                                     @Override
                                                                     protected Object initialValue() {
                                                                       if (TCThreadGroup.currentThreadInTCThreadGroup()) {
@@ -63,18 +68,6 @@ public class TCByteBufferFactory {
                                                                       }
                                                                     }
                                                                   };
-
-  private static final int                DEFAULT_FIXED_SIZE      = 4096;
-  private static final int                fixedBufferSize         = DEFAULT_FIXED_SIZE;
-
-  private static final TCByteBuffer[]     EMPTY_BB_ARRAY          = new TCByteBuffer[0];
-
-  private static final TCLogger           logger                  = TCLogging.getLogger(TCByteBufferFactory.class);
-
-  private static final TCByteBuffer       ZERO_BYTE_BUFFER        = TCByteBufferImpl.wrap(new byte[0]);
-
-  private static final boolean            disablePooling          = !(TCPropertiesImpl.getProperties()
-                                                                      .getBoolean(TCPropertiesConsts.TC_BYTEBUFFER_POOLING_ENABLED));
 
   private static TCByteBuffer createNewInstance(boolean direct, int capacity, int index, int totalCount) {
     try {
@@ -112,7 +105,7 @@ public class TCByteBufferFactory {
     if (size == 0) { return ZERO_BYTE_BUFFER; }
 
     // Don't give 4k ByteBuffer from pool for smaller size requests.
-    if (disablePooling || size < (fixedBufferSize - 500) || size > fixedBufferSize) {
+    if (disablePooling || size < (FIXED_BUFFER_SIZE - 500) || size > FIXED_BUFFER_SIZE) {
       return createNewInstance(direct, size);
     } else {
       return getFromPoolOrCreate(direct);
@@ -127,7 +120,7 @@ public class TCByteBufferFactory {
 
     TCByteBuffer buffer = getFromPool(direct);
     if (null == buffer) {
-      buffer = createNewInstance(direct, fixedBufferSize, i, numBuffers);
+      buffer = createNewInstance(direct, FIXED_BUFFER_SIZE, i, numBuffers);
     }
     return buffer;
   }
@@ -160,7 +153,7 @@ public class TCByteBufferFactory {
 
     if (disablePooling) {
       for (int i = 0; i < numBuffers; i++) {
-        rv[i] = createNewInstance(direct, fixedBufferSize, i, numBuffers);
+        rv[i] = createNewInstance(direct, FIXED_BUFFER_SIZE, i, numBuffers);
       }
     } else { // do pooling logic
       for (int i = 0; i < numBuffers; i++) {
@@ -170,7 +163,7 @@ public class TCByteBufferFactory {
 
     // adjust limit of last buffer returned
     TCByteBuffer lastBuffer = rv[rv.length - 1];
-    lastBuffer.limit(lastBuffer.capacity() - ((numBuffers * fixedBufferSize) - length));
+    lastBuffer.limit(lastBuffer.capacity() - ((numBuffers * FIXED_BUFFER_SIZE) - length));
 
     // ensureSpace(rv, length);
 
@@ -178,15 +171,15 @@ public class TCByteBufferFactory {
   }
 
   private static int getBufferCountNeededForMessageSize(final int length) {
-    int numBuffers = length / fixedBufferSize;
-    if ((length % fixedBufferSize) != 0) {
+    int numBuffers = length / FIXED_BUFFER_SIZE;
+    if ((length % FIXED_BUFFER_SIZE) != 0) {
       numBuffers++;
     }
     return numBuffers;
   }
 
   public static int getTotalBufferSizeNeededForMessageSize(final int length) {
-    return (getBufferCountNeededForMessageSize(length) * fixedBufferSize);
+    return (getBufferCountNeededForMessageSize(length) * FIXED_BUFFER_SIZE);
   }
 
   private static TCByteBuffer getFromPool(boolean direct) {
@@ -204,6 +197,7 @@ public class TCByteBufferFactory {
       }
     } catch (InterruptedException e) {
       logger.warn("interrupted while getting buffer from pool", e);
+      Thread.currentThread().interrupt();
       return null;
     }
     return buf;
@@ -220,7 +214,7 @@ public class TCByteBufferFactory {
   public static void returnBuffer(TCByteBuffer buf) {
     if (disablePooling) { return; }
 
-    if (buf.capacity() == fixedBufferSize) {
+    if (buf.capacity() == FIXED_BUFFER_SIZE) {
       BufferPool bufferPool = buf.getBufferPool();
       buf.commit();
 
@@ -229,6 +223,7 @@ public class TCByteBufferFactory {
           bufferPool.offer(buf);
         } catch (InterruptedException e) {
           logger.warn("interrupted while trying to return buffer", e);
+          Thread.currentThread().interrupt();
         }
       }
     }

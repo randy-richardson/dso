@@ -15,7 +15,7 @@ import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.mgmt.MapEntryFacade;
 import com.tc.objectserver.mgmt.MapEntryFacadeImpl;
-import com.tc.objectserver.persistence.sleepycat.PersistableCollection;
+import com.tc.objectserver.persistence.db.PersistableCollection;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
 
@@ -42,17 +42,17 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
     super(in);
   }
 
-  public void apply(final ObjectID objectID, final DNACursor cursor, final ApplyTransactionInfo includeIDs)
+  public void apply(final ObjectID objectID, final DNACursor cursor, final ApplyTransactionInfo applyInfo)
       throws IOException {
     while (cursor.next()) {
       final LogicalAction action = cursor.getLogicalAction();
       final int method = action.getMethod();
       final Object[] params = action.getParameters();
-      applyMethod(objectID, includeIDs, method, params);
+      applyMethod(objectID, applyInfo, method, params);
     }
   }
 
-  protected void applyMethod(final ObjectID objectID, final ApplyTransactionInfo includeIDs, final int method,
+  protected void applyMethod(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final int method,
                              final Object[] params) {
     switch (method) {
       case SerializationUtil.PUT:
@@ -60,20 +60,26 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
         mapPreProcess(params);
         final Object key = getKey(params);
         final Object value = getValue(params);
-        this.references.put(key, value);
+        Object old = this.references.put(key, value);
         if (key instanceof ObjectID) {
           final ObjectID v = (ObjectID) key;
           getListener().changed(objectID, null, v);
-          addBackReferenceForKey(includeIDs, v, objectID);
+          addBackReferenceForKey(applyInfo, v, objectID);
         }
         if (value instanceof ObjectID) {
           final ObjectID v = (ObjectID) value;
           getListener().changed(objectID, null, v);
-          addBackReferenceForValue(includeIDs, v, objectID);
+          addBackReferenceForValue(applyInfo, v, objectID);
+        }
+        if (old instanceof ObjectID) {
+          invalidateIfNeeded(applyInfo, (ObjectID) old);
         }
         break;
       case SerializationUtil.REMOVE:
-        this.references.remove(params[0]);
+        old = this.references.remove(params[0]);
+        if (old instanceof ObjectID) {
+          invalidateIfNeeded(applyInfo, (ObjectID) old);
+        }
         break;
       case SerializationUtil.CLEAR:
         this.references.clear();
@@ -84,20 +90,25 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
 
   }
 
+  protected void invalidateIfNeeded(ApplyTransactionInfo applyInfo, ObjectID objectID) {
+    // Overridden by subclasses
+  }
+
   protected void addBackReferenceForKey(final ApplyTransactionInfo includeIDs, final ObjectID key, final ObjectID map) {
     includeIDs.addBackReference(key, map);
   }
 
-  protected void addBackReferenceForValue(final ApplyTransactionInfo includeIDs, final ObjectID value, final ObjectID map) {
+  protected void addBackReferenceForValue(final ApplyTransactionInfo includeIDs, final ObjectID value,
+                                          final ObjectID map) {
     includeIDs.addBackReference(value, map);
   }
 
-  private Object getKey(final Object[] params) {
+  protected Object getKey(final Object[] params) {
     // Hack hack big hack for trove maps which replace the key on set as opposed to HashMaps which do not.
     return params.length == 3 ? params[1] : params[0];
   }
 
-  private Object getValue(final Object[] params) {
+  protected Object getValue(final Object[] params) {
     // Hack hack big hack for trove maps which replace the key on set as opposed to HashMaps which do not.
     return params.length == 3 ? params[2] : params[1];
   }
@@ -109,7 +120,7 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
     }
   }
 
-  public void dehydrate(final ObjectID objectID, final DNAWriter writer, DNAType type) {
+  public void dehydrate(final ObjectID objectID, final DNAWriter writer, final DNAType type) {
     for (final Iterator i = this.references.entrySet().iterator(); i.hasNext();) {
       final Entry entry = (Entry) i.next();
       final Object key = entry.getKey();

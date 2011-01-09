@@ -55,6 +55,10 @@ class StaticResources
     FilePath.new(@root_directory, '.tc-build-cache')
   end
 
+  def global_cache_directory
+    FilePath.new(ENV['HOME'], '.tc', 'cache').ensure_directory.canonicalize
+  end
+
   def build_config_directory
     FilePath.new(@root_directory, 'buildconfig')
   end
@@ -162,6 +166,10 @@ class StaticResources
 
   def config_schema_source_directory(module_set)
     FilePath.new(module_set['common'].subtree('src').resource_root, "com", "tc", "config", "schema")
+  end
+
+  def external_projects_directory
+    FilePath.new(@root_directory, 'external')
   end
 
   # 2006-07-19 andrew -- HACK HACK HACK. This is ONLY in support of 'tc.install_dir' in

@@ -21,20 +21,19 @@ public class TerracottaOperatorEventResourcesTest extends TCTestCase {
      * Memeory manager messages
      */
     Assert.assertTrue(TerracottaOperatorEventResources.getLongGCMessage().equals(this.resources.getObject("long.gc")));
+    Assert.assertTrue(TerracottaOperatorEventResources.getLongGCAndOffheapRecommendationMessage()
+        .equals(this.resources.getObject("long.gc.no.offheap")));
     Assert.assertTrue(TerracottaOperatorEventResources.getHighMemoryUsageMessage()
         .equals(this.resources.getObject("high.memory.usage")));
 
     /**
      * DGC messages
      */
-    Assert.assertTrue(TerracottaOperatorEventResources.getDGCStartedMessage().equals(
-                                                                                     this.resources
+    Assert.assertTrue(TerracottaOperatorEventResources.getDGCStartedMessage().equals(this.resources
                                                                                          .getObject("dgc.started")));
-    Assert.assertTrue(TerracottaOperatorEventResources.getDGCFinishedMessage().equals(
-                                                                                      this.resources
+    Assert.assertTrue(TerracottaOperatorEventResources.getDGCFinishedMessage().equals(this.resources
                                                                                           .getObject("dgc.finished")));
-    Assert.assertTrue(TerracottaOperatorEventResources.getDGCCanceledMessage().equals(
-                                                                                      this.resources
+    Assert.assertTrue(TerracottaOperatorEventResources.getDGCCanceledMessage().equals(this.resources
                                                                                           .getObject("dgc.canceled")));
 
     /**
@@ -44,11 +43,13 @@ public class TerracottaOperatorEventResourcesTest extends TCTestCase {
         .equals(this.resources.getObject("node.availability")));
     Assert.assertTrue(TerracottaOperatorEventResources.getOOODisconnectMessage()
         .equals(this.resources.getObject("ooo.disconnect")));
-    Assert.assertTrue(TerracottaOperatorEventResources.getOOOConnectMessage().equals(
-                                                                                     this.resources
+    Assert.assertTrue(TerracottaOperatorEventResources.getOOOConnectMessage().equals(this.resources
                                                                                          .getObject("ooo.connect")));
     Assert.assertTrue(TerracottaOperatorEventResources.getClusterNodeStateChangedMessage()
         .equals(this.resources.getObject("node.state")));
+
+    Assert.assertTrue(TerracottaOperatorEventResources.getHandshakeRejectedMessage()
+        .equals(this.resources.getObject("handshake.reject")));
 
     /**
      * Zap Messagse
@@ -59,5 +60,11 @@ public class TerracottaOperatorEventResourcesTest extends TCTestCase {
         .equals(this.resources.getObject("zap.accepted")));
     Assert
         .assertTrue(TerracottaOperatorEventResources.getDirtyDBMessage().equals(this.resources.getObject("dirty.db")));
+
+    /**
+     * Off heap message
+     */
+    Assert.assertTrue(TerracottaOperatorEventResources.getOffHeapMemoryUsageMessage()
+        .equals(this.resources.getObject("offheap.memory.usage")));
   }
 }
