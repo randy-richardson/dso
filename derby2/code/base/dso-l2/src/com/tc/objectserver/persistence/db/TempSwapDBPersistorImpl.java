@@ -14,11 +14,9 @@ import com.tc.objectserver.persistence.inmemory.InMemoryClassPersistor;
 import com.tc.objectserver.persistence.inmemory.InMemoryClientStatePersistor;
 import com.tc.objectserver.persistence.inmemory.InMemoryPersistentMapStore;
 import com.tc.objectserver.persistence.inmemory.InMemorySequenceProvider;
-import com.tc.objectserver.persistence.inmemory.NullPersistenceTransactionProvider;
 import com.tc.objectserver.persistence.inmemory.NullStringIndexPersistor;
 import com.tc.objectserver.persistence.inmemory.NullTransactionPersistor;
 import com.tc.objectserver.storage.api.DBEnvironment;
-import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
 import com.tc.util.sequence.MutableSequence;
 
 import java.io.File;
@@ -35,10 +33,11 @@ public class TempSwapDBPersistorImpl extends DBPersistorImpl {
     super(logger, env, serializationAdapterFactory, l2DataPath, objectStatsRecorder);
   }
 
-  @Override
-  protected PersistenceTransactionProvider createPersistenceTransactionProvider(final DBEnvironment dbenv) {
-    return new NullPersistenceTransactionProvider();
-  }
+  // @Override
+  // protected PersistenceTransactionProvider createPersistenceTransactionProvider(final DBEnvironment dbenv) {
+  // super.cre
+  // //return new NullPersistenceTransactionProvider();
+  // }
 
   @Override
   protected StringIndexPersistor createStringIndexPersistor() {

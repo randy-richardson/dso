@@ -4,6 +4,8 @@
  */
 package com.tc.objectserver.impl;
 
+import org.apache.commons.io.FileUtils;
+
 import bsh.EvalError;
 import bsh.Interpreter;
 
@@ -235,6 +237,7 @@ import com.tc.objectserver.storage.api.DBFactory;
 import com.tc.objectserver.storage.api.OffheapStats;
 import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
 import com.tc.objectserver.storage.berkeleydb.BerkeleyDBFactory;
+import com.tc.objectserver.storage.derby.DerbyDBFactory;
 import com.tc.objectserver.tx.CommitTransactionMessageRecycler;
 import com.tc.objectserver.tx.ServerTransactionManagerConfig;
 import com.tc.objectserver.tx.ServerTransactionManagerImpl;
@@ -525,7 +528,16 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       logger.info("Since running OffHeap in temp-swap mode, setting je.maxMemoryPercent to "
                   + newBDBMemPercentage.toString());
     }
-    final DBFactory dbFactory = new BerkeleyDBFactory(bdbProperties);
+
+    final DBFactory dbFactory;
+    boolean isDerby = TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_DERBY_ENABLED);
+    if (!isDerby) {
+      dbFactory = new BerkeleyDBFactory(bdbProperties);
+    } else {
+      final Properties derbyProperties = this.l2Properties.getPropertiesFor("derbydb")
+          .addAllPropertiesTo(new Properties());
+      dbFactory = new DerbyDBFactory(derbyProperties);
+    }
 
     // start the JMX server
     try {
@@ -579,6 +591,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       if (dbhome.exists()) {
         logger.debug("deleting persistence database...");
         TCFileUtils.forceDelete(dbhome, "jdb");
+        FileUtils.cleanDirectory(dbhome);
         logger.debug("persistence database deleted.");
       }
     }
