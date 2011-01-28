@@ -10,6 +10,7 @@ import com.mchange.v2.c3p0.DataSources;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.beans.object.ServerDBBackupMBean;
+import com.tc.objectserver.persistence.api.ManagedObjectStoreStats;
 import com.tc.objectserver.persistence.db.DBException;
 import com.tc.objectserver.persistence.db.DatabaseNotOpenException;
 import com.tc.objectserver.persistence.db.TCDatabaseException;
@@ -397,5 +398,9 @@ public class DerbyDBEnvironment implements DBEnvironment {
 
   public void initBackupMbean(ServerDBBackupMBean mBean) {
     // TODO: no db backup
+  }
+
+  public void initObjectStoreStats(ManagedObjectStoreStats objectStoreStats) {
+    //
   }
 }

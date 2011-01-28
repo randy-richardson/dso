@@ -20,8 +20,7 @@ import java.io.IOException;
  */
 public class SearchEventHandler extends AbstractEventHandler {
 
-  private IndexManager         indexManager;
-  private SearchRequestManager searchRequestManager;
+  private IndexManager indexManager;
 
   /**
    * {@inheritDoc}
@@ -34,8 +33,8 @@ public class SearchEventHandler extends AbstractEventHandler {
       SearchUpsertContext suc = (SearchUpsertContext) context;
 
       try {
-        this.indexManager.upsert(suc.getName(), suc.getCacheKey(), suc.getAttributes(),
-                                 suc.getMetaDataProcessingContext());
+        this.indexManager.upsert(suc.getCacheName(), suc.getCacheKey(), suc.getCacheValue(), suc.getAttributes(),
+                                 suc.getMetaDataProcessingContext(), suc.isPutIfAbsent());
       } catch (IndexException e) {
         // TODO: figure out what to do with IndexException, rethrow for now.
         throw new EventHandlerException(e);
@@ -43,29 +42,24 @@ public class SearchEventHandler extends AbstractEventHandler {
     } else if (context instanceof SearchDeleteContext) {
       SearchDeleteContext sdc = (SearchDeleteContext) context;
       try {
-        this.indexManager.remove(sdc.getName(), sdc.getCacheKey(), sdc.getMetaDataProcessingContext());
+        this.indexManager.remove(sdc.getCacheName(), sdc.getCacheKey(), sdc.getMetaDataProcessingContext());
       } catch (IndexException e) {
         // TODO: figure out what to do with IndexException, rethrow for now.
         throw new EventHandlerException(e);
       }
-    } else if (context instanceof SearchQueryContext) {
-      SearchQueryContext sqc = (SearchQueryContext) context;
-
-      SearchResult searchResult;
-      try {
-        searchResult = this.indexManager.searchIndex(sqc.getCacheName(), sqc.getQueryStack(), sqc.includeKeys(),
-                                                     sqc.getAttributeSet(), sqc.getSortAttributes(),
-                                                     sqc.getAggregators(), sqc.getMaxResults());
-        this.searchRequestManager.queryResponse(sqc, searchResult.getQueryResults(),
-                                                searchResult.getAggregatorResults());
-      } catch (IndexException e) {
-        // XXX: log something?
-        this.searchRequestManager.queryErrorResponse(sqc, e.getMessage());
-      }
     } else if (context instanceof SearchClearContext) {
       SearchClearContext scc = (SearchClearContext) context;
       try {
-        this.indexManager.clear(scc.getName(), scc.getMetaDataProcessingContext());
+        this.indexManager.clear(scc.getCacheName(), scc.getMetaDataProcessingContext());
+      } catch (IndexException e) {
+        // TODO: figure out what to do with IndexException, rethrow for now.
+        throw new EventHandlerException(e);
+      }
+    } else if (context instanceof SearchEvictionRemoveContext) {
+      SearchEvictionRemoveContext serc = (SearchEvictionRemoveContext) context;
+      try {
+        this.indexManager.removeIfValueEqual(serc.getCacheName(), serc.getRemoves(),
+                                             serc.getMetaDataProcessingContext());
       } catch (IndexException e) {
         // TODO: figure out what to do with IndexException, rethrow for now.
         throw new EventHandlerException(e);
@@ -80,7 +74,6 @@ public class SearchEventHandler extends AbstractEventHandler {
     super.initialize(context);
     ServerConfigurationContext serverContext = (ServerConfigurationContext) context;
     this.indexManager = serverContext.getIndexManager();
-    this.searchRequestManager = serverContext.getSearchRequestManager();
   }
 
 }

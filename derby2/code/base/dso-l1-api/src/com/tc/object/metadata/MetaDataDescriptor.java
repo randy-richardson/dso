@@ -3,6 +3,8 @@
  */
 package com.tc.object.metadata;
 
+import com.tc.object.ObjectID;
+
 import java.util.Date;
 
 /**
@@ -30,6 +32,8 @@ public interface MetaDataDescriptor {
 
   void add(String name, Date value);
 
+  void add(String name, java.sql.Date value);
+
   void add(String name, Enum value);
 
   void add(String name, String value);
@@ -38,8 +42,9 @@ public interface MetaDataDescriptor {
 
   void add(String name, Object value);
 
+  void add(String name, ObjectID value);
+
+  void addNull(String name);
+
   String getCategory();
-
-  int size();
-
 }

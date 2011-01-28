@@ -6,7 +6,6 @@ package com.tc.object;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
 
-import java.util.List;
 import java.util.Set;
 
 public interface TCObjectServerMap<L> extends TCObject {
@@ -30,16 +29,45 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param key Key Object
    * @param value Object in the mapping
    */
-  public void doLogicalRemove(final TCServerMap map, final Object key, final List<MetaDataDescriptor> metaDatas);
+  public void doLogicalRemove(final TCServerMap map, final Object key);
 
   /**
    * Does a logic remove and mark as removed in the local cache if present. The cached item is not associated to a lock.
    * 
    * @param map ServerTCMap
    * @param key Key Object
+   */
+  public void doLogicalRemoveUnlocked(final TCServerMap map, final Object key);
+
+  /**
+   * Does a logic remove and mark as removed in the local cache if present only if there exist a mapping of key to
+   * value. The cached item is not associated to a lock.
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object
    * @param value Object in the mapping
    */
-  public void doLogicalRemoveUnlocked(final TCServerMap map, final Object key, final List<MetaDataDescriptor> metaDatas);
+  public void doLogicalRemoveUnlocked(final TCServerMap map, final Object key, final Object value);
+
+  /**
+   * Does a logic putIfAbsent. The cached item is not associated to a lock. The check about the presence of an existing
+   * mapping is not done here and is expected to be done outside elsewhere.
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object
+   * @param value Object in the mapping
+   */
+  public void doLogicalPutIfAbsentUnlocked(final TCServerMap map, final Object key, final Object value);
+
+  /**
+   * Does a logic replace. The cached item is not associated to a lock.
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object
+   * @param value Object in the mapping
+   */
+  public void doLogicalReplaceUnlocked(final TCServerMap map, final Object key, final Object current,
+                                       final Object newValue);
 
   /**
    * Does a logical put and updates the local cache
@@ -49,15 +77,14 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param key Key Object
    * @param value Object in the mapping
    */
-  public void doLogicalPut(final TCServerMap map, final L lockID, final Object key, final Object value,
-                           final List<MetaDataDescriptor> metaDatas);
+  public void doLogicalPut(final TCServerMap map, final L lockID, final Object key, final Object value);
 
   /**
    * Clear this map
    * 
    * @param map ServerTCMap
    */
-  public void doClear(final TCServerMap map, final List<MetaDataDescriptor> metaDatas);
+  public void doClear(final TCServerMap map);
 
   /**
    * Does a logical put and updates the local cache without using a lock. The cached Item is not associated to a lock.
@@ -67,8 +94,7 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param key Key Object
    * @param value Object in the mapping
    */
-  public void doLogicalPutUnlocked(final TCServerMap map, final Object key, final Object value,
-                                   final List<MetaDataDescriptor> metaDatas);
+  public void doLogicalPutUnlocked(final TCServerMap map, final Object key, final Object value);
 
   /**
    * Returns the value for a particular key in a TCServerMap. If already present in local cache, returns the value
@@ -146,4 +172,9 @@ public interface TCObjectServerMap<L> extends TCObject {
    * Get from local cache.
    */
   public Object getValueFromLocalCache(Object key);
+
+  /**
+   * Add meta data to this server map
+   */
+  public void addMetaData(MetaDataDescriptor mdd);
 }

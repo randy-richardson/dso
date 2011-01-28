@@ -3,6 +3,7 @@
  */
 package com.tc.objectserver.search;
 
+import com.tc.async.api.EventContext;
 import com.tc.net.ClientID;
 import com.tc.net.GroupID;
 import com.tc.object.SearchRequestID;
@@ -13,11 +14,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Context holding search queury search information.
+ * Context holding search query search information.
  * 
  * @author Nabib El-Rahman
  */
-public class SearchQueryContext implements SearchEventContext {
+public class SearchQueryContext implements EventContext {
 
   private final ClientID        clientID;
   private final SearchRequestID requestID;
@@ -25,24 +26,31 @@ public class SearchQueryContext implements SearchEventContext {
   private final String          cacheName;
   private final LinkedList      queryStack;
   private final boolean         includeKeys;
+  private final boolean         includeValues;
   private final Set<String>     attributeSet;
   private final List<NVPair>    sortAttributes;
   private final List<NVPair>    aggregators;
   private final int             maxResults;
+  private final int             batchSize;
+  private final boolean         prefetchFirstBatch;
 
   public SearchQueryContext(ClientID clientID, SearchRequestID requestID, GroupID groupIDFrom, String cacheName,
-                            LinkedList queryStack, boolean includeKeys, Set<String> attributeSet,
-                            List<NVPair> sortAttributes, List<NVPair> aggregators, int maxResults) {
+                            LinkedList queryStack, boolean includeKeys, boolean includeValues,
+                            Set<String> attributeSet, List<NVPair> sortAttributes, List<NVPair> aggregators,
+                            int maxResults, int batchSize, boolean prefetchFirstBatch) {
     this.clientID = clientID;
     this.requestID = requestID;
     this.groupIDFrom = groupIDFrom;
     this.cacheName = cacheName;
     this.queryStack = queryStack;
     this.includeKeys = includeKeys;
+    this.includeValues = includeValues;
     this.attributeSet = attributeSet;
     this.sortAttributes = sortAttributes;
     this.aggregators = aggregators;
     this.maxResults = maxResults;
+    this.batchSize = batchSize;
+    this.prefetchFirstBatch = prefetchFirstBatch;
   }
 
   /**
@@ -98,6 +106,15 @@ public class SearchQueryContext implements SearchEventContext {
   }
 
   /**
+   * Result set should include values
+   * 
+   * @return boolean true if should return values
+   */
+  public boolean includeValues() {
+    return includeValues;
+  }
+
+  /**
    * Attribute keys, should return values with result set.
    * 
    * @return Set<String> attributes.
@@ -138,6 +155,20 @@ public class SearchQueryContext implements SearchEventContext {
    */
   public Object getKey() {
     return clientID;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public int getBatchSize() {
+    return batchSize;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public boolean isPrefetchFirstBatch() {
+    return prefetchFirstBatch;
   }
 
 }

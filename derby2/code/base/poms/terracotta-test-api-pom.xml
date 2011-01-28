@@ -57,8 +57,8 @@
       <artifactId>jmxremote</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.management</groupId>
-      <artifactId>jmxremote_optional</artifactId>
+      <groupId>org.terracotta</groupId>
+      <artifactId>jmxremote_optional-tc</artifactId>
     </dependency>
     <dependency>
       <groupId>org.beanshell</groupId>
@@ -103,7 +103,7 @@
       <artifactId>trove</artifactId>
     </dependency>
     <dependency>
-      <groupId>berkeleydb</groupId>
+      <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
     </dependency>
     <dependency>

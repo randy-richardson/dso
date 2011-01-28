@@ -131,12 +131,12 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
     // XXX:: We are clearing unmaterialized DNAs and removed objects here because on connect we are going to send
     // the list of objects present in this L1 from Client Object Manager anyways. We can't be clearing the removed
     // object IDs in unpause(), then you get MNK-835
-    clear();
+    clear(GroupID.ALL_GROUPS);
     notifyAll();
   }
 
-  public void initializeHandshake(final NodeID thisNode, final NodeID remoteNode,
-                                  final ClientHandshakeMessage handshakeMessage) {
+  public synchronized void initializeHandshake(final NodeID thisNode, final NodeID remoteNode,
+                                               final ClientHandshakeMessage handshakeMessage) {
     if (isStopped()) { return; }
     assertPaused("Attempt to init handshake while not PAUSED");
     this.state = State.STARTING;
@@ -150,7 +150,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
     notifyAll();
   }
 
-  public synchronized void clear() {
+  public synchronized void clear(GroupID gid) {
     this.lru.clear();
     this.dnaCache.clear();
     this.removeObjects.clear();
@@ -524,7 +524,12 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   private class SendPendingRequestsTaskTimer extends TimerTask {
     @Override
     public void run() {
-      sendPendingRequests();
+      try {
+        sendPendingRequests();
+      } catch (TCNotRunningException e) {
+        logger.info("Ignoring " + e.getMessage() + " in " + this.getClass().getName() + " and cancelling timer task");
+        this.cancel();
+      }
     }
   }
 
@@ -534,7 +539,8 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
       try {
         sendRemovedObjects();
       } catch (TCNotRunningException e) {
-        logger.info("Ignoring " + e.getMessage() + " in RemovedObjectTimerTask");
+        logger.info("Ignoring " + e.getMessage() + " in " + this.getClass().getName() + " and cancelling timer task");
+        this.cancel();
       }
     }
   }
@@ -542,7 +548,12 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   private class CleanupUnusedDNATimerTask extends TimerTask {
     @Override
     public void run() {
-      clearAllUnrequestedDNABatches();
+      try {
+        clearAllUnrequestedDNABatches();
+      } catch (TCNotRunningException e) {
+        logger.info("Ignoring " + e.getMessage() + " in " + this.getClass().getName() + " and cancelling timer task");
+        this.cancel();
+      }
     }
   }
 

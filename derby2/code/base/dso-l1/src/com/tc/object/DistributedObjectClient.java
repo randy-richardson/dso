@@ -75,6 +75,7 @@ import com.tc.object.handler.ClientCoordinationHandler;
 import com.tc.object.handler.ClusterInternalEventsHandler;
 import com.tc.object.handler.ClusterMemberShipEventsHandler;
 import com.tc.object.handler.ClusterMetaDataHandler;
+import com.tc.object.handler.ClusterRejoinEventsHandler;
 import com.tc.object.handler.DmiHandler;
 import com.tc.object.handler.LockRecallHandler;
 import com.tc.object.handler.LockResponseHandler;
@@ -105,7 +106,7 @@ import com.tc.object.msg.BatchTransactionAcknowledgeMessageImpl;
 import com.tc.object.msg.BroadcastTransactionMessageImpl;
 import com.tc.object.msg.ClientHandshakeAckMessageImpl;
 import com.tc.object.msg.ClientHandshakeMessageImpl;
-import com.tc.object.msg.ClientHandshakeRejectedMessageImpl;
+import com.tc.object.msg.ClientHandshakeRefusedMessageImpl;
 import com.tc.object.msg.ClusterMembershipMessage;
 import com.tc.object.msg.CommitTransactionMessageImpl;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessage;
@@ -417,7 +418,14 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
     // //////////////////////////////////
     // create NetworkStackHarnessFactory
-    final ReconnectConfig l1ReconnectConfig = this.config.getL1ReconnectProperties();
+    ReconnectConfig l1ReconnectConfig = null;
+    try {
+      l1ReconnectConfig = this.config.getL1ReconnectProperties();
+    } catch (ConfigurationSetupException e) {
+      CONSOLE_LOGGER.error(e.getMessage());
+      System.exit(1);
+    }
+
     final boolean useOOOLayer = l1ReconnectConfig.getReconnectEnabled();
     final NetworkStackHarnessFactory networkStackHarnessFactory;
     if (useOOOLayer) {
@@ -455,7 +463,10 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final int maxConnectRetries = tcProperties.getInt(TCPropertiesConsts.L1_MAX_CONNECT_RETRIES);
     if (socketConnectTimeout < 0) { throw new IllegalArgumentException("invalid socket time value: "
                                                                        + socketConnectTimeout); }
-    ChannelEventListener reconnectionRejectedListener = new ReconnectionRejectedListenerImpl(clusterInternalEventsStage
+    final Stage clusterRejoinEventsStage = stageManager
+        .createStage(ClientConfigurationContext.CLUSTER_REJOIN_EVENTS_STAGE,
+                     new ClusterRejoinEventsHandler(this.dsoCluster), 1, maxSize);
+    ChannelEventListener reconnectionRejectedListener = new ReconnectionRejectedListenerImpl(clusterRejoinEventsStage
         .getSink());
     this.channel = this.dsoClientBuilder.createDSOClientMessageChannel(this.communicationsManager,
                                                                        this.connectionComponents, sessionProvider,
@@ -553,7 +564,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final TCProperties cacheManagerProperties = this.l1Properties.getPropertiesFor("cachemanager");
     final CacheConfig cacheConfig = new CacheConfigImpl(cacheManagerProperties);
     this.tcMemManager = new TCMemoryManagerImpl(cacheConfig.getSleepInterval(), cacheConfig.getLeastCount(),
-                                                cacheConfig.isOnlyOldGenMonitored(), getThreadGroup());
+                                                cacheConfig.isOnlyOldGenMonitored(), getThreadGroup(), false);
     final long timeOut = TCPropertiesImpl.getProperties().getLong(TCPropertiesConsts.LOGGING_LONG_GC_THRESHOLD);
     final LongGCLogger gcLogger = this.dsoClientBuilder.createLongGCLogger(timeOut);
     this.tcMemManager.registerForMemoryEvents(gcLogger);
@@ -738,8 +749,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         .addClassMapping(TCMessageType.ACKNOWLEDGE_TRANSACTION_MESSAGE, AcknowledgeTransactionMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.CLIENT_HANDSHAKE_MESSAGE, ClientHandshakeMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.CLIENT_HANDSHAKE_ACK_MESSAGE, ClientHandshakeAckMessageImpl.class);
-    this.channel.addClassMapping(TCMessageType.CLIENT_HANDSHAKE_REJECTED_MESSAGE,
-                                 ClientHandshakeRejectedMessageImpl.class);
+    this.channel.addClassMapping(TCMessageType.CLIENT_HANDSHAKE_REFUSED_MESSAGE,
+                                 ClientHandshakeRefusedMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.JMX_MESSAGE, JMXMessage.class);
     this.channel.addClassMapping(TCMessageType.JMXREMOTE_MESSAGE_CONNECTION_MESSAGE, JmxRemoteTunnelMessage.class);
     this.channel.addClassMapping(TCMessageType.CLUSTER_MEMBERSHIP_EVENT_MESSAGE, ClusterMembershipMessage.class);
@@ -748,7 +759,8 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                  CompletedTransactionLowWaterMarkMessage.class);
     this.channel.addClassMapping(TCMessageType.NODES_WITH_OBJECTS_MESSAGE, NodesWithObjectsMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.NODES_WITH_KEYS_MESSAGE, NodesWithKeysMessageImpl.class);
-    this.channel.addClassMapping(TCMessageType.NODES_WITH_KEYS_RESPONSE_MESSAGE, NodesWithKeysResponseMessageImpl.class);
+    this.channel
+        .addClassMapping(TCMessageType.NODES_WITH_KEYS_RESPONSE_MESSAGE, NodesWithKeysResponseMessageImpl.class);
     this.channel.addClassMapping(TCMessageType.NODES_WITH_OBJECTS_RESPONSE_MESSAGE,
                                  NodesWithObjectsResponseMessageImpl.class);
     this.channel
@@ -858,7 +870,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                   hydrateSink);
     this.channel.routeMessageType(TCMessageType.BATCH_TRANSACTION_ACK_MESSAGE, batchTxnAckStage.getSink(), hydrateSink);
     this.channel.routeMessageType(TCMessageType.CLIENT_HANDSHAKE_ACK_MESSAGE, pauseStage.getSink(), hydrateSink);
-    this.channel.routeMessageType(TCMessageType.CLIENT_HANDSHAKE_REJECTED_MESSAGE, pauseStage.getSink(), hydrateSink);
+    this.channel.routeMessageType(TCMessageType.CLIENT_HANDSHAKE_REFUSED_MESSAGE, pauseStage.getSink(), hydrateSink);
     this.channel.routeMessageType(TCMessageType.JMXREMOTE_MESSAGE_CONNECTION_MESSAGE, jmxRemoteTunnelStage.getSink(),
                                   hydrateSink);
     this.channel.routeMessageType(TCMessageType.CLUSTER_MEMBERSHIP_EVENT_MESSAGE,

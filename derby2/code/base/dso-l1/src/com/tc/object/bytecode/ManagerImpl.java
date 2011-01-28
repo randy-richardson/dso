@@ -15,9 +15,9 @@ import com.tc.exception.ExceptionWrapper;
 import com.tc.exception.ExceptionWrapperImpl;
 import com.tc.exception.TCNotRunningException;
 import com.tc.lang.StartupHelper;
+import com.tc.lang.StartupHelper.StartupAction;
 import com.tc.lang.TCThreadGroup;
 import com.tc.lang.ThrowableHandler;
-import com.tc.lang.StartupHelper.StartupAction;
 import com.tc.license.LicenseManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -57,9 +57,9 @@ import com.tc.object.metadata.NVPair;
 import com.tc.object.tx.ClientTransactionManager;
 import com.tc.object.tx.UnlockedSharedObjectException;
 import com.tc.operatorevent.TerracottaOperatorEvent;
-import com.tc.operatorevent.TerracottaOperatorEventImpl;
 import com.tc.operatorevent.TerracottaOperatorEvent.EventSubsystem;
 import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
+import com.tc.operatorevent.TerracottaOperatorEventImpl;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.search.SearchQueryResults;
@@ -425,7 +425,11 @@ public class ManagerImpl implements ManagerInternal {
   }
 
   public TCObject lookupOrCreate(final Object obj) {
-    if (obj instanceof Manageable) { return ((Manageable) obj).__tc_managed(); }
+    if (obj instanceof Manageable) {
+      TCObject tco = ((Manageable) obj).__tc_managed();
+      if (tco != null) { return tco; }
+    }
+
     return this.objectManager.lookupOrCreate(obj);
   }
 
@@ -940,11 +944,11 @@ public class ManagerImpl implements ManagerInternal {
   }
 
   public SearchQueryResults executeQuery(String cachename, LinkedList queryStack, boolean includeKeys,
-                                         Set<String> attributeSet, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults) {
+                                         boolean includeValues, Set<String> attributeSet, List<NVPair> sortAttributes,
+                                         List<NVPair> aggregators, int maxResults, int batchSize) {
     waitForAllCurrentTransactionsToComplete();
-    return searchRequestManager.query(cachename, queryStack, includeKeys, attributeSet, sortAttributes, aggregators,
-                                      maxResults);
+    return searchRequestManager.query(cachename, queryStack, includeKeys, includeValues, attributeSet, sortAttributes,
+                                      aggregators, maxResults, batchSize);
   }
 
   public NVPair createNVPair(String name, Object value) {

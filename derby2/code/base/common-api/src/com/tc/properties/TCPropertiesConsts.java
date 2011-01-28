@@ -180,6 +180,8 @@ public interface TCPropertiesConsts {
   public static final String   L2_SEDA_MANAGEDOBJECTREQUESTSTAGE_THREADS                       = "l2.seda.managedobjectrequeststage.threads";
   public static final String   L2_SEDA_STAGE_SINK_CAPACITY                                     = "l2.seda.stage.sink.capacity";
   public static final String   L2_SEDA_EVICTION_PROCESSORSTAGE_SINK_SIZE                       = "l2.seda.evictionprocessorstage.sink.capacity";
+  public static final String   L2_SEDA_SEARCH_THREADS                                          = "l2.seda.search.threads";
+  public static final String   L2_SEDA_QUERY_THREADS                                           = "l2.seda.query.threads";
 
   /*********************************************************************************************************************
    * <code>
@@ -640,6 +642,7 @@ public interface TCPropertiesConsts {
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED                 = "ehcache.storageStrategy.dcv2.localcache.enabled";
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_INCOHERENT_READ_TIMEOUT = "ehcache.storageStrategy.dcv2.localcache.incoherentReadTimeout";
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_PERELEMENT_TTI_TTL_ENABLED         = "ehcache.storageStrategy.dcv2.perElementTTITTL.enabled";
+  public static final String   EHCACHE_STORAGESTRATEGY_DCV2_EVICT_UNEXPIRED_ENTRIES_ENABLED    = "ehcache.storageStrategy.dcv2.evictUnexpiredEntries.enabled";
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_PERIODICEVICTION_ENABLED           = "ehcache.storageStrategy.dcv2.periodicEviction.enabled";
   public static final String   EHCACHE_STORAGESTRATEGY_DCV2_PINSEGMENTS_ENABLED                = "ehcache.storageStrategy.dcv2.pinSegments.enabled";
   /*********************************************************************************************************************
@@ -857,6 +860,8 @@ public interface TCPropertiesConsts {
   public static final String   L2_OFFHEAP_OBJECT_CACHE_INITIAL_DATASIZE                        = "l2.offHeapCache.object.initialDataSize";
   public static final String   L2_OFFHEAP_OBJECT_CACHE_TABLESIZE                               = "l2.offHeapCache.object.tableSize";
   public static final String   L2_OFFHEAP_OBJECT_CACHE_CONCURRENCY                             = "l2.offHeapCache.object.concurrency";
+  public static final String   L2_OFFHEAP_TEMP_SWAP_FLUSH_TO_DISK_COUNT                        = "l2.offHeapCache.temp.swap.flush.to.disk.count";
+  public static final String   L2_OFFHEAP_TEMP_SWAP_THROTTLE_SIZE                              = "l2.offHeapCache.temp.swap.throttle.size";
 
   // for tests
   public static final String   L2_OFFHEAP_SKIP_JVMARG_CHECK                                    = "l2.offHeapCache.skip.jvmarg.check";

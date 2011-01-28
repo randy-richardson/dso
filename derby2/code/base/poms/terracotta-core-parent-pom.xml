@@ -21,22 +21,6 @@
         dependencyManagement section of the parent POM.
     -->
     <dependency>
-      <groupId>org.terracotta.modules</groupId>
-      <artifactId>excludes-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.terracotta.modules</groupId>
-      <artifactId>guimodels-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.terracotta.modules</groupId>
-      <artifactId>jdk15-preinst-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.terracotta.modules</groupId>
-      <artifactId>standard-config</artifactId>
-    </dependency>    
-    <dependency>
       <groupId>org.terracotta</groupId>
       <artifactId>tcconfig</artifactId>
     </dependency>
@@ -89,8 +73,8 @@
       <artifactId>jmxremote</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.management</groupId>
-      <artifactId>jmxremote_optional</artifactId>
+      <groupId>org.terracotta</groupId>
+      <artifactId>jmxremote_optional-tc</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.code.guice</groupId>
@@ -139,7 +123,7 @@
       <artifactId>trove</artifactId>
     </dependency>
     <dependency>
-      <groupId>berkeleydb</groupId>
+      <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
     </dependency>
     <dependency>

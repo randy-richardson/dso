@@ -108,7 +108,8 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                                  final ClientStateManager clientStateManger,
                                                  final GCStatsEventPublisher gcEventListener,
                                                  final StatisticsAgentSubSystem statsAgentSubSystem,
-                                                 final DGCSequenceProvider dgcSequenceProvider) {
+                                                 final DGCSequenceProvider dgcSequenceProvider,
+                                                 final ServerTransactionManager serverTransactionManager) {
     final MarkAndSweepGarbageCollector gc = new MarkAndSweepGarbageCollector(objectManagerConfig, objectMgr,
                                                                              stateManager, gcPublisher,
                                                                              dgcSequenceProvider);
@@ -144,7 +145,7 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
     return new NullL2IndexStateManager();
   }
 
-  public SearchRequestManager createSearchRequestManager(DSOChannelManager channelManager, Sink searchEventSink) {
+  public SearchRequestManager createSearchRequestManager(DSOChannelManager channelManager, Sink managedObjectRequestSink) {
     return new NullSearchRequestManager();
   }
 
@@ -169,8 +170,7 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                            managedObjectRequestSink);
   }
 
-  public ServerConfigurationContext createServerConfigurationContext(
-                                                                     StageManager stageManager,
+  public ServerConfigurationContext createServerConfigurationContext(StageManager stageManager,
                                                                      ObjectManager objMgr,
                                                                      ObjectRequestManager objRequestMgr,
                                                                      ServerMapRequestManager serverTCMapRequestManager,

@@ -20,11 +20,13 @@ import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.metadata.MetaDataDescriptorImpl;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
+import com.tc.object.metadata.NVPair;
 import com.tc.object.metadata.ValueType;
 import com.tc.util.Assert;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
 
 import junit.framework.TestCase;
 
@@ -82,9 +84,11 @@ public class DNAImplTest extends TestCase {
     final PhysicalAction action5 = new PhysicalAction("class.field4", new ObjectID(5), true);
 
     MetaDataDescriptorInternal md = new MetaDataDescriptorImpl("cat1");
+    md.setObjectID(id);
     md.add("name1", 42);
 
     MetaDataDescriptorInternal md2 = new MetaDataDescriptorImpl("cat2");
+    md2.setObjectID(id);
     md2.add("name2", true);
     md2.add("name3", "sdfsdfsdf".getBytes());
     md2.add("name4", (byte) 4);
@@ -97,9 +101,12 @@ public class DNAImplTest extends TestCase {
     md2.add("steve", (short) 53);
     md2.add("tim", "rulez");
     md2.add("e-noom", TestEnum.FOO);
+    md2.add("null value", (Object) null);
+    md2.add("oid", new ObjectID(23));
+    md2.add("sql date", new java.sql.Date(4345));
 
     // make sure we cover all the types (if you add a new type and this is going off then add it to this test) :-)
-    assertEquals(ValueType.values().length, md2.getMetaDatas().size());
+    assertEquals(ValueType.values().length, md2.numberOfNvPairs());
 
     if (parentID) {
       dnaWriter.setParentObjectID(pid);
@@ -201,9 +208,95 @@ public class DNAImplTest extends TestCase {
     }
   }
 
+  public void testMetaDataFoldNotFirstTxn() throws Exception {
+    TCByteBufferOutputStream out = new TCByteBufferOutputStream();
+
+    final ObjectID id = new ObjectID(1);
+    final String type = getClass().getName();
+
+    final ObjectStringSerializer serializer = new ObjectStringSerializer();
+    final ClassProvider classProvider = new MockClassProvider();
+    final DNAEncoding encoding = new ApplicatorDNAEncodingImpl(classProvider);
+    final DNAWriterInternal dnaWriter = createDNAWriter(out, id, type, serializer, encoding, false);
+    final PhysicalAction action1 = new PhysicalAction("class.field1", new Integer(1), false);
+
+    dnaWriter.addPhysicalAction(action1.getFieldName(), action1.getObject());
+    assertTrue(dnaWriter.isContiguous());
+    dnaWriter.markSectionEnd();
+
+    // simulate folding with a meta data (but without having a meta data in the first txn)
+    DNAWriterInternal appender = (DNAWriterInternal) dnaWriter.createAppender();
+    assertTrue(dnaWriter.isContiguous());
+    appender.addPhysicalAction(action1.getFieldName(), action1.getObject());
+    MetaDataDescriptorInternal md = new MetaDataDescriptorImpl("cat");
+    md.setObjectID(id);
+    md.add("foo", "bar");
+    appender.addMetaData(md);
+    appender.markSectionEnd();
+
+    // collapse this folded DNA into contiguous buffer
+    dnaWriter.finalizeHeader();
+    out = new TCByteBufferOutputStream();
+    dnaWriter.copyTo(out);
+
+    final TCByteBufferInputStream in = new TCByteBufferInputStream(out.toArray());
+    this.dna = createDNAImpl(serializer);
+    assertSame(this.dna, this.dna.deserializeFrom(in));
+    assertEquals(0, in.available());
+    final DNACursor cursor = this.dna.getCursor();
+    int count = 0;
+    while (cursor.next(encoding)) {
+      count++;
+      switch (count) {
+        case 1:
+          compareAction(action1, cursor.getPhysicalAction());
+          break;
+        case 2:
+          compareAction(action1, cursor.getPhysicalAction());
+          break;
+        default:
+          fail("count got to " + count);
+      }
+    }
+
+    if (count != 2) { throw new AssertionError("not enough action seen: " + count); }
+
+    assertEquals(id, this.dna.getObjectID());
+
+    assertEquals(ObjectID.NULL_ID, this.dna.getParentObjectID());
+
+    Assert.assertEquals(false, this.dna.isDelta());
+
+    // verify meta data
+    count = 0;
+    MetaDataReader metaReader = dna.getMetaDataReader();
+    for (MetaDataDescriptorInternal meta : metaReader) {
+      count++;
+      switch (count) {
+        case 1: {
+          verifyMetaData(md, meta);
+          break;
+        }
+        default: {
+          throw new AssertionError(count);
+        }
+      }
+    }
+
+    assertEquals(1, count);
+
+  }
+
   private void verifyMetaData(MetaDataDescriptorInternal expect, MetaDataDescriptorInternal actual) {
     assertEquals(expect.getCategory(), actual.getCategory());
-    assertEquals(expect.getMetaDatas(), actual.getMetaDatas());
+    assertEquals(expect.numberOfNvPairs(), actual.numberOfNvPairs());
+
+    Iterator<NVPair> i1 = expect.getMetaDatas();
+    Iterator<NVPair> i2 = actual.getMetaDatas();
+    while (i1.hasNext()) {
+      assertEquals(i1.next(), i2.next());
+    }
+    assertFalse(i2.hasNext());
   }
 
   protected DNAImpl createDNAImpl(final ObjectStringSerializer serializer) {

@@ -35,10 +35,6 @@ public class ClusterInternalEventsHandler extends AbstractEventHandler {
         this.dsoCluster.fireThisNodeJoined(context.getEventNodeID(), context.getOtherNodeIDs());
         break;
 
-      case THIS_NODE_LEFT:
-        this.dsoCluster.fireThisNodeLeft();
-        break;
-
       case NODE_JOIN:
         this.dsoCluster.fireNodeJoined(context.getEventNodeID());
         break;

@@ -5,6 +5,7 @@ package com.tc.object.metadata;
 
 import com.tc.io.TCByteBufferInput;
 import com.tc.io.TCByteBufferOutput;
+import com.tc.object.ObjectID;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -529,6 +530,44 @@ public abstract class AbstractNVPair implements NVPair {
     }
   }
 
+  public static class SqlDateNVPair extends AbstractNVPair {
+    private final java.sql.Date value;
+
+    public SqlDateNVPair(String name, java.sql.Date value) {
+      super(name);
+      this.value = value;
+    }
+
+    public java.sql.Date getValue() {
+      return value;
+    }
+
+    public Object getObjectValue() {
+      return value;
+    }
+
+    @Override
+    public String valueAsString() {
+      return value.toString();
+    }
+
+    @Override
+    public ValueType getType() {
+      return ValueType.SQL_DATE;
+    }
+
+    @Override
+    boolean basicEquals(NVPair obj) {
+      if (obj instanceof SqlDateNVPair) { return value.equals(((SqlDateNVPair) obj).value); }
+      return false;
+    }
+
+    @Override
+    public NVPair cloneWithNewName(String newName) {
+      return new SqlDateNVPair(newName, value);
+    }
+  }
+
   public static class EnumNVPair extends AbstractNVPair {
 
     private final String className;
@@ -588,7 +627,110 @@ public abstract class AbstractNVPair implements NVPair {
 
   }
 
+  public static class NullNVPair extends AbstractNVPair {
+
+    public NullNVPair(String name) {
+      super(name);
+    }
+
+    public Object getObjectValue() {
+      return null;
+    }
+
+    @Override
+    public NVPair cloneWithNewName(String newName) {
+      return new NullNVPair(newName);
+    }
+
+    @Override
+    boolean basicEquals(NVPair other) {
+      return other instanceof NullNVPair;
+    }
+
+    @Override
+    public String valueAsString() {
+      // XXX: is this a good return value?
+      return "null";
+    }
+
+    @Override
+    public ValueType getType() {
+      return ValueType.NULL;
+    }
+  }
+
+  public static class ObjectIdNVPair extends AbstractNVPair {
+
+    private final ObjectID oid;
+
+    public ObjectIdNVPair(String name, ObjectID oid) {
+      super(name);
+      this.oid = oid;
+    }
+
+    public Object getObjectValue() {
+      return oid;
+    }
+
+    public ObjectID getValue() {
+      return oid;
+    }
+
+    @Override
+    public NVPair cloneWithNewName(String newName) {
+      return new ObjectIdNVPair(newName, oid);
+    }
+
+    @Override
+    boolean basicEquals(NVPair other) {
+      if (other instanceof ObjectIdNVPair) { return oid.equals(((ObjectIdNVPair) other).oid); }
+      return false;
+    }
+
+    @Override
+    public String valueAsString() {
+      return oid.toString();
+    }
+
+    @Override
+    public ValueType getType() {
+      return ValueType.OBJECT_ID;
+    }
+  }
+
+  public static NVPair createNVPair(String name, Object value, ValueType type) {
+    if (ValueType.ENUM.equals(type)) { return enumPairFromString(name, (String) value); }
+    if (ValueType.CHAR.equals(type)) { return new AbstractNVPair.CharNVPair(name, (char) ((Integer) value).intValue()); }
+
+    return AbstractNVPair.createNVPair(name, value);
+  }
+
+  public static EnumNVPair enumPairFromString(String name, String enumString) {
+    String className = enumString.substring(0, enumString.length() - 10);
+    int ordinal = Integer.parseInt(enumString.substring(enumString.length() - 10));
+    return new EnumNVPair(name, className, ordinal);
+  }
+
+  public static String enumStorageString(EnumNVPair enumPair) {
+    return enumStorageString(enumPair.getClassName(), enumPair.getOrdinal());
+  }
+
+  private static String enumStorageString(String className, int ordinal) {
+    StringBuilder sb = new StringBuilder(className.length() + 10);
+    sb.append(className);
+
+    String ordinalString = String.valueOf(ordinal);
+    for (int i = ordinalString.length(); i < 10; i++) {
+      sb.append('0');
+    }
+
+    sb.append(ordinalString);
+    return sb.toString();
+  }
+
   public static NVPair createNVPair(String attributeName, Object value) {
+    if (value == null) { return new NullNVPair(attributeName); }
+
     if (value instanceof Byte) {
       return new ByteNVPair(attributeName, (Byte) value);
     } else if (value instanceof Boolean) {
@@ -609,10 +751,15 @@ public abstract class AbstractNVPair implements NVPair {
       return new StringNVPair(attributeName, (String) value);
     } else if (value instanceof byte[]) {
       return new ByteArrayNVPair(attributeName, (byte[]) value);
+    } else if (value instanceof java.sql.Date) {
+      // this one must come before regular java.util.Date
+      return new SqlDateNVPair(attributeName, (java.sql.Date) value);
     } else if (value instanceof Date) {
       return new DateNVPair(attributeName, (Date) value);
+    } else if (value instanceof ObjectID) {
+      return new ObjectIdNVPair(attributeName, (ObjectID) value);
     } else if (value instanceof Enum) { return new EnumNVPair(attributeName, (Enum) value); }
 
-    throw new IllegalArgumentException("Unsupported type: " + ((value == null) ? "(null)" : value.getClass().getName()));
+    throw new IllegalArgumentException("Unsupported type: " + value.getClass().getName());
   }
 }

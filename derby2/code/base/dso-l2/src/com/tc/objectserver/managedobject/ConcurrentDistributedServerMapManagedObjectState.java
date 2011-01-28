@@ -5,11 +5,12 @@ package com.tc.objectserver.managedobject;
 
 import com.tc.object.ObjectID;
 import com.tc.object.SerializationUtil;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
 import com.tc.object.dna.api.PhysicalAction;
-import com.tc.object.dna.api.DNA.DNAType;
+import com.tc.object.dna.impl.UTF8ByteDataHolder;
 import com.tc.objectserver.api.EvictableMap;
 
 import java.io.IOException;
@@ -20,10 +21,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.Map.Entry;
 
 public class ConcurrentDistributedServerMapManagedObjectState extends ConcurrentDistributedMapManagedObjectState
     implements EvictableMap {
@@ -33,6 +34,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
   public static final String TARGET_MAX_IN_MEMORY_COUNT_FIELDNAME = "targetMaxInMemoryCount";
   public static final String TARGET_MAX_TOTAL_COUNT_FIELDNAME     = "targetMaxTotalCount";
   public static final String INVALIDATE_ON_CHANGE                 = "invalidateOnChange";
+  public static final String CACHE_NAME_FIELDNAME                 = "cacheName";
 
   enum EvictionStatus {
     NOT_INITIATED, INITIATED, SAMPLED
@@ -46,6 +48,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
   private int            maxTTLSeconds;
   private int            targetMaxInMemoryCount;
   private int            targetMaxTotalCount;
+  private String         cacheName;
 
   protected ConcurrentDistributedServerMapManagedObjectState(final ObjectInput in) throws IOException {
     super(in);
@@ -54,6 +57,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
     this.targetMaxInMemoryCount = in.readInt();
     this.targetMaxTotalCount = in.readInt();
     this.invalidateOnChange = in.readBoolean();
+    this.cacheName = in.readUTF();
   }
 
   protected ConcurrentDistributedServerMapManagedObjectState(final long classId, final Map map) {
@@ -89,6 +93,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
     writer.addPhysicalAction(TARGET_MAX_IN_MEMORY_COUNT_FIELDNAME, Integer.valueOf(this.targetMaxInMemoryCount));
     writer.addPhysicalAction(TARGET_MAX_TOTAL_COUNT_FIELDNAME, Integer.valueOf(this.targetMaxTotalCount));
     writer.addPhysicalAction(INVALIDATE_ON_CHANGE, Boolean.valueOf(this.invalidateOnChange));
+    writer.addPhysicalAction(CACHE_NAME_FIELDNAME, cacheName);
   }
 
   @Override
@@ -117,6 +122,16 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
           this.targetMaxTotalCount = ((Integer) physicalAction.getObject());
         } else if (fieldName.equals(INVALIDATE_ON_CHANGE)) {
           this.invalidateOnChange = ((Boolean) physicalAction.getObject());
+        } else if (fieldName.equals(CACHE_NAME_FIELDNAME)) {
+          Object value = physicalAction.getObject();
+          String name;
+          if (value instanceof UTF8ByteDataHolder) {
+            name = ((UTF8ByteDataHolder) value).asString();
+          } else {
+            name = (String) value;
+          }
+
+          this.cacheName = name;
         } else {
           throw new AssertionError("unexpected field name: " + fieldName);
         }
@@ -140,9 +155,11 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
   protected void applyMethod(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final int method,
                              final Object[] params) {
     if (method == SerializationUtil.REMOVE_IF_VALUE_EQUAL) {
-      // This is currently used by evictor, in future we may support all of ConcurrentMap operations at the server
-      // directly
-      applyRemoveIfValueEqual(params);
+      applyRemoveIfValueEqual(applyInfo, params);
+    } else if (method == SerializationUtil.PUT_IF_ABSENT) {
+      applyPutIfAbsent(applyInfo, params);
+    } else if (method == SerializationUtil.REPLACE_IF_VALUE_EQUAL) {
+      applyReplaceIfValueEqual(applyInfo, params);
     } else if (method == SerializationUtil.EVICTION_COMPLETED) {
       evictionCompleted();
     } else if (method != SerializationUtil.CLEAR_LOCAL_CACHE) {
@@ -164,12 +181,43 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
     }
   }
 
-  private void applyRemoveIfValueEqual(final Object[] params) {
+  private void applyRemoveIfValueEqual(ApplyTransactionInfo applyInfo, final Object[] params) {
     final Object key = getKey(params);
     final Object value = getValue(params);
     final Object valueInMap = this.references.get(key);
     if (value.equals(valueInMap)) {
       this.references.remove(key);
+      if (valueInMap instanceof ObjectID) {
+        invalidateIfNeeded(applyInfo, (ObjectID) valueInMap);
+      }
+    }
+  }
+
+  private void applyReplaceIfValueEqual(ApplyTransactionInfo applyInfo, Object[] params) {
+    final Object key = params[0];
+    final Object current = params[1];
+    final Object newValue = params[2];
+    final Object valueInMap = this.references.get(key);
+    if (current.equals(valueInMap)) {
+      this.references.put(key, newValue);
+      if (valueInMap instanceof ObjectID) {
+        invalidateIfNeeded(applyInfo, (ObjectID) valueInMap);
+      }
+    } else if (newValue instanceof ObjectID) {
+      // Invalidate the newValue so that the VM that initiated this call can remove it from the local cache.
+      invalidateIfNeeded(applyInfo, (ObjectID) newValue);
+    }
+  }
+
+  private void applyPutIfAbsent(ApplyTransactionInfo applyInfo, Object[] params) {
+    final Object key = getKey(params);
+    final Object value = getValue(params);
+    final Object valueInMap = this.references.get(key);
+    if (valueInMap == null) {
+      this.references.put(key, value);
+    } else if (value instanceof ObjectID) {
+      // Invalidate the value so that the VM that initiated this call can remove it from the local cache.
+      invalidateIfNeeded(applyInfo, (ObjectID) value);
     }
   }
 
@@ -181,6 +229,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
     out.writeInt(this.targetMaxInMemoryCount);
     out.writeInt(this.targetMaxTotalCount);
     out.writeBoolean(this.invalidateOnChange);
+    out.writeUTF(this.cacheName);
   }
 
   public Object getValueForKey(final Object portableKey) {
@@ -246,13 +295,14 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
     final int chance = count > size ? 100 : Math.max(10, (count / size) * 100);
     for (final Iterator i = this.references.entrySet().iterator(); samples.size() < count && i.hasNext();) {
       final Entry e = (Entry) i.next();
-      if (ignoreList.contains(e.getValue())) {
+      Object value = e.getValue();
+      if (ignoreList.contains(value)) {
         continue;
       }
       if (r.nextInt(100) < chance) {
-        samples.put(e.getKey(), e.getValue());
+        samples.put(e.getKey(), value);
       } else {
-        ignored.put(e.getKey(), e.getValue());
+        ignored.put(e.getKey(), value);
       }
     }
     if (samples.size() < count) {
@@ -262,5 +312,9 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
       }
     }
     return samples;
+  }
+
+  public String getCacheName() {
+    return cacheName;
   }
 }

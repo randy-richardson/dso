@@ -10,6 +10,7 @@ import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 import com.tc.search.IndexQueryResult;
 import com.tc.search.SearchQueryResults;
+import com.tc.search.aggregator.Aggregator;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -22,9 +23,9 @@ import java.util.Set;
  */
 public class NullRemoteSearchRequestManager implements RemoteSearchRequestManager {
 
-  public SearchQueryResults query(String cachename, LinkedList queryStack, boolean includeKeys,
+  public SearchQueryResults query(String cachename, LinkedList queryStack, boolean includeKeys, boolean includeValues,
                                   Set<String> attributeSet, List<NVPair> sortAttributeMap, List<NVPair> aggregators,
-                                  int maxResults) {
+                                  int maxResults, int batchSize) {
     return null;
   }
 
@@ -46,7 +47,7 @@ public class NullRemoteSearchRequestManager implements RemoteSearchRequestManage
 
   public void addResponseForQuery(final SessionID sessionID, final SearchRequestID requestID,
                                   final GroupID groupIDFrom, final List<IndexQueryResult> queryResults,
-                                  final List<NVPair> aggregatorResults, final NodeID nodeID) {
+                                  final List<Aggregator> aggregators, final NodeID nodeID) {
     //
   }
 

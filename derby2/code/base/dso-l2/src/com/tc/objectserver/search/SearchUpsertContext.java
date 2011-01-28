@@ -3,8 +3,8 @@
  */
 package com.tc.objectserver.search;
 
+import com.tc.object.ObjectID;
 import com.tc.object.metadata.NVPair;
-import com.tc.object.tx.ServerTransactionID;
 import com.tc.objectserver.metadata.MetaDataProcessingContext;
 
 import java.util.List;
@@ -16,25 +16,18 @@ import java.util.List;
  */
 public class SearchUpsertContext extends BaseSearchEventContext {
 
-  private final String       name;
   private final List<NVPair> attributes;
   private final Object       cacheKey;
+  private final Object       cacheValue;
+  private final boolean      putIfAbsent;
 
-  public SearchUpsertContext(ServerTransactionID transactionID, String name, Object cacheKey, List<NVPair> attributes,
-                             MetaDataProcessingContext metaDataContext) {
-    super(transactionID, metaDataContext);
-    this.name = name;
+  public SearchUpsertContext(ObjectID cdsmOid, String name, Object cacheKey, Object cacheValue,
+                             List<NVPair> attributes, MetaDataProcessingContext metaDataContext, boolean putIfAbsent) {
+    super(cdsmOid, name, metaDataContext);
     this.cacheKey = cacheKey;
+    this.cacheValue = cacheValue;
     this.attributes = attributes;
-  }
-
-  /**
-   * Name of index.
-   * 
-   * @return String name
-   */
-  public String getName() {
-    return name;
+    this.putIfAbsent = putIfAbsent;
   }
 
   /**
@@ -45,10 +38,21 @@ public class SearchUpsertContext extends BaseSearchEventContext {
   }
 
   /**
+   * Value for cache entry
+   */
+  public Object getCacheValue() {
+    return cacheValue;
+  }
+
+  /**
    * Return List of attributes-value associated with the key.
    */
   public List<NVPair> getAttributes() {
     return attributes;
+  }
+
+  public boolean isPutIfAbsent() {
+    return putIfAbsent;
   }
 
 }

@@ -7,6 +7,7 @@ import com.tc.io.TCByteBufferInput;
 import com.tc.io.TCByteBufferInputStream;
 import com.tc.io.TCByteBufferOutput;
 import com.tc.io.TCSerializable;
+import com.tc.object.ObjectID;
 import com.tc.object.metadata.AbstractNVPair.EnumNVPair;
 import com.tc.util.ClassUtils;
 
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -29,38 +31,57 @@ public class MetaDataDescriptorImpl implements TCSerializable, MetaDataDescripto
 
   private final String                        category;
   private final List<NVPair>                  metaDatas;
+  private ObjectID                            oid;
 
   public MetaDataDescriptorImpl(String category) {
-    this(category, new ArrayList<NVPair>());
+    this(category, new ArrayList<NVPair>(), ObjectID.NULL_ID);
   }
 
-  private MetaDataDescriptorImpl(String category, List<NVPair> metaDatas) {
+  private MetaDataDescriptorImpl(String category, List<NVPair> metaDatas, ObjectID oid) {
     this.category = category;
     this.metaDatas = metaDatas;
+    this.oid = oid;
   }
 
-  public List<NVPair> getMetaDatas() {
-    return metaDatas;
+  public Iterator<NVPair> getMetaDatas() {
+    return metaDatas.iterator();
+  }
+
+  public int numberOfNvPairs() {
+    return metaDatas.size();
   }
 
   public String getCategory() {
     return this.category;
   }
 
+  public ObjectID getObjectId() {
+    return oid;
+  }
+
+  public void setObjectID(ObjectID id) {
+    this.oid = id;
+  }
+
   public Object deserializeFrom(TCByteBufferInput in) throws IOException {
     final String cat = in.readString();
+    final ObjectID id = new ObjectID(in.readLong());
+
     final int size = in.readInt();
     List<NVPair> data = new ArrayList<NVPair>(size);
-
     for (int i = 0; i < size; i++) {
       data.add(AbstractNVPair.deserializeInstance(in));
     }
 
-    return new MetaDataDescriptorImpl(cat, data);
+    return new MetaDataDescriptorImpl(cat, data, id);
   }
 
   public void serializeTo(TCByteBufferOutput out) {
     out.writeString(category);
+
+    if (oid.isNull()) { throw new AssertionError("OID never set"); }
+    out.writeLong(oid.toLong());
+
     out.writeInt(metaDatas.size());
     for (NVPair nvpair : metaDatas) {
       nvpair.serializeTo(out);
@@ -124,7 +145,24 @@ public class MetaDataDescriptorImpl implements TCSerializable, MetaDataDescripto
     metaDatas.add(new AbstractNVPair.DateNVPair(name, value));
   }
 
+  public void add(String name, java.sql.Date value) {
+    metaDatas.add(new AbstractNVPair.SqlDateNVPair(name, value));
+  }
+
+  public void add(String name, ObjectID value) {
+    metaDatas.add(new AbstractNVPair.ObjectIdNVPair(name, value));
+  }
+
+  public void addNull(String name) {
+    metaDatas.add(new AbstractNVPair.NullNVPair(name));
+  }
+
   public void add(String name, Object value) {
+    if (value == null) {
+      addNull(name);
+      return;
+    }
+
     Class type = value.getClass();
     ValueType vt = TYPES.get(type);
 
@@ -166,6 +204,10 @@ public class MetaDataDescriptorImpl implements TCSerializable, MetaDataDescripto
           add(name, (Date) value);
           break;
         }
+        case SQL_DATE: {
+          add(name, (java.sql.Date) value);
+          break;
+        }
         case BYTE_ARRAY: {
           add(name, ((byte[]) value));
           break;
@@ -176,6 +218,12 @@ public class MetaDataDescriptorImpl implements TCSerializable, MetaDataDescripto
         }
         case ENUM: {
           throw new AssertionError();
+        }
+        case NULL: {
+          throw new AssertionError();
+        }
+        case OBJECT_ID: {
+          add(name, (ObjectID) value);
         }
       }
 
@@ -189,10 +237,6 @@ public class MetaDataDescriptorImpl implements TCSerializable, MetaDataDescripto
     }
 
     throw new IllegalArgumentException("Unsupported type: " + type);
-  }
-
-  public int size() {
-    return metaDatas.size();
   }
 
   private static final Map<Class, ValueType> TYPES;
@@ -209,7 +253,9 @@ public class MetaDataDescriptorImpl implements TCSerializable, MetaDataDescripto
     map.put(Long.class, ValueType.LONG);
     map.put(String.class, ValueType.STRING);
     map.put(Date.class, ValueType.DATE);
+    map.put(java.sql.Date.class, ValueType.SQL_DATE);
     map.put(byte[].class, ValueType.BYTE_ARRAY);
+    map.put(ObjectID.class, ValueType.OBJECT_ID);
 
     TYPES = map;
   }

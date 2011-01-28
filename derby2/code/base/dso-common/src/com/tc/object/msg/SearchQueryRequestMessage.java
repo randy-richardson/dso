@@ -4,8 +4,8 @@
 package com.tc.object.msg;
 
 import com.tc.async.api.MultiThreadedEventContext;
+import com.tc.net.ClientID;
 import com.tc.net.GroupID;
-import com.tc.net.NodeID;
 import com.tc.net.protocol.tcm.TCMessage;
 import com.tc.object.SearchRequestID;
 import com.tc.object.metadata.NVPair;
@@ -15,8 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The class represents a query request from the client. the cachename is to identify the index and the query string is
- * our client side query in string form.
+ * The class represents a query request from the client. the cachename is to identify the index
  * 
  * @author Nabib El-Rahman
  */
@@ -25,7 +24,7 @@ public interface SearchQueryRequestMessage extends TCMessage, MultiThreadedEvent
   /**
    * ClientID
    */
-  public NodeID getClientID();
+  public ClientID getClientID();
 
   /**
    * Search Identifier. return SearchRequestID requestID
@@ -45,6 +44,7 @@ public interface SearchQueryRequestMessage extends TCMessage, MultiThreadedEvent
    * @param cacheName
    * @param queryStack
    * @param keys
+   * @param values
    * @param attributeSet
    * @param sortAttributeMap
    * @param aggregators
@@ -52,15 +52,16 @@ public interface SearchQueryRequestMessage extends TCMessage, MultiThreadedEvent
    */
   public void initialSearchRequestMessage(final SearchRequestID searchRequestID, final GroupID groupFrom,
                                           final String cacheName, final LinkedList queryStack, final boolean keys,
-                                          final Set<String> attributeSet, final List<NVPair> sortAttributesMap,
-                                          final List<NVPair> aggregators, int maxResults);
+                                          final boolean values, final Set<String> attributeSet,
+                                          final List<NVPair> sortAttributesMap, final List<NVPair> aggregators,
+                                          int maxResults, int batchSize, boolean prefetchFirstBatch);
 
   /**
    * Name of cache to query against.
    * 
    * @return String string.
    */
-  public String getCachename();
+  public String getCacheName();
 
   /**
    * Query stack to search
@@ -96,8 +97,24 @@ public interface SearchQueryRequestMessage extends TCMessage, MultiThreadedEvent
   public boolean includeKeys();
 
   /**
+   * Result should include values
+   * 
+   * @return boolean
+   */
+  public boolean includeValues();
+
+  /**
    * Return maximum results size. return integer
    */
   public int getMaxResults();
 
+  /**
+   * Return the desired result set batch size
+   */
+  public int getBatchSize();
+
+  /**
+   * Return true if the server should start prefetch for the first batch
+   */
+  public boolean isPrefetchFirstBatch();
 }

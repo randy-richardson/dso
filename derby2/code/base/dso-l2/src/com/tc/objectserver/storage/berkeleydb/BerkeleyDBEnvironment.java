@@ -24,6 +24,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.beans.object.ServerDBBackup;
 import com.tc.management.beans.object.ServerDBBackupMBean;
+import com.tc.objectserver.persistence.api.ManagedObjectStoreStats;
 import com.tc.objectserver.persistence.db.DBException;
 import com.tc.objectserver.persistence.db.DatabaseNotOpenException;
 import com.tc.objectserver.persistence.db.DatabaseOpenException;
@@ -95,8 +96,10 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     this.ecfg.setTransactional(true);
     this.ecfg.setAllowCreate(true);
     this.ecfg.setReadOnly(false);
-    // this.ecfg.setTxnWriteNoSync(!paranoid);
     this.ecfg.setTxnNoSync(!paranoid);
+    // if (!paranoid) {
+    // this.ecfg.setDurability(new Durability(SyncPolicy.NO_SYNC, SyncPolicy.NO_SYNC, ReplicaAckPolicy.NONE));
+    // }
     this.dbcfg = new DatabaseConfig();
     this.dbcfg.setAllowCreate(true);
     this.dbcfg.setTransactional(true);
@@ -108,6 +111,10 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     if (mBean != null) {
       ((ServerDBBackup) mBean).setDbEnvironment(this.getEnvironment(), this.getEnvironmentHome());
     }
+  }
+
+  public void initObjectStoreStats(ManagedObjectStoreStats objectStoreStats) {
+    //
   }
 
   // For tests
@@ -413,7 +420,11 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     if (!OperationStatus.SUCCESS.equals(stat)) throw new TCDatabaseException("Unexpected operation status "
                                                                              + "trying to unset clean flag: " + stat);
     try {
-      tx.commitSync();
+      if (isParanoidMode()) {
+        tx.commitSync();
+      } else {
+        tx.commit();
+      }
     } catch (Exception e) {
       throw new TCDatabaseException(e.getMessage());
     }
