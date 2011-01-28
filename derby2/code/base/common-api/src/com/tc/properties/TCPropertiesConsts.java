@@ -209,7 +209,8 @@ public interface TCPropertiesConsts {
   public static final String   L2_BERKELEYDB_JE_CLEANER_LOOKAHEAD_CACHESIZE                    = "l2.berkeleydb.je.cleaner.lookAheadCacheSize";
   public static final String   L2_BERKELEYDB_JE_CLEANER_MINAGE                                 = "l2.berkeleydb.je.cleaner.minAge";
   public static final String   L2_DERBY_ENABLED                                                = "l2.derby.enabled";
-  public static final String   L2_DERBY_CONNECTION_POOL_SIZE                                   = "l2.derby.connection.pool.size";
+  public static final String   L2_DERBY_CONNECTION_MAX_POOL_SIZE                               = "l2.derby.connection.max.pool.size";
+  public static final String   L2_DERBY_CONNECTION_MIN_POOL_SIZE                               = "l2.derby.connection.min.pool.size";
 
   /*********************************************************************************************************************
    * <code>

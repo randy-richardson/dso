@@ -170,9 +170,10 @@ public class DerbyDBEnvironment implements DBEnvironment {
       cpds.setDriverClass(DRIVER);
       cpds.setJdbcUrl(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME + ";");
       cpds.setAutoCommitOnClose(false);
-      cpds.setMinPoolSize(50);
+      int minPoolSize = TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_DERBY_CONNECTION_MIN_POOL_SIZE);
+      cpds.setMinPoolSize(minPoolSize);
       cpds.setAcquireIncrement(5);
-      int maxPoolSize = TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_DERBY_CONNECTION_POOL_SIZE);
+      int maxPoolSize = TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_DERBY_CONNECTION_MAX_POOL_SIZE);
       cpds.setMaxPoolSize(maxPoolSize);
       // cpds.setConnectionCustomizerClassName(TCDerbyConnectionListener.class.getName());
       cpds.setProperties(derbyProps);

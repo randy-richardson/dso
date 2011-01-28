@@ -615,7 +615,14 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   public void releaseAndCommit(final PersistenceTransaction persistenceTransaction, final ManagedObject object) {
     if (this.config.paranoid()) {
       flushAndCommit(persistenceTransaction, object);
+    } else {
+      // committing the transaction.
+      // Reason: for temp swap
+      // BDB: NullPersistenceTransaction will be passed, hence committing won't make a difference
+      // Derby: DerbyTransactionWrapper will be passed, hence if we don commit, we will be leaking Connection.
+      persistenceTransaction.commit();
     }
+
     basicRelease(object);
     postRelease();
 
@@ -645,6 +652,12 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
                                   final Collection<ManagedObject> managedObjects) {
     if (this.config.paranoid()) {
       flushAllAndCommit(persistenceTransaction, managedObjects);
+    } else {
+      // committing the transaction.
+      // Reason: for temp swap
+      // BDB: NullPersistenceTransaction will be passed, hence committing won't make a difference
+      // Derby: DerbyTransactionWrapper will be passed, hence if we don commit, we will be leaking Connection.
+      persistenceTransaction.commit();
     }
     for (final ManagedObject managedObject : managedObjects) {
       basicRelease(managedObject);
