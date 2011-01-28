@@ -29,6 +29,7 @@ import com.tc.objectserver.persistence.db.DBException;
 import com.tc.objectserver.persistence.db.DatabaseNotOpenException;
 import com.tc.objectserver.persistence.db.DatabaseOpenException;
 import com.tc.objectserver.persistence.db.TCDatabaseException;
+import com.tc.objectserver.persistence.inmemory.NullPersistenceTransactionProvider;
 import com.tc.objectserver.storage.api.DBEnvironment;
 import com.tc.objectserver.storage.api.OffheapStats;
 import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
@@ -614,5 +615,9 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
 
   public OffheapStats getOffheapStats() {
     return OffheapStats.NULL_OFFHEAP_STATS;
+  }
+
+  public PersistenceTransactionProvider getTempSwapPersistenceTransactionProvider() {
+    return new NullPersistenceTransactionProvider();
   }
 }

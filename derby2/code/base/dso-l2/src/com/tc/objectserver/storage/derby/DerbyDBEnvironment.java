@@ -379,6 +379,10 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return new DerbyPersistenceTransactionProvider(this);
   }
 
+  public PersistenceTransactionProvider getTempSwapPersistenceTransactionProvider() {
+    return getPersistenceTransactionProvider();
+  }
+
   public boolean isParanoidMode() {
     return isParanoid;
   }
