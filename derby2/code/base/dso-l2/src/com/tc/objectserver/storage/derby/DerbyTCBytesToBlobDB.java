@@ -153,7 +153,7 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
         throw new DBException(e);
       }
 
-      if (hasNext) {
+      if (!hasNext) {
         finished = true;
       }
       return hasNext;
