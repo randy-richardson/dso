@@ -25,12 +25,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMapsDatabase {
-  private static final String     OBJECT_ID = "objectid";
-  private final BackingMapFactory factory   = new BackingMapFactory() {
-                                              public Map createBackingMapFor(final ObjectID mapID) {
-                                                return new HashMap(0);
-                                              }
-                                            };
+  private static final String     OBJECT_ID  = "objectid";
+  private static final String     indexName1 = "indexMapObjectId1";
+  private static final String     indexName2 = "indexMapObjectId2";
+
+  private final BackingMapFactory factory    = new BackingMapFactory() {
+                                               public Map createBackingMapFor(final ObjectID mapID) {
+                                                 return new HashMap(0);
+                                               }
+                                             };
 
   public DerbyTCMapsDatabase(String tableName, Connection connection, QueryProvider queryProvider)
       throws TCDatabaseException {
@@ -43,6 +46,18 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
 
     Statement statement = connection.createStatement();
     String query = queryProvider.createMapsDBTable(tableName, OBJECT_ID, KEY, VALUE);
+    statement.execute(query);
+    statement.close();
+    connection.commit();
+
+    statement = connection.createStatement();
+    query = queryProvider.createMapsDBIndex1(indexName1, tableName, OBJECT_ID, KEY, VALUE);
+    statement.execute(query);
+    statement.close();
+    connection.commit();
+
+    statement = connection.createStatement();
+    query = queryProvider.createMapsDBIndex2(indexName2, tableName, OBJECT_ID, KEY, VALUE);
     statement.execute(query);
     statement.close();
     connection.commit();

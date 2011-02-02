@@ -21,4 +21,10 @@ public interface QueryProvider {
   String createRootDBTable(String tableName, String key, String value);
 
   String createStringToStringDBTable(String tableName, String key, String value);
+
+  String createMapsDBIndex1(String indexName, String tableName, String objectId, String key, String value);
+
+  String createMapsDBIndex2(String indexName, String tableName, String objectId, String key, String value);
+
+  String createObjectDBIndex(String indexName, String tableName, String key);
 }

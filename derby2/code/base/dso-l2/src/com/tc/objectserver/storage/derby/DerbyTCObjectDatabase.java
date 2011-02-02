@@ -21,8 +21,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TCObjectDatabase {
-  private static final TCLogger logger = TCLogging.getLogger(DerbyTCObjectDatabase.class);
+  private static final TCLogger logger    = TCLogging.getLogger(DerbyTCObjectDatabase.class);
   private final SampledCounter  l2FaultFromDisk;
+  private static final String   indexName = "objectDBIndex";
 
   public DerbyTCObjectDatabase(String tableName, Connection connection, QueryProvider queryProvider,
                                SampledCounter l2FaultFromDisk) throws TCDatabaseException {
@@ -36,6 +37,12 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
 
     Statement statement = connection.createStatement();
     String query = queryProvider.createObjectDBTable(tableName, KEY, VALUE);
+    statement.execute(query);
+    statement.close();
+    connection.commit();
+
+    statement = connection.createStatement();
+    query = queryProvider.createObjectDBIndex(indexName, tableName, KEY);
     statement.execute(query);
     statement.close();
     connection.commit();
