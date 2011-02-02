@@ -35,7 +35,13 @@ public abstract class AbstractDerbyTCDatabase {
   }
 
   protected Connection pt2nt(PersistenceTransaction tx) {
-    return (tx instanceof DerbyTransactionWrapper) ? ((DerbyTransactionWrapper) tx).getTransaction() : null;
+    Object o = (tx != null) ? tx.getTransaction() : null;
+    if (o != null) {
+      if (!(o instanceof Connection)) { throw new AssertionError("Invalid transaction from " + tx + ": " + o); }
+      return (Connection) o;
+    } else {
+      return null;
+    }
   }
 
   protected void closeResultSet(ResultSet rs) {
