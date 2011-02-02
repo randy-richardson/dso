@@ -17,12 +17,14 @@ import com.tctest.TransparentTestIface;
 
 public class ObjectDataTest extends ActivePassiveTransparentTestBase implements TestConfigurator {
 
-  private int clientCount = 2;
+  private final int clientCount = 2;
 
+  @Override
   protected Class<ObjectDataTestApp> getApplicationClass() {
     return ObjectDataTestApp.class;
   }
 
+  @Override
   public void doSetUp(TransparentTestIface t) throws Exception {
     t.getTransparentAppConfig().setClientCount(clientCount).setIntensity(1);
     t.initializeTestRunner();
@@ -30,22 +32,24 @@ public class ObjectDataTest extends ActivePassiveTransparentTestBase implements 
 
   @Override
   protected long getRestartInterval(RestartTestHelper helper) {
-    if(Os.isSolaris() || Memory.isMemoryLow()) {
+    if (Os.isSolaris() || Memory.isMemoryLow()) {
       return super.getRestartInterval(helper) * 3;
     } else {
       return super.getRestartInterval(helper);
     }
   }
-  
+
+  @Override
   protected boolean canRunCrash() {
     return true;
   }
 
+  @Override
   public void setupActivePassiveTest(ActivePassiveTestSetupManager setupManager) {
     setupManager.setServerCount(2);
     setupManager.setServerCrashMode(MultipleServersCrashMode.CONTINUOUS_ACTIVE_CRASH);
     setupManager.setServerCrashWaitTimeInSec(30);
     setupManager.setServerShareDataMode(MultipleServersSharedDataMode.NETWORK);
-    setupManager.setServerPersistenceMode(MultipleServersPersistenceMode.TEMPORARY_SWAP_ONLY);
+    setupManager.setServerPersistenceMode(MultipleServersPersistenceMode.PERMANENT_STORE);
   }
 }

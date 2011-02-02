@@ -33,6 +33,7 @@ import com.tc.util.sequence.MutableSequence;
 
 import java.beans.PropertyVetoException;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -73,7 +74,14 @@ public class DerbyDBEnvironment implements DBEnvironment {
     this.l2FaultFromDisk = l2FaultFromDisk;
     FileUtils.forceMkdir(this.envHome);
     logger.warn("Using DERBY DBEnvironment ...");
-    System.err.println("Using DERBY DBEnvironment ...");
+    Properties p = System.getProperties();
+    p.setProperty("derby.system.home", this.envHome.getAbsolutePath());
+    File derbyPropsFile = new File(this.envHome.getAbsoluteFile() + File.separator + "derby.properties");
+    if (!derbyPropsFile.exists()) {
+      FileOutputStream fos = new FileOutputStream(derbyPropsFile);
+      derbyProps.store(fos, "Derby Properties File");
+      logger.info("Derby Properties file created with: " + derbyProps);
+    }
   }
 
   public static boolean tableExists(Connection connection, String table) throws SQLException {
