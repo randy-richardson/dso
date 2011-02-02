@@ -5,8 +5,6 @@ package com.tc.objectserver.storage.derby;
 
 import org.apache.commons.io.FileUtils;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-import com.mchange.v2.c3p0.DataSources;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.beans.object.ServerDBBackupMBean;
@@ -25,13 +23,10 @@ import com.tc.objectserver.storage.api.TCMapsDatabase;
 import com.tc.objectserver.storage.api.TCObjectDatabase;
 import com.tc.objectserver.storage.api.TCRootDatabase;
 import com.tc.objectserver.storage.api.TCStringToStringDatabase;
-import com.tc.properties.TCPropertiesConsts;
-import com.tc.properties.TCPropertiesImpl;
 import com.tc.statistics.StatisticRetrievalAction;
 import com.tc.stats.counter.sampled.SampledCounter;
 import com.tc.util.sequence.MutableSequence;
 
-import java.beans.PropertyVetoException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -55,7 +50,6 @@ public class DerbyDBEnvironment implements DBEnvironment {
   private final QueryProvider   queryProvider = new DerbyQueryProvider();
   private final boolean         isParanoid;
   private final File            envHome;
-  private ComboPooledDataSource cpds;
   private DBEnvironmentStatus   status;
   private DerbyControlDB        controlDB;
   private final SampledCounter  l2FaultFromDisk;
@@ -172,35 +166,16 @@ public class DerbyDBEnvironment implements DBEnvironment {
 
   public void openDatabase() throws TCDatabaseException {
     createDatabase();
-
-    try {
-      cpds = new ComboPooledDataSource();
-      cpds.setDriverClass(DRIVER);
-      cpds.setJdbcUrl(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME + ";");
-      cpds.setAutoCommitOnClose(false);
-      int minPoolSize = TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_DERBY_CONNECTION_MIN_POOL_SIZE);
-      cpds.setMinPoolSize(minPoolSize);
-      cpds.setAcquireIncrement(5);
-      int maxPoolSize = TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_DERBY_CONNECTION_MAX_POOL_SIZE);
-      cpds.setMaxPoolSize(maxPoolSize);
-      // cpds.setConnectionCustomizerClassName(TCDerbyConnectionListener.class.getName());
-      cpds.setProperties(derbyProps);
-    } catch (PropertyVetoException e) {
-      throw new TCDatabaseException(e.getMessage());
-    }
   }
 
   protected Connection createConnection() throws TCDatabaseException {
     try {
-      Connection conn = cpds.getConnection();
-      if (!isParanoid) {
-        conn.setAutoCommit(false);
-      } else {
-        conn.setAutoCommit(true);
-      }
-      return conn;
-    } catch (SQLException sqlE) {
-      throw new TCDatabaseException(sqlE);
+      Connection connection = DriverManager.getConnection(PROTOCOL + envHome.getAbsolutePath() + File.separator
+                                                          + DB_NAME + ";");
+      connection.setAutoCommit(false);
+      return connection;
+    } catch (SQLException e) {
+      throw new TCDatabaseException(e);
     }
   }
 
@@ -279,7 +254,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     tables.put(MAP_DB_NAME, db);
   }
 
-  public synchronized void close() throws TCDatabaseException {
+  public synchronized void close() {
     status = DBEnvironmentStatus.STATUS_CLOSING;
 
     forceClose();
@@ -287,13 +262,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     status = DBEnvironmentStatus.STATUS_CLOSED;
   }
 
-  private void forceClose() throws TCDatabaseException {
-    try {
-      if (cpds == null) return;
-      DataSources.destroy(cpds);
-    } catch (SQLException e) {
-      throw new TCDatabaseException(e);
-    }
+  private void forceClose() {
     try {
       DriverManager.getConnection(PROTOCOL + envHome.getAbsolutePath() + File.separator + DB_NAME + ";logDevice="
                                   + envHome.getAbsolutePath() + ";shutdown=true");
