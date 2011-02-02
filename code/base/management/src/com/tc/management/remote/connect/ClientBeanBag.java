@@ -20,7 +20,6 @@ import javax.management.Notification;
 import javax.management.NotificationFilter;
 import javax.management.NotificationListener;
 import javax.management.ObjectName;
-import javax.management.QueryExp;
 import javax.management.remote.generic.ConnectionClosedException;
 
 public class ClientBeanBag {
@@ -38,7 +37,6 @@ public class ClientBeanBag {
   private final UUID                  uuid;
 
   private String[]                    tunneledDomains;
-  private QueryExp                    queryExp;
 
   private MBeanRegistrationListener   mbeanRegistrationListener;
   private RemoteRegistrationFilter    remoteRegistrationFilter;
@@ -48,9 +46,8 @@ public class ClientBeanBag {
     this.l2MBeanServer = l2MBeanServer;
     this.channel = channel;
     this.uuid = uuid;
-    this.l1Connection = l1Connection;
-
     setTunneledDomains(tunneledDomains);
+    this.l1Connection = l1Connection;
   }
 
   synchronized void unregisterBeans() {
@@ -66,7 +63,6 @@ public class ClientBeanBag {
 
   public synchronized void setTunneledDomains(String[] tunneledDomains) {
     this.tunneledDomains = tunneledDomains;
-    this.queryExp = TerracottaManagement.matchAllTerracottaMBeans(uuid, tunneledDomains);
   }
 
   public UUID getUuid() {
@@ -103,7 +99,8 @@ public class ClientBeanBag {
     }
 
     // now that we're listening we can query and let the bean bag deal with the possible concurrency
-    Set<ObjectName> mBeans = l1Connection.queryNames(null, queryExp);
+    Set<ObjectName> mBeans = l1Connection.queryNames(null, TerracottaManagement
+        .matchAllTerracottaMBeans(uuid, tunneledDomains));
     for (ObjectName objName : mBeans) {
       try {
         registerBean(objName);
@@ -130,73 +127,80 @@ public class ClientBeanBag {
     return false;
   }
 
-  synchronized void registerBean(ObjectName objName) {
-    LOGGER.info("registerBean: " + objName);
-
-    ObjectName modifiedObjName = null;
+  synchronized void registerBean(final ObjectName objName) {
     try {
-      if (queryExp.apply(objName)) {
-        modifiedObjName = TerracottaManagement.addNodeInfo(objName, channel.getRemoteAddress());
+      ObjectName modifiedObjName = TerracottaManagement.addNodeInfo(objName, channel.getRemoteAddress());
+
+      if (!beanNames.contains(modifiedObjName)
+          && TerracottaManagement.matchAllTerracottaMBeans(uuid, tunneledDomains).apply(objName)) {
         if (beanNames.add(modifiedObjName)) {
-          MBeanMirror mirror = MBeanMirrorFactory.newMBeanMirror(l1Connection, objName, modifiedObjName);
-          l2MBeanServer.registerMBean(mirror, modifiedObjName);
+          try {
+            MBeanMirror mirror = MBeanMirrorFactory.newMBeanMirror(l1Connection, objName, modifiedObjName);
+            l2MBeanServer.registerMBean(mirror, modifiedObjName);
+          } catch (Throwable t) {
+            beanNames.remove(modifiedObjName);
+            if (t instanceof Error) throw (Error) t;
+            if (t instanceof Exception) throw (Exception) t;
+            throw new RuntimeException(t);
+          }
           LOGGER.info("Tunneled MBean '" + modifiedObjName + "'");
         }
       } else {
         LOGGER.info("Ignoring bean '" + objName + "'");
       }
     } catch (Exception e) {
-      if (modifiedObjName != null) {
-        beanNames.remove(modifiedObjName);
-      }
-      LOGGER.warn("Unable to register Tunneled MBean[" + objName + "]", e);
+      LOGGER.warn("Unable to register DSO client bean[" + objName + "] due to " + e.getMessage());
     }
   }
 
-  synchronized void unregisterBean(ObjectName name, boolean remove) {
-    LOGGER.info("unregisterBean: " + name);
+  synchronized void unregisterBean(ObjectName objName, boolean remove) {
+    ObjectName modifiedObjName;
 
-    ObjectName modifiedObjName = null;
     try {
-      modifiedObjName = TerracottaManagement.addNodeInfo(name, channel.getRemoteAddress());
-      if (beanNames.contains(modifiedObjName)) {
+      modifiedObjName = TerracottaManagement.addNodeInfo(objName, channel.getRemoteAddress());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    if (beanNames.contains(modifiedObjName)) {
+      try {
         l2MBeanServer.unregisterMBean(modifiedObjName);
         LOGGER.info("Unregistered Tunneled MBean '" + modifiedObjName + "'");
-      } else {
-        LOGGER.info("Ignoring bean for unregistration: " + name);
-      }
-    } catch (Exception e) {
-      LOGGER.warn("Unable to unregister Tunneled MBean[" + modifiedObjName + "]", e);
-    } finally {
-      if (remove && modifiedObjName != null) {
-        beanNames.remove(modifiedObjName);
+      } catch (Exception e) {
+        LOGGER.warn("Unable to unregister DSO client bean[" + modifiedObjName + "]", e);
+      } finally {
+        if (remove) {
+          beanNames.remove(modifiedObjName);
+        }
       }
     }
   }
 
   private static final class RemoteRegistrationFilter implements NotificationFilter {
     private static final long serialVersionUID = 6745130208320538044L;
-    private final QueryExp    queryExp;
+
+    private final UUID        uuid;
+    private final String[]    tunneledDomains;
 
     private RemoteRegistrationFilter(UUID uuid, String[] tunneledDomains) {
-      this.queryExp = TerracottaManagement.matchAllTerracottaMBeans(uuid, tunneledDomains);
+      this.uuid = uuid;
+      this.tunneledDomains = tunneledDomains;
     }
 
     public boolean isNotificationEnabled(final Notification notification) {
       if (notification instanceof MBeanServerNotification) {
         final MBeanServerNotification mbsn = (MBeanServerNotification) notification;
-        final String notifType = mbsn.getType();
-        if (notifType.equals(MBeanServerNotification.REGISTRATION_NOTIFICATION)
-            || notifType.equals(MBeanServerNotification.UNREGISTRATION_NOTIFICATION)) {
+        if (mbsn.getType().equals(MBeanServerNotification.REGISTRATION_NOTIFICATION)) {
+          ObjectName on = mbsn.getMBeanName();
           try {
-            return queryExp.apply(mbsn.getMBeanName());
+            return TerracottaManagement.matchAllTerracottaMBeans(uuid, tunneledDomains).apply(on);
           } catch (Exception e) {
             LOGGER.warn("Unable to filter remote MBean registration", e);
             return false;
           }
         }
       }
-      return false;
+      return true;
     }
   }
 
@@ -220,4 +224,5 @@ public class ClientBeanBag {
       }
     }
   }
+
 }
