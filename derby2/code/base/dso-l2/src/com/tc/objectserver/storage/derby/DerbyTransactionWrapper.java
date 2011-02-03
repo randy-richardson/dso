@@ -32,15 +32,13 @@ public class DerbyTransactionWrapper implements PersistenceTransaction {
       connection.commit();
     } catch (SQLException e) {
       throw new DBException(e);
-    } finally {
-      closeConnection();
     }
   }
 
   /**
    * This is done to return the connection to the connection pool
    */
-  private void closeConnection() {
+  public void close() {
     try {
       connection.close();
     } catch (SQLException e) {
@@ -59,4 +57,5 @@ public class DerbyTransactionWrapper implements PersistenceTransaction {
   public Connection getTransaction() {
     return connection;
   }
+
 }

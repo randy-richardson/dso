@@ -47,7 +47,7 @@ public class DerbyDBSequence implements MutableSequence {
       String seqID = rs.getString(SEQUENCE_UID);
       rs.close();
       connection.commit();
-      connection.close();
+      // connection.close();
       return seqID;
     }
 
@@ -79,7 +79,7 @@ public class DerbyDBSequence implements MutableSequence {
       psUpdate.executeUpdate();
 
       connection.commit();
-      connection.close();
+      // connection.close();
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -100,7 +100,7 @@ public class DerbyDBSequence implements MutableSequence {
       long current = rs.getLong(1);
       rs.close();
       connection.commit();
-      connection.close();
+      // connection.close();
       return current;
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -124,7 +124,7 @@ public class DerbyDBSequence implements MutableSequence {
     psPut.executeUpdate();
     psPut.close();
     connection.commit();
-    connection.close();
+    // connection.close();
   }
 
   private boolean exists() throws SQLException {
@@ -139,11 +139,11 @@ public class DerbyDBSequence implements MutableSequence {
     if (!rs.next()) {
       rs.close();
       connection.commit();
-      connection.close();
+      // connection.close();
       return false;
     }
     connection.commit();
-    connection.close();
+    // connection.close();
     return true;
   }
 

@@ -23,6 +23,10 @@ public class NullPersistenceTransactionProvider implements PersistenceTransactio
     return NULL_TRANSACTION;
   }
 
+  public PersistenceTransaction createNewTransaction() {
+    return NULL_TRANSACTION;
+  }
+
   private final static class NullPersistenceTransaction implements PersistenceTransaction {
     public void commit() {
       return;
@@ -34,6 +38,10 @@ public class NullPersistenceTransactionProvider implements PersistenceTransactio
 
     public Object getTransaction() {
       return null;
+    }
+
+    public void close() {
+      //
     }
   }
 
