@@ -35,11 +35,11 @@ public class DerbyQueryProvider implements QueryProvider {
            + ", PRIMARY KEY(" + key + "," + id + ") )";
   }
 
-  public String createMapsDBIndex1(String indexName, String tableName, String id, String key, String value) {
+  public String createMapsDBIndexObjectID(String indexName, String tableName, String id, String key, String value) {
     return "CREATE INDEX " + indexName + " ON " + tableName + "(" + id + ")";
   }
 
-  public String createMapsDBIndex2(String indexName, String tableName, String id, String key, String value) {
+  public String createMapsDBIndexObjectdIDKey(String indexName, String tableName, String id, String key, String value) {
     return "CREATE INDEX " + indexName + " ON " + tableName + "(" + id + "," + key + ")";
   }
 

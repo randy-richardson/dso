@@ -13,7 +13,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,11 +27,8 @@ public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLo
   protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
     String query = queryProvider.createLongDBTable(tableName, KEY);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    executeQuery(connection, query);
   }
 
   public boolean contains(long key, PersistenceTransaction tx) {

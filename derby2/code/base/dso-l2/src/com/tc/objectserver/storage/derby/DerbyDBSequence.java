@@ -37,7 +37,7 @@ public class DerbyDBSequence implements MutableSequence {
 
   private String setUID() throws SQLException {
     ResultSet rs = null;
-    Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getTransaction();
+    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
     PreparedStatement psSelect = connection.prepareStatement("SELECT " + SEQUENCE_UID + " FROM " + SEQUENCE_TABLE
                                                              + " WHERE " + SEUQENCE_NAME + " = ?");
     psSelect.setString(1, entryName);
@@ -47,11 +47,10 @@ public class DerbyDBSequence implements MutableSequence {
       String seqID = rs.getString(SEQUENCE_UID);
       rs.close();
       connection.commit();
-      // connection.close();
       return seqID;
     }
 
-    throw new IllegalStateException("Should never reach here");
+    throw new IllegalStateException("Invalid state for sequence");
   }
 
   public String getUID() {
@@ -70,8 +69,7 @@ public class DerbyDBSequence implements MutableSequence {
     if (current > next) { throw new AssertionError("Current = " + current + " Next = " + next); }
 
     try {
-      Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getTransaction();
-
+      Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + SEQUENCE_TABLE + " SET " + SEQUENCE_VALUE
                                                                + " = ? " + " WHERE " + SEUQENCE_NAME + " = ?");
       psUpdate.setLong(1, next);
@@ -79,7 +77,6 @@ public class DerbyDBSequence implements MutableSequence {
       psUpdate.executeUpdate();
 
       connection.commit();
-      // connection.close();
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -89,7 +86,7 @@ public class DerbyDBSequence implements MutableSequence {
     ResultSet rs = null;
     PreparedStatement psSelect;
     try {
-      Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getTransaction();
+      Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
       psSelect = connection.prepareStatement("SELECT " + SEQUENCE_VALUE + " FROM " + SEQUENCE_TABLE + " WHERE "
                                              + SEUQENCE_NAME + " = ?");
       psSelect.setString(1, entryName);
@@ -100,7 +97,6 @@ public class DerbyDBSequence implements MutableSequence {
       long current = rs.getLong(1);
       rs.close();
       connection.commit();
-      // connection.close();
       return current;
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -114,7 +110,7 @@ public class DerbyDBSequence implements MutableSequence {
   public void createSequenceIfNeccesary(int startVal) throws SQLException {
     if (exists()) { return; }
 
-    Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getTransaction();
+    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
 
     PreparedStatement psPut = connection.prepareStatement("INSERT INTO " + SEQUENCE_TABLE + " VALUES (?, ?, ?)");
     psPut.setString(1, entryName);
@@ -124,12 +120,11 @@ public class DerbyDBSequence implements MutableSequence {
     psPut.executeUpdate();
     psPut.close();
     connection.commit();
-    // connection.close();
   }
 
   private boolean exists() throws SQLException {
     ResultSet rs = null;
-    Connection connection = ((DerbyTransactionWrapper) (ptxp.newTransaction())).getTransaction();
+    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
 
     PreparedStatement psSelect = connection.prepareStatement("SELECT " + SEQUENCE_VALUE + " FROM " + SEQUENCE_TABLE
                                                              + " WHERE " + SEUQENCE_NAME + " = ?");
@@ -139,11 +134,9 @@ public class DerbyDBSequence implements MutableSequence {
     if (!rs.next()) {
       rs.close();
       connection.commit();
-      // connection.close();
       return false;
     }
     connection.commit();
-    // connection.close();
     return true;
   }
 

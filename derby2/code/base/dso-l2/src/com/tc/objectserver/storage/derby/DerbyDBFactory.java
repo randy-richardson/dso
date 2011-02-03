@@ -26,58 +26,7 @@ public class DerbyDBFactory implements DBFactory {
   }
 
   public ServerDBBackupMBean getServerDBBackupMBean(L2ConfigurationSetupManager configurationSetupManager) {
+    // TODO
     return null;
   }
-
-  public final ServerDBBackupMBean NULL_BEAN = new ServerDBBackupMBean() {
-
-                                               public void reset() {
-                                                 //
-                                               }
-
-                                               public boolean isNotificationBroadcaster() {
-                                                 return false;
-                                               }
-
-                                               public boolean isEnabled() {
-                                                 return false;
-                                               }
-
-                                               public String getInterfaceClassName() {
-                                                 return null;
-                                               }
-
-                                               public void enable() {
-                                                 //
-                                               }
-
-                                               public void disable() {
-                                                 //
-                                               }
-
-                                               public void runBackUp(String path) {
-                                                 //
-                                               }
-
-                                               public void runBackUp() {
-                                                 //  
-                                               }
-
-                                               public boolean isBackupEnabled() {
-                                                 return false;
-                                               }
-
-                                               public boolean isBackUpRunning() {
-                                                 return false;
-                                               }
-
-                                               public String getDefaultPathForBackup() {
-                                                 return null;
-                                               }
-
-                                               public String getDbHome() {
-                                                 return null;
-                                               }
-                                             };
-
 }

@@ -11,6 +11,7 @@ import com.tc.objectserver.storage.api.PersistenceTransaction;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public abstract class AbstractDerbyTCDatabase {
   protected final static String KEY    = "derbykey";
@@ -34,7 +35,7 @@ public abstract class AbstractDerbyTCDatabase {
     }
   }
 
-  protected Connection pt2nt(PersistenceTransaction tx) {
+  static Connection pt2nt(PersistenceTransaction tx) {
     Object o = (tx != null) ? tx.getTransaction() : null;
     if (o != null) {
       if (!(o instanceof Connection)) { throw new AssertionError("Invalid transaction from " + tx + ": " + o); }
@@ -52,6 +53,13 @@ public abstract class AbstractDerbyTCDatabase {
         logger.info(e.getMessage(), e);
       }
     }
+  }
+
+  protected void executeQuery(Connection connection, String query) throws SQLException {
+    Statement statement = connection.createStatement();
+    statement.execute(query);
+    statement.close();
+    connection.commit();
   }
 
   protected abstract void createTableIfNotExists(Connection connection, QueryProvider queryProvider)

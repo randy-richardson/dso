@@ -22,9 +22,9 @@ public interface QueryProvider {
 
   String createStringToStringDBTable(String tableName, String key, String value);
 
-  String createMapsDBIndex1(String indexName, String tableName, String objectId, String key, String value);
+  String createMapsDBIndexObjectID(String indexName, String tableName, String objectId, String key, String value);
 
-  String createMapsDBIndex2(String indexName, String tableName, String objectId, String key, String value);
+  String createMapsDBIndexObjectdIDKey(String indexName, String tableName, String objectId, String key, String value);
 
   String createObjectDBIndex(String indexName, String tableName, String key);
 }

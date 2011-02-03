@@ -18,12 +18,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TCObjectDatabase {
-  private static final TCLogger logger    = TCLogging.getLogger(DerbyTCObjectDatabase.class);
+  private static final String   INDEX_NAME = "objectDBIndex";
+  private static final TCLogger logger     = TCLogging.getLogger(DerbyTCObjectDatabase.class);
   private final SampledCounter  l2FaultFromDisk;
-  private static final String   indexName = "objectDBIndex";
 
   public DerbyTCObjectDatabase(String tableName, Connection connection, QueryProvider queryProvider,
                                SampledCounter l2FaultFromDisk) throws TCDatabaseException {
@@ -35,17 +34,11 @@ public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TC
   protected final void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
     String query = queryProvider.createObjectDBTable(tableName, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    executeQuery(connection, query);
 
-    statement = connection.createStatement();
-    query = queryProvider.createObjectDBIndex(indexName, tableName, KEY);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    query = queryProvider.createObjectDBIndex(INDEX_NAME, tableName, KEY);
+    executeQuery(connection, query);
   }
 
   public Status delete(long id, PersistenceTransaction tx) {

@@ -15,7 +15,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCBytesToBytesDatabase {
   public DerbyTCBytesToBlobDB(String tableName, Connection connection, QueryProvider queryProvider)
@@ -27,11 +26,8 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
   protected final void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
     String query = queryProvider.createBytesToBlobDBTable(tableName, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    executeQuery(connection, query);
   }
 
   public Status delete(byte[] key, PersistenceTransaction tx) {
@@ -130,9 +126,11 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
     return Status.NOT_SUCCESS;
   }
 
-  static class DerbyTCBytesBytesCursor extends AbstractDerbyTCDatabaseCursor<byte[], byte[]> {
+  static class DerbyTCBytesBytesCursor implements TCDatabaseCursor<byte[], byte[]> {
+    private final ResultSet rs;
+
     public DerbyTCBytesBytesCursor(ResultSet rs) {
-      super(rs);
+      this.rs = rs;
     }
 
     private TCDatabaseEntry<byte[], byte[]> entry    = null;
@@ -164,6 +162,22 @@ public class DerbyTCBytesToBlobDB extends AbstractDerbyTCDatabase implements TCB
       TCDatabaseEntry<byte[], byte[]> temp = entry;
       entry = null;
       return temp;
+    }
+
+    public void close() {
+      try {
+        rs.close();
+      } catch (SQLException e) {
+        throw new DBException(e);
+      }
+    }
+
+    public void delete() {
+      try {
+        rs.deleteRow();
+      } catch (SQLException e) {
+        throw new DBException(e);
+      }
     }
   }
 }

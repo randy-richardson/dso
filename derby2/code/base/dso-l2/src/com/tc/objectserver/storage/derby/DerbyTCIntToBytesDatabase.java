@@ -13,7 +13,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,11 +27,8 @@ public class DerbyTCIntToBytesDatabase extends AbstractDerbyTCDatabase implement
   protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
     String query = queryProvider.createIntToBytesDBTable(tableName, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    executeQuery(connection, query);
   }
 
   public byte[] get(int id, PersistenceTransaction tx) {

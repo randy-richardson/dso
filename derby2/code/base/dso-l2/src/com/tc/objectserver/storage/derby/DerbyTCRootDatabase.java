@@ -14,7 +14,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,11 +31,8 @@ public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRo
   protected final void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
     String query = queryProvider.createRootDBTable(tableName, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    executeQuery(connection, query);
   }
 
   public long get(byte[] rootName, PersistenceTransaction tx) {

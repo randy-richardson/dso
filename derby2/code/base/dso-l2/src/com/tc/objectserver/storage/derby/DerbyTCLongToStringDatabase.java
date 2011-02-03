@@ -15,7 +15,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase implements TCLongToStringDatabase {
 
@@ -28,11 +27,8 @@ public class DerbyTCLongToStringDatabase extends AbstractDerbyTCDatabase impleme
   protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
     String query = queryProvider.createLongToStringDBTable(tableName, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    executeQuery(connection, query);
   }
 
   public TLongObjectHashMap loadMappingsInto(TLongObjectHashMap target, PersistenceTransaction tx) {

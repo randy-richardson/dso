@@ -20,20 +20,19 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMapsDatabase {
-  private static final String     OBJECT_ID  = "objectid";
-  private static final String     indexName1 = "indexMapObjectId1";
-  private static final String     indexName2 = "indexMapObjectId2";
+  private static final String     OBJECT_ID          = "objectid";
+  private static final String     INDEX_OBJECTID     = "indexMapObjectId";
+  private static final String     INDEX_OBJECTID_KEY = "indexMapObjectIdKey";
 
-  private final BackingMapFactory factory    = new BackingMapFactory() {
-                                               public Map createBackingMapFor(final ObjectID mapID) {
-                                                 return new HashMap(0);
-                                               }
-                                             };
+  private final BackingMapFactory factory            = new BackingMapFactory() {
+                                                       public Map createBackingMapFor(final ObjectID mapID) {
+                                                         return new HashMap(0);
+                                                       }
+                                                     };
 
   public DerbyTCMapsDatabase(String tableName, Connection connection, QueryProvider queryProvider)
       throws TCDatabaseException {
@@ -44,23 +43,14 @@ public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMa
   protected void createTableIfNotExists(Connection connection, QueryProvider queryProvider) throws SQLException {
     if (DerbyDBEnvironment.tableExists(connection, tableName)) { return; }
 
-    Statement statement = connection.createStatement();
     String query = queryProvider.createMapsDBTable(tableName, OBJECT_ID, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    executeQuery(connection, query);
 
-    statement = connection.createStatement();
-    query = queryProvider.createMapsDBIndex1(indexName1, tableName, OBJECT_ID, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    query = queryProvider.createMapsDBIndexObjectID(INDEX_OBJECTID, tableName, OBJECT_ID, KEY, VALUE);
+    executeQuery(connection, query);
 
-    statement = connection.createStatement();
-    query = queryProvider.createMapsDBIndex2(indexName2, tableName, OBJECT_ID, KEY, VALUE);
-    statement.execute(query);
-    statement.close();
-    connection.commit();
+    query = queryProvider.createMapsDBIndexObjectdIDKey(INDEX_OBJECTID_KEY, tableName, OBJECT_ID, KEY, VALUE);
+    executeQuery(connection, query);
   }
 
   public int delete(PersistenceTransaction tx, long id, Object key, TCCollectionsSerializer serializer)
