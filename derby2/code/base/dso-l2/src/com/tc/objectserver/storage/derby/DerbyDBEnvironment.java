@@ -71,7 +71,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     Properties p = System.getProperties();
     p.setProperty("derby.system.home", this.envHome.getAbsolutePath());
     File derbyPropsFile = new File(this.envHome.getAbsoluteFile() + File.separator + "derby.properties");
-    if (!derbyPropsFile.exists()) {
+    if (!derbyProps.isEmpty() && !derbyPropsFile.exists()) {
       FileOutputStream fos = new FileOutputStream(derbyPropsFile);
       derbyProps.store(fos, "Derby Properties File");
       logger.info("Derby Properties file created with: " + derbyProps);
