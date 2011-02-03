@@ -344,7 +344,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     }
   }
 
-  private void connectionEstablished() {
+  protected void connectionEstablished() {
     Set<ObjectName> theReadySet = getReadySet();
     if (theReadySet == null) { return; }
 
@@ -365,10 +365,10 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       oldConnected = isConnected();
       this.connected = connected;
     }
+    firePropertyChange(PROP_CONNECTED, !connected, connected);
     if (connected == true && oldConnected == false) {
       connectionEstablished();
     }
-    firePropertyChange(PROP_CONNECTED, !connected, connected);
     if (oldConnected == true && connected == false) {
       setReady(false);
       handleDisconnect();
@@ -815,6 +815,16 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     return theServerInfoBean != null ? theServerInfoBean.getEnvironment() : "";
   }
 
+  public String getTCProperties() {
+    TCServerInfoMBean theServerInfoBean = getServerInfoBean();
+    return theServerInfoBean != null ? theServerInfoBean.getTCProperties() : "";
+  }
+
+  public String[] getProcessArguments() {
+    TCServerInfoMBean theServerInfoBean = getServerInfoBean();
+    return theServerInfoBean != null ? theServerInfoBean.getProcessArguments() : new String[] {};
+  }
+
   public String getConfig() {
     TCServerInfoMBean theServerInfoBean = getServerInfoBean();
     return theServerInfoBean != null ? theServerInfoBean.getConfig() : "";
@@ -994,8 +1004,7 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
       synchronized (this) {
         theReadySet.remove(beanName);
       }
-      boolean isReady = theReadySet.isEmpty();
-      setReady(isReady);
+      setReady(theReadySet.isEmpty());
     }
   }
 
@@ -1960,11 +1969,11 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     }
   }
 
-  public void setAttribute(Set<ObjectName> onSet, String attrName, Object attrValue) throws Exception {
+  public Map<ObjectName, Exception> setAttribute(Set<ObjectName> onSet, String attrName, Object attrValue)
+      throws Exception {
     DSOMBean theDsoBean = getDSOBean();
-    if (theDsoBean != null && isConnected()) {
-      theDsoBean.setAttribute(onSet, attrName, attrValue);
-    }
+    if (theDsoBean != null && isConnected()) { return theDsoBean.setAttribute(onSet, attrName, attrValue); }
+    return Collections.emptyMap();
   }
 
   public Object getAttribute(ObjectName on, String attrName) throws Exception {
@@ -2047,5 +2056,4 @@ public class Server extends BaseClusterNode implements IServer, NotificationList
     logListener = null;
     serverGroup = null;
   }
-
 }

@@ -17,7 +17,6 @@ import com.tc.admin.model.IServer;
 import com.tc.admin.options.RuntimeStatsOption;
 import com.tc.statistics.retrieval.actions.SRAThreadDump;
 
-import java.awt.Color;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
@@ -499,6 +498,9 @@ public class ClusterNode extends ClusterElementNode implements ConnectionListene
         nodeStructureChanged();
         controller.expand(this);
         controller.expand(topologyNode);
+        if (featuresNode.getParent() != null) {
+          controller.expand(featuresNode);
+        }
       }
     } catch (Throwable t) {
       adminClientContext.log(t);
@@ -700,10 +702,6 @@ public class ClusterNode extends ClusterElementNode implements ConnectionListene
       clusterPanel.disconnected();
       versionCheckOccurred.set(false);
     }
-  }
-
-  Color getServerStatusColor() {
-    return ServerHelper.getHelper().getServerStatusColor(getActiveCoordinator());
   }
 
   public ClusterThreadDumpEntry takeThreadDump() {
