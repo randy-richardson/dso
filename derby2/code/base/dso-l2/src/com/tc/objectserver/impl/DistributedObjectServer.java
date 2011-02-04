@@ -308,7 +308,6 @@ import com.tc.util.StartupLock;
 import com.tc.util.TCTimeoutException;
 import com.tc.util.UUID;
 import com.tc.util.concurrent.StoppableThread;
-import com.tc.util.io.TCFileUtils;
 import com.tc.util.runtime.LockInfoByThreadID;
 import com.tc.util.runtime.NullThreadIDMapImpl;
 import com.tc.util.runtime.ThreadIDMap;
@@ -591,7 +590,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     if (!persistent) {
       if (dbhome.exists()) {
         logger.debug("deleting persistence database...");
-        TCFileUtils.forceDelete(dbhome, "jdb");
         FileUtils.cleanDirectory(dbhome);
         logger.debug("persistence database deleted.");
       }
