@@ -3,7 +3,7 @@
  */
 package com.tc.objectserver.storage.derby;
 
-public class DerbyQueryProvider implements QueryProvider {
+class DerbyQueryProvider implements QueryProvider {
 
   public String createBytesToBlobDBTable(String tableName, String key, String value) {
     return "CREATE TABLE " + tableName + "(" + key + " " + DerbyDataTypes.TC_BYTE_ARRAY_KEY + ", " + value + " "

@@ -9,29 +9,29 @@ import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
 
 import java.sql.Connection;
 
-public class DerbyPersistenceTransactionProvider implements PersistenceTransactionProvider {
-  protected final DerbyDBEnvironment                derbyDBEnv;
-  protected final static DerbyTransactionWrapper    NULL_TX        = new DerbyTransactionWrapper(null);
+class DerbyPersistenceTransactionProvider implements PersistenceTransactionProvider {
+  protected final DerbyDBEnvironment                   derbyDBEnv;
+  protected final static DerbyDBPersistenceTransaction NULL_TX        = new DerbyDBPersistenceTransaction(null);
 
-  private final ThreadLocal<PersistenceTransaction> threadLocalTxn = new ThreadLocal<PersistenceTransaction>() {
-                                                                     @Override
-                                                                     protected PersistenceTransaction initialValue() {
-                                                                       return createNewTransaction();
-                                                                     }
-                                                                   };
+  private final ThreadLocal<PersistenceTransaction>    threadLocalTxn = new ThreadLocal<PersistenceTransaction>() {
+                                                                        @Override
+                                                                        protected PersistenceTransaction initialValue() {
+                                                                          return createNewTransaction();
+                                                                        }
+                                                                      };
 
   public DerbyPersistenceTransactionProvider(DerbyDBEnvironment derbyDBEnv) {
     this.derbyDBEnv = derbyDBEnv;
   }
 
-  public PersistenceTransaction newTransaction() {
+  public PersistenceTransaction getOrCreateNewTransaction() {
     return threadLocalTxn.get();
   }
 
   public PersistenceTransaction createNewTransaction() {
     try {
       Connection connection = derbyDBEnv.createConnection();
-      return new DerbyTransactionWrapper(connection);
+      return new DerbyDBPersistenceTransaction(connection);
     } catch (Exception e) {
       throw new DBException(e);
     }

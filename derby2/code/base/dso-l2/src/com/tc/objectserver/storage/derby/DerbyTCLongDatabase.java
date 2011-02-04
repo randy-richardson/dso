@@ -16,7 +16,7 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLongDatabase {
+class DerbyTCLongDatabase extends AbstractDerbyTCDatabase implements TCLongDatabase {
 
   public DerbyTCLongDatabase(String tableName, Connection connection, QueryProvider queryProvider)
       throws TCDatabaseException {

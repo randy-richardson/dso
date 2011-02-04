@@ -11,11 +11,11 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DerbyTransactionWrapper implements PersistenceTransaction {
+class DerbyDBPersistenceTransaction implements PersistenceTransaction {
   private final Connection connection;
   private final Map        properties = new HashMap(1);
 
-  public DerbyTransactionWrapper(Connection conn) {
+  public DerbyDBPersistenceTransaction(Connection conn) {
     this.connection = conn;
   }
 

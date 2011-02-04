@@ -19,7 +19,7 @@ public final class BerkeleyDBPersistenceTransactionProvider implements Persisten
     this.env = env;
   }
 
-  public PersistenceTransaction newTransaction() {
+  public PersistenceTransaction getOrCreateNewTransaction() {
     try {
       return new BerkeleyDBPersistenceTransaction(newNativeTransaction());
     } catch (Exception e) {
@@ -36,6 +36,6 @@ public final class BerkeleyDBPersistenceTransactionProvider implements Persisten
   }
 
   public PersistenceTransaction createNewTransaction() {
-    return newTransaction();
+    return getOrCreateNewTransaction();
   }
 }

@@ -12,7 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class DerbyDBSequence implements MutableSequence {
+class DerbyDBSequence implements MutableSequence {
   public static final String                        SEQUENCE_TABLE = "sequenceTable";
   private static final String                       SEUQENCE_NAME  = "sequenceName";
   private static final String                       SEQUENCE_UID   = "sequenceUid";
@@ -37,7 +37,7 @@ public class DerbyDBSequence implements MutableSequence {
 
   private String setUID() throws SQLException {
     ResultSet rs = null;
-    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
+    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.getOrCreateNewTransaction());
     PreparedStatement psSelect = connection.prepareStatement("SELECT " + SEQUENCE_UID + " FROM " + SEQUENCE_TABLE
                                                              + " WHERE " + SEUQENCE_NAME + " = ?");
     psSelect.setString(1, entryName);
@@ -69,7 +69,7 @@ public class DerbyDBSequence implements MutableSequence {
     if (current > next) { throw new AssertionError("Current = " + current + " Next = " + next); }
 
     try {
-      Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
+      Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.getOrCreateNewTransaction());
       PreparedStatement psUpdate = connection.prepareStatement("UPDATE " + SEQUENCE_TABLE + " SET " + SEQUENCE_VALUE
                                                                + " = ? " + " WHERE " + SEUQENCE_NAME + " = ?");
       psUpdate.setLong(1, next);
@@ -86,7 +86,7 @@ public class DerbyDBSequence implements MutableSequence {
     ResultSet rs = null;
     PreparedStatement psSelect;
     try {
-      Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
+      Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.getOrCreateNewTransaction());
       psSelect = connection.prepareStatement("SELECT " + SEQUENCE_VALUE + " FROM " + SEQUENCE_TABLE + " WHERE "
                                              + SEUQENCE_NAME + " = ?");
       psSelect.setString(1, entryName);
@@ -110,7 +110,7 @@ public class DerbyDBSequence implements MutableSequence {
   public void createSequenceIfNeccesary(int startVal) throws SQLException {
     if (exists()) { return; }
 
-    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
+    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.getOrCreateNewTransaction());
 
     PreparedStatement psPut = connection.prepareStatement("INSERT INTO " + SEQUENCE_TABLE + " VALUES (?, ?, ?)");
     psPut.setString(1, entryName);
@@ -124,7 +124,7 @@ public class DerbyDBSequence implements MutableSequence {
 
   private boolean exists() throws SQLException {
     ResultSet rs = null;
-    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.newTransaction());
+    Connection connection = AbstractDerbyTCDatabase.pt2nt(ptxp.getOrCreateNewTransaction());
 
     PreparedStatement psSelect = connection.prepareStatement("SELECT " + SEQUENCE_VALUE + " FROM " + SEQUENCE_TABLE
                                                              + " WHERE " + SEUQENCE_NAME + " = ?");

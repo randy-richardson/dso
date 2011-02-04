@@ -67,7 +67,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     this.derbyProps = props;
     this.l2FaultFromDisk = l2FaultFromDisk;
     FileUtils.forceMkdir(this.envHome);
-    logger.warn("Using DERBY DBEnvironment ...");
+    logger.info("Using DERBY DBEnvironment ...");
     Properties p = System.getProperties();
     p.setProperty("derby.system.home", this.envHome.getAbsolutePath());
     File derbyPropsFile = new File(this.envHome.getAbsoluteFile() + File.separator + "derby.properties");
@@ -313,32 +313,32 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return (DerbyTCRootDatabase) tables.get(ROOT_DB_NAME);
   }
 
-  public TCLongDatabase getClientStateDatabase() throws TCDatabaseException {
+  public synchronized TCLongDatabase getClientStateDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCLongDatabase) tables.get(CLIENT_STATE_DB_NAME);
   }
 
-  public TCBytesToBytesDatabase getTransactionDatabase() throws TCDatabaseException {
+  public synchronized TCBytesToBytesDatabase getTransactionDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCBytesToBlobDB) tables.get(TRANSACTION_DB_NAME);
   }
 
-  public TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException {
+  public synchronized TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCIntToBytesDatabase) tables.get(CLASS_DB_NAME);
   }
 
-  public TCMapsDatabase getMapsDatabase() throws TCDatabaseException {
+  public synchronized TCMapsDatabase getMapsDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCMapsDatabase) tables.get(MAP_DB_NAME);
   }
 
-  public TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException {
+  public synchronized TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCLongToStringDatabase) tables.get(STRING_INDEX_DB_NAME);
   }
 
-  public TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException {
+  public synchronized TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException {
     assertOpen();
     return (DerbyTCStringToStringDatabase) tables.get(CLUSTER_STATE_STORE);
   }
@@ -365,7 +365,7 @@ public class DerbyDBEnvironment implements DBEnvironment {
     return isParanoid;
   }
 
-  public void assertOpen() throws DatabaseNotOpenException {
+  private void assertOpen() throws DatabaseNotOpenException {
     if (DBEnvironmentStatus.STATUS_OPEN != status) throw new DatabaseNotOpenException(
                                                                                       "Database environment should be open but isn't.");
   }

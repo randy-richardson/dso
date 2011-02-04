@@ -15,7 +15,7 @@ public final class TestPersistenceTransactionProvider implements PersistenceTran
   public final LinkedQueue nullTransactionContexts = new LinkedQueue();
   public final LinkedQueue newTransactions         = new LinkedQueue();
 
-  public PersistenceTransaction newTransaction() {
+  public PersistenceTransaction getOrCreateNewTransaction() {
     try {
       PersistenceTransaction rv = new TestPersistenceTransaction();
       newTransactions.put(rv);
@@ -35,7 +35,7 @@ public final class TestPersistenceTransactionProvider implements PersistenceTran
   }
 
   public PersistenceTransaction createNewTransaction() {
-    return newTransaction();
+    return getOrCreateNewTransaction();
   }
 
 }

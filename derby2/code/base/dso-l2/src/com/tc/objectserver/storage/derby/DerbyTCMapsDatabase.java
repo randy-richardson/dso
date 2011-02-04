@@ -23,7 +23,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMapsDatabase {
+class DerbyTCMapsDatabase extends AbstractDerbyTCDatabase implements TCMapsDatabase {
   private static final String     OBJECT_ID          = "objectid";
   private static final String     INDEX_OBJECTID     = "indexMapObjectId";
   private static final String     INDEX_OBJECTID_KEY = "indexMapObjectIdKey";

@@ -14,7 +14,7 @@ import java.sql.Statement;
 /**
  * This class is for control db
  */
-public class DerbyControlDB extends AbstractDerbyTCDatabase {
+class DerbyControlDB extends AbstractDerbyTCDatabase {
   private final static short CLEAN_FLAG = 1;
   private final static short DIRTY_FLAG = 2;
   private final static short NULL_FLAG  = -1;

@@ -19,7 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TCObjectDatabase {
+class DerbyTCObjectDatabase extends AbstractDerbyTCDatabase implements TCObjectDatabase {
   private static final String   INDEX_NAME = "objectDBIndex";
   private static final TCLogger logger     = TCLogging.getLogger(DerbyTCObjectDatabase.class);
   private final SampledCounter  l2FaultFromDisk;

@@ -342,32 +342,32 @@ public class BerkeleyDBEnvironment implements DBEnvironment {
     return (BerkeleyDBTCRootDatabase) databasesByName.get(ROOT_DB_NAME);
   }
 
-  public TCLongDatabase getClientStateDatabase() throws TCDatabaseException {
+  public synchronized TCLongDatabase getClientStateDatabase() throws TCDatabaseException {
     assertOpen();
     return (BerkeleyDBTCLongDatabase) databasesByName.get(CLIENT_STATE_DB_NAME);
   }
 
-  public TCBytesToBytesDatabase getTransactionDatabase() throws TCDatabaseException {
+  public synchronized TCBytesToBytesDatabase getTransactionDatabase() throws TCDatabaseException {
     assertOpen();
     return (BerkeleyDBTCBytesBytesDatabase) databasesByName.get(TRANSACTION_DB_NAME);
   }
 
-  public TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException {
+  public synchronized TCIntToBytesDatabase getClassDatabase() throws TCDatabaseException {
     assertOpen();
     return (BerkeleyDBTCIntToBytesDatabase) databasesByName.get(CLASS_DB_NAME);
   }
 
-  public TCMapsDatabase getMapsDatabase() throws TCDatabaseException {
+  public synchronized TCMapsDatabase getMapsDatabase() throws TCDatabaseException {
     assertOpen();
     return (BerkeleyDBTCMapsDatabase) databasesByName.get(MAP_DB_NAME);
   }
 
-  public TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException {
+  public synchronized TCLongToStringDatabase getStringIndexDatabase() throws TCDatabaseException {
     assertOpen();
     return (BerkeleyDBTCLongToStringDatabase) databasesByName.get(STRING_INDEX_DB_NAME);
   }
 
-  public TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException {
+  public synchronized TCStringToStringDatabase getClusterStateStoreDatabase() throws TCDatabaseException {
     assertOpen();
     return (BerkeleyDBTCStringtoStringDatabase) databasesByName.get(CLUSTER_STATE_STORE);
   }

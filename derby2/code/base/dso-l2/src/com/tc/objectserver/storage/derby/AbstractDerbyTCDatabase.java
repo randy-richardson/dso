@@ -13,7 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public abstract class AbstractDerbyTCDatabase {
+abstract class AbstractDerbyTCDatabase {
   protected final static String KEY    = "derbykey";
   protected final static String VALUE  = "derbyvalue";
 

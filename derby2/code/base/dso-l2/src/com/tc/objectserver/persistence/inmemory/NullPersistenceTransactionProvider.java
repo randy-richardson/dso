@@ -15,7 +15,7 @@ public class NullPersistenceTransactionProvider implements PersistenceTransactio
     return null;
   }
 
-  public PersistenceTransaction newTransaction() {
+  public PersistenceTransaction getOrCreateNewTransaction() {
     return NULL_TRANSACTION;
   }
 

@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRootDatabase {
+class DerbyTCRootDatabase extends AbstractDerbyTCDatabase implements TCRootDatabase {
   public DerbyTCRootDatabase(String tableName, Connection connection, QueryProvider queryProvider)
       throws TCDatabaseException {
     super(tableName, connection, queryProvider);
