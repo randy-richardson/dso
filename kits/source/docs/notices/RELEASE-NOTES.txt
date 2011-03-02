@@ -30,6 +30,12 @@ DEV-5105
 
 DEV-5113
 - Fix issue with DGC cycle not occuring causing Offheap to fill up, causing a passive crash due to disk full
-----
+-----------------------------------------------------------------------
+Patch Level 2
+-------------------------------
+DEV-5207
+- Fix potential deadlock in server map eviction after throttling added
+
+
 All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
 http://www.terracotta.org

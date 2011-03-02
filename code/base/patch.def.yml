@@ -5,7 +5,7 @@
 #
 # Example:
 # level: 1
-level: 1
+level: 2
 
 # List of files to include in the patch tar.  File paths listed here are
 # relative to the kit root directory.  Use the YAML syntax for lists:
@@ -15,4 +15,4 @@ level: 1
 #- lib/tc.jar
 files: 
  - lib/tc.jar
- - common/terracotta-toolkit-1.1-runtime-ee-2.0.0-patch1.jar
+ - common/terracotta-toolkit-1.1-runtime-ee-2.0.1.jar
