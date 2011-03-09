@@ -15,4 +15,4 @@ level: 2
 #- lib/tc.jar
 files: 
  - lib/tc.jar
- - common/terracotta-toolkit-1.1-runtime-ee-2.0.1.jar
+ - common/terracotta-toolkit-1.1-runtime-ee-2.0.1-patch2.jar
