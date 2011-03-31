@@ -13,7 +13,7 @@ This patch contains the patched toolkit runtime jar that will replace the curren
 It can be found under "common" folder after you apply the patch:
 
 Old: terracotta-toolkit-1.1-runtime-ee-2.1.0.jar
-New: terracotta-toolkit-1.1-runtime-ee-2.1.1.jar
+New: terracotta-toolkit-1.1-runtime-ee-2.1.1-patch1.jar
 
 Make sure that application classpath (or WAR files) no longer refers to the old toolkit runtime jar
 and update it to the new one.
@@ -25,7 +25,7 @@ tc.jar
 DEV-5590
 - OffHeap memory entries not removed
 
-terracotta-toolkit-1.1-runtime-ee-2.1.1.jar
+terracotta-toolkit-1.1-runtime-ee-2.1.1-patch1.jar
 CDV-1556
 - loader constraint with org/terracotta/cluster/ClusterEvent$Type
 
