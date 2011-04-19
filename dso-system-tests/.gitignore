@@ -1,3 +1,4 @@
-/build.eclipse
+/.classpath
+/.project
 /target
-/logs*
+
