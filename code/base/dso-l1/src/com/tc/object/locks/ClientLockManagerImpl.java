@@ -592,7 +592,7 @@ public class ClientLockManagerImpl implements ClientLockManager, ClientLockManag
   private void waitUntilRunning() {
     this.stateGuard.readLock().lock();
     try {
-      if (this.state == State.RUNNING) { return; }
+      if (running()) { return; }
     } finally {
       this.stateGuard.readLock().unlock();
     }
@@ -600,7 +600,7 @@ public class ClientLockManagerImpl implements ClientLockManager, ClientLockManag
     boolean interrupted = false;
     this.stateGuard.writeLock().lock();
     try {
-      while (this.state != State.RUNNING) {
+      while (!running()) {
         try {
           this.runningCondition.await();
         } catch (final InterruptedException e) {
@@ -622,6 +622,10 @@ public class ClientLockManagerImpl implements ClientLockManager, ClientLockManag
      * locked.
      */
     return this.state == State.PAUSED;
+  }
+
+  private boolean running() {
+    return this.state == State.RUNNING;
   }
 
   static enum State {

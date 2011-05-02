@@ -216,6 +216,17 @@ public class LockManagerImpl implements LockManager, PrettyPrintable, LockManage
   }
 
   public void start() {
+    /*
+     * A Thread.sleep(...) here will delay the transition of the server from starting to running, which will also delay
+     * the sending of the client ack. This should allow the client time to send us a recall that we lose (when the fix
+     * isn't applied).
+     */
+    // try {
+    // Thread.sleep(10000);
+    // } catch (InterruptedException e) {
+    // throw new AssertionError(e);
+    // }
+
     statusLock.writeLock().lock();
     try {
       Assert.assertTrue(!isStarted);
