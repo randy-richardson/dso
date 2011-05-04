@@ -6,7 +6,6 @@ package com.tc.net.protocol.transport;
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 
-import com.tc.async.api.Sink;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.net.core.TCConnection;
@@ -49,7 +48,6 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
   private final TCLogger                         consoleLogger      = CustomerLogging.getConsoleLogger();
   private final ReentrantLock                    licenseLock;
   private final String                           commsMgrName;
-  private final Sink                             memcacheSink;
 
   // used only in test
   public ServerStackProvider(TCLogger logger, Set initialConnectionIDs, NetworkStackHarnessFactory harnessFactory,
@@ -59,8 +57,8 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
                              ConnectionIDFactory connectionIdFactory, ConnectionPolicy connectionPolicy,
                              WireProtocolAdaptorFactory wireProtocolAdaptorFactory, ReentrantLock licenseLock) {
     this(logger, initialConnectionIDs, harnessFactory, channelFactory, messageTransportFactory,
-         handshakeMessageFactory, connectionIdFactory, connectionPolicy, wireProtocolAdaptorFactory, null, null,
-         licenseLock, CommunicationsManager.COMMSMGR_SERVER);
+         handshakeMessageFactory, connectionIdFactory, connectionPolicy, wireProtocolAdaptorFactory, null, licenseLock,
+         CommunicationsManager.COMMSMGR_SERVER);
   }
 
   public ServerStackProvider(TCLogger logger, Set initialConnectionIDs, NetworkStackHarnessFactory harnessFactory,
@@ -69,13 +67,12 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
                              TransportHandshakeMessageFactory handshakeMessageFactory,
                              ConnectionIDFactory connectionIdFactory, ConnectionPolicy connectionPolicy,
                              WireProtocolAdaptorFactory wireProtocolAdaptorFactory,
-                             WireProtocolMessageSink wireProtoMsgSink, Sink memcacheSink, ReentrantLock licenseLock,
+                             WireProtocolMessageSink wireProtoMsgSink, ReentrantLock licenseLock,
                              final String commsMgrName) {
     this.messageTransportFactory = messageTransportFactory;
     this.connectionPolicy = connectionPolicy;
     this.wireProtocolAdaptorFactory = wireProtocolAdaptorFactory;
     this.wireProtoMsgsink = wireProtoMsgSink;
-    this.memcacheSink = memcacheSink;
     Assert.assertNotNull(harnessFactory);
     this.harnessFactory = harnessFactory;
     this.channelFactory = channelFactory;
@@ -201,11 +198,11 @@ public class ServerStackProvider implements NetworkStackProvider, MessageTranspo
    */
 
   public TCProtocolAdaptor getInstance() {
-    if (memcacheSink != null || wireProtoMsgsink != null) {
-      return this.wireProtocolAdaptorFactory.newWireProtocolAdaptor(wireProtoMsgsink, memcacheSink);
+    if (wireProtoMsgsink != null) {
+      return this.wireProtocolAdaptorFactory.newWireProtocolAdaptor(wireProtoMsgsink);
     } else {
       MessageSink sink = new MessageSink(createHandshakeErrorHandler(), this.commsMgrName);
-      return this.wireProtocolAdaptorFactory.newWireProtocolAdaptor(sink, null);
+      return this.wireProtocolAdaptorFactory.newWireProtocolAdaptor(sink);
     }
   }
 

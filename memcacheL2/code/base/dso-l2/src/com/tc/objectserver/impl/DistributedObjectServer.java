@@ -95,7 +95,6 @@ import com.tc.net.protocol.tcm.TCMessageRouterImpl;
 import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.net.protocol.transport.ConnectionIDFactory;
 import com.tc.net.protocol.transport.ConnectionPolicy;
-import com.tc.net.protocol.transport.DefaultConnectionIdFactory;
 import com.tc.net.protocol.transport.HealthCheckerConfigImpl;
 import com.tc.net.protocol.transport.TransportHandshakeErrorNullHandler;
 import com.tc.net.utils.L2Utils;
@@ -353,7 +352,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   private final DSOServerBuilder                 serverBuilder;
   protected final L2ConfigurationSetupManager    configSetupManager;
   private final Sink                             httpSink;
-  private final Sink                             memcacheSink;
   protected final HaConfigImpl                   haConfig;
 
   private static final TCLogger                  logger           = CustomerLogging.getDSOGenericLogger();
@@ -361,7 +359,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   private ServerID                               thisServerNodeID = ServerID.NULL_ID;
   protected NetworkListener                      l1Listener;
-  protected NetworkListener                      memcacheListener;
   protected GCStatsEventPublisher                gcStatsEventPublisher;
   private TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider;
   private CommunicationsManager                  communicationsManager;
@@ -415,12 +412,12 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                  final ConnectionPolicy connectionPolicy, final TCServerInfoMBean tcServerInfoMBean,
                                  final ObjectStatsRecorder objectStatsRecorder,
                                  final StatisticsGathererSubSystem statisticsGathererSubSystem) {
-    this(configSetupManager, threadGroup, connectionPolicy, new NullSink(), new NullSink(), tcServerInfoMBean,
-         objectStatsRecorder, statisticsGathererSubSystem, new L2State(), new SEDA(threadGroup), null);
+    this(configSetupManager, threadGroup, connectionPolicy, new NullSink(), tcServerInfoMBean, objectStatsRecorder,
+         statisticsGathererSubSystem, new L2State(), new SEDA(threadGroup), null);
   }
 
   public DistributedObjectServer(final L2ConfigurationSetupManager configSetupManager, final TCThreadGroup threadGroup,
-                                 final ConnectionPolicy connectionPolicy, final Sink httpSink, final Sink memcacheSink,
+                                 final ConnectionPolicy connectionPolicy, final Sink httpSink,
                                  final TCServerInfoMBean tcServerInfoMBean,
                                  final ObjectStatsRecorder objectStatsRecorder,
                                  final StatisticsGathererSubSystem statisticsGathererSubSystem, final L2State l2State,
@@ -434,7 +431,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.haConfig = new HaConfigImpl(this.configSetupManager);
     this.connectionPolicy = connectionPolicy;
     this.httpSink = httpSink;
-    this.memcacheSink = memcacheSink;
     this.tcServerInfoMBean = tcServerInfoMBean;
     this.objectStatsRecorder = objectStatsRecorder;
     this.statisticsGathererSubSystem = statisticsGathererSubSystem;
@@ -801,11 +797,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.l1Listener = this.communicationsManager.createListener(sessionManager,
                                                                 new TCSocketAddress(dsoBind, serverPort), true,
                                                                 this.connectionIdFactory, this.httpSink);
-
-    this.memcacheListener = this.communicationsManager.createListener(new NullSessionManager(),
-                                                                      new TCSocketAddress("0.0.0.0", 11211), true,
-                                                                      new DefaultConnectionIdFactory(), null, null,
-                                                                      memcacheSink);
 
     final ClientTunnelingEventHandler cteh = new ClientTunnelingEventHandler();
     this.stripeIDStateManager = new StripeIDStateManagerImpl(this.haConfig, this.persistor.getPersistentStateStore());
@@ -1253,19 +1244,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       startActiveMode();
       startL1Listener();
     }
-
-    startMemcacheListener();
-
     setLoggerOnExit();
-  }
-
-  private void startMemcacheListener() {
-    try {
-      this.memcacheListener.start(Collections.EMPTY_SET);
-    } catch (IOException e) {
-      System.err.println("XXX memcache listener start error " + e);
-      throw new RuntimeException(e);
-    }
   }
 
   private DBFactory getDBFactory() {

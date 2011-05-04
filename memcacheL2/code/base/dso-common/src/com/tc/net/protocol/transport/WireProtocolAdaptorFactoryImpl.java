@@ -1,6 +1,5 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
- * notice. All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
  */
 package com.tc.net.protocol.transport;
 
@@ -21,10 +20,8 @@ public class WireProtocolAdaptorFactoryImpl implements WireProtocolAdaptorFactor
     this(null);
   }
 
-  public TCProtocolAdaptor newWireProtocolAdaptor(WireProtocolMessageSink sink, Sink memcacheSink) {
-
+  public TCProtocolAdaptor newWireProtocolAdaptor(WireProtocolMessageSink sink) {
     if (httpSink != null) { return new ProtocolSwitch(new WireProtocolAdaptorImpl(sink), httpSink); }
-    if (memcacheSink != null) { return new ProtocolSwitch(new MemcacheProtocolAdapter(memcacheSink), memcacheSink); }
     return new WireProtocolAdaptorImpl(sink);
   }
 }
