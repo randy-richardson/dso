@@ -324,7 +324,7 @@ public class ClientMessageTransport extends MessageTransportBase {
       public void putMessage(WireProtocolMessage message) {
         receiveTransportMessage(message);
       }
-    });
+    }, null);
   }
 
   void endIfDisconnected() {

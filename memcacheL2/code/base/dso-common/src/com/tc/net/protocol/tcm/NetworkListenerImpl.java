@@ -31,18 +31,20 @@ class NetworkListenerImpl implements NetworkListener {
   private final ConnectionIDFactory       connectionIdFactory;
   private final Sink                      httpSink;
   private final WireProtocolMessageSink   wireProtoMsgSnk;
+  private final Sink                      memcacheSink;
 
   // this constructor is intentionally not public, only the Comms Manager should be creating them
   NetworkListenerImpl(final TCSocketAddress addr, final CommunicationsManagerImpl commsMgr,
                       final ChannelManagerImpl channelManager, final TCMessageFactory msgFactory,
                       final TCMessageRouter router, final boolean reuseAddr,
                       final ConnectionIDFactory connectionIdFactory, final Sink httpSink,
-                      final WireProtocolMessageSink wireProtoMsgSnk) {
+                      final WireProtocolMessageSink wireProtoMsgSnk, Sink memcacheSink) {
     this.commsMgr = commsMgr;
     this.channelManager = channelManager;
     this.addr = addr;
     this.connectionIdFactory = connectionIdFactory;
     this.httpSink = httpSink;
+    this.memcacheSink = memcacheSink;
     this.wireProtoMsgSnk = wireProtoMsgSnk;
     this.started = false;
     this.reuseAddr = reuseAddr;
@@ -59,7 +61,8 @@ class NetworkListenerImpl implements NetworkListener {
    */
   public synchronized void start(final Set initialConnectionIDs) throws IOException {
     this.lsnr = this.commsMgr.createCommsListener(this.addr, this.channelManager, this.reuseAddr, initialConnectionIDs,
-                                                  this.connectionIdFactory, this.httpSink, this.wireProtoMsgSnk);
+                                                  this.connectionIdFactory, this.httpSink, this.wireProtoMsgSnk,
+                                                  this.memcacheSink);
     this.started = true;
     this.commsMgr.registerListener(this);
   }

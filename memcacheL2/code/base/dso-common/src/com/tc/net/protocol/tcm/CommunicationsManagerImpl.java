@@ -278,6 +278,15 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                           httpSink, null);
   }
 
+  public NetworkListener createListener(SessionProvider sessionProvider, TCSocketAddress address,
+                                        boolean transportDisconnectRemovesChannel,
+                                        ConnectionIDFactory connectionIDFactory, Sink httpSink,
+                                        WireProtocolMessageSink wireSink, Sink memcacheSink) {
+    return createListener(sessionProvider, address, transportDisconnectRemovesChannel, connectionIDFactory, true,
+                          httpSink, wireSink, memcacheSink);
+
+  }
+
   public NetworkListener createListener(SessionProvider sessionProvider, TCSocketAddress addr,
                                         boolean transportDisconnectRemovesChannel,
                                         ConnectionIDFactory connectionIdFactory, boolean reuseAddr) {
@@ -299,6 +308,15 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                          boolean transportDisconnectRemovesChannel,
                                          ConnectionIDFactory connectionIdFactory, boolean reuseAddr, Sink httpSink,
                                          WireProtocolMessageSink wireProtoMsgSnk) {
+    return createListener(sessionProvider, addr, transportDisconnectRemovesChannel, connectionIdFactory, reuseAddr,
+                          httpSink, wireProtoMsgSnk, null);
+  }
+
+  private NetworkListener createListener(SessionProvider sessionProvider, TCSocketAddress addr,
+                                         boolean transportDisconnectRemovesChannel,
+                                         ConnectionIDFactory connectionIdFactory, boolean reuseAddr, Sink httpSink,
+                                         WireProtocolMessageSink wireProtoMsgSnk, Sink memcacheSink) {
+
     if (shutdown.isSet()) { throw new IllegalStateException("Comms manger shut down"); }
 
     // The idea here is that someday we might want to pass in a custom channel factory. The reason you might want to do
@@ -328,12 +346,13 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
 
     final ChannelManagerImpl channelManager = new ChannelManagerImpl(transportDisconnectRemovesChannel, channelFactory);
     return new NetworkListenerImpl(addr, this, channelManager, msgFactory, messageRouter, reuseAddr,
-                                   connectionIdFactory, httpSink, wireProtoMsgSnk);
+                                   connectionIdFactory, httpSink, wireProtoMsgSnk, memcacheSink);
   }
 
   TCListener createCommsListener(TCSocketAddress addr, final ServerMessageChannelFactory channelFactory,
                                  boolean resueAddr, Set initialConnectionIDs, ConnectionIDFactory connectionIdFactory,
-                                 Sink httpSink, WireProtocolMessageSink wireProtocolMessageSink) throws IOException {
+                                 Sink httpSink, WireProtocolMessageSink wireProtocolMessageSink, Sink memcacheSink)
+      throws IOException {
 
     MessageTransportFactory transportFactory = new MessageTransportFactory() {
       public MessageTransport createNewTransport() {
@@ -365,7 +384,8 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                                                 this.transportMessageFactory, connectionIdFactory,
                                                                 this.connectionPolicy,
                                                                 new WireProtocolAdaptorFactoryImpl(httpSink),
-                                                                wireProtocolMessageSink, licenseLock, this.commsMgrName);
+                                                                wireProtocolMessageSink, memcacheSink, licenseLock,
+                                                                this.commsMgrName);
     return connectionManager.createListener(addr, stackProvider, Constants.DEFAULT_ACCEPT_QUEUE_DEPTH, resueAddr);
   }
 

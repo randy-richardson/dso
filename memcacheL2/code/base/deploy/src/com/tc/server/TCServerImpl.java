@@ -424,8 +424,12 @@ public class TCServerImpl extends SEDA implements TCServer {
                                                   100);
       stage.start(new NullContext(getStageManager()));
 
+      Stage memcacheStage = getStageManager().createStage("memcache-bridge", new MemcacheHandler(), 1, 10 * 1000);
+
+      // memcacheStage.start(new NullContext(getStageManager()));
+
       // the following code starts the jmx server as well
-      startDSOServer(stage.getSink());
+      startDSOServer(stage.getSink(), memcacheStage.getSink());
 
       if (isActive()) {
         updateActivateTime();
@@ -459,7 +463,7 @@ public class TCServerImpl extends SEDA implements TCServer {
     new StartupHelper(getThreadGroup(), new StartAction()).startUp();
   }
 
-  private void startDSOServer(final Sink httpSink) throws Exception {
+  private void startDSOServer(final Sink httpSink, Sink memcacheSink) throws Exception {
     Assert.assertTrue(this.state.isStartState());
     TCProperties props = TCPropertiesImpl.getProperties();
     ObjectStatsRecorder objectStatsRecorder;
@@ -470,6 +474,7 @@ public class TCServerImpl extends SEDA implements TCServer {
                                                   props.getBoolean(L2_TRANSACTIONMANAGER_LOGGING_PRINT_BROADCAST_STATS),
                                                   props.getBoolean(L2_OBJECTMANAGER_PERSISTOR_LOGGING_ENABLED));
     this.dsoServer = createDistributedObjectServer(this.configurationSetupManager, this.connectionPolicy, httpSink,
+                                                   memcacheSink,
                                                    new TCServerInfo(this, this.state, objectStatsRecorder),
                                                    objectStatsRecorder, this.state, this);
     this.dsoServer.start();
@@ -477,11 +482,12 @@ public class TCServerImpl extends SEDA implements TCServer {
 
   protected DistributedObjectServer createDistributedObjectServer(L2ConfigurationSetupManager configSetupManager,
                                                                   ConnectionPolicy policy, Sink httpSink,
-                                                                  TCServerInfo serverInfo,
+                                                                  Sink memcacheSink, TCServerInfo serverInfo,
                                                                   ObjectStatsRecorder objectStatsRecorder,
                                                                   L2State l2State, TCServerImpl serverImpl) {
-    return new DistributedObjectServer(configSetupManager, getThreadGroup(), policy, httpSink, serverInfo,
-                                       objectStatsRecorder, statisticsGathererSubSystem, l2State, this, this);
+    return new DistributedObjectServer(configSetupManager, getThreadGroup(), policy, httpSink, memcacheSink,
+                                       serverInfo, objectStatsRecorder, statisticsGathererSubSystem, l2State, this,
+                                       this);
   }
 
   private void startHTTPServer(final CommonL2Config commonL2Config, final TerracottaConnector tcConnector)
