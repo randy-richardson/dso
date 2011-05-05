@@ -157,21 +157,25 @@ public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, 
 
   public LocalCacheElement get(Object key) {
     ManagedObject mo = getMemcacheRootMO();
-    ObjectID valueID = (ObjectID) ((ConcurrentDistributedServerMapManagedObjectState) mo.getManagedObjectState())
-        .getMap().get(key);
-    if (valueID == null) { return null; }
+    ManagedObject valueMO = null;
+    try {
+      ObjectID valueID = (ObjectID) ((ConcurrentDistributedServerMapManagedObjectState) mo.getManagedObjectState())
+          .getMap().get(key);
+      if (valueID == null) { return new LocalCacheElement((Key) key); }
 
-    System.out.println("GET OID: " + valueID);
-    ManagedObject valueMO = this.objectManager.getObjectByID(valueID);
+      // System.out.println("GET OID: " + valueID);
+      valueMO = this.objectManager.getObjectByID(valueID);
 
-    LocalCacheElement element = new LocalCacheElement((Key) key);
-    element.setData(ChannelBuffers.wrappedBuffer(((TDCSerializedEntryManagedObjectState) valueMO
-        .getManagedObjectState()).value));
+      LocalCacheElement element = new LocalCacheElement((Key) key);
+      element.setData(ChannelBuffers.wrappedBuffer(((TDCSerializedEntryManagedObjectState) valueMO
+          .getManagedObjectState()).value));
 
-    System.out.println("XXX GET key:" + element.getKey() + "; value: " + element.getData());
-    this.objectManager.releaseReadOnly(mo);
-    this.objectManager.releaseReadOnly(valueMO);
-    return element;
+      // System.out.println("XXX GET key:" + element.getKey() + "; value: " + element.getData());
+      return element;
+    } finally {
+      this.objectManager.releaseReadOnly(mo);
+      if (valueMO != null) this.objectManager.releaseReadOnly(valueMO);
+    }
   }
 
   /**
@@ -200,7 +204,7 @@ public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, 
     changes.add(cdsmPut);
     applyMemCacheTxn(this.serverTxnFactory.createMemcacheElementTxn(localNodeID, changes));
 
-    System.out.println("XXX PUT key: " + key + "; value: " + value.getData() + " -- OID: " + valueOID);
+    // System.out.println("XXX PUT key: " + key + "; value: " + value.getData() + " -- OID: " + valueOID);
     return new LocalCacheElement();
   }
 
