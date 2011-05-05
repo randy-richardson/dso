@@ -6,6 +6,7 @@ package com.tc.objectserver.storage.memcached;
 import org.jboss.netty.buffer.ChannelBuffers;
 
 import com.tc.test.TCTestCase;
+import com.tc.util.HexDump;
 import com.thimbleware.jmemcached.Key;
 import com.thimbleware.jmemcached.LocalCacheElement;
 
@@ -30,12 +31,19 @@ public class TCMemcacheStorageTest extends TCTestCase {
     ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
     ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
     objOut.writeObject(element);
+    byteOut.flush();
+    byte[] b = byteOut.toByteArray();
+    System.out.println("XXX " + HexDump.dump(b));
     objOut.close();
 
-    byte[] b = byteOut.toByteArray();
     ByteArrayInputStream byteIn = new ByteArrayInputStream(b);
     ObjectInputStream objIn = new ObjectInputStream(byteIn);
-    System.out.println("XXX OUT " + objIn.readObject());
+    byte[] buf = new byte[b.length];
+
+    System.out.println("XXX OUT 2 " + byteIn.read(buf, 0, 118));
+    System.out.println("XXX " + HexDump.dump(buf));
+
+    System.out.println("XXX OUT 1 " + objIn.readObject());
 
   }
 
