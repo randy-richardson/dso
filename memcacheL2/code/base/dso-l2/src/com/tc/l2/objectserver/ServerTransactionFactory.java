@@ -82,9 +82,9 @@ public class ServerTransactionFactory {
     return new ServerMapEvictionDNA(oid, className, loaderDesc, candidates, cacheName);
   }
 
-  public ServerTransactionImpl createMemcacheRootTxn(NodeID localNodeID, long oid) {
+  public ServerTransactionImpl createMemcacheRootTxn(NodeID localNodeID, long oid, String rootName) {
     Map rootMap = new HashMap();
-    rootMap.put("MEMCACHE-GLOBAL-CACHE", new ObjectID(oid));
+    rootMap.put(rootName, new ObjectID(oid));
     return new ServerTransactionImpl(TxnBatchID.NULL_BATCH_ID, getNextTransactionID(), SequenceID.NULL_ID,
                                      NULL_LOCK_ID, localNodeID,
                                      Collections.singletonList(new MemcacheRootDNA(new ObjectID(oid))),

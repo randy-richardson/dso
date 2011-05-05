@@ -1262,7 +1262,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     memcacheDaemon.setAddr(new InetSocketAddress("0.0.0.0", 11211));
     CacheStorage<Key, LocalCacheElement> storage = new TCMemcacheStorage(objectStore, this.groupCommManager,
                                                                          serverTransactionFactory,
-                                                                         transactionBatchManager);
+                                                                         transactionBatchManager,
+                                                                         this.transactionManager, this.objectManager);
     memcacheDaemon.setCache(new CacheImpl(storage));
     memcacheDaemon.start();
   }

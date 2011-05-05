@@ -17,18 +17,21 @@ import com.tc.object.metadata.MetaDataDescriptorInternal;
 import java.util.Collections;
 import java.util.Iterator;
 
+/**
+ * Hack at its best
+ */
 public class MemcacheDNA implements DNAInternal {
 
   private final ObjectID oid;
-  private final long     version;
   private final Object[] params;
   private final int      method;
+  private final long     version;
 
-  public MemcacheDNA(ObjectID oid, long version, Object[] params, int method) {
+  public MemcacheDNA(ObjectID oid, Object[] params, int method, long version) {
     this.oid = oid;
-    this.version = version;
     this.params = params;
     this.method = method;
+    this.version = version;
   }
 
   public int getArraySize() {
@@ -48,7 +51,7 @@ public class MemcacheDNA implements DNAInternal {
   }
 
   public ObjectID getParentObjectID() throws DNAException {
-    return null;
+    return ObjectID.NULL_ID;
   }
 
   public String getTypeName() {
@@ -56,7 +59,7 @@ public class MemcacheDNA implements DNAInternal {
   }
 
   public long getVersion() {
-    return version;
+    return this.version;
   }
 
   public boolean hasLength() {
@@ -64,7 +67,7 @@ public class MemcacheDNA implements DNAInternal {
   }
 
   public boolean isDelta() {
-    return false;
+    return true;
   }
 
   public MetaDataReader getMetaDataReader() {
@@ -85,7 +88,8 @@ public class MemcacheDNA implements DNAInternal {
 
   private class MemcacheDNACursor implements DNACursor {
 
-    boolean next;
+    boolean               next;
+    private LogicalAction currenctAction;
 
     public MemcacheDNACursor() {
       next = true;
@@ -97,7 +101,9 @@ public class MemcacheDNA implements DNAInternal {
 
     public boolean next() {
       if (next) {
+        currenctAction = new LogicalAction(method, params);
         next = false;
+        return true;
       }
       return next;
     }
@@ -111,11 +117,7 @@ public class MemcacheDNA implements DNAInternal {
     }
 
     public LogicalAction getLogicalAction() {
-      if (next) {
-        return new LogicalAction(method, params);
-      } else {
-        throw new ImplementMe();
-      }
+      throw new ImplementMe();
     }
 
     public PhysicalAction getPhysicalAction() {
@@ -123,7 +125,7 @@ public class MemcacheDNA implements DNAInternal {
     }
 
     public Object getAction() {
-      return null;
+      return currenctAction;
     }
 
   }
