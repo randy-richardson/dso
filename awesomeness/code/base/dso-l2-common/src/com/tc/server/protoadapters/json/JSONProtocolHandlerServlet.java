@@ -9,7 +9,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import com.tc.server.protoadapters.GlobalStorageManager;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.Map;
 
 import javax.servlet.ServletOutputStream;
@@ -32,7 +31,6 @@ public class JSONProtocolHandlerServlet extends HttpServlet {
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
     ServletOutputStream out = response.getOutputStream();
-    out.println("Hello - " + new Date());
     String msg = request.getParameter("msg");
     if (null == msg || "".equals(msg)) {
       out.println("Unknown message: " + msg);
@@ -63,7 +61,8 @@ public class JSONProtocolHandlerServlet extends HttpServlet {
   private void run() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
     Map readValue = mapper
-        .readValue("{\"operation\": \"GET\", \"key\": \"key1\", \"value\": {\"one\": 1, \"two\": 2, \"boolean\": false, \"array\":[1, 2, 3, 4, 5]}}",
+        .readValue(
+                   "{\"operation\": \"GET\", \"key\": \"key1\", \"value\": {\"one\": 1, \"two\": 2, \"boolean\": false, \"array\":[1, 2, 3, 4, 5]}}",
                    Map.class);
     System.out.println(GlobalStorageManager.toString(readValue));
 
