@@ -7,6 +7,7 @@ package com.tc.server;
 import com.tc.config.schema.L2Info;
 import com.tc.config.schema.ServerGroupInfo;
 import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.server.protoadapters.ProtocolAdapterManager;
 
 public interface TCServer {
   String[] processArguments();
@@ -58,4 +59,6 @@ public interface TCServer {
   void dump();
 
   void reloadConfiguration() throws ConfigurationSetupException;
+
+  void setProtocolAdapterManager(ProtocolAdapterManager protocolAdapterManager);
 }

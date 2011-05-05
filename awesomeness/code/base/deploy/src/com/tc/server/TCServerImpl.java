@@ -59,6 +59,8 @@ import com.tc.objectserver.mgmt.ObjectStatsRecorder;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
+import com.tc.server.protoadapters.ProtocolAdapterManager;
+import com.tc.server.protoadapters.json.JSONProtocolHandlerServlet;
 import com.tc.servlets.L1ReconnectPropertiesServlet;
 import com.tc.statistics.StatisticsGathererSubSystem;
 import com.tc.util.Assert;
@@ -85,6 +87,7 @@ public class TCServerImpl extends SEDA implements TCServer {
                                                                                            + "/*";
   public static final String                L1_RECONNECT_PROPERTIES_FROML2_SERVELET_PATH = "/l1reconnectproperties";
 
+  public static final String                JSON_HANDLER_SERVLET_PATH                    = "/globalStorage";
   public static final String                HTTP_AUTHENTICATION_ROLE_STATISTICS          = "statistics";
 
   private static final TCLogger             logger                                       = TCLogging
@@ -543,10 +546,14 @@ public class TCServerImpl extends SEDA implements TCServer {
     }
     context.setResourceBase(resourceBaseDir.getAbsolutePath());
 
+    context.setAttribute(JSONProtocolHandlerServlet.GLOBAL_STORAGE_MGR_ATTRIBUTE,
+                         protocolAdapterManager.getGlobalStorageManager());
+
     createAndAddServlet(servletHandler, VersionServlet.class.getName(), VERSION_SERVLET_PATH);
     createAndAddServlet(servletHandler, ConfigServlet.class.getName(), CONFIG_SERVLET_PATH);
     createAndAddServlet(servletHandler, GroupInfoServlet.class.getName(), GROUP_INFO_SERVLET_PATH);
     createAndAddServlet(servletHandler, GroupIDMapServlet.class.getName(), GROUPID_MAP_SERVLET_PATH);
+    createAndAddServlet(servletHandler, JSONProtocolHandlerServlet.class.getName(), JSON_HANDLER_SERVLET_PATH);
 
     if (cvtRestEnabled) {
       createAndAddServlet(servletHandler, StatisticsGathererServlet.class.getName(), STATISTICS_GATHERER_SERVLET_PATH);
@@ -601,6 +608,7 @@ public class TCServerImpl extends SEDA implements TCServer {
 
   // TODO: check that this is not needed then remove
   private TCServerActivationListener activationListener;
+  private ProtocolAdapterManager     protocolAdapterManager;
 
   public void setActivationListener(final TCServerActivationListener listener) {
     this.activationListener = listener;
@@ -652,4 +660,9 @@ public class TCServerImpl extends SEDA implements TCServer {
   public String[] processArguments() {
     return configurationSetupManager.processArguments();
   }
+
+  public void setProtocolAdapterManager(ProtocolAdapterManager protocolAdapterManager) {
+    this.protocolAdapterManager = protocolAdapterManager;
+  }
+
 }
