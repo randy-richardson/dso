@@ -312,6 +312,7 @@ import com.tc.util.StartupLock;
 import com.tc.util.TCTimeoutException;
 import com.tc.util.UUID;
 import com.tc.util.concurrent.StoppableThread;
+import com.tc.util.concurrent.ThreadUtil;
 import com.tc.util.runtime.LockInfoByThreadID;
 import com.tc.util.runtime.NullThreadIDMapImpl;
 import com.tc.util.runtime.ThreadIDMap;
@@ -1258,6 +1259,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   private void startMemcacheServer(ServerTransactionFactory serverTransactionFactory,
                                    TransactionBatchManagerImpl transactionBatchManager) {
+
+    ThreadUtil.reallySleep(10000);
+
     MemCacheDaemon<LocalCacheElement> memcacheDaemon = new MemCacheDaemon<LocalCacheElement>();
     memcacheDaemon.setAddr(new InetSocketAddress("0.0.0.0", 11211));
     CacheStorage<Key, LocalCacheElement> storage = new TCMemcacheStorage(objectStore, this.groupCommManager,

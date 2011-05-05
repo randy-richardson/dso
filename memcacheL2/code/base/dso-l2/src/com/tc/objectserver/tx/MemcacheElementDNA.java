@@ -12,26 +12,19 @@ import com.tc.object.dna.api.DNAInternal;
 import com.tc.object.dna.api.LogicalAction;
 import com.tc.object.dna.api.MetaDataReader;
 import com.tc.object.dna.api.PhysicalAction;
-import com.tc.object.metadata.MetaDataDescriptorInternal;
 
-import java.util.Collections;
-import java.util.Iterator;
+import java.io.IOException;
 
-/**
- * Hack at its best
- */
-public class MemcacheDNA implements DNAInternal {
+public class MemcacheElementDNA implements DNAInternal {
 
   private final ObjectID oid;
-  private final Object[] params;
-  private final int      method;
   private final long     version;
+  private final byte[]   value;
 
-  public MemcacheDNA(ObjectID oid, Object[] params, int method, long version) {
+  public MemcacheElementDNA(ObjectID oid, long version, byte[] value) {
     this.oid = oid;
-    this.params = params;
-    this.method = method;
     this.version = version;
+    this.value = value;
   }
 
   public int getArraySize() {
@@ -39,7 +32,7 @@ public class MemcacheDNA implements DNAInternal {
   }
 
   public DNACursor getCursor() {
-    return new MemcacheDNACursor();
+    return new MemcacheElementDNACursor();
   }
 
   public String getDefiningLoaderDescription() {
@@ -55,7 +48,7 @@ public class MemcacheDNA implements DNAInternal {
   }
 
   public String getTypeName() {
-    return null;
+    return "org.terracotta.cache.serialization.SerializedEntry";
   }
 
   public long getVersion() {
@@ -67,53 +60,28 @@ public class MemcacheDNA implements DNAInternal {
   }
 
   public boolean isDelta() {
-    return true;
+    return false;
   }
 
   public MetaDataReader getMetaDataReader() {
-    return new NullMetaDataReader();
+    return null;
   }
 
   public boolean hasMetaData() {
     return false;
   }
 
-  private static class NullMetaDataReader implements MetaDataReader {
+  private class MemcacheElementDNACursor implements DNACursor {
 
-    public Iterator<MetaDataDescriptorInternal> iterator() {
-      return Collections.EMPTY_LIST.iterator();
-    }
+    PhysicalAction physicalAction;
+    boolean        next = true;
 
-  }
-
-  private class MemcacheDNACursor implements DNACursor {
-
-    boolean               next;
-    private LogicalAction currenctAction;
-
-    public MemcacheDNACursor() {
-      next = true;
+    public Object getAction() {
+      return physicalAction;
     }
 
     public int getActionCount() {
       return 1;
-    }
-
-    public boolean next() {
-      if (next) {
-        currenctAction = new LogicalAction(method, params);
-        next = false;
-        return true;
-      }
-      return next;
-    }
-
-    public boolean next(DNAEncoding encoding) {
-      throw new ImplementMe();
-    }
-
-    public void reset() throws UnsupportedOperationException {
-      //
     }
 
     public LogicalAction getLogicalAction() {
@@ -121,11 +89,25 @@ public class MemcacheDNA implements DNAInternal {
     }
 
     public PhysicalAction getPhysicalAction() {
+      return physicalAction;
+    }
+
+    public boolean next() throws IOException {
+      if (next) {
+        next = false;
+        physicalAction = new PhysicalAction(value);
+        return true;
+      }
+      return next;
+    }
+
+    public boolean next(DNAEncoding arg0) throws IOException, ClassNotFoundException {
       throw new ImplementMe();
     }
 
-    public Object getAction() {
-      return currenctAction;
+    public void reset() throws UnsupportedOperationException {
+      throw new ImplementMe();
+
     }
 
   }

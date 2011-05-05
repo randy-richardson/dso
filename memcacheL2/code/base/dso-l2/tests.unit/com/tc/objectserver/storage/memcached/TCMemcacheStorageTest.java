@@ -6,12 +6,12 @@ package com.tc.objectserver.storage.memcached;
 import org.jboss.netty.buffer.ChannelBuffers;
 
 import com.tc.test.TCTestCase;
-import com.tc.util.HexDump;
 import com.thimbleware.jmemcached.Key;
 import com.thimbleware.jmemcached.LocalCacheElement;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -28,21 +28,33 @@ public class TCMemcacheStorageTest extends TCTestCase {
     System.out.println("XXX IN " + element + " - " + Arrays.toString(element.getData().array()) + " - "
                        + element.getData().array().length + " - " + element.getData().capacity());
 
-    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-    ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
-    objOut.writeObject(element);
-    byteOut.flush();
-    byte[] b = byteOut.toByteArray();
-    System.out.println("XXX " + HexDump.dump(b));
+    // ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+    // ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
+    // objOut.writeObject(element);
+    // byteOut.flush();
+    // byte[] b = byteOut.toByteArray();
+    // System.out.println("XXX " + HexDump.dump(b));
+    // objOut.close();
+    //
+    // ByteArrayInputStream byteIn = new ByteArrayInputStream(b);
+    // ObjectInputStream objIn = new ObjectInputStream(byteIn);
+    // byte[] buf = new byte[b.length];
+    //
+    // System.out.println("XXX OUT 2 " + byteIn.read(buf, 0, 118));
+    // System.out.println("XXX " + HexDump.dump(buf));
+
+    // System.out.println("XXX OUT 1 " + objIn.readObject());
+
+    String str = "sdgsdfsdfsfsffsfdfs";
+
+    FileOutputStream fileOut = new FileOutputStream(new File("localcacheel.txt"));
+    ObjectOutputStream objOut = new ObjectOutputStream(fileOut);
+    objOut.writeObject(str);
+    fileOut.flush();
     objOut.close();
 
-    ByteArrayInputStream byteIn = new ByteArrayInputStream(b);
-    ObjectInputStream objIn = new ObjectInputStream(byteIn);
-    byte[] buf = new byte[b.length];
-
-    System.out.println("XXX OUT 2 " + byteIn.read(buf, 0, 118));
-    System.out.println("XXX " + HexDump.dump(buf));
-
+    FileInputStream fileIn = new FileInputStream(new File("localcacheel.txt"));
+    ObjectInputStream objIn = new ObjectInputStream(fileIn);
     System.out.println("XXX OUT 1 " + objIn.readObject());
 
   }

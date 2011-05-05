@@ -37,7 +37,7 @@ public class TDCSerializedEntryManagedObjectState extends AbstractManagedObjectS
 
   private final long            classID;
 
-  private byte[]                value;
+  public byte[]                 value;
   private int                   createTime;
   private int                   lastAccessedTime;
 

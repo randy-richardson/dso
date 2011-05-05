@@ -11,15 +11,15 @@ import com.tc.net.NodeID;
 import com.tc.net.groups.GroupManager;
 import com.tc.object.ObjectID;
 import com.tc.object.SerializationUtil;
-import com.tc.object.dna.impl.ObjectStringSerializer;
+import com.tc.object.dna.api.DNAInternal;
 import com.tc.object.dna.impl.ObjectStringSerializerImpl;
-import com.tc.object.tx.TransactionID;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.impl.ObjectManagerImpl;
 import com.tc.objectserver.impl.ServerMapEvictionTransactionBatchContext;
-import com.tc.objectserver.managedobject.ApplyTransactionInfo;
 import com.tc.objectserver.managedobject.ConcurrentDistributedServerMapManagedObjectState;
-import com.tc.objectserver.tx.MemcacheDNA;
+import com.tc.objectserver.managedobject.TDCSerializedEntryManagedObjectState;
+import com.tc.objectserver.tx.MemcacheCDSMDNA;
+import com.tc.objectserver.tx.MemcacheElementDNA;
 import com.tc.objectserver.tx.ServerTransaction;
 import com.tc.objectserver.tx.ServerTransactionManagerEventListener;
 import com.tc.objectserver.tx.ServerTransactionManagerImpl;
@@ -35,19 +35,24 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, ServerTransactionManagerEventListener {
 
-  private static final String     MEMCACHE_ROOT_NAME = "MEMCACHE-GLOBAL-CACHE";
-  private final ObjectManagerImpl objectManager;
-  private volatile ObjectID       memcacheRootID;
-  private volatile ManagedObject  memcacheRootMO;
-  private final NodeID            localNodeID;
-  private final AtomicLong        opsVersions        = new AtomicLong();
+  private static final String               MEMCACHE_ROOT_NAME = "MEMCACHE-GLOBAL-CACHE";
+  private final ObjectManagerImpl           objectManager;
+  private final ObjectIDSequence            oidSequence;
+  private volatile ObjectID                 memcacheRootID;
+  private final NodeID                      localNodeID;
+  private final AtomicLong                  opsVersions        = new AtomicLong();
+  private final ObjectStringSerializerImpl  serializer;
+  private final TransactionBatchManagerImpl transactionBatchManager;
+  private final ServerTransactionFactory    serverTxnFactory;
 
   /**
    * 1. Create a root map once <br>
@@ -67,15 +72,25 @@ public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, 
                            ServerTransactionManagerImpl transactionManager, ObjectManagerImpl objectManager) {
 
     localNodeID = groupCommManager.getLocalNodeID();
-    final ObjectStringSerializer serializer = new ObjectStringSerializerImpl();
+    this.serializer = new ObjectStringSerializerImpl();
+    this.transactionBatchManager = transactionBatchManager;
+    this.serverTxnFactory = new ServerTransactionFactory();
+    this.objectManager = objectManager;
+    this.oidSequence = objectStore;
 
-    transactionManager.addRootListener(this);
-    ServerTransaction txn = new ServerTransactionFactory().createMemcacheRootTxn(localNodeID, objectStore
-        .nextObjectIDBatch(1), MEMCACHE_ROOT_NAME);
+    // transactionManager.addRootListener(this);
+    memcacheRootID = new ObjectID(objectStore.nextObjectIDBatch(1));
+    ServerTransaction txn = this.serverTxnFactory.createMemcacheRootTxn(localNodeID, memcacheRootID.toLong(),
+                                                                        MEMCACHE_ROOT_NAME);
+
+    applyMemCacheTxn(txn);
+  }
+
+  private void applyMemCacheTxn(ServerTransaction txn) {
     final TransactionBatchContext batchContext = new ServerMapEvictionTransactionBatchContext(localNodeID, txn,
                                                                                               serializer);
-    transactionBatchManager.processTransactions(batchContext);
-    this.objectManager = objectManager;
+
+    this.transactionBatchManager.processTransactions(batchContext);
   }
 
   private byte[] getSerializedLocalCacheElement(LocalCacheElement element) {
@@ -141,24 +156,51 @@ public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, 
   }
 
   public LocalCacheElement get(Object key) {
-    byte[] bytes = (byte[]) ((ConcurrentDistributedServerMapManagedObjectState) getMemcacheRootMO()
-        .getManagedObjectState()).getMap().get(key);
-    if (bytes == null) { return null; }
+    ManagedObject mo = getMemcacheRootMO();
+    ObjectID valueID = (ObjectID) ((ConcurrentDistributedServerMapManagedObjectState) mo.getManagedObjectState())
+        .getMap().get(key);
+    if (valueID == null) { return null; }
+
+    System.out.println("GET OID: " + valueID);
+    ManagedObject valueMO = this.objectManager.getObjectByID(valueID);
 
     LocalCacheElement element = new LocalCacheElement((Key) key);
-    element.setData(ChannelBuffers.wrappedBuffer(bytes));
+    element.setData(ChannelBuffers.wrappedBuffer(((TDCSerializedEntryManagedObjectState) valueMO
+        .getManagedObjectState()).value));
 
     System.out.println("XXX GET key:" + element.getKey() + "; value: " + element.getData());
+    this.objectManager.releaseReadOnly(mo);
+    this.objectManager.releaseReadOnly(valueMO);
     return element;
   }
 
+  /**
+   * 1. create oid for value <br>
+   * 2. create dna for serialized entry <br>
+   * 3. create dna for CDSM put <br>
+   * 4. create a server txn with both changes and apply
+   */
   public LocalCacheElement put(Key key, LocalCacheElement value) {
     byte[] b = value.getData().array();
-    getMemcacheRootMO().apply(
-                              new MemcacheDNA(memcacheRootID, new Object[] { key, b }, SerializationUtil.PUT,
-                                              opsVersions.incrementAndGet()), TransactionID.NULL_ID,
-                              new ApplyTransactionInfo(), null, true);
-    System.out.println("XXX PUT key: " + key + "; value: " + value.getData());
+    ObjectID valueOID = new ObjectID(this.oidSequence.nextObjectIDBatch(1));
+    DNAInternal entryCreate = new MemcacheElementDNA(valueOID, opsVersions.incrementAndGet(), b);
+    DNAInternal cdsmPut = new MemcacheCDSMDNA(memcacheRootID, new Object[] { key, valueOID }, SerializationUtil.PUT,
+                                              opsVersions.incrementAndGet());
+
+    // List changes = new ArrayList();
+    // changes.add(cdsmPut);
+    // applyMemCacheTxn(this.serverTxnFactory.createMemcacheElementTxn(localNodeID, changes));
+    //
+    // List changes2 = new ArrayList();
+    // changes2.add(entryCreate);
+    // applyMemCacheTxn(this.serverTxnFactory.createMemcacheElementTxn(localNodeID, changes2));
+
+    List changes = new ArrayList();
+    changes.add(entryCreate);
+    changes.add(cdsmPut);
+    applyMemCacheTxn(this.serverTxnFactory.createMemcacheElementTxn(localNodeID, changes));
+
+    System.out.println("XXX PUT key: " + key + "; value: " + value.getData() + " -- OID: " + valueOID);
     return new LocalCacheElement();
   }
 
@@ -204,18 +246,15 @@ public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, 
   }
 
   public void rootCreated(String name, ObjectID id) {
-    if (name.equals(MEMCACHE_ROOT_NAME)) {
-      System.out.println("XXX root created " + name + " - " + id);
-      this.memcacheRootID = id;
-      this.memcacheRootMO = this.objectManager.getObjectByID(id);
-    }
+    // if (name.equals(MEMCACHE_ROOT_NAME)) {
+    // System.out.println("XXX root created " + name + " - " + id);
+    // this.memcacheRootID = id;
+    // this.memcacheRootMO = this.objectManager.getObjectByID(id);
+    // }
   }
 
   ManagedObject getMemcacheRootMO() {
-    if (this.memcacheRootMO == null) {
-      this.memcacheRootMO = this.objectManager.getObjectByID(this.memcacheRootID);
-    }
-    return this.memcacheRootMO;
+    return this.objectManager.getObjectByID(this.memcacheRootID);
   }
 
 }
