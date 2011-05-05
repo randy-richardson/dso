@@ -3,6 +3,8 @@
  */
 package com.tc.objectserver.storage.memcached;
 
+import org.jboss.netty.buffer.ChannelBuffers;
+
 import com.tc.exception.ImplementMe;
 import com.tc.l2.objectserver.ServerTransactionFactory;
 import com.tc.net.NodeID;
@@ -28,7 +30,11 @@ import com.thimbleware.jmemcached.Key;
 import com.thimbleware.jmemcached.LocalCacheElement;
 import com.thimbleware.jmemcached.storage.CacheStorage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -64,13 +70,42 @@ public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, 
     final ObjectStringSerializer serializer = new ObjectStringSerializerImpl();
 
     transactionManager.addRootListener(this);
-    ServerTransaction txn = new ServerTransactionFactory().createMemcacheRootTxn(localNodeID,
-                                                                                 objectStore.nextObjectIDBatch(1),
-                                                                                 MEMCACHE_ROOT_NAME);
+    ServerTransaction txn = new ServerTransactionFactory().createMemcacheRootTxn(localNodeID, objectStore
+        .nextObjectIDBatch(1), MEMCACHE_ROOT_NAME);
     final TransactionBatchContext batchContext = new ServerMapEvictionTransactionBatchContext(localNodeID, txn,
                                                                                               serializer);
     transactionBatchManager.processTransactions(batchContext);
     this.objectManager = objectManager;
+  }
+
+  private byte[] getSerializedLocalCacheElement(LocalCacheElement element) {
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    try {
+      ObjectOutputStream stream = new ObjectOutputStream(byteArrayOutputStream);
+      stream.writeObject(element);
+      byteArrayOutputStream.flush();
+      stream.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    byte[] b = byteArrayOutputStream.toByteArray();
+
+    getDeserializedLocalCacheElement(b);
+    return byteArrayOutputStream.toByteArray();
+  }
+
+  private LocalCacheElement getDeserializedLocalCacheElement(byte[] bytes) {
+    if (bytes == null) { return null; }
+
+    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+    try {
+      ObjectInputStream stream = new ObjectInputStream(byteArrayInputStream);
+      LocalCacheElement element = (LocalCacheElement) stream.readObject();
+      stream.close();
+      return element;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public LocalCacheElement putIfAbsent(Key key, LocalCacheElement value) {
@@ -106,14 +141,21 @@ public class TCMemcacheStorage implements CacheStorage<Key, LocalCacheElement>, 
   }
 
   public LocalCacheElement get(Object key) {
-    LocalCacheElement element = (LocalCacheElement) ((ConcurrentDistributedServerMapManagedObjectState) getMemcacheRootMO()
+    byte[] bytes = (byte[]) ((ConcurrentDistributedServerMapManagedObjectState) getMemcacheRootMO()
         .getManagedObjectState()).getMap().get(key);
-    if (element != null) System.out.println("XXX GET key:" + element.getKey() + "; value: " + element.getData());
+    if (bytes == null) { return null; }
+
+    LocalCacheElement element = new LocalCacheElement((Key) key);
+    element.setData(ChannelBuffers.wrappedBuffer(bytes));
+
+    System.out.println("XXX GET key:" + element.getKey() + "; value: " + element.getData());
     return element;
   }
 
   public LocalCacheElement put(Key key, LocalCacheElement value) {
-    getMemcacheRootMO().apply(new MemcacheDNA(memcacheRootID, new Object[] { key, value }, SerializationUtil.PUT,
+    byte[] b = value.getData().array();
+    getMemcacheRootMO().apply(
+                              new MemcacheDNA(memcacheRootID, new Object[] { key, b }, SerializationUtil.PUT,
                                               opsVersions.incrementAndGet()), TransactionID.NULL_ID,
                               new ApplyTransactionInfo(), null, true);
     System.out.println("XXX PUT key: " + key + "; value: " + value.getData());

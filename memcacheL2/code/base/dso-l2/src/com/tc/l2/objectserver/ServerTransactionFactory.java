@@ -38,10 +38,8 @@ public class ServerTransactionFactory {
   private final AtomicLong             tid                   = new AtomicLong();
 
   public ServerTransaction createTxnFrom(final ObjectSyncMessage syncMsg) {
-    final ObjectSyncServerTransaction txn = new ObjectSyncServerTransaction(syncMsg.getServerTransactionID(),
-                                                                            syncMsg.getOids(), syncMsg.getDnaCount(),
-                                                                            syncMsg.getDNAs(), syncMsg.getRootsMap(),
-                                                                            syncMsg.messageFrom());
+    final ObjectSyncServerTransaction txn = new ObjectSyncServerTransaction(syncMsg.getServerTransactionID(), syncMsg
+        .getOids(), syncMsg.getDnaCount(), syncMsg.getDNAs(), syncMsg.getRootsMap(), syncMsg.messageFrom());
     return txn;
   }
 
@@ -63,11 +61,10 @@ public class ServerTransactionFactory {
                                                                  final ObjectStringSerializer serializer,
                                                                  final String cacheName) {
     return new ServerTransactionImpl(TxnBatchID.NULL_BATCH_ID, getNextTransactionID(), SequenceID.NULL_ID,
-                                     NULL_LOCK_ID, localNodeID,
-                                     Collections.singletonList(createServerMapEvictionDNAFor(oid, className,
-                                                                                             loaderDesc, candidates,
-                                                                                             cacheName)), serializer,
-                                     Collections.EMPTY_MAP, TxnType.NORMAL, Collections.EMPTY_LIST,
+                                     NULL_LOCK_ID, localNodeID, Collections
+                                         .singletonList(createServerMapEvictionDNAFor(oid, className, loaderDesc,
+                                                                                      candidates, cacheName)),
+                                     serializer, Collections.EMPTY_MAP, TxnType.NORMAL, Collections.EMPTY_LIST,
                                      NULL_DMI_DESCRIPTOR,
                                      new MetaDataReader[] { createEvictionMetaDataFor(oid, cacheName, candidates) }, 1,
                                      EMPTY_HIGH_WATER_MARK);
@@ -86,10 +83,20 @@ public class ServerTransactionFactory {
     Map rootMap = new HashMap();
     rootMap.put(rootName, new ObjectID(oid));
     return new ServerTransactionImpl(TxnBatchID.NULL_BATCH_ID, getNextTransactionID(), SequenceID.NULL_ID,
-                                     NULL_LOCK_ID, localNodeID,
-                                     Collections.singletonList(new MemcacheRootDNA(new ObjectID(oid))),
+                                     NULL_LOCK_ID, localNodeID, Collections
+                                         .singletonList(new MemcacheRootDNA(new ObjectID(oid))),
                                      new ObjectStringSerializerImpl(), rootMap, TxnType.NORMAL, Collections.EMPTY_LIST,
                                      NULL_DMI_DESCRIPTOR, new MetaDataReader[] {}, 1, EMPTY_HIGH_WATER_MARK);
+
+  }
+
+  public ServerTransactionImpl createMemcacheTxn(NodeID localNodeID, long oid, String rootName) {
+    return new ServerTransactionImpl(TxnBatchID.NULL_BATCH_ID, getNextTransactionID(), SequenceID.NULL_ID,
+                                     NULL_LOCK_ID, localNodeID, Collections
+                                         .singletonList(new MemcacheRootDNA(new ObjectID(oid))),
+                                     new ObjectStringSerializerImpl(), Collections.EMPTY_MAP, TxnType.NORMAL,
+                                     Collections.EMPTY_LIST, NULL_DMI_DESCRIPTOR, new MetaDataReader[] {}, 1,
+                                     EMPTY_HIGH_WATER_MARK);
 
   }
 }
