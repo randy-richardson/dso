@@ -11,11 +11,13 @@ import com.tc.object.dmi.DmiDescriptor;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.MetaDataReader;
 import com.tc.object.dna.impl.ObjectStringSerializer;
+import com.tc.object.dna.impl.ObjectStringSerializerImpl;
 import com.tc.object.locks.LockID;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.object.tx.TransactionID;
 import com.tc.object.tx.TxnBatchID;
 import com.tc.object.tx.TxnType;
+import com.tc.objectserver.tx.MemcacheRootDNA;
 import com.tc.objectserver.tx.ServerMapEvictionDNA;
 import com.tc.objectserver.tx.ServerMapEvictionMetaDataReader;
 import com.tc.objectserver.tx.ServerTransaction;
@@ -23,6 +25,7 @@ import com.tc.objectserver.tx.ServerTransactionImpl;
 import com.tc.util.SequenceID;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -79,4 +82,14 @@ public class ServerTransactionFactory {
     return new ServerMapEvictionDNA(oid, className, loaderDesc, candidates, cacheName);
   }
 
+  public ServerTransactionImpl createMemcacheRootTxn(NodeID localNodeID, long oid) {
+    Map rootMap = new HashMap();
+    rootMap.put("MEMCACHE-GLOBAL-CACHE", new ObjectID(oid));
+    return new ServerTransactionImpl(TxnBatchID.NULL_BATCH_ID, getNextTransactionID(), SequenceID.NULL_ID,
+                                     NULL_LOCK_ID, localNodeID,
+                                     Collections.singletonList(new MemcacheRootDNA(new ObjectID(oid))),
+                                     new ObjectStringSerializerImpl(), rootMap, TxnType.NORMAL, Collections.EMPTY_LIST,
+                                     NULL_DMI_DESCRIPTOR, new MetaDataReader[] {}, 1, EMPTY_HIGH_WATER_MARK);
+
+  }
 }

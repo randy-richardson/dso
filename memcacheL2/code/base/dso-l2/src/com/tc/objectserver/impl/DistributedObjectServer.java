@@ -241,6 +241,7 @@ import com.tc.objectserver.storage.api.DBEnvironment;
 import com.tc.objectserver.storage.api.DBFactory;
 import com.tc.objectserver.storage.api.OffheapStats;
 import com.tc.objectserver.storage.api.PersistenceTransactionProvider;
+import com.tc.objectserver.storage.memcached.TCMemcacheStorage;
 import com.tc.objectserver.tx.CommitTransactionMessageRecycler;
 import com.tc.objectserver.tx.ServerTransactionManagerConfig;
 import com.tc.objectserver.tx.ServerTransactionManagerImpl;
@@ -323,11 +324,17 @@ import com.tc.util.startuplock.FileNotCreatedException;
 import com.tc.util.startuplock.LocationNotCreatedException;
 import com.terracottatech.config.Offheap;
 import com.terracottatech.config.PersistenceMode;
+import com.thimbleware.jmemcached.CacheImpl;
+import com.thimbleware.jmemcached.Key;
+import com.thimbleware.jmemcached.LocalCacheElement;
+import com.thimbleware.jmemcached.MemCacheDaemon;
+import com.thimbleware.jmemcached.storage.CacheStorage;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1245,6 +1252,19 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       startL1Listener();
     }
     setLoggerOnExit();
+
+    startMemcacheServer(serverTransactionFactory, transactionBatchManager);
+  }
+
+  private void startMemcacheServer(ServerTransactionFactory serverTransactionFactory,
+                                   TransactionBatchManagerImpl transactionBatchManager) {
+    MemCacheDaemon<LocalCacheElement> memcacheDaemon = new MemCacheDaemon<LocalCacheElement>();
+    memcacheDaemon.setAddr(new InetSocketAddress("0.0.0.0", 11211));
+    CacheStorage<Key, LocalCacheElement> storage = new TCMemcacheStorage(objectStore, this.groupCommManager,
+                                                                         serverTransactionFactory,
+                                                                         transactionBatchManager);
+    memcacheDaemon.setCache(new CacheImpl(storage));
+    memcacheDaemon.start();
   }
 
   private DBFactory getDBFactory() {

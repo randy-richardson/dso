@@ -20,5 +20,6 @@
     <dependency name="slf4j-api" rev="1.6.1" org="org.slf4j"/>
     <dependency name="trove" rev="1.1-beta-5" org="trove"/>
     <dependency org="com.thimbleware.jmemcached" name="jmemcached-core" rev="1.0.0"/>
+    <dependency org="org.jboss.netty" name="netty" rev="3.1.0.GA"/>
   </dependencies>
 </ivy-module>
