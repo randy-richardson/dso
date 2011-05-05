@@ -32,7 +32,7 @@
 	<classpathentry exported="true" kind="lib" path="/dependencies/lib/slf4j-log4j12-1.6.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="/dependencies/lib/trove-1.1-beta-5.jar"/>
 	<classpathentry exported="true" kind="lib" path="/dependencies/lib/jmemcached-core-1.0.0.jar" sourcepath="/Users/mgovinda/Desktop/jmemcached-core-0.9.1-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="/dependencies/lib/netty-3.2.3.Final.jar"/>
+	<classpathentry exported="true" kind="lib" path="/dependencies/lib/netty-3.2.4.Final.jar" sourcepath="/Users/mgovinda/Desktop/netty-3.2.4.Final/jar/netty-3.2.4.Final-sources.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/common-api"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/tim-api"/>
 	<classpathentry exported="true" kind="lib" path="lib.tests.unit/tctest-xmlbeans-generated.jar"/>
