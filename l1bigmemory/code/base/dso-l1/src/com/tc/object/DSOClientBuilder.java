@@ -47,9 +47,9 @@ import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.net.DSOClientMessageChannel;
 import com.tc.object.session.SessionManager;
 import com.tc.object.session.SessionProvider;
-import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
 import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.TransactionIDGenerator;
+import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
 import com.tc.runtime.logging.LongGCLogger;
 import com.tc.statistics.StatisticsAgentSubSystem;
 import com.tc.stats.counter.Counter;
@@ -69,7 +69,8 @@ public interface DSOClientBuilder {
                                                         final SessionProvider sessionProvider, int maxReconnectTries,
                                                         int socketConnectTimeout, TCClient client);
 
-  CommunicationsManager createCommunicationsManager(final MessageMonitor monitor,
+  CommunicationsManager createCommunicationsManager(
+                                                    final MessageMonitor monitor,
                                                     TCMessageRouter messageRouter,
                                                     final NetworkStackHarnessFactory stackHarnessFactory,
                                                     final ConnectionPolicy connectionPolicy,
@@ -83,7 +84,8 @@ public interface DSOClientBuilder {
   TunneledDomainManager createTunneledDomainManager(final ClientMessageChannel ch, final DSOMBeanConfig config,
                                                     final TunnelingEventHandler teh);
 
-  ClientGlobalTransactionManager createClientGlobalTransactionManager(final RemoteTransactionManager remoteTxnMgr,
+  ClientGlobalTransactionManager createClientGlobalTransactionManager(
+                                                                      final RemoteTransactionManager remoteTxnMgr,
                                                                       final RemoteServerMapManager remoteServerMapManager);
 
   RemoteObjectManager createRemoteObjectManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
@@ -91,7 +93,7 @@ public interface DSOClientBuilder {
 
   RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
                                                       final SessionManager sessionManager, Sink lockRecallSink,
-                                                      Sink capacityEvictionSink, Sink ttiTTLEvitionSink);
+                                                      Sink ttiTTLEvitionSink);
 
   RemoteSearchRequestManager createRemoteSearchRequestManager(final TCLogger logger,
                                                               final DSOClientMessageChannel dsoChannel,

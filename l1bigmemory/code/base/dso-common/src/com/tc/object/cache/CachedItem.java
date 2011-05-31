@@ -4,27 +4,11 @@
 package com.tc.object.cache;
 
 import com.tc.cache.ExpirableEntry;
-import com.tc.object.ObjectID;
-import com.tc.object.tx.TransactionCompleteListener;
-import com.tc.object.tx.TransactionID;
+import com.tc.local.cache.store.DisposeListener;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-public class CachedItem implements TransactionCompleteListener {
-
-  public interface DisposeListener {
-    /**
-     * This method is called when the CachedItem is disposed. Dispose is called when the item is being flushed/removed
-     * from the RemoteServerMapManager
-     */
-    public void disposed(CachedItem ci);
-
-    /**
-     * This method is called to remove from the LocalCache if the same mapping exists from the key to the cachedItem.
-     * This will also remove from the RemoteServerMapManager
-     */
-    public void evictFromLocalCache(CachedItem ci);
-  }
+public class CachedItem {
 
   private final DisposeListener                                                 listener;
   /*
@@ -37,7 +21,8 @@ public class CachedItem implements TransactionCompleteListener {
 
   private volatile CachedItemState                                              state;
   private static final AtomicReferenceFieldUpdater<CachedItem, CachedItemState> refUpdater = AtomicReferenceFieldUpdater
-                                                                                               .newUpdater(CachedItem.class,
+                                                                                               .newUpdater(
+                                                                                                           CachedItem.class,
                                                                                                            CachedItemState.class,
                                                                                                            "state");
 
@@ -127,26 +112,6 @@ public class CachedItem implements TransactionCompleteListener {
       final CachedItemState lstate = state;
       success = update(lstate, lstate.clearAccessed());
     } while (!success);
-  }
-
-  public void transactionComplete(TransactionID txnID) {
-    switch (state) {
-      case REMOVE_ON_TXN_COMPLETE:
-        listener.evictFromLocalCache(this);
-        break;
-      default: {
-        boolean success = false;
-        do {
-          final CachedItemState lstate = state;
-          success = update(lstate, lstate.acknowledged());
-        } while (!success);
-        if (id == ObjectID.NULL_ID && value == null) {
-          // This is an unlocked remove item, remove from local cache so reads go to the server
-          dispose();
-        }
-        break;
-      }
-    }
   }
 
   private boolean update(CachedItemState previous, CachedItemState newState) {

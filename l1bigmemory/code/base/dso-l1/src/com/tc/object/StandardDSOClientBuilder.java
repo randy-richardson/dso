@@ -61,12 +61,12 @@ import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.net.DSOClientMessageChannel;
 import com.tc.object.session.SessionManager;
 import com.tc.object.session.SessionProvider;
-import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
 import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.RemoteTransactionManagerImpl;
 import com.tc.object.tx.TransactionBatchFactory;
 import com.tc.object.tx.TransactionBatchWriterFactory;
 import com.tc.object.tx.TransactionIDGenerator;
+import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.runtime.logging.LongGCLogger;
@@ -102,7 +102,8 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
     return cap;
   }
 
-  public CommunicationsManager createCommunicationsManager(final MessageMonitor monitor,
+  public CommunicationsManager createCommunicationsManager(
+                                                           final MessageMonitor monitor,
                                                            final TCMessageRouter messageRouter,
                                                            final NetworkStackHarnessFactory stackHarnessFactory,
                                                            final ConnectionPolicy connectionPolicy,
@@ -124,7 +125,8 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
     return new TunneledDomainManager(ch, config, teh);
   }
 
-  public ClientGlobalTransactionManager createClientGlobalTransactionManager(final RemoteTransactionManager remoteTxnMgr,
+  public ClientGlobalTransactionManager createClientGlobalTransactionManager(
+                                                                             final RemoteTransactionManager remoteTxnMgr,
                                                                              final RemoteServerMapManager remoteServerMapManager) {
     return new ClientGlobalTransactionManagerImpl(remoteTxnMgr, remoteServerMapManager);
   }
@@ -135,8 +137,8 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
     final GroupID defaultGroups[] = dsoChannel.getGroupIDs();
     Assert.assertNotNull(defaultGroups);
     Assert.assertEquals(1, defaultGroups.length);
-    return new RemoteObjectManagerImpl(defaultGroups[0], logger, dsoChannel.getRequestRootMessageFactory(),
-                                       dsoChannel.getRequestManagedObjectMessageFactory(), faultCount, sessionManager);
+    return new RemoteObjectManagerImpl(defaultGroups[0], logger, dsoChannel.getRequestRootMessageFactory(), dsoChannel
+        .getRequestManagedObjectMessageFactory(), faultCount, sessionManager);
   }
 
   public ClusterMetaDataManager createClusterMetaDataManager(final DSOClientMessageChannel dsoChannel,
@@ -204,10 +206,8 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
     final GroupID defaultGroups[] = dsoChannel.getGroupIDs();
     Assert.assertNotNull(defaultGroups);
     Assert.assertEquals(1, defaultGroups.length);
-    final TransactionBatchFactory txBatchFactory = new TransactionBatchWriterFactory(
-                                                                                     dsoChannel
-                                                                                         .getCommitTransactionMessageFactory(),
-                                                                                     encoding, foldingConfig);
+    final TransactionBatchFactory txBatchFactory = new TransactionBatchWriterFactory(dsoChannel
+        .getCommitTransactionMessageFactory(), encoding, foldingConfig);
     return new RemoteTransactionManagerImpl(
                                             defaultGroups[0],
                                             new ClientIDLogger(cidProvider, TCLogging
@@ -279,14 +279,12 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
   public RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger,
                                                              final DSOClientMessageChannel dsoChannel,
                                                              final SessionManager sessionManager,
-                                                             final Sink recallLockSink,
-                                                             final Sink capacityEvictionSink,
-                                                             final Sink ttiTTLEvitionSink) {
+                                                             final Sink recallLockSink, final Sink ttiTTLEvitionSink) {
     final GroupID defaultGroups[] = dsoChannel.getGroupIDs();
     Assert.assertNotNull(defaultGroups);
     Assert.assertEquals(1, defaultGroups.length);
     return new RemoteServerMapManagerImpl(defaultGroups[0], logger, dsoChannel.getServerMapMessageFactory(),
-                                          sessionManager, recallLockSink, capacityEvictionSink, ttiTTLEvitionSink);
+                                          sessionManager, recallLockSink, ttiTTLEvitionSink);
   }
 
   public RemoteSearchRequestManager createRemoteSearchRequestManager(final TCLogger logger,

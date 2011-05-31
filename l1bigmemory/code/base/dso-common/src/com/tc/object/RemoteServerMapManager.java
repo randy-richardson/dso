@@ -3,6 +3,8 @@
  */
 package com.tc.object;
 
+import com.tc.local.cache.store.DisposeListener;
+import com.tc.local.cache.store.LocalCacheStoreValue;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.cache.CachedItem;
@@ -14,6 +16,7 @@ import java.util.Collection;
 import java.util.Set;
 
 public interface RemoteServerMapManager extends ClientHandshakeCallback {
+  public void addDisposeListener(ObjectID mapID, DisposeListener listener);
 
   public Object getMappingForKey(ObjectID mapID, Object portableKey);
 
@@ -36,18 +39,18 @@ public interface RemoteServerMapManager extends ClientHandshakeCallback {
    * Adds this CachedItem to LockID or ObjectID. When the lock is recalled or the Object is invalidated this CachedItem
    * will be invalidated too.
    */
-  public void addCachedItem(Object id, CachedItem item);
+  public void addCachedItem(Object id, ObjectID mapID, Object key, LocalCacheStoreValue item);
 
   /**
    * Removes the mapping from ObjectID or LockID to CachedItem
    */
-  public void removeCachedItem(Object id, CachedItem item);
+  public void removeCachedItem(Object id, ObjectID mapID, Object key, LocalCacheStoreValue item);
 
   public void flush(Object id);
 
   public void clearCachedItemsForLocks(Set<LockID> toEvict);
 
-  public void initiateCachedItemEvictionFor(TCObjectServerMap serverMap);
-
   public void expired(TCObjectServerMap serverMap, CachedItem ci);
+
+  public void dispose(ObjectID mapID, Object key);
 }

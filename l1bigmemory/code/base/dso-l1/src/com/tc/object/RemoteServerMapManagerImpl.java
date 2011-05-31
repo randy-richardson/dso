@@ -6,12 +6,13 @@ package com.tc.object;
 import com.tc.async.api.Sink;
 import com.tc.exception.TCNotRunningException;
 import com.tc.exception.TCObjectNotFoundException;
+import com.tc.local.cache.store.DisposeListener;
+import com.tc.local.cache.store.LocalCacheStoreValue;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.cache.CachedItem;
 import com.tc.object.cache.CachedItemStore;
-import com.tc.object.context.CachedItemEvictionContext;
 import com.tc.object.context.CachedItemExpiredContext;
 import com.tc.object.context.LocksToRecallContext;
 import com.tc.object.locks.LockID;
@@ -34,23 +35,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
   // TODO::Make its own property
   private static final int                                               MAX_OUTSTANDING_REQUESTS_SENT_IMMEDIATELY = TCPropertiesImpl
                                                                                                                        .getProperties()
-                                                                                                                       .getInt(TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_MAX_REQUEST_SENT_IMMEDIATELY);
+                                                                                                                       .getInt(
+                                                                                                                               TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_MAX_REQUEST_SENT_IMMEDIATELY);
   private static final long                                              BATCH_LOOKUP_TIME_PERIOD                  = TCPropertiesImpl
                                                                                                                        .getProperties()
-                                                                                                                       .getInt(TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_BATCH_LOOKUP_TIME_PERIOD);
+                                                                                                                       .getInt(
+                                                                                                                               TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_BATCH_LOOKUP_TIME_PERIOD);
 
   private final GroupID                                                  groupID;
   private final ServerMapMessageFactory                                  smmFactory;
   private final TCLogger                                                 logger;
   private final SessionManager                                           sessionManager;
   private final Map<ServerMapRequestID, AbstractServerMapRequestContext> outstandingRequests                       = new HashMap<ServerMapRequestID, AbstractServerMapRequestContext>();
-
+  private final Map<ObjectID, DisposeListener>                           disposeListeners                          = new ConcurrentHashMap<ObjectID, DisposeListener>();
   private final Timer                                                    requestTimer                              = new Timer(
                                                                                                                                "RemoteServerMapManager Request Scheduler",
                                                                                                                                true);
@@ -59,12 +63,8 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private long                                                           requestIDCounter                          = 0;
   private boolean                                                        pendingSendTaskScheduled                  = false;
 
-  private final CachedItemStore                                          cachedItems                               = new CachedItemStore(
-                                                                                                                                         16384,
-                                                                                                                                         0.75f,
-                                                                                                                                         1024);
+  private final CachedItemStore                                          cachedItems;
   private final Sink                                                     lockRecallSink;
-  private final Sink                                                     capacityEvictionSink;
   private final Sink                                                     ttiTTLEvitionSink;
 
   private static enum State {
@@ -73,15 +73,14 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
   public RemoteServerMapManagerImpl(final GroupID groupID, final TCLogger logger,
                                     final ServerMapMessageFactory smmFactory, final SessionManager sessionManager,
-                                    final Sink lockRecallSink, final Sink capacityEvictionSink,
-                                    final Sink ttiTTLEvitionSink) {
+                                    final Sink lockRecallSink, final Sink ttiTTLEvitionSink) {
     this.groupID = groupID;
     this.logger = logger;
     this.smmFactory = smmFactory;
     this.sessionManager = sessionManager;
     this.lockRecallSink = lockRecallSink;
-    this.capacityEvictionSink = capacityEvictionSink;
     this.ttiTTLEvitionSink = ttiTTLEvitionSink;
+    this.cachedItems = new CachedItemStore(this);
   }
 
   /**
@@ -211,8 +210,8 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   }
 
   private void sendRequestNow(final AbstractServerMapRequestContext context) {
-    final ServerMapRequestMessage msg = this.smmFactory.newServerMapRequestMessage(this.groupID,
-                                                                                   context.getRequestType());
+    final ServerMapRequestMessage msg = this.smmFactory.newServerMapRequestMessage(this.groupID, context
+        .getRequestType());
     context.initializeMessage(msg);
     msg.send();
   }
@@ -325,27 +324,22 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
    * Adds this CachedItem to LockID or ObjectID. When the lock is recalled or the Object is invalidated this CachedItem
    * will be invalidated too.
    */
-  public void addCachedItem(final Object id, final CachedItem item) {
+  public void addCachedItem(final Object id, ObjectID mapID, Object key, final LocalCacheStoreValue item) {
     if (id == null) { throw new AssertionError("ID cannot be null"); }
-    this.cachedItems.add(id, item);
+    this.cachedItems.add(id, key, mapID);
   }
 
   /**
    * Removes the mapping from ObjectID or LockID to CachedItem
    */
-  public void removeCachedItem(final Object id, final CachedItem item) {
+  public void removeCachedItem(final Object id, ObjectID mapID, Object key, final LocalCacheStoreValue item) {
     if (id == null) { throw new AssertionError("ID cannot be null"); }
-    this.cachedItems.remove(id, item);
+    this.cachedItems.remove(id, key, mapID);
   }
 
   public void flush(final Object id) {
     if (id == null) { throw new AssertionError("ID cannot be null"); }
     this.cachedItems.flush(id);
-  }
-
-  public void initiateCachedItemEvictionFor(final TCObjectServerMap serverMap) {
-    // NOTE:: If this implementation changes for any reason, checkout RemoteServerMapManagerGroupImpl
-    this.capacityEvictionSink.add(new CachedItemEvictionContext(serverMap));
   }
 
   /**
@@ -537,5 +531,18 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
       ((GetAllSizeServerMapRequestMessage) requestMessage).initializeGetAllSizeRequest(this.requestID, this.mapIDs);
     }
 
+  }
+
+  public void addDisposeListener(ObjectID mapID, DisposeListener listener) {
+    this.disposeListeners.put(mapID, listener);
+  }
+
+  private DisposeListener getDisposeListener(ObjectID mapID) {
+    return this.disposeListeners.get(mapID);
+  }
+
+  public void dispose(ObjectID mapID, Object key) {
+    DisposeListener disposeListener = getDisposeListener(mapID);
+    disposeListener.disposed(key);
   }
 }

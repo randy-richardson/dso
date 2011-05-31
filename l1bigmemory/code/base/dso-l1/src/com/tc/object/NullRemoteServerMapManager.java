@@ -3,6 +3,8 @@
  */
 package com.tc.object;
 
+import com.tc.local.cache.store.DisposeListener;
+import com.tc.local.cache.store.LocalCacheStoreValue;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.cache.CachedItem;
@@ -28,10 +30,6 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
 
   public void initializeHandshake(final NodeID thisNode, final NodeID remoteNode,
                                   final ClientHandshakeMessage handshakeMessage) {
-    //
-  }
-
-  public void removeCachedItem(final Object id, final CachedItem item) {
     //
   }
 
@@ -67,10 +65,6 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void addCachedItem(final Object id, final CachedItem item) {
-    //
-  }
-
   public void clearCachedItemsForLocks(final Set<LockID> toEvict) {
     //
   }
@@ -88,4 +82,19 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
+  public void addCachedItem(Object id, ObjectID mapID, Object key, LocalCacheStoreValue item) {
+    //
+  }
+
+  public void removeCachedItem(Object id, ObjectID mapID, Object key, LocalCacheStoreValue item) {
+    //
+  }
+
+  public void addDisposeListener(ObjectID mapID, DisposeListener listener) {
+    //
+  }
+
+  public void dispose(ObjectID mapID, Object key) {
+    //
+  }
 }
