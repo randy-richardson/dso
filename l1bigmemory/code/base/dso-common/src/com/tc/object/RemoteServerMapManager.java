@@ -3,6 +3,7 @@
  */
 package com.tc.object;
 
+import com.tc.invalidation.Invalidations;
 import com.tc.local.cache.store.DisposeListener;
 import com.tc.local.cache.store.LocalCacheStoreValue;
 import com.tc.net.GroupID;
@@ -47,6 +48,8 @@ public interface RemoteServerMapManager extends ClientHandshakeCallback {
   public void removeCachedItem(Object id, ObjectID mapID, Object key, LocalCacheStoreValue item);
 
   public void flush(Object id);
+
+  public void flush(Invalidations invalidations);
 
   public void clearCachedItemsForLocks(Set<LockID> toEvict);
 

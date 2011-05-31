@@ -6,10 +6,10 @@ package com.tc.objectserver.managedobject;
 
 import com.tc.object.ObjectID;
 import com.tc.object.SerializationUtil;
-import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
+import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.objectserver.mgmt.FacadeUtil;
 import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
@@ -24,8 +24,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 
 /**
  * state for maps
@@ -72,13 +72,13 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
           addBackReferenceForValue(applyInfo, v, objectID);
         }
         if (old instanceof ObjectID) {
-          invalidateIfNeeded(applyInfo, (ObjectID) old);
+          invalidateIfNeeded(objectID, applyInfo, (ObjectID) old);
         }
         break;
       case SerializationUtil.REMOVE:
         old = this.references.remove(params[0]);
         if (old instanceof ObjectID) {
-          invalidateIfNeeded(applyInfo, (ObjectID) old);
+          invalidateIfNeeded(objectID, applyInfo, (ObjectID) old);
         }
         break;
       case SerializationUtil.CLEAR:
@@ -90,7 +90,7 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
 
   }
 
-  protected void invalidateIfNeeded(ApplyTransactionInfo applyInfo, ObjectID objectID) {
+  protected void invalidateIfNeeded(final ObjectID mapID, ApplyTransactionInfo applyInfo, ObjectID objectID) {
     // Overridden by subclasses
   }
 

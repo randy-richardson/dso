@@ -10,6 +10,7 @@ import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 
 import com.tc.async.api.Sink;
 import com.tc.bytes.TCByteBuffer;
+import com.tc.invalidation.Invalidations;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
@@ -499,12 +500,10 @@ public class ObjectRequestManagerTest extends TestCase {
       throw new AssertionError(e);
     }
 
-    objectRequestManager.sendObjects(respondToObjectRequestContext.getRequestedNodeID(),
-                                     respondToObjectRequestContext.getObjs(),
-                                     respondToObjectRequestContext.getRequestedObjectIDs(),
-                                     respondToObjectRequestContext.getMissingObjectIDs(),
-                                     respondToObjectRequestContext.isServerInitiated(),
-                                     respondToObjectRequestContext.getRequestDepth());
+    objectRequestManager.sendObjects(respondToObjectRequestContext.getRequestedNodeID(), respondToObjectRequestContext
+        .getObjs(), respondToObjectRequestContext.getRequestedObjectIDs(), respondToObjectRequestContext
+        .getMissingObjectIDs(), respondToObjectRequestContext.isServerInitiated(), respondToObjectRequestContext
+        .getRequestDepth());
 
   }
 
@@ -671,11 +670,11 @@ public class ObjectRequestManagerTest extends TestCase {
         synchronized (this) {
           System.out.println("in the reponse thread: " + respondToObjectRequestContext);
           this.objectRequestManager.sendObjects(respondToObjectRequestContext.getRequestedNodeID(),
-                                                respondToObjectRequestContext.getObjs(),
-                                                respondToObjectRequestContext.getRequestedObjectIDs(),
-                                                respondToObjectRequestContext.getMissingObjectIDs(),
-                                                respondToObjectRequestContext.isServerInitiated(),
-                                                respondToObjectRequestContext.getRequestDepth());
+                                                respondToObjectRequestContext.getObjs(), respondToObjectRequestContext
+                                                    .getRequestedObjectIDs(), respondToObjectRequestContext
+                                                    .getMissingObjectIDs(), respondToObjectRequestContext
+                                                    .isServerInitiated(), respondToObjectRequestContext
+                                                    .getRequestDepth());
           if (testReqManObjResMsgIter.hasNext()) {
             final TestRequestManagedObjectResponseMessage message = (TestRequestManagedObjectResponseMessage) testReqManObjResMsgIter
                 .next();
@@ -794,7 +793,7 @@ public class ObjectRequestManagerTest extends TestCase {
 
     public List<DNA> createPrunedChangesAndAddObjectIDTo(final Collection<DNA> changes,
                                                          final ApplyTransactionInfo references, final NodeID clientID,
-                                                         final Set<ObjectID> objectIDs, final Set<ObjectID> invalidIDs) {
+                                                         final Set<ObjectID> objectIDs, final Invalidations invalidIDs) {
       throw new NotImplementedException(TestClientStateManager.class);
     }
 

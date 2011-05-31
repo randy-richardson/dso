@@ -4,8 +4,10 @@
 package com.tc.object;
 
 import com.tc.async.api.Sink;
+import com.tc.exception.ImplementMe;
 import com.tc.exception.TCNotRunningException;
 import com.tc.exception.TCObjectNotFoundException;
+import com.tc.invalidation.Invalidations;
 import com.tc.local.cache.store.DisposeListener;
 import com.tc.local.cache.store.LocalCacheStoreValue;
 import com.tc.logging.TCLogger;
@@ -544,5 +546,9 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   public void dispose(ObjectID mapID, Object key) {
     DisposeListener disposeListener = getDisposeListener(mapID);
     disposeListener.disposed(key);
+  }
+
+  public void flush(Invalidations invalidations) {
+    throw new ImplementMe();
   }
 }

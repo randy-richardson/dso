@@ -4,6 +4,7 @@
  */
 package com.tc.objectserver.l1.api;
 
+import com.tc.invalidation.Invalidations;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
 import com.tc.object.ObjectID;
@@ -45,14 +46,14 @@ public class ClientStateManagerTest extends TestCase {
     ClientID cid1 = new ClientID(1);
     stateManager.startupNode(cid1);
     assertTrue(stateManager.createPrunedChangesAndAddObjectIDTo(changes, new ApplyTransactionInfo(), cid1,
-                                                                lookupObjectIDs, new HashSet()).size() == 0);
+                                                                lookupObjectIDs, new Invalidations()).size() == 0);
     assertEquals(0, lookupObjectIDs.size());
 
     stateManager.startupNode(cid0);
     stateManager.addReference(cid0, new ObjectID(4));
     stateManager.addAllReferencedIdsTo(testSet);
     assertEquals(0, stateManager.createPrunedChangesAndAddObjectIDTo(changes, new ApplyTransactionInfo(), cid1,
-                                                                     lookupObjectIDs, new HashSet()).size());
+                                                                     lookupObjectIDs, new Invalidations()).size());
     assertEquals(0, lookupObjectIDs.size());
     assertEquals(1, testSet.size());
 
@@ -62,10 +63,10 @@ public class ClientStateManagerTest extends TestCase {
     assertEquals(2, testSet.size());
 
     assertEquals(0, stateManager.createPrunedChangesAndAddObjectIDTo(changes, new ApplyTransactionInfo(), cid1,
-                                                                     lookupObjectIDs, new HashSet()).size());
+                                                                     lookupObjectIDs, new Invalidations()).size());
     assertEquals(0, lookupObjectIDs.size());
     assertEquals(0, stateManager.createPrunedChangesAndAddObjectIDTo(changes, new ApplyTransactionInfo(), cid0,
-                                                                     lookupObjectIDs, new HashSet()).size());
+                                                                     lookupObjectIDs, new Invalidations()).size());
     assertEquals(0, lookupObjectIDs.size());
 
     stateManager.addReference(cid0, new ObjectID(0));
@@ -73,7 +74,7 @@ public class ClientStateManagerTest extends TestCase {
     assertEquals(3, testSet.size());
 
     assertEquals(1, stateManager.createPrunedChangesAndAddObjectIDTo(changes, new ApplyTransactionInfo(), cid0,
-                                                                     lookupObjectIDs, new HashSet()).size());
+                                                                     lookupObjectIDs, new Invalidations()).size());
     assertEquals(0, lookupObjectIDs.size());
 
     ApplyTransactionInfo backReferences = new ApplyTransactionInfo();
@@ -81,7 +82,7 @@ public class ClientStateManagerTest extends TestCase {
     backReferences.addBackReference(new ObjectID(3), new ObjectID(0));
 
     assertEquals(1, stateManager.createPrunedChangesAndAddObjectIDTo(changes, backReferences, cid0, lookupObjectIDs,
-                                                                     new HashSet()).size());
+                                                                     new Invalidations()).size());
     assertEquals(2, lookupObjectIDs.size());
 
     stateManager.shutdownNode(cid1);

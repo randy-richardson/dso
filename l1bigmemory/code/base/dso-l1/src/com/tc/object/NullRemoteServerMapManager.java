@@ -3,6 +3,7 @@
  */
 package com.tc.object;
 
+import com.tc.invalidation.Invalidations;
 import com.tc.local.cache.store.DisposeListener;
 import com.tc.local.cache.store.LocalCacheStoreValue;
 import com.tc.net.GroupID;
@@ -95,6 +96,10 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
   }
 
   public void dispose(ObjectID mapID, Object key) {
+    //
+  }
+
+  public void flush(Invalidations invalidations) {
     //
   }
 }
