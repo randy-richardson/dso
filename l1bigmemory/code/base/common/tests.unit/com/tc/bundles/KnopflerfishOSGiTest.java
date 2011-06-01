@@ -10,6 +10,7 @@ import org.osgi.framework.BundleException;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
+import com.tc.test.TCTestCase;
 import com.tc.util.ProductInfo;
 import com.terracottatech.config.Module;
 
@@ -22,16 +23,18 @@ import java.util.Iterator;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-import junit.framework.TestCase;
-
-public class KnopflerfishOSGiTest extends TestCase {
+public class KnopflerfishOSGiTest extends TCTestCase {
 
   private static final String PRODUCT_VERSION_DASH_QUALIFIER = ProductInfo.getInstance().version();
   private static final String PRODUCT_VERSION_DOT_QUALIFIER  = PRODUCT_VERSION_DASH_QUALIFIER.replace('-', '.');
   private KnopflerfishOSGi    osgiRuntime                    = null;
+  private File                defaultRepo                    = null;
 
   @Override
   public void setUp() throws Exception {
+    defaultRepo = new File(getTempDirectory(), "modules");
+    if (!defaultRepo.mkdirs()) { throw new Exception("Can't create modules home '" + defaultRepo + "'"); }
+    System.setProperty("com.tc.l1.modules.repositories", defaultRepo.getAbsolutePath());
     osgiRuntime = new KnopflerfishOSGi(new URL[0], Collections.EMPTY_LIST);
   }
 
@@ -52,7 +55,7 @@ public class KnopflerfishOSGiTest extends TestCase {
       String version = PRODUCT_VERSION_DASH_QUALIFIER;
       String name = jar.getName().replaceAll("-" + version + ".jar", "");
 
-      String[] repos = { System.getProperty("com.tc.l1.modules.repositories") };
+      String[] repos = { defaultRepo.getAbsolutePath() };
       Resolver resolver = new Resolver(repos, ProductInfo.getInstance().version(), ProductInfo.getInstance()
           .timApiVersion());
       Module module = Module.Factory.newInstance();
@@ -109,7 +112,7 @@ public class KnopflerfishOSGiTest extends TestCase {
   }
 
   private Collection jarFiles() throws IOException {
-    String repo = System.getProperty("com.tc.l1.modules.repositories");
+    String repo = defaultRepo.getAbsolutePath();
     File file = null;
     if (repo.startsWith("file:")) {
       file = FileUtils.toFile(new URL(repo));
