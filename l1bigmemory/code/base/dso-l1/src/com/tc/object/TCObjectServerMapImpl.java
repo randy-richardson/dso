@@ -4,13 +4,11 @@
 package com.tc.object;
 
 import com.tc.exception.TCObjectNotFoundException;
-import com.tc.local.cache.store.DisposeListener;
-import com.tc.local.cache.store.L1ServerMapLocalCacheStore;
-import com.tc.local.cache.store.L1ServerMapLocalCacheStoreHashMap;
-import com.tc.local.cache.store.L1ServerMapLocalCacheStoreListener;
-import com.tc.local.cache.store.L1ServerMapLocalCacheStoreListenerImpl;
+import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.local.cache.store.L1ServerMapLocalStoreTransactionCompletionListener;
 import com.tc.local.cache.store.LocalCacheStoreValue;
+import com.tc.local.cache.store.ServerMapLocalCacheImpl;
+import com.tc.local.cache.store.ServerMapLocalCacheImpl.TransactionCompletionAdaptor;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.GroupID;
@@ -27,43 +25,44 @@ import com.tc.properties.TCPropertiesImpl;
 import java.util.Collections;
 import java.util.Set;
 
-public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObject, TCObjectServerMap<L> {
+public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObject, TCObjectServerMap<L>,
+    TransactionCompletionAdaptor {
 
-  private final static TCLogger        logger           = TCLogging.getLogger(TCObjectServerMapImpl.class);
+  private final static TCLogger         logger           = TCLogging.getLogger(TCObjectServerMapImpl.class);
 
-  private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
-                                                            .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
-  private final static boolean         CACHE_ENABLED    = TCPropertiesImpl
-                                                            .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
+  private static final boolean          EVICTOR_LOGGING  = TCPropertiesImpl
+                                                             .getProperties()
+                                                             .getBoolean(
+                                                                         TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+  private final static boolean          CACHE_ENABLED    = TCPropertiesImpl
+                                                             .getProperties()
+                                                             .getBoolean(
+                                                                         TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
 
-  private static final Object[]        NO_ARGS          = new Object[] {};
+  private static final Object[]         NO_ARGS          = new Object[] {};
 
   static {
     logger.info(TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED + " : " + CACHE_ENABLED);
   }
 
-  private final GroupID                groupID;
-  private final ClientObjectManager    objectManager;
-  private final RemoteServerMapManager serverMapManager;
-  private final Manager                manager;
-  private final LocalCache             cache            = new LocalCache();
-  private volatile int                 maxInMemoryCount = 0;
-  private volatile boolean             invalidateOnChange;
-
-  private volatile boolean             localCacheEnabled;
+  private final GroupID                 groupID;
+  private final ClientObjectManager     objectManager;
+  private final RemoteServerMapManager  serverMapManager;
+  private final Manager                 manager;
+  private final ServerMapLocalCacheImpl cache;
+  private volatile int                  maxInMemoryCount = 0;
+  private volatile boolean              invalidateOnChange;
 
   public TCObjectServerMapImpl(final Manager manager, final ClientObjectManager objectManager,
                                final RemoteServerMapManager serverMapManager, final ObjectID id, final Object peer,
-                               final TCClass tcc, final boolean isNew) {
+                               final TCClass tcc, final boolean isNew,
+                               final GlobalLocalCacheManager globalLocalCacheManager) {
     super(id, peer, tcc, isNew);
     this.groupID = new GroupID(id.getGroupID());
     this.objectManager = objectManager;
     this.serverMapManager = serverMapManager;
     this.manager = manager;
+    this.cache = new ServerMapLocalCacheImpl(id, this, globalLocalCacheManager);
   }
 
   public void initialize(final int maxTTISeconds, final int maxTTLSeconds, final int targetMaxInMemoryCount,
@@ -71,7 +70,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
                          final boolean localCacheEnabledFlag) {
     this.maxInMemoryCount = targetMaxInMemoryCount;
     this.invalidateOnChange = invalidateOnChangeFlag;
-    this.localCacheEnabled = localCacheEnabledFlag;
+    this.cache.initialize(targetMaxInMemoryCount, localCacheEnabledFlag);
   }
 
   /**
@@ -478,179 +477,13 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.objectManager.getTransactionManager().addMetaDataDescriptor(this, (MetaDataDescriptorInternal) mdd);
   }
 
-  /* Local Cache operations */
-  private final class LocalCache implements DisposeListener {
-    private final L1ServerMapLocalCacheStore<Object, LocalCacheStoreValue>         map;
-    private final L1ServerMapLocalCacheStoreListener<Object, LocalCacheStoreValue> listener;
-    private final ObjectID                                                         mapID;
-
-    public LocalCache() {
-      map = new L1ServerMapLocalCacheStoreHashMap<Object, LocalCacheStoreValue>(
-                                                                                TCObjectServerMapImpl.this.maxInMemoryCount);
-      listener = new L1ServerMapLocalCacheStoreListenerImpl(serverMapManager);
-      this.mapID = TCObjectServerMapImpl.this.getObjectID();
-      serverMapManager.addDisposeListener(this.mapID, this);
-      this.map.addListener(listener);
-    }
-
-    /**
-     * Creates a coherent mapping for the key to CachedItem<br>
-     * TODO: make sure remove actually removes from local cache after transction completes
-     * 
-     * @param id - LockID that is protecting the item
-     * @param key - key of the mapping
-     * @param value - value of the mapping
-     * @param b
-     */
-    public void addCoherentValueToCache(final Object id, final Object key, final Object value, boolean isMutate) {
-      addCoherentValueToCache(id, key, value, isMutate, false);
-    }
-
-    public void addCoherentValueToCache(final Object id, final Object key, final Object value, boolean isMutate,
-                                        boolean isRemove) {
-      final LocalCacheStoreValue item;
-      final L1ServerMapLocalStoreTransactionCompletionListener txnCompleteListener;
-      if (!localCacheEnabled) {
-        txnCompleteListener = new L1ServerMapLocalStoreTransactionCompletionListener(this, key, true);
-        item = new LocalCacheStoreValue(id, value);
-      } else {
-        txnCompleteListener = isMutate ? new L1ServerMapLocalStoreTransactionCompletionListener(this, key, isRemove)
-            : null;
-        item = new LocalCacheStoreValue(id, value);
-      }
-      addToCache(key, item, isMutate, txnCompleteListener);
-    }
-
-    private void registerForCallbackOnComplete(final L1ServerMapLocalStoreTransactionCompletionListener item) {
-      if (item == null) { return; }
-      ClientTransaction txn = TCObjectServerMapImpl.this.objectManager.getTransactionManager().getCurrentTransaction();
-      if (txn == null) { throw new UnlockedSharedObjectException(
-                                                                 "Attempt to access a shared object outside the scope of a shared lock.",
-                                                                 Thread.currentThread().getName(), manager
-                                                                     .getClientID()); }
-      txn.addTransactionCompleteListener(item);
-    }
-
-    public void addIncoherentValueToCache(final Object key, final Object value, boolean isMutate) {
-      final LocalCacheStoreValue item;
-      final L1ServerMapLocalStoreTransactionCompletionListener txnCompleteListener;
-      if (!localCacheEnabled) {
-        txnCompleteListener = new L1ServerMapLocalStoreTransactionCompletionListener(this, key, true);
-        item = new LocalCacheStoreValue(null, value, true);
-      } else {
-        txnCompleteListener = isMutate ? new L1ServerMapLocalStoreTransactionCompletionListener(this, key, false)
-            : null;
-        item = new LocalCacheStoreValue(null, value, true);
-      }
-      addToCache(key, item, isMutate, txnCompleteListener);
-    }
-
-    // TODO::FIXME:: There is a race for puts for same key from same vm - it races between the map.put() and
-    // serverMapManager.put()
-    private void addToCache(final Object key, final LocalCacheStoreValue item, boolean isMutate,
-                            L1ServerMapLocalStoreTransactionCompletionListener txnCompleteListener) {
-      if (!localCacheEnabled && !isMutate) {
-        // local cache NOT enabled AND NOT a mutate operation, do not cache anything locally
-        // for mutate ops keep in local cache till txn is complete
-        return;
-      }
-      final LocalCacheStoreValue old = this.map.put(key, item);
-      if (old != null) {
-        Object oldID = old.getID();
-        // TODO: do we need a null id check, may be when we remove we do put a NULL_ID
-        if (oldID != null && oldID != ObjectID.NULL_ID) {
-          // I think this should be removeCachedItem only
-          TCObjectServerMapImpl.this.serverMapManager.removeCachedItem(oldID, mapID, key, old);
-        }
-      }
-      Object itemID = item.getID();
-      if (itemID != null && itemID != ObjectID.NULL_ID) {
-        TCObjectServerMapImpl.this.serverMapManager.addCachedItem(itemID, mapID, key, item);
-      }
-      if (isMutate) {
-        registerForCallbackOnComplete(txnCompleteListener);
-      }
-    }
-
-    // private boolean isExpired(final CachedItem ci, final int now) {
-    // final ExpirableEntry ee;
-    // if ((TCObjectServerMapImpl.this.tti <= 0 && TCObjectServerMapImpl.this.ttl <= 0)
-    // || (ee = ci.getExpirableEntry()) == null) { return false; }
-    // return now >= ee.expiresAt(TCObjectServerMapImpl.this.tti, TCObjectServerMapImpl.this.ttl);
-    // }
-
-    public void clearAllLocalCache() {
-      this.map.clear();
-    }
-
-    public int size() {
-      return this.map.size();
-    }
-
-    public int evictCachedEntries(int toClear) {
-      return this.map.evict(toClear);
-    }
-
-    /**
-     * When a remove from local cache is called, remove and flush
-     */
-    public void removeFromLocalCache(Object key) {
-      LocalCacheStoreValue value = this.map.remove(key);
-      if (value != null) {
-        listener.notifyElementEvicted(key, value);
-      }
-    }
-
-    public Set getKeySet() {
-      return this.map.getKeySet();
-    }
-
-    // TODO: need to make sure in RemoteServerMapManager that when no CachedItems are 0 for a particular lockid, i need
-    // to recall the lock<br>
-    // Also do we even need this especially when we have removeFromLocalCache
-    public void evictFromLocalCache(Object key, LocalCacheStoreValue ci) {
-      LocalCacheStoreValue value = this.map.remove(key);
-      if (value != null) {
-        TCObjectServerMapImpl.this.serverMapManager.removeCachedItem(value.getID(), mapID, key, value);
-      }
-    }
-
-    /**
-     * Returned value may be coherent or incoherent or null
-     */
-    public LocalCacheStoreValue getCachedItem(final Object key) {
-      LocalCacheStoreValue value = this.map.get(key);
-      if (value.isIncoherent() && value.isIncoherentTooLong()) {
-        // if incoherent and been incoherent too long, remove from cache/map
-        this.map.remove(key);
-        return null;
-      }
-      return value;
-    }
-
-    /**
-     * Returned value is always coherent or null.
-     */
-    public LocalCacheStoreValue getCoherentCachedItem(final Object key) {
-      final LocalCacheStoreValue value = getCachedItem(key);
-      if (value.isIncoherent()) {
-        this.map.remove(key);
-        return null;
-      }
-      return value;
-    }
-
-    public void disposed(Object key) {
-      this.map.remove(key);
-    }
-
-    public void pinEntry(Object key) {
-      this.map.pinEntry(key);
-    }
-
-    public void unpinEntry(Object key) {
-      this.map.unpinEntry(key);
-    }
+  public void registerForCallbackOnComplete(
+                                            final L1ServerMapLocalStoreTransactionCompletionListener localStoreTxnCompletionListener) {
+    if (localStoreTxnCompletionListener == null) { return; }
+    ClientTransaction txn = TCObjectServerMapImpl.this.objectManager.getTransactionManager().getCurrentTransaction();
+    if (txn == null) { throw new UnlockedSharedObjectException(
+                                                               "Attempt to access a shared object outside the scope of a shared lock.",
+                                                               Thread.currentThread().getName(), manager.getClientID()); }
+    txn.addTransactionCompleteListener(localStoreTxnCompletionListener);
   }
-
 }

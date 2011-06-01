@@ -23,12 +23,12 @@ import com.tc.net.protocol.tcm.TestTCMessage;
 import com.tc.net.protocol.transport.ConnectionID;
 import com.tc.object.ObjectID;
 import com.tc.object.locks.ClientServerExchangeLockContext;
-import com.tc.object.locks.ServerLockContext.State;
-import com.tc.object.locks.ServerLockContext.Type;
 import com.tc.object.locks.StringLockID;
 import com.tc.object.locks.TestLockManager;
-import com.tc.object.locks.TestLockManager.ReestablishLockContext;
 import com.tc.object.locks.ThreadID;
+import com.tc.object.locks.ServerLockContext.State;
+import com.tc.object.locks.ServerLockContext.Type;
+import com.tc.object.locks.TestLockManager.ReestablishLockContext;
 import com.tc.object.msg.BatchTransactionAcknowledgeMessage;
 import com.tc.object.msg.ClientHandshakeAckMessage;
 import com.tc.object.msg.TestClientHandshakeMessage;
@@ -42,6 +42,7 @@ import com.tc.objectserver.l1.api.TestClientStateManager.AddReferenceContext;
 import com.tc.objectserver.tx.TestServerTransactionManager;
 import com.tc.objectserver.tx.TestTransactionBatchManager;
 import com.tc.test.TCTestCase;
+import com.tc.util.ObjectIDSet;
 import com.tc.util.SequenceID;
 import com.tc.util.SequenceValidator;
 import com.tc.util.TestTimer;
@@ -201,7 +202,9 @@ public class ServerClientHandshakeManagerTest extends TCTestCase {
     handshake.transactionSequenceIDs = sequenceIDs;
     handshake.clientObjectIds.add(new ObjectID(200));
     handshake.clientObjectIds.add(new ObjectID(20002));
-    handshake.validateObjectIds.add(new ObjectID(20002));
+    ObjectIDSet tempSet = new ObjectIDSet();
+    tempSet.add(new ObjectID(20002));
+    handshake.validateObjectIds.put(new ObjectID(200), tempSet);
 
     final List<ClientServerExchangeLockContext> lockContexts = new LinkedList();
     lockContexts.add(new ClientServerExchangeLockContext(new StringLockID("my lock"), clientID1, new ThreadID(10001),
@@ -257,9 +260,10 @@ public class ServerClientHandshakeManagerTest extends TCTestCase {
 
     // make sure object validation ids are added to InvalidateObjectManager
     assertTrue(handshake.validateObjectIds.size() > 0);
-    final ArgumentCaptor<Set> requestContextArg = ArgumentCaptor.forClass(Set.class);
+    final ArgumentCaptor<Map> requestContextArg = ArgumentCaptor.forClass(Map.class);
 
-    Mockito.verify(invalidateObjMgr, Mockito.atMost(1)).addObjectsToValidateFor((ClientID) Matchers.eq(handshake
+    Mockito.verify(invalidateObjMgr, Mockito.atMost(1)).addObjectsToValidateFor(
+                                                                                (ClientID) Matchers.eq(handshake
                                                                                     .getSourceNodeID()),
                                                                                 requestContextArg.capture());
     assertEquals(handshake.validateObjectIds, requestContextArg.getValue());

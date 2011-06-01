@@ -4,17 +4,14 @@
 package com.tc.object;
 
 import com.tc.async.api.Sink;
-import com.tc.exception.ImplementMe;
 import com.tc.exception.TCNotRunningException;
 import com.tc.exception.TCObjectNotFoundException;
 import com.tc.invalidation.Invalidations;
-import com.tc.local.cache.store.DisposeListener;
-import com.tc.local.cache.store.LocalCacheStoreValue;
+import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.cache.CachedItem;
-import com.tc.object.cache.CachedItemStore;
 import com.tc.object.context.CachedItemExpiredContext;
 import com.tc.object.context.LocksToRecallContext;
 import com.tc.object.locks.LockID;
@@ -28,16 +25,16 @@ import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionManager;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
+import com.tc.util.ObjectIDSet;
 import com.tc.util.Util;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map.Entry;
 
 public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
@@ -56,7 +53,6 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private final TCLogger                                                 logger;
   private final SessionManager                                           sessionManager;
   private final Map<ServerMapRequestID, AbstractServerMapRequestContext> outstandingRequests                       = new HashMap<ServerMapRequestID, AbstractServerMapRequestContext>();
-  private final Map<ObjectID, DisposeListener>                           disposeListeners                          = new ConcurrentHashMap<ObjectID, DisposeListener>();
   private final Timer                                                    requestTimer                              = new Timer(
                                                                                                                                "RemoteServerMapManager Request Scheduler",
                                                                                                                                true);
@@ -65,9 +61,9 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private long                                                           requestIDCounter                          = 0;
   private boolean                                                        pendingSendTaskScheduled                  = false;
 
-  private final CachedItemStore                                          cachedItems;
   private final Sink                                                     lockRecallSink;
   private final Sink                                                     ttiTTLEvitionSink;
+  private final GlobalLocalCacheManager                                  globalLocalCacheManager;
 
   private static enum State {
     PAUSED, RUNNING, STARTING, STOPPED
@@ -75,14 +71,15 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
   public RemoteServerMapManagerImpl(final GroupID groupID, final TCLogger logger,
                                     final ServerMapMessageFactory smmFactory, final SessionManager sessionManager,
-                                    final Sink lockRecallSink, final Sink ttiTTLEvitionSink) {
+                                    final Sink lockRecallSink, final Sink ttiTTLEvitionSink,
+                                    GlobalLocalCacheManager globalLocalCacheManager) {
     this.groupID = groupID;
     this.logger = logger;
     this.smmFactory = smmFactory;
     this.sessionManager = sessionManager;
     this.lockRecallSink = lockRecallSink;
     this.ttiTTLEvitionSink = ttiTTLEvitionSink;
-    this.cachedItems = new CachedItemStore(this);
+    this.globalLocalCacheManager = globalLocalCacheManager;
   }
 
   /**
@@ -322,33 +319,16 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     }
   }
 
-  /**
-   * Adds this CachedItem to LockID or ObjectID. When the lock is recalled or the Object is invalidated this CachedItem
-   * will be invalidated too.
-   */
-  public void addCachedItem(final Object id, ObjectID mapID, Object key, final LocalCacheStoreValue item) {
+  public void flush(final LockID id) {
     if (id == null) { throw new AssertionError("ID cannot be null"); }
-    this.cachedItems.add(id, key, mapID);
-  }
-
-  /**
-   * Removes the mapping from ObjectID or LockID to CachedItem
-   */
-  public void removeCachedItem(final Object id, ObjectID mapID, Object key, final LocalCacheStoreValue item) {
-    if (id == null) { throw new AssertionError("ID cannot be null"); }
-    this.cachedItems.remove(id, key, mapID);
-  }
-
-  public void flush(final Object id) {
-    if (id == null) { throw new AssertionError("ID cannot be null"); }
-    this.cachedItems.flush(id);
+    this.globalLocalCacheManager.flush(id);
   }
 
   /**
    * Can't just remove from local cache as pending changes in transaction buffers can't be cleared from cache, else u
    * get wrong answers from the server. Recalling the locks which will do the right thing here.
    */
-  public void clearCachedItemsForLocks(final Set<LockID> toEvict) {
+  public void recallLocks(final Set<LockID> toEvict) {
     // NOTE:: If this implementation changes for any reason, checkout RemoteServerMapManagerGroupImpl
     this.lockRecallSink.add(new LocksToRecallContext(toEvict));
   }
@@ -382,7 +362,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     if (isStopped()) { return; }
     assertPaused("Attempt to init handshake while not PAUSED");
     this.state = State.STARTING;
-    addObjectIDsToValidateTo(handshakeMessage.getObjectIDsToValidate());
+    globalLocalCacheManager.addAllObjectIDsToValidate(handshakeMessage.getObjectIDsToValidate());
   }
 
   public synchronized void unpause(final NodeID remote, final int disconnected) {
@@ -391,15 +371,6 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     this.state = State.RUNNING;
     requestOutstanding();
     notifyAll();
-  }
-
-  private void addObjectIDsToValidateTo(Set objectIDs) {
-    Set keys = cachedItems.addAllKeysTo(new HashSet(1024));
-    for (Object key : keys) {
-      if (key instanceof ObjectID) {
-        objectIDs.add(key);
-      }
-    }
   }
 
   public synchronized void shutdown() {
@@ -535,20 +506,12 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
   }
 
-  public void addDisposeListener(ObjectID mapID, DisposeListener listener) {
-    this.disposeListeners.put(mapID, listener);
-  }
-
-  private DisposeListener getDisposeListener(ObjectID mapID) {
-    return this.disposeListeners.get(mapID);
-  }
-
-  public void dispose(ObjectID mapID, Object key) {
-    DisposeListener disposeListener = getDisposeListener(mapID);
-    disposeListener.disposed(key);
-  }
-
   public void flush(Invalidations invalidations) {
-    throw new ImplementMe();
+    Map<ObjectID, ObjectIDSet> map = invalidations.getIternalMap();
+    for (Entry<ObjectID, ObjectIDSet> entry : map.entrySet()) {
+      ObjectID mapID = entry.getKey();
+      ObjectIDSet set = entry.getValue();
+      globalLocalCacheManager.flush(mapID, set);
+    }
   }
 }

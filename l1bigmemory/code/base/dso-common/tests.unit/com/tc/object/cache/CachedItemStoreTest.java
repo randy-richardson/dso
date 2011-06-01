@@ -16,7 +16,7 @@ import junit.framework.TestCase;
 // TODO: fix this test
 public class CachedItemStoreTest extends TestCase {
 
-  CachedItemStore                       store;
+  // CachedItemStore store;
   ConcurrentHashMap<Object, CachedItem> parent;
   HashMap<LockID, Integer>              lockID2Index;
   private DisposeListener               disposeHandler;

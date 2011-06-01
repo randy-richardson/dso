@@ -5,7 +5,7 @@ package com.tc.object;
 
 import com.tc.invalidation.Invalidations;
 import com.tc.local.cache.store.DisposeListener;
-import com.tc.local.cache.store.LocalCacheStoreValue;
+import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.cache.CachedItem;
@@ -47,7 +47,7 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     return null;
   }
 
-  public void flush(final Object id) {
+  public void flush(final LockID id) {
     //
   }
 
@@ -66,7 +66,7 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void clearCachedItemsForLocks(final Set<LockID> toEvict) {
+  public void recallLocks(final Set<LockID> toEvict) {
     //
   }
 
@@ -83,14 +83,6 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void addCachedItem(Object id, ObjectID mapID, Object key, LocalCacheStoreValue item) {
-    //
-  }
-
-  public void removeCachedItem(Object id, ObjectID mapID, Object key, LocalCacheStoreValue item) {
-    //
-  }
-
   public void addDisposeListener(ObjectID mapID, DisposeListener listener) {
     //
   }
@@ -101,5 +93,9 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
 
   public void flush(Invalidations invalidations) {
     //
+  }
+
+  public GlobalLocalCacheManager getGlobalLocalCacheManager() {
+    return null;
   }
 }

@@ -4,6 +4,7 @@
 package com.tc.object;
 
 import com.tc.async.api.Sink;
+import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.logging.ClientIDLogger;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -272,20 +273,22 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
 
   public TCClassFactory createTCClassFactory(final DSOClientConfigHelper config, final ClassProvider classProvider,
                                              final DNAEncoding dnaEncoding, final Manager manager,
+                                             final GlobalLocalCacheManager localCacheManager,
                                              final RemoteServerMapManager remoteServerMapManager) {
     return new TCClassFactoryImpl(new TCFieldFactory(config), config, classProvider, dnaEncoding, manager,
-                                  remoteServerMapManager);
+                                  localCacheManager, remoteServerMapManager);
   }
 
   public RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger,
                                                              final DSOClientMessageChannel dsoChannel,
                                                              final SessionManager sessionManager,
-                                                             final Sink recallLockSink, final Sink ttiTTLEvitionSink) {
+                                                             final Sink recallLockSink, final Sink ttiTTLEvitionSink,
+                                                             final GlobalLocalCacheManager globalLocalCacheManager) {
     final GroupID defaultGroups[] = dsoChannel.getGroupIDs();
     Assert.assertNotNull(defaultGroups);
     Assert.assertEquals(1, defaultGroups.length);
     return new RemoteServerMapManagerImpl(defaultGroups[0], logger, dsoChannel.getServerMapMessageFactory(),
-                                          sessionManager, recallLockSink, ttiTTLEvitionSink);
+                                          sessionManager, recallLockSink, ttiTTLEvitionSink, globalLocalCacheManager);
   }
 
   public RemoteSearchRequestManager createRemoteSearchRequestManager(final TCLogger logger,

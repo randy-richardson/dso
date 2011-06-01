@@ -19,6 +19,7 @@ import com.tc.handler.CallbackDumpHandler;
 import com.tc.io.TCByteBufferOutputStream;
 import com.tc.lang.TCThreadGroup;
 import com.tc.license.LicenseManager;
+import com.tc.local.cache.store.GlobalLocalCacheManagerImpl;
 import com.tc.logging.ClientIDLogger;
 import com.tc.logging.ClientIDLoggerProvider;
 import com.tc.logging.CustomerLogging;
@@ -545,16 +546,19 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     searchRequestManager = this.dsoClientBuilder.createRemoteSearchRequestManager(new ClientIDLogger(this.channel
         .getClientIDProvider(), TCLogging.getLogger(RemoteObjectManager.class)), this.channel, sessionManager);
 
+    GlobalLocalCacheManagerImpl globalLocalCacheManager = new GlobalLocalCacheManagerImpl();
     final RemoteServerMapManager remoteServerMapManager = this.dsoClientBuilder
         .createRemoteServerMapManager(new ClientIDLogger(this.channel.getClientIDProvider(), TCLogging
             .getLogger(RemoteObjectManager.class)), this.channel, sessionManager, lockRecallStage.getSink(),
-                                      ttiTTLEvictionStage.getSink());
+                                      ttiTTLEvictionStage.getSink(), globalLocalCacheManager);
+    globalLocalCacheManager.initialize(remoteServerMapManager);
 
     final ClientGlobalTransactionManager gtxManager = this.dsoClientBuilder
         .createClientGlobalTransactionManager(this.rtxManager, remoteServerMapManager);
 
     final TCClassFactory classFactory = this.dsoClientBuilder.createTCClassFactory(this.config, this.classProvider,
                                                                                    encoding, this.manager,
+                                                                                   globalLocalCacheManager,
                                                                                    remoteServerMapManager);
     final TCObjectFactory objectFactory = new TCObjectFactoryImpl(classFactory);
 

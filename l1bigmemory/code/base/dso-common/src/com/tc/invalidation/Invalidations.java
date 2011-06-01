@@ -17,7 +17,15 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 public class Invalidations implements TCSerializable {
-  private final Map<ObjectID, ObjectIDSet> invalidationsPerCdsm = new HashMap<ObjectID, ObjectIDSet>();
+  private final Map<ObjectID, ObjectIDSet> invalidationsPerCdsm;
+
+  public Invalidations() {
+    this(new HashMap<ObjectID, ObjectIDSet>());
+  }
+
+  public Invalidations(Map<ObjectID, ObjectIDSet> invalidationsPerCdsm) {
+    this.invalidationsPerCdsm = invalidationsPerCdsm;
+  }
 
   public void add(ObjectID mapID, ObjectID oid) {
     ObjectIDSet set = invalidationsPerCdsm.get(mapID);
@@ -31,6 +39,10 @@ public class Invalidations implements TCSerializable {
 
   public Set<ObjectID> getMapIds() {
     return invalidationsPerCdsm.keySet();
+  }
+
+  public Map<ObjectID, ObjectIDSet> getIternalMap() {
+    return invalidationsPerCdsm;
   }
 
   public ObjectIDSet getObjectIDSetForMapId(ObjectID mapID) {

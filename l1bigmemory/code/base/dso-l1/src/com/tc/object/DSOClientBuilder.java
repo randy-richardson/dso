@@ -4,6 +4,7 @@
 package com.tc.object;
 
 import com.tc.async.api.Sink;
+import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.logging.ClientIDLogger;
 import com.tc.logging.TCLogger;
 import com.tc.management.ClientLockStatManager;
@@ -94,7 +95,8 @@ public interface DSOClientBuilder {
 
   RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
                                                       final SessionManager sessionManager, Sink lockRecallSink,
-                                                      Sink ttiTTLEvitionSink);
+                                                      Sink ttiTTLEvitionSink,
+                                                      final GlobalLocalCacheManager globalLocalCacheManager);
 
   RemoteSearchRequestManager createRemoteSearchRequestManager(final TCLogger logger,
                                                               final DSOClientMessageChannel dsoChannel,
@@ -161,6 +163,7 @@ public interface DSOClientBuilder {
 
   TCClassFactory createTCClassFactory(final DSOClientConfigHelper config, final ClassProvider classProvider,
                                       final DNAEncoding dnaEncoding, final Manager manager,
+                                      final GlobalLocalCacheManager globalLocalCacheManager,
                                       final RemoteServerMapManager remoteServerMapManager);
 
   LongGCLogger createLongGCLogger(long gcTimeOut);

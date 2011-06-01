@@ -21,9 +21,9 @@ import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.TCConcurrentStore;
 import com.tc.util.concurrent.TCConcurrentStore.TCConcurrentStoreCallback;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,21 +37,21 @@ public class InvalidateObjectManagerImpl implements InvalidateObjectManager, Pos
     INITIAL, STARTED
   }
 
-  private volatile State                                   state                       = State.INITIAL;
+  private volatile State                                                state                       = State.INITIAL;
 
-  private final TCConcurrentStore<ClientID, Invalidations> invalidateMap               = new TCConcurrentStore<ClientID, Invalidations>(
-                                                                                                                                        256,
-                                                                                                                                        0.75f,
-                                                                                                                                        128);
-  private final ConcurrentHashMap<ClientID, Set<ObjectID>> validateMap                 = new ConcurrentHashMap<ClientID, Set<ObjectID>>(
-                                                                                                                                        32,
-                                                                                                                                        0.75f,
-                                                                                                                                        16);
-  private final AddCallbackForInvalidations                addCallbackForInvalidations = new AddCallbackForInvalidations();
-  private Sink                                             invalidateSink;
-  private Sink                                             validateSink;
+  private final TCConcurrentStore<ClientID, Invalidations>              invalidateMap               = new TCConcurrentStore<ClientID, Invalidations>(
+                                                                                                                                                     256,
+                                                                                                                                                     0.75f,
+                                                                                                                                                     128);
+  private final ConcurrentHashMap<ClientID, Map<ObjectID, ObjectIDSet>> validateMap                 = new ConcurrentHashMap<ClientID, Map<ObjectID, ObjectIDSet>>(
+                                                                                                                                                                  32,
+                                                                                                                                                                  0.75f,
+                                                                                                                                                                  16);
+  private final AddCallbackForInvalidations                             addCallbackForInvalidations = new AddCallbackForInvalidations();
+  private Sink                                                          invalidateSink;
+  private Sink                                                          validateSink;
 
-  private final ServerTransactionManager                   transactionManager;
+  private final ServerTransactionManager                                transactionManager;
 
   public InvalidateObjectManagerImpl(ServerTransactionManager transactionManager) {
     this.transactionManager = transactionManager;
@@ -75,34 +75,45 @@ public class InvalidateObjectManagerImpl implements InvalidateObjectManager, Pos
 
   public void validateObjects(ObjectIDSet validEntries) {
     for (Iterator i = validateMap.entrySet().iterator(); i.hasNext();) {
-      Entry<ClientID, Set<ObjectID>> e = (Entry<ClientID, Set<ObjectID>>) i.next();
-      Set<ObjectID> invalids = getInvalidsFrom(validEntries, e.getValue());
+      Entry<ClientID, Map<ObjectID, ObjectIDSet>> e = (Entry<ClientID, Map<ObjectID, ObjectIDSet>>) i.next();
+      Map<ObjectID, ObjectIDSet> invalids = getInvalidsFrom(validEntries, e.getValue());
       if (!invalids.isEmpty()) {
         logger.info("Invalidating " + invalids.size() + " entries in " + e.getKey() + " after restart");
         // TODO: this needs to be done
-        invalidateObjectFor(e.getKey(), invalids);
+        invalidateObjectFor(e.getKey(), new Invalidations(invalids));
       }
       i.remove();
     }
   }
 
-  private Set<ObjectID> getInvalidsFrom(ObjectIDSet validEntries, Set<ObjectID> toCheck) {
-    Set<ObjectID> invalids = new ObjectIDSet();
-    for (ObjectID oid : toCheck) {
-      if (!validEntries.contains(oid)) {
-        invalids.add(oid);
+  private Map<ObjectID, ObjectIDSet> getInvalidsFrom(ObjectIDSet validEntries, Map<ObjectID, ObjectIDSet> toCheck) {
+    Map<ObjectID, ObjectIDSet> invalids = new HashMap<ObjectID, ObjectIDSet>();
+    for (Entry<ObjectID, ObjectIDSet> entry : toCheck.entrySet()) {
+      ObjectID mapID = entry.getKey();
+      ObjectIDSet existingOids = entry.getValue();
+      ObjectIDSet invalidSet = new ObjectIDSet();
+
+      for (ObjectID oid : existingOids) {
+        if (!validEntries.contains(oid)) {
+          invalidSet.add(oid);
+        }
+      }
+
+      if (!invalidSet.isEmpty()) {
+        invalids.put(mapID, invalidSet);
       }
     }
+
     return invalids;
   }
 
-  public void addObjectsToValidateFor(ClientID clientID, Set objectIDsToValidate) {
+  public void addObjectsToValidateFor(ClientID clientID, Map<ObjectID, ObjectIDSet> objectIDsToValidate) {
     if (state != State.INITIAL) { throw new AssertionError(
                                                            "Objects can be added for validation only in INITIAL state : state = "
                                                                + state + " clientID = " + clientID
                                                                + " objectIDsToValidate = " + objectIDsToValidate.size()); }
     if (!objectIDsToValidate.isEmpty()) {
-      Set<ObjectID> old = validateMap.put(clientID, objectIDsToValidate);
+      Map<ObjectID, ObjectIDSet> old = validateMap.put(clientID, objectIDsToValidate);
       if (old != null) { throw new AssertionError("Same client send validate objects twice : " + clientID
                                                   + " objects to validate : " + objectIDsToValidate.size()); }
     }

@@ -10,24 +10,24 @@ import com.tc.object.tx.TransactionID;
  * To be used only when a transaction is completed.
  */
 public class L1ServerMapLocalStoreTransactionCompletionListener implements TransactionCompleteListener {
-  private final DisposeListener disposeListener;
-  private final Object          key;
-  private final boolean         removeEntryOnTransactionComplete;
+  private final ServerMapLocalCache serverMapLocalCache;
+  private final Object              key;
+  private final boolean             removeEntryOnTransactionComplete;
 
-  public L1ServerMapLocalStoreTransactionCompletionListener(DisposeListener disposeListener, Object key,
+  public L1ServerMapLocalStoreTransactionCompletionListener(ServerMapLocalCache serverMapLocalCache, Object key,
                                                             boolean removeEntryOnTransactionComplete) {
-    this.disposeListener = disposeListener;
+    this.serverMapLocalCache = serverMapLocalCache;
     this.key = key;
     this.removeEntryOnTransactionComplete = removeEntryOnTransactionComplete;
-    this.disposeListener.pinEntry(this.key);
+    this.serverMapLocalCache.pinEntry(this.key);
   }
 
   public void transactionComplete(TransactionID txnID) {
-    disposeListener.unpinEntry(key);
+    serverMapLocalCache.unpinEntry(key);
     if (removeEntryOnTransactionComplete) {
       // TODO: could this be a race or a problem ?
       // It could be a problem actually
-      disposeListener.evictFromLocalCache(key, null);
+      serverMapLocalCache.evictFromLocalCache(key, null);
     }
   }
 }

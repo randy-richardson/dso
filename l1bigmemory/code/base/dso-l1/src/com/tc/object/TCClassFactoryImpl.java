@@ -7,6 +7,7 @@ package com.tc.object;
 import com.tc.aspectwerkz.reflect.ClassInfo;
 import com.tc.aspectwerkz.reflect.impl.java.JavaClassInfo;
 import com.tc.exception.TCRuntimeException;
+import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.applicator.AccessibleObjectApplicator;
@@ -44,17 +45,20 @@ public class TCClassFactoryImpl implements TCClassFactory {
   protected final DSOClientConfigHelper            config;
   protected final ClassProvider                    classProvider;
   protected final DNAEncoding                      encoding;
+  private final GlobalLocalCacheManager            globalLocalCacheManager;
   private final RemoteServerMapManager             remoteServerMapManager;
   private final Manager                            manager;
 
   public TCClassFactoryImpl(final TCFieldFactory fieldFactory, final DSOClientConfigHelper config,
                             final ClassProvider classProvider, final DNAEncoding dnaEncoding, Manager manager,
-                            RemoteServerMapManager remoteServerMapManager) {
+                            final GlobalLocalCacheManager globalLocalCacheManager,
+                            final RemoteServerMapManager remoteServerMapManager) {
     this.fieldFactory = fieldFactory;
     this.config = config;
     this.classProvider = classProvider;
     this.encoding = dnaEncoding;
     this.manager = manager;
+    this.globalLocalCacheManager = globalLocalCacheManager;
     this.remoteServerMapManager = remoteServerMapManager;
   }
 
@@ -75,8 +79,8 @@ public class TCClassFactoryImpl implements TCClassFactory {
                                   final LoaderDescription loaderDesc, final String className, final ClassInfo classInfo) {
     TCClass rv;
     if (className.equals(TCClassFactory.CDSM_DSO_CLASSNAME)) {
-      rv = new ServerMapTCClassImpl(this.manager, this.remoteServerMapManager, this.fieldFactory, this, objectManager,
-                                    this.config.getTCPeerClass(clazz),
+      rv = new ServerMapTCClassImpl(this.manager, this.globalLocalCacheManager, this.remoteServerMapManager,
+                                    this.fieldFactory, this, objectManager, this.config.getTCPeerClass(clazz),
                                     getLogicalSuperClassWithDefaultConstructor(clazz), loaderDesc, this.config
                                         .getLogicalExtendingClassName(className), this.config.isLogical(className),
                                     this.config.isCallConstructorOnLoad(classInfo), this.config

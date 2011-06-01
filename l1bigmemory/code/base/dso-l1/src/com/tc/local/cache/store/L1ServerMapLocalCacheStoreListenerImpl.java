@@ -3,7 +3,6 @@
  */
 package com.tc.local.cache.store;
 
-import com.tc.object.RemoteServerMapManager;
 import com.tc.object.locks.LockID;
 
 import java.util.HashMap;
@@ -17,10 +16,10 @@ import java.util.Map.Entry;
  */
 public class L1ServerMapLocalCacheStoreListenerImpl implements
     L1ServerMapLocalCacheStoreListener<Object, LocalCacheStoreValue> {
-  private final RemoteServerMapManager serverMapManager;
+  private final ServerMapLocalCache serverMapLocalCache;
 
-  public L1ServerMapLocalCacheStoreListenerImpl(RemoteServerMapManager serverMapManager) {
-    this.serverMapManager = serverMapManager;
+  public L1ServerMapLocalCacheStoreListenerImpl(ServerMapLocalCache serverMapLocalCache) {
+    this.serverMapLocalCache = serverMapLocalCache;
   }
 
   public void notifyElementEvicted(Object key, LocalCacheStoreValue value) {
@@ -39,7 +38,7 @@ public class L1ServerMapLocalCacheStoreListenerImpl implements
 
       // if eventual
       if (value.isUnlockedCoherent()) {
-        this.serverMapManager.flush(value.getID());
+        this.serverMapLocalCache.flush(value.getID());
       } else if (value.isIncoherent()) {
         // incoeherent
         // do nothing
@@ -50,7 +49,7 @@ public class L1ServerMapLocalCacheStoreListenerImpl implements
     }
 
     if (evictedLockIds.size() > 0) {
-      this.serverMapManager.clearCachedItemsForLocks(evictedLockIds);
+      this.serverMapLocalCache.clearForIDsAndRecallLocks(evictedLockIds);
     }
   }
 }

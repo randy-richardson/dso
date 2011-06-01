@@ -33,4 +33,6 @@ public interface L1ServerMapLocalCacheStore<K, V> {
   public Set getKeySet();
 
   public int size();
+
+  public void initialize(int maxInMemory);
 }
