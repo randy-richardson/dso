@@ -6,7 +6,6 @@ package com.tc.object;
 import com.tc.invalidation.Invalidations;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
-import com.tc.object.cache.CachedItem;
 import com.tc.object.handshakemanager.ClientHandshakeCallback;
 import com.tc.object.locks.LockID;
 import com.tc.object.session.SessionID;
@@ -37,6 +36,4 @@ public interface RemoteServerMapManager extends ClientHandshakeCallback {
   public void flush(Invalidations invalidations);
 
   public void recallLocks(Set<LockID> toEvict);
-
-  public void expired(TCObjectServerMap serverMap, CachedItem ci);
 }

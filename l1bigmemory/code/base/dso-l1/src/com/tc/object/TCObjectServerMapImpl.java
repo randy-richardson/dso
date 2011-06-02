@@ -7,6 +7,7 @@ import com.tc.exception.TCObjectNotFoundException;
 import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.local.cache.store.L1ServerMapLocalStoreTransactionCompletionListener;
 import com.tc.local.cache.store.LocalCacheStoreValue;
+import com.tc.local.cache.store.ServerMapLocalCache;
 import com.tc.local.cache.store.ServerMapLocalCacheImpl;
 import com.tc.local.cache.store.ServerMapLocalCacheImpl.TransactionCompletionAdaptor;
 import com.tc.logging.TCLogger;
@@ -28,30 +29,31 @@ import java.util.Set;
 public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObject, TCObjectServerMap<L>,
     TransactionCompletionAdaptor {
 
-  private final static TCLogger         logger           = TCLogging.getLogger(TCObjectServerMapImpl.class);
+  private final static TCLogger        logger           = TCLogging.getLogger(TCObjectServerMapImpl.class);
 
-  private static final boolean          EVICTOR_LOGGING  = TCPropertiesImpl
-                                                             .getProperties()
-                                                             .getBoolean(
-                                                                         TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
-  private final static boolean          CACHE_ENABLED    = TCPropertiesImpl
-                                                             .getProperties()
-                                                             .getBoolean(
-                                                                         TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
+  private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
+                                                            .getProperties()
+                                                            .getBoolean(
+                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+  private final static boolean         CACHE_ENABLED    = TCPropertiesImpl
+                                                            .getProperties()
+                                                            .getBoolean(
+                                                                        TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
 
-  private static final Object[]         NO_ARGS          = new Object[] {};
+  private static final Object[]        NO_ARGS          = new Object[] {};
 
   static {
     logger.info(TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED + " : " + CACHE_ENABLED);
   }
 
-  private final GroupID                 groupID;
-  private final ClientObjectManager     objectManager;
-  private final RemoteServerMapManager  serverMapManager;
-  private final Manager                 manager;
-  private final ServerMapLocalCacheImpl cache;
-  private volatile int                  maxInMemoryCount = 0;
-  private volatile boolean              invalidateOnChange;
+  private final GroupID                groupID;
+  private final ClientObjectManager    objectManager;
+  private final RemoteServerMapManager serverMapManager;
+  private final Manager                manager;
+  private final ServerMapLocalCache    cache;
+  private volatile int                 maxInMemoryCount = 0;
+  private volatile boolean             invalidateOnChange;
+  private volatile boolean             localCacheEnabled;
 
   public TCObjectServerMapImpl(final Manager manager, final ClientObjectManager objectManager,
                                final RemoteServerMapManager serverMapManager, final ObjectID id, final Object peer,
@@ -62,9 +64,8 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.objectManager = objectManager;
     this.serverMapManager = serverMapManager;
     this.manager = manager;
-    this.cache = new ServerMapLocalCacheImpl(id, this, globalLocalCacheManager);
-    // the initialize method gets called from "super" call only. hence we can initialize like this.
-    this.cache.initialize(this.maxInMemoryCount, this.invalidateOnChange);
+    this.cache = new ServerMapLocalCacheImpl(id, this, globalLocalCacheManager, this.maxInMemoryCount,
+                                             this.localCacheEnabled);
   }
 
   public void initialize(final int maxTTISeconds, final int maxTTLSeconds, final int targetMaxInMemoryCount,
@@ -72,6 +73,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
                          final boolean localCacheEnabledFlag) {
     this.maxInMemoryCount = targetMaxInMemoryCount;
     this.invalidateOnChange = invalidateOnChangeFlag;
+    this.localCacheEnabled = localCacheEnabledFlag;
   }
 
   /**
@@ -231,7 +233,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
    */
   public Object getValue(final TCServerMap map, final L lockID, final Object key) {
     if (CACHE_ENABLED) {
-      final LocalCacheStoreValue item = this.cache.getCoherentCachedItem(key);
+      final LocalCacheStoreValue item = this.cache.getCoherentLocalValue(key);
       if (item != null) { return item.getValue(); }
     }
 
@@ -274,9 +276,9 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   private LocalCacheStoreValue getValueUnlockedFromCache(Object key) {
     if (invalidateOnChange) {
-      return this.cache.getCoherentCachedItem(key);
+      return this.cache.getCoherentLocalValue(key);
     } else {
-      return this.cache.getCachedItem(key);
+      return this.cache.getLocalValue(key);
     }
   }
 
@@ -405,7 +407,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   public Object getValueFromLocalCache(final Object key) {
     if (CACHE_ENABLED) {
-      LocalCacheStoreValue cachedItem = this.cache.getCachedItem(key);
+      LocalCacheStoreValue cachedItem = this.cache.getLocalValue(key);
       if (cachedItem != null) { return cachedItem.getValue(); }
     }
     return null;

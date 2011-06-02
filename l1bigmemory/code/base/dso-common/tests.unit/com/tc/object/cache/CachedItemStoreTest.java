@@ -4,31 +4,25 @@
 package com.tc.object.cache;
 
 import com.tc.exception.ImplementMe;
-import com.tc.local.cache.store.DisposeListener;
-import com.tc.object.locks.LockID;
-import com.tc.object.locks.StringLockID;
-
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 import junit.framework.TestCase;
 
-// TODO: fix this test
+// TODO: fix this test. Will be rewriting this test in a while
 public class CachedItemStoreTest extends TestCase {
 
   // CachedItemStore store;
-  ConcurrentHashMap<Object, CachedItem> parent;
-  HashMap<LockID, Integer>              lockID2Index;
-  private DisposeListener               disposeHandler;
+  // ConcurrentHashMap<Object, CachedItem> parent;
+  // HashMap<LockID, Integer> lockID2Index;
+  // private DisposeListener disposeHandler;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    // this.store = new CachedItemStore();
-    this.parent = new ConcurrentHashMap<Object, CachedItem>();
-    this.lockID2Index = new HashMap<LockID, Integer>();
-    // TODO: fixme
-    this.disposeHandler = null;
+    // // this.store = new CachedItemStore();
+    // this.parent = new ConcurrentHashMap<Object, CachedItem>();
+    // this.lockID2Index = new HashMap<LockID, Integer>();
+    // // TODO: fixme
+    // this.disposeHandler = null;
   }
 
   public void test() {
@@ -112,54 +106,55 @@ public class CachedItemStoreTest extends TestCase {
   // }
   // }
 
-  private int getIndex(final LockID lockID) {
-    return this.lockID2Index.get(lockID);
-  }
-
-  private void verifyOne(final CachedItem item, final int index, final LockID lockID) {
-    assertNull(item.getNext());
-    verify(index, lockID, item);
-  }
-
-  private void verifyTwo(CachedItem item, final int index1, final int index2, final LockID lockID) {
-    verify(index1, lockID, item);
-    assertNotNull(item.getNext());
-    item = item.getNext();
-    verify(index2, lockID, item);
-    assertNull(item.getNext());
-  }
-
-  private void verifyThree(CachedItem item, final int index1, final int index2, final int index3, final LockID lockID) {
-    verify(index1, lockID, item);
-    assertNotNull(item.getNext());
-    item = item.getNext();
-    verify(index2, lockID, item);
-    assertNotNull(item.getNext());
-    item = item.getNext();
-    verify(index3, lockID, item);
-    assertNull(item.getNext());
-  }
-
-  private void verify(final int i, final LockID lockID, final CachedItem item) {
-    assertEquals(lockID, item.getID());
-    assertEquals(getKey(i), item.getKey());
-    assertEquals(getValue(i), item.getValue());
-  }
-
-  private Object getValue(final int i) {
-    return "value-" + i;
-  }
-
-  private Object getKey(final int i) {
-    return "key-" + i;
-  }
-
-  private LockID getLockId(final int i) {
-    final LockID lockID = new StringLockID("LockID-" + i);
-    if (!this.lockID2Index.containsKey(lockID)) {
-      this.lockID2Index.put(lockID, i);
-    }
-    return lockID;
-  }
+  // private int getIndex(final LockID lockID) {
+  // return this.lockID2Index.get(lockID);
+  // }
+  //
+  // private void verifyOne(final CachedItem item, final int index, final LockID lockID) {
+  // assertNull(item.getNext());
+  // verify(index, lockID, item);
+  // }
+  //
+  // private void verifyTwo(CachedItem item, final int index1, final int index2, final LockID lockID) {
+  // verify(index1, lockID, item);
+  // assertNotNull(item.getNext());
+  // item = item.getNext();
+  // verify(index2, lockID, item);
+  // assertNull(item.getNext());
+  // }
+  //
+  // private void verifyThree(CachedItem item, final int index1, final int index2, final int index3, final LockID
+  // lockID) {
+  // verify(index1, lockID, item);
+  // assertNotNull(item.getNext());
+  // item = item.getNext();
+  // verify(index2, lockID, item);
+  // assertNotNull(item.getNext());
+  // item = item.getNext();
+  // verify(index3, lockID, item);
+  // assertNull(item.getNext());
+  // }
+  //
+  // private void verify(final int i, final LockID lockID, final CachedItem item) {
+  // assertEquals(lockID, item.getID());
+  // assertEquals(getKey(i), item.getKey());
+  // assertEquals(getValue(i), item.getValue());
+  // }
+  //
+  // private Object getValue(final int i) {
+  // return "value-" + i;
+  // }
+  //
+  // private Object getKey(final int i) {
+  // return "key-" + i;
+  // }
+  //
+  // private LockID getLockId(final int i) {
+  // final LockID lockID = new StringLockID("LockID-" + i);
+  // if (!this.lockID2Index.containsKey(lockID)) {
+  // this.lockID2Index.put(lockID, i);
+  // }
+  // return lockID;
+  // }
 
 }

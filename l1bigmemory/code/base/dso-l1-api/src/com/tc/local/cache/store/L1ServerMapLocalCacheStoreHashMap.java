@@ -15,13 +15,13 @@ import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocalCacheStore<K, V> {
-  private final List<L1ServerMapLocalCacheStoreListener<K, V>> listeners          = new CopyOnWriteArrayList<L1ServerMapLocalCacheStoreListener<K, V>>();
-  private final HashMap<K, V>                                  backingCache       = new HashMap<K, V>();
-  private volatile int                                         maxElementInMemory = Integer.MAX_VALUE;
-  private final HashSet<K>                                     pinnedEntries      = new HashSet<K>();
+  private final List<L1ServerMapLocalCacheStoreListener<K, V>> listeners     = new CopyOnWriteArrayList<L1ServerMapLocalCacheStoreListener<K, V>>();
+  private final HashMap<K, V>                                  backingCache  = new HashMap<K, V>();
+  private final int                                            maxElementInMemory;
+  private final HashSet<K>                                     pinnedEntries = new HashSet<K>();
 
-  public void initialize(int maxInMemory) {
-    if (maxElementInMemory == 0) {
+  public L1ServerMapLocalCacheStoreHashMap(int maxInMemory) {
+    if (maxInMemory == 0) {
       this.maxElementInMemory = Integer.MAX_VALUE;
     } else {
       this.maxElementInMemory = maxInMemory;

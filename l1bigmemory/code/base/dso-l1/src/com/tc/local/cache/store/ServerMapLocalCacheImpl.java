@@ -17,23 +17,20 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private final ObjectID                                                         mapID;
   private final TransactionCompletionAdaptor                                     transactionCompletionAdaptor;
   private final GlobalLocalCacheManager                                          globalLocalCacheManager;
-  private volatile boolean                                                       localCacheEnabled;
+  private final boolean                                                          localCacheEnabled;
 
   public ServerMapLocalCacheImpl(ObjectID mapID, TransactionCompletionAdaptor transactionCompletionAdaptor,
-                                 GlobalLocalCacheManager globalLocalCacheManager) {
+                                 GlobalLocalCacheManager globalLocalCacheManager, int maxInMemory,
+                                 boolean islocalCacheEnbaled) {
     this.mapID = mapID;
     this.transactionCompletionAdaptor = transactionCompletionAdaptor;
     this.globalLocalCacheManager = globalLocalCacheManager;
-    this.map = new L1ServerMapLocalCacheStoreHashMap<Object, LocalCacheStoreValue>();
+    this.localCacheEnabled = islocalCacheEnbaled;
+    this.map = new L1ServerMapLocalCacheStoreHashMap<Object, LocalCacheStoreValue>(maxInMemory);
 
     this.globalLocalCacheManager.addLocalCache(this.mapID, this);
     this.listener = new L1ServerMapLocalCacheStoreListenerImpl(this);
     this.map.addListener(listener);
-  }
-
-  public void initialize(int maxInMemory, boolean islocalCacheEnbaled) {
-    this.localCacheEnabled = islocalCacheEnbaled;
-    this.map.initialize(maxInMemory);
   }
 
   /**
@@ -155,7 +152,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   /**
    * Returned value may be coherent or incoherent or null
    */
-  public LocalCacheStoreValue getCachedItem(final Object key) {
+  public LocalCacheStoreValue getLocalValue(final Object key) {
     LocalCacheStoreValue value = this.map.get(key);
     if (value != null && value.isIncoherent() && value.isIncoherentTooLong()) {
       // if incoherent and been incoherent too long, remove from cache/map
@@ -168,8 +165,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   /**
    * Returned value is always coherent or null.
    */
-  public LocalCacheStoreValue getCoherentCachedItem(final Object key) {
-    final LocalCacheStoreValue value = getCachedItem(key);
+  public LocalCacheStoreValue getCoherentLocalValue(final Object key) {
+    final LocalCacheStoreValue value = getLocalValue(key);
     if (value != null && value.isIncoherent()) {
       this.map.remove(key);
       return null;

@@ -4,11 +4,9 @@
 package com.tc.object;
 
 import com.tc.invalidation.Invalidations;
-import com.tc.local.cache.store.DisposeListener;
 import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
-import com.tc.object.cache.CachedItem;
 import com.tc.object.locks.LockID;
 import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
@@ -74,20 +72,8 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void expired(final TCObjectServerMap serverMap, final CachedItem ci) {
-    //
-  }
-
   public void addResponseForGetAllKeys(SessionID localSessionID, ObjectID mapID, ServerMapRequestID requestID,
                                        Set keys, NodeID nodeID) {
-    //
-  }
-
-  public void addDisposeListener(ObjectID mapID, DisposeListener listener) {
-    //
-  }
-
-  public void dispose(ObjectID mapID, Object key) {
     //
   }
 

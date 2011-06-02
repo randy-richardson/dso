@@ -11,8 +11,6 @@ import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
-import com.tc.object.cache.CachedItem;
-import com.tc.object.context.CachedItemExpiredContext;
 import com.tc.object.context.LocksToRecallContext;
 import com.tc.object.locks.LockID;
 import com.tc.object.msg.ClientHandshakeMessage;
@@ -62,7 +60,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private boolean                                                        pendingSendTaskScheduled                  = false;
 
   private final Sink                                                     lockRecallSink;
-  private final Sink                                                     ttiTTLEvitionSink;
+  // private final Sink ttiTTLEvitionSink;
   private final GlobalLocalCacheManager                                  globalLocalCacheManager;
 
   private static enum State {
@@ -78,7 +76,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     this.smmFactory = smmFactory;
     this.sessionManager = sessionManager;
     this.lockRecallSink = lockRecallSink;
-    this.ttiTTLEvitionSink = ttiTTLEvitionSink;
+    // this.ttiTTLEvitionSink = ttiTTLEvitionSink;
     this.globalLocalCacheManager = globalLocalCacheManager;
   }
 
@@ -331,10 +329,6 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   public void recallLocks(final Set<LockID> toEvict) {
     // NOTE:: If this implementation changes for any reason, checkout RemoteServerMapManagerGroupImpl
     this.lockRecallSink.add(new LocksToRecallContext(toEvict));
-  }
-
-  public void expired(final TCObjectServerMap serverMap, final CachedItem ci) {
-    this.ttiTTLEvitionSink.add(new CachedItemExpiredContext(serverMap, ci));
   }
 
   private void waitUntilRunning() {
