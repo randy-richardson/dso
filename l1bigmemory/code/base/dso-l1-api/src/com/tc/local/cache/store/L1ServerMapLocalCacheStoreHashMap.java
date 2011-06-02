@@ -121,4 +121,10 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   public Set getKeySet() {
     throw new ImplementMe();
   }
+
+  @Override
+  public String toString() {
+    return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache + ", maxElementInMemory="
+           + maxElementInMemory + ", pinnedEntries=" + pinnedEntries + "]";
+  }
 }

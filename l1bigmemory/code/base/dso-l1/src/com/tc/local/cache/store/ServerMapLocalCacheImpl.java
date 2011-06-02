@@ -201,6 +201,11 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
    */
   public void flush(Object id) {
     List keys = cacheIDStore.remove(id);
+    if (keys == null) {
+      // This can happen when remove is called due an "remove" from local cache on a remove frm CDSM
+      return;
+    }
+
     for (Object key : keys) {
       this.map.remove(key);
     }
