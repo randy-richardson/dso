@@ -220,4 +220,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   public void addAllObjectIDsToValidate(Map tempMap) {
     this.cacheIDStore.addAllObjectIDsToValidate(mapID, tempMap);
   }
+
+  ServerMapLocalCacheIDStore getCacheIDStore() {
+    return cacheIDStore;
+  }
 }

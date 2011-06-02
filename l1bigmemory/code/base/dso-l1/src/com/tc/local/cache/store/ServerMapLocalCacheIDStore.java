@@ -32,6 +32,10 @@ public class ServerMapLocalCacheIDStore<L> {
     }
   }
 
+  int size() {
+    return store.size();
+  }
+
   // For tests
   List get(final L id) {
     ReentrantReadWriteLock lock = getLock(id);
