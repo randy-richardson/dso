@@ -81,7 +81,7 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
 
   private void addInvalidateObjectIDsTo(ClientStateImpl clientState, Invalidations invalidationsForClient,
                                         Invalidations allInvalidations) {
-    if (allInvalidations.isEmpty()) return;
+    if (allInvalidations == null || allInvalidations.isEmpty()) return;
     Set<ObjectID> mapIDs = allInvalidations.getMapIds();
     for (ObjectID mapID : mapIDs) {
       ObjectIDSet invalidatedOids = allInvalidations.getObjectIDSetForMapId(mapID);

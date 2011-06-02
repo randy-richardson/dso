@@ -63,6 +63,8 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.serverMapManager = serverMapManager;
     this.manager = manager;
     this.cache = new ServerMapLocalCacheImpl(id, this, globalLocalCacheManager);
+    // the initialize method gets called from "super" call only. hence we can initialize like this.
+    this.cache.initialize(this.maxInMemoryCount, this.invalidateOnChange);
   }
 
   public void initialize(final int maxTTISeconds, final int maxTTLSeconds, final int targetMaxInMemoryCount,
@@ -70,7 +72,6 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
                          final boolean localCacheEnabledFlag) {
     this.maxInMemoryCount = targetMaxInMemoryCount;
     this.invalidateOnChange = invalidateOnChangeFlag;
-    this.cache.initialize(targetMaxInMemoryCount, localCacheEnabledFlag);
   }
 
   /**
