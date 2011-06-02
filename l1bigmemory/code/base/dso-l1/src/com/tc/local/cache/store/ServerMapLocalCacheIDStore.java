@@ -133,6 +133,7 @@ public class ServerMapLocalCacheIDStore<L> {
   }
 
   private ReentrantReadWriteLock getLock(L key) {
-    return readWriteLocks[key.hashCode()];
+    int index = Math.abs(key.hashCode() % CONCURRENCY);
+    return readWriteLocks[index];
   }
 }
