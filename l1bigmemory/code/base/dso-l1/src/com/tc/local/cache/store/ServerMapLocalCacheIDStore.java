@@ -6,12 +6,12 @@ package com.tc.local.cache.store;
 /**
  * Used to be cached item store
  */
-
+import com.tc.logging.TCLogger;
+import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.util.ObjectIDSet;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -19,29 +19,40 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerMapLocalCacheIDStore<L> {
+  private static final TCLogger          LOGGER         = TCLogging.getLogger(ServerMapLocalCacheIDStore.class);
   private final static int               CONCURRENCY    = 1;
+
   private final ReentrantReadWriteLock[] readWriteLocks = new ReentrantReadWriteLock[CONCURRENCY];
 
-  // TODO: This should be an ehcache later
-  private final Map<L, List>             store;
+  private final BackingMap               backingMap     = new BackingMap();
 
   public ServerMapLocalCacheIDStore() {
-    this.store = new HashMap<L, List>();
     for (int i = 0; i < readWriteLocks.length; i++) {
       this.readWriteLocks[i] = new ReentrantReadWriteLock();
     }
   }
 
-  int size() {
-    return store.size();
+  public void setupLocalStore(L1ServerMapLocalCacheStore localCacheStore) {
+    backingMap.setupLocalStore(localCacheStore);
   }
 
-  // For tests
+  int size() {
+    // TODO: fix this, merge conflict
+    // return store.size();
+    return 0;
+  }
+
   List get(final L id) {
     ReentrantReadWriteLock lock = getLock(id);
     try {
       lock.readLock().lock();
-      return this.store.get(id);
+      Object obj = this.backingMap.get(id);
+      if (obj instanceof List) {
+        return (List) obj;
+      } else {
+        LOGGER.warn("Get for: '" + id + "': not mapped to a list - " + obj);
+        return null;
+      }
     } finally {
       lock.readLock().unlock();
     }
@@ -58,13 +69,14 @@ public class ServerMapLocalCacheIDStore<L> {
   }
 
   private void addInternal(L id, Object key) {
-    List list = this.store.get(id);
+    List list = get(id);
     if (list == null) {
       list = new ArrayList();
-      this.store.put(id, list);
+      this.backingMap.put(id, list);
+      // TODO: need to pin this element?
     }
-
     list.add(key);
+    // TODO: need to put back the list in the store?
   }
 
   public void remove(final L id, final Object key) {
@@ -79,7 +91,7 @@ public class ServerMapLocalCacheIDStore<L> {
 
   // TODO: should we do a recall when list size becomes 0 OR unpin the lock
   private void removeInternal(L id, Object key) {
-    List list = this.store.get(id);
+    List list = get(id);
     if (list == null) { return; }
 
     Iterator iterator = list.iterator();
@@ -92,20 +104,24 @@ public class ServerMapLocalCacheIDStore<L> {
     }
 
     if (list.size() == 0) {
-      this.store.remove(id);
+      this.backingMap.remove(id);
     }
   }
 
   public List remove(final L id) {
-    final List list;
     ReentrantReadWriteLock lock = getLock(id);
     try {
       lock.writeLock().lock();
-      list = this.store.remove(id);
+      final Object obj = this.backingMap.remove(id);
+      if (obj instanceof List) {
+        return (List) obj;
+      } else {
+        LOGGER.warn("Remove for: '" + id + "' is not mapped to a list - " + obj);
+        return null;
+      }
     } finally {
       lock.writeLock().unlock();
     }
-    return list;
   }
 
   /**
@@ -116,12 +132,16 @@ public class ServerMapLocalCacheIDStore<L> {
       readWriteLock.readLock().lock();
     }
     try {
-      if (!this.store.isEmpty()) {
+      if (this.backingMap.size() != 0) {
         ObjectIDSet set = new ObjectIDSet();
-        Set currentSet = this.store.keySet();
-        for (Object id : currentSet) {
-          if (id instanceof ObjectID) {
-            set.add((ObjectID) id);
+
+        Set currentSet = this.backingMap.getKeySet();
+        if (currentSet != null) {
+          for (Object id : currentSet) {
+            // TODO: keys added from serverMapLocalCache can never be ObjectID, need other special handling here?
+            if (id instanceof ObjectID) {
+              set.add((ObjectID) id);
+            }
           }
         }
 
@@ -139,5 +159,60 @@ public class ServerMapLocalCacheIDStore<L> {
   private ReentrantReadWriteLock getLock(L key) {
     int index = Math.abs(key.hashCode() % CONCURRENCY);
     return readWriteLocks[index];
+  }
+
+  private static class BackingMap {
+    private volatile L1ServerMapLocalCacheStore store;
+
+    public void setupLocalStore(L1ServerMapLocalCacheStore localCacheStore) {
+      this.store = localCacheStore;
+    }
+
+    private boolean isStoreInitialized() {
+      if (store == null) {
+        LOGGER.info("Store is not setup yet");
+        return false;
+      }
+      return true;
+    }
+
+    Object get(Object key) {
+      if (isStoreInitialized()) {
+        return store.get(key);
+      } else {
+        return null;
+      }
+    }
+
+    void put(Object key, List value) {
+      if (isStoreInitialized()) {
+        store.put(key, value);
+      }
+    }
+
+    Object remove(Object key) {
+      if (isStoreInitialized()) {
+        return store.remove(key);
+      } else {
+        return null;
+      }
+    }
+
+    int size() {
+      if (isStoreInitialized()) {
+        return store.size();
+      } else {
+        return 0;
+      }
+    }
+
+    Set getKeySet() {
+      if (isStoreInitialized()) {
+        return store.getKeySet();
+      } else {
+        return null;
+      }
+    }
+
   }
 }

@@ -49,6 +49,8 @@ import com.tc.exception.TCRuntimeException;
 import com.tc.injection.annotations.InjectedDsoInstance;
 import com.tc.injection.exceptions.UnsupportedInjectedDsoInstanceTypeException;
 import com.tc.io.TCByteArrayOutputStream;
+import com.tc.local.cache.store.L1ServerMapLocalCacheStore;
+import com.tc.local.cache.store.L1ServerMapLocalCacheStoreListener;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.LogLevel;
 import com.tc.logging.NullTCLogger;
@@ -596,6 +598,10 @@ public class BootJarTool {
       addRuntimeClasses();
 
       addLiterals();
+
+      // local cache store classes
+      loadTerracottaClass(L1ServerMapLocalCacheStore.class.getName());
+      loadTerracottaClass(L1ServerMapLocalCacheStoreListener.class.getName());
 
       addSunStandardLoaders();
       addInstrumentedAccessibleObject();

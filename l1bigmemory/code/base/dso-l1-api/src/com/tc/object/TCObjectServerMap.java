@@ -3,6 +3,7 @@
  */
 package com.tc.object;
 
+import com.tc.local.cache.store.L1ServerMapLocalCacheStore;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
 
@@ -176,4 +177,9 @@ public interface TCObjectServerMap<L> extends TCObject {
    * Add meta data to this server map
    */
   public void addMetaData(MetaDataDescriptor mdd);
+
+  /**
+   * Setup the local store for use. This method is called whenever the map is created or faulted in the L1 first time.
+   */
+  void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore);
 }

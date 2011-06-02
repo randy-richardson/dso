@@ -5,11 +5,10 @@ package com.tc.object;
 
 import com.tc.exception.TCObjectNotFoundException;
 import com.tc.local.cache.store.GlobalLocalCacheManager;
-import com.tc.local.cache.store.L1ServerMapLocalStoreTransactionCompletionListener;
+import com.tc.local.cache.store.L1ServerMapLocalCacheStore;
 import com.tc.local.cache.store.LocalCacheStoreValue;
 import com.tc.local.cache.store.ServerMapLocalCache;
 import com.tc.local.cache.store.ServerMapLocalCacheImpl;
-import com.tc.local.cache.store.ServerMapLocalCacheImpl.TransactionCompletionAdaptor;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.GroupID;
@@ -18,27 +17,22 @@ import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
-import com.tc.object.tx.ClientTransaction;
-import com.tc.object.tx.UnlockedSharedObjectException;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 
 import java.util.Collections;
 import java.util.Set;
 
-public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObject, TCObjectServerMap<L>,
-    TransactionCompletionAdaptor {
+public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObject, TCObjectServerMap<L> {
 
   private final static TCLogger        logger           = TCLogging.getLogger(TCObjectServerMapImpl.class);
 
   private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+                                                            .getBoolean(TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
   private final static boolean         CACHE_ENABLED    = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
+                                                            .getBoolean(TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
 
   private static final Object[]        NO_ARGS          = new Object[] {};
 
@@ -55,6 +49,8 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
   private volatile boolean             invalidateOnChange;
   private volatile boolean             localCacheEnabled;
 
+  private L1ServerMapLocalCacheStore   serverMapLocalStore;
+
   public TCObjectServerMapImpl(final Manager manager, final ClientObjectManager objectManager,
                                final RemoteServerMapManager serverMapManager, final ObjectID id, final Object peer,
                                final TCClass tcc, final boolean isNew,
@@ -64,8 +60,15 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.objectManager = objectManager;
     this.serverMapManager = serverMapManager;
     this.manager = manager;
-    this.cache = new ServerMapLocalCacheImpl(id, this, globalLocalCacheManager, this.maxInMemoryCount,
+    this.cache = new ServerMapLocalCacheImpl(id, objectManager, manager, globalLocalCacheManager,
                                              this.localCacheEnabled);
+    if (serverMapLocalStore != null) {
+      logger.debug(getObjectID() + ": Setting serverMapLocalStore in constructor");
+      cache.setupLocalStore(serverMapLocalStore);
+    } else {
+      logger.debug(getObjectID() + ": serverMapLocalStore not initialized yet (in constructor)");
+    }
+
   }
 
   public void initialize(final int maxTTISeconds, final int maxTTLSeconds, final int targetMaxInMemoryCount,
@@ -480,13 +483,16 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.objectManager.getTransactionManager().addMetaDataDescriptor(this, (MetaDataDescriptorInternal) mdd);
   }
 
-  public void registerForCallbackOnComplete(
-                                            final L1ServerMapLocalStoreTransactionCompletionListener localStoreTxnCompletionListener) {
-    if (localStoreTxnCompletionListener == null) { return; }
-    ClientTransaction txn = TCObjectServerMapImpl.this.objectManager.getTransactionManager().getCurrentTransaction();
-    if (txn == null) { throw new UnlockedSharedObjectException(
-                                                               "Attempt to access a shared object outside the scope of a shared lock.",
-                                                               Thread.currentThread().getName(), manager.getClientID()); }
-    txn.addTransactionCompleteListener(localStoreTxnCompletionListener);
+  public void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore) {
+    // this is called from CDSMDso.__tc_managed(tco)
+    this.serverMapLocalStore = serverMapLocalStore;
+    if (cache != null) {
+      logger.debug(getObjectID()
+                   + ": Setting up serverMapLocalStore in setupLocalStore as serverMapLocalCache is not null");
+      cache.setupLocalStore(serverMapLocalStore);
+    } else {
+      logger.debug(getObjectID()
+                   + ": NOT setting up serverMapLocalStore in setupLocalStore as serverMapLocalCache IS null");
+    }
   }
 }

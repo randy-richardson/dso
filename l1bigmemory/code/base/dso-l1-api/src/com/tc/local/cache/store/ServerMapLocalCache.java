@@ -10,6 +10,12 @@ import java.util.Map;
 import java.util.Set;
 
 public interface ServerMapLocalCache {
+
+  /**
+   * Set up local cache store for use
+   */
+  void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore);
+
   /**
    * Each ServerMapLocalCache cache is associated with a TCObjectServerMap<br>
    * This ObjectID is the id of that TCObject
