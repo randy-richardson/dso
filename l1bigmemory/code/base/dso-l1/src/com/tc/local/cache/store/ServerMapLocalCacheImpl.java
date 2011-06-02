@@ -157,7 +157,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
    */
   public LocalCacheStoreValue getCachedItem(final Object key) {
     LocalCacheStoreValue value = this.map.get(key);
-    if (value.isIncoherent() && value.isIncoherentTooLong()) {
+    if (value != null && value.isIncoherent() && value.isIncoherentTooLong()) {
       // if incoherent and been incoherent too long, remove from cache/map
       this.map.remove(key);
       return null;
@@ -170,7 +170,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
    */
   public LocalCacheStoreValue getCoherentCachedItem(final Object key) {
     final LocalCacheStoreValue value = getCachedItem(key);
-    if (value.isIncoherent()) {
+    if (value != null && value.isIncoherent()) {
       this.map.remove(key);
       return null;
     }
