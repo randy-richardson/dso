@@ -36,12 +36,13 @@ public class ServerMapLocalCacheIDStore<L> {
     backingMap.setupLocalStore(localCacheStore);
   }
 
+  // Used in tests
   int size() {
-    // TODO: fix this, merge conflict
-    // return store.size();
+    // TODO
     return 0;
   }
 
+  // Used in tests
   List get(final L id) {
     ReentrantReadWriteLock lock = getLock(id);
     try {
@@ -69,7 +70,7 @@ public class ServerMapLocalCacheIDStore<L> {
   }
 
   private void addInternal(L id, Object key) {
-    List list = get(id);
+    List list = (List) backingMap.get(id);
     if (list == null) {
       list = new ArrayList();
       this.backingMap.put(id, list);
