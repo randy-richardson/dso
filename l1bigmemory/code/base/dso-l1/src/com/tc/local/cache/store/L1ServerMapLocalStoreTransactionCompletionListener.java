@@ -19,7 +19,6 @@ public class L1ServerMapLocalStoreTransactionCompletionListener implements Trans
     this.serverMapLocalCache = serverMapLocalCache;
     this.key = key;
     this.removeEntryOnTransactionComplete = removeEntryOnTransactionComplete;
-    this.serverMapLocalCache.pinEntry(this.key);
   }
 
   public void transactionComplete(TransactionID txnID) {

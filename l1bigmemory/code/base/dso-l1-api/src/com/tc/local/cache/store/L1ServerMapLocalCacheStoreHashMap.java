@@ -3,8 +3,6 @@
  */
 package com.tc.local.cache.store;
 
-import com.tc.exception.ImplementMe;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -117,9 +115,8 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     this.evict(Integer.MAX_VALUE);
   }
 
-  // TODO
-  public Set getKeySet() {
-    throw new ImplementMe();
+  public synchronized Set getKeySet() {
+    return this.backingCache.keySet();
   }
 
   @Override

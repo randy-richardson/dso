@@ -75,6 +75,7 @@ public class ServerMapLocalCacheIDStore<L> {
       list = new ArrayList();
       this.backingMap.put(id, list);
       // TODO: need to pin this element?
+      this.backingMap.pinEntry(id);
     }
     list.add(key);
     // TODO: need to put back the list in the store?
@@ -140,7 +141,7 @@ public class ServerMapLocalCacheIDStore<L> {
         if (currentSet != null) {
           for (Object id : currentSet) {
             // TODO: keys added from serverMapLocalCache can never be ObjectID, need other special handling here?
-            if (id instanceof ObjectID) {
+            if (id instanceof ObjectID && id != ObjectID.NULL_ID) {
               set.add((ObjectID) id);
             }
           }
@@ -214,6 +215,15 @@ public class ServerMapLocalCacheIDStore<L> {
         return null;
       }
     }
+
+    void pinEntry(Object key) {
+      store.pinEntry(key);
+    }
+
+    // TODO
+    // void unpinEntry(Object key) {
+    // store.pinEntry(key);
+    // }
 
   }
 }

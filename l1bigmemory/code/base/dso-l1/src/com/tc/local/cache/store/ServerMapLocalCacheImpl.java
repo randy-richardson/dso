@@ -69,7 +69,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     addToCache(key, item, isMutate, txnCompleteListener);
   }
 
-  private void registerForCallbackOnComplete(final L1ServerMapLocalStoreTransactionCompletionListener l1ServerMapLocalStoreTransactionCompletionListener) {
+  private void registerForCallbackOnComplete(
+                                             final L1ServerMapLocalStoreTransactionCompletionListener l1ServerMapLocalStoreTransactionCompletionListener) {
     if (l1ServerMapLocalStoreTransactionCompletionListener == null) { return; }
     ClientTransaction txn = this.objectManager.getTransactionManager().getCurrentTransaction();
     if (txn == null) { throw new UnlockedSharedObjectException(
@@ -101,6 +102,11 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       return;
     }
     final LocalCacheStoreValue old = this.localStore.put(key, item);
+    // TODO
+    if (isMutate) {
+      this.localStore.pinEntry(key);
+    }
+
     if (old != null) {
       Object oldID = old.getID();
       // TODO: do we need a null id check, may be when we remove we do put a NULL_ID
