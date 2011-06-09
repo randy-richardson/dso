@@ -77,6 +77,26 @@ public class Invalidations implements TCSerializable {
     return this;
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((invalidationsPerCdsm == null) ? 0 : invalidationsPerCdsm.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    Invalidations other = (Invalidations) obj;
+    if (invalidationsPerCdsm == null) {
+      if (other.invalidationsPerCdsm != null) return false;
+    } else if (!invalidationsPerCdsm.equals(other.invalidationsPerCdsm)) return false;
+    return true;
+  }
+
   public void serializeTo(TCByteBufferOutput out) {
     out.writeInt(this.invalidationsPerCdsm.size());
     for (Entry<ObjectID, ObjectIDSet> entry : this.invalidationsPerCdsm.entrySet()) {
