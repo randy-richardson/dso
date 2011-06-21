@@ -33,11 +33,6 @@ public interface ServerMapLocalCache {
   void clearForIDsAndRecallLocks(Set<LockID> evictedLockIds);
 
   /**
-   * Pin the entry for this object key. That is this entry should not be evicted.
-   */
-  void pinEntry(Object key);
-
-  /**
    * Unpin entry for this object key. That is evict it if required.
    */
   void unpinEntry(Object key);

@@ -73,9 +73,7 @@ public class ServerMapLocalCacheIDStore<L> {
     List list = (List) backingMap.get(id);
     if (list == null) {
       list = new ArrayList();
-      this.backingMap.put(id, list);
-      // TODO: need to pin this element?
-      this.backingMap.pinEntry(id);
+      this.backingMap.put(id, list, true);
     }
     list.add(key);
     // TODO: need to put back the list in the store?
@@ -192,6 +190,12 @@ public class ServerMapLocalCacheIDStore<L> {
       }
     }
 
+    void put(Object key, List value, boolean isPinned) {
+      if (isStoreInitialized()) {
+        store.put(key, value, isPinned);
+      }
+    }
+
     Object remove(Object key) {
       if (isStoreInitialized()) {
         return store.remove(key);
@@ -214,10 +218,6 @@ public class ServerMapLocalCacheIDStore<L> {
       } else {
         return null;
       }
-    }
-
-    void pinEntry(Object key) {
-      store.pinEntry(key);
     }
 
     // TODO

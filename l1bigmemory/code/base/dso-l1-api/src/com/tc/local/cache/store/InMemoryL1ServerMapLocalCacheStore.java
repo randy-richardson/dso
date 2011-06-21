@@ -59,7 +59,9 @@ public class InMemoryL1ServerMapLocalCacheStore<K, V> implements L1ServerMapLoca
     }
   }
 
-  public V putPinned(K key, V value) {
+  public V put(K key, V value, boolean isPinned) {
+    if (!isPinned) { return put(key, value); }
+
     Map<K, StoreValue<V>> store = getStoreFor(key);
     ReentrantReadWriteLock lock = getLockFor(key);
 

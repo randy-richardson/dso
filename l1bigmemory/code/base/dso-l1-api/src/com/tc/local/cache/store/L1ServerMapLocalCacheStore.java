@@ -18,6 +18,14 @@ public interface L1ServerMapLocalCacheStore<K, V> {
   public V put(K key, V value);
 
   /**
+   * Put an entry in the backing map<br>
+   * 
+   * @param pinned true if the entry is not to be considered for eviction
+   * @return the old value if present
+   */
+  public V put(K key, V value, boolean pinned);
+
+  /**
    * @return the value if present
    */
   public V get(K key);
@@ -60,11 +68,6 @@ public interface L1ServerMapLocalCacheStore<K, V> {
    * @return size of the map
    */
   public int size();
-
-  /**
-   * Pin the entry so that it cannot be evicted from cache
-   */
-  public void pinEntry(K key);
 
   /**
    * Unpin entry so that it is eligible for eviction

@@ -101,10 +101,11 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       // for mutate ops keep in local cache till txn is complete
       return;
     }
-    final LocalCacheStoreValue old = this.localStore.put(key, item);
-    // TODO
+    final LocalCacheStoreValue old;
     if (isMutate) {
-      this.localStore.pinEntry(key);
+      old = this.localStore.put(key, item, true);
+    } else {
+      old = this.localStore.put(key, item);
     }
 
     if (old != null) {
@@ -190,10 +191,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       return null;
     }
     return value;
-  }
-
-  public void pinEntry(Object key) {
-    this.localStore.pinEntry(key);
   }
 
   public void unpinEntry(Object key) {

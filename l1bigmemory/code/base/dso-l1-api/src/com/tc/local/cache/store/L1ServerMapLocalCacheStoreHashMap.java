@@ -47,6 +47,22 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     return oldValue;
   }
 
+  public V put(K key, V value, boolean isPinned) {
+    if (!isPinned) { return put(key, value); }
+
+    V oldValue = null;
+    int size;
+    synchronized (this) {
+      oldValue = backingCache.put(key, value);
+      size = this.backingCache.size();
+      pinEntry(key);
+    }
+
+    doCapacityEviction(key, size);
+
+    return oldValue;
+  }
+
   private void doCapacityEviction(K key, int size) {
     /**
      * capacity eviction
@@ -56,7 +72,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     }
   }
 
-  public synchronized void pinEntry(K key) {
+  private synchronized void pinEntry(K key) {
     pinnedEntries.add(key);
   }
 
