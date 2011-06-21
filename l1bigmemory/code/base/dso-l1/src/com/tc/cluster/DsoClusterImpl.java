@@ -351,6 +351,9 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
     boolean fireOperationsDisabled = false;
     stateWriteLock.lock();
     try {
+      // We may get a node left event without ever seeing a node joined event, just ignore
+      // the node left event in that case
+      if (!nodeStatus.getState().isNodeJoined()) { return; }
       if (nodeStatus.getState().areOperationsEnabled()) {
         fireOperationsDisabled = true;
       }
@@ -434,7 +437,7 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
     if (useOOBNotification(eventType, event, listener)) {
       Thread t = new Thread(new Runnable() {
         public void run() {
-          notifyDsoClusterListener(DsoClusterEventType.NODE_LEFT, event, listener);
+          notifyDsoClusterListener(eventType, event, listener);
         }
       }, "Out of band notifier");
       t.setDaemon(true);

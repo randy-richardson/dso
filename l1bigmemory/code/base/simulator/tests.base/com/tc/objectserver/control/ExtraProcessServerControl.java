@@ -27,9 +27,11 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.management.MBeanServerConnection;
 import javax.management.remote.JMXConnector;
@@ -111,6 +113,36 @@ public class ExtraProcessServerControl extends ServerControlBase {
          false);
   }
 
+  private void pruneJVMArgsList(List vmArgs) {
+    // Arguments added later in the list have precedence.
+    try {
+      Map<String, String> map = new HashMap<String, String>();
+      for (Object vmArgObj : vmArgs) {
+        String vmArg = (String) vmArgObj;
+        String[] kv = vmArg.split("=");
+        if (kv.length == 1) {
+          map.put(kv[0], null);
+        } else if (kv.length == 2) {
+          if (map.containsKey(kv[0]) && !map.get(kv[0]).equals(kv[1])) {
+            System.out.println("Overriding duplicate JVM arg definition " + kv[0] + "=" + map.get(kv[0]) + " with "
+                               + kv[0] + "=" + kv[1]);
+          }
+          map.put(kv[0], kv[1]);
+        }
+      }
+      vmArgs.clear();
+      for (Entry<String, String> entry : map.entrySet()) {
+        if (entry.getValue() != null) {
+          vmArgs.add(entry.getKey() + "=" + entry.getValue());
+        } else {
+          vmArgs.add(entry.getKey());
+        }
+      }
+    } catch (Exception e) {
+      System.err.println("XXX error in pruneJVMArgs " + e);
+    }
+  }
+
   // only called by constructors in this class
   protected ExtraProcessServerControl(DebugParams debugParams, String host, int dsoPort, int adminPort,
                                       String configFileLoc, File runningDirectory, boolean mergeOutput,
@@ -121,15 +153,6 @@ public class ExtraProcessServerControl extends ServerControlBase {
     this.javaHome = javaHome;
     this.serverName = serverName;
     jvmArgs = new ArrayList();
-
-    if (additionalJvmArgs != null) {
-      for (Iterator i = additionalJvmArgs.iterator(); i.hasNext();) {
-        String next = (String) i.next();
-        if (!next.equals(undefString)) {
-          this.jvmArgs.add(next);
-        }
-      }
-    }
 
     this.configFileLoc = configFileLoc;
     this.mergeOutput = mergeOutput;
@@ -150,6 +173,17 @@ public class ExtraProcessServerControl extends ServerControlBase {
     if (!Vm.isIBM() && !(Os.isMac() && Vm.isJDK14())) {
       jvmArgs.add("-XX:+HeapDumpOnOutOfMemoryError");
     }
+
+    // Add test defined parameters last so they have the final word in what gets passed to the spawned process.
+    if (additionalJvmArgs != null) {
+      for (Iterator i = additionalJvmArgs.iterator(); i.hasNext();) {
+        String next = (String) i.next();
+        if (!next.equals(undefString)) {
+          this.jvmArgs.add(next);
+        }
+      }
+    }
+    pruneJVMArgsList(jvmArgs);
   }
 
   protected void addProductKeyIfExists(List args) {
@@ -283,6 +317,7 @@ public class ExtraProcessServerControl extends ServerControlBase {
   }
 
   protected LinkedJavaProcess createLinkedJavaProcess(String mainClassName, List<String> args, List<String> jvmargs) {
+    VerboseGCHelper.getInstance().setupVerboseGcLogging(jvmargs, serverName, mainClassName);
     LinkedJavaProcess result = new LinkedJavaProcess(mainClassName, args, jvmargs);
     result.setMaxRuntime(TestConfigObject.getInstance().getJunitTimeoutInSeconds() + 180);
     result.setDirectory(this.runningDirectory);
@@ -424,7 +459,7 @@ public class ExtraProcessServerControl extends ServerControlBase {
       this.debug = debug;
     }
 
-    private void addDebugParamsTo(Collection jvmArgs) {
+    private void addDebugParamsTo(List jvmArgs) {
       if (debug) {
         jvmArgs.add("-Xdebug");
         String address = debugPort > 0 ? "address=" + debugPort + "," : "";

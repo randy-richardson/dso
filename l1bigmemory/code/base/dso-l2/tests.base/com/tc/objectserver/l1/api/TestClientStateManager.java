@@ -80,8 +80,8 @@ public class TestClientStateManager implements ClientStateManager {
     return oids;
   }
 
-  public void startupNode(final NodeID nodeID) {
-    // NOP
+  public boolean startupNode(final NodeID nodeID) {
+    return true;
   }
 
   public Set<NodeID> getConnectedClientIDs() {

@@ -429,8 +429,13 @@ public class ActivePassiveServerManager extends MultipleServerManager {
             isActive = tcServerInfoMBeans[i].isActive();
           } catch (Exception e) {
             System.out.println("Need to fetch tcServerInfoMBean for server=[" + dsoPorts[i] + "]...");
-            tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
-            isActive = tcServerInfoMBeans[i].isActive();
+            try {
+              tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
+              isActive = tcServerInfoMBeans[i].isActive();
+            } catch (Exception e2) {
+              System.out.println("exception restoring jmx connection [" + e2.getMessage() + "]");
+              continue;
+            }
           }
           debugPrintln("********  index=[" + index + "]  i=[" + i + "] active=[" + isActive + "]  threadId=["
                        + Thread.currentThread().getName() + "]");
@@ -474,19 +479,25 @@ public class ActivePassiveServerManager extends MultipleServerManager {
           boolean isPassiveStandby;
           try {
             isPassiveStandby = tcServerInfoMBeans[i].isPassiveStandby();
+
+            if (serverNetworkShare && isPassiveStandby) {
+              return;
+            } else if (!serverNetworkShare && tcServerInfoMBeans[i].isStarted()) {
+              return;
+            } else if (tcServerInfoMBeans[i].isActive()) { throw new AssertionError(
+                                                                                    "Server["
+                                                                                        + servers[i].getDsoPort()
+                                                                                        + "] is in active mode when it should not be!"); }
           } catch (Exception e) {
-            System.out.println("Need to fetch tcServerInfoMBean for server=[" + dsoPorts[i] + "]...");
-            tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
-            isPassiveStandby = tcServerInfoMBeans[i].isPassiveStandby();
+            System.out.println("Need to fetch tcServerInfoMBean for server=[" + dsoPorts[i] + "]... [" + e.getMessage()
+                               + "]");
+            try {
+              tcServerInfoMBeans[i] = getTcServerInfoMBean(i);
+              isPassiveStandby = tcServerInfoMBeans[i].isPassiveStandby();
+            } catch (Exception e2) {
+              System.out.println("exception restoring jmx connection [" + e2.getMessage() + "]");
+            }
           }
-          if (serverNetworkShare && isPassiveStandby) {
-            return;
-          } else if (!serverNetworkShare && tcServerInfoMBeans[i].isStarted()) {
-            return;
-          } else if (tcServerInfoMBeans[i].isActive()) { throw new AssertionError(
-                                                                                  "Server["
-                                                                                      + servers[i].getDsoPort()
-                                                                                      + "] is in active mode when it should not be!"); }
         }
       }
       Thread.sleep(1000);
@@ -578,14 +589,20 @@ public class ActivePassiveServerManager extends MultipleServerManager {
   }
 
   @Override
-  public void dumpAllServers(int currentPid, int dumpCount, long dumpInterval) throws Exception {
+  public boolean dumpClusterState(int currentPid, int dumpCount, long dumpInterval) throws Exception {
+    if (serverCrasher != null) {
+      this.serverCrasher.stop();
+    }
     pid = currentPid;
+    boolean dumpTaken = false;
+    getActiveIndex(false);
     for (int i = 0; i < serverCount; i++) {
       if (!serverNetworkShare && i != activeIndex) {
         debugPrintln("***** skipping dumping server=[" + dsoPorts[i] + "]");
         continue;
       }
-      if (servers[i].getServerControl().isRunning()) {
+
+      if (servers[i].getServerControl().isRunning() && i == activeIndex) {
         System.out.println("Dumping server=[" + dsoPorts[i] + "]");
 
         MBeanServerConnection mbs;
@@ -599,9 +616,12 @@ public class ActivePassiveServerManager extends MultipleServerManager {
           jmxConnectors[i] = getJMXConnector(jmxPorts[i]);
           mbs = jmxConnectors[i].getMBeanServerConnection();
         }
+
         L2DumperMBean mbean = (L2DumperMBean) MBeanServerInvocationHandler.newProxyInstance(mbs, L2MBeanNames.DUMPER,
                                                                                             L2DumperMBean.class, true);
         mbean.dumpClusterState();
+
+        dumpTaken = true;
         if (pid != 0) {
           mbean.setThreadDumpCount(dumpCount);
           mbean.setThreadDumpInterval(dumpInterval);
@@ -611,6 +631,7 @@ public class ActivePassiveServerManager extends MultipleServerManager {
       }
     }
     closeJMXConnectors();
+    return dumpTaken;
   }
 
   private void closeJMXConnector(int i) {
