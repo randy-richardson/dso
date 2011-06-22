@@ -27,6 +27,8 @@ public class L1ServerMapLocalCacheStoreListenerImpl implements L1ServerMapLocalC
 
   // TODO: does this need to be present in the interface? not called from outside
   public void notifyElementsEvicted(Map evictedElements) {
+    // TODO: should the flushing logic be done inside another thread, since this might delay "put" if eviction called
+    // within that thread
     final Set<LockID> evictedLockIds = new HashSet<LockID>();
     Set<Entry> entries = evictedElements.entrySet();
 

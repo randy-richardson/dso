@@ -101,6 +101,9 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       // for mutate ops keep in local cache till txn is complete
       return;
     }
+
+    // TODO: Before putting we should put lock id it in GlobalLocalCacheManager
+
     final LocalCacheStoreValue old;
     if (isMutate) {
       old = this.localStore.put(key, item, true);
@@ -198,10 +201,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   }
 
   public void clearForIDsAndRecallLocks(Set<LockID> evictedLockIds) {
-    for (LockID lockID : evictedLockIds) {
-      flush(lockID);
-    }
-
     globalLocalCacheManager.recallLocks(evictedLockIds);
   }
 
