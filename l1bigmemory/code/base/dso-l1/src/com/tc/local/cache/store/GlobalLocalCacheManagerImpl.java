@@ -6,13 +6,15 @@ package com.tc.local.cache.store;
 import com.tc.object.ObjectID;
 import com.tc.object.RemoteServerMapManager;
 import com.tc.object.locks.LockID;
+import com.tc.util.concurrent.TCConcurrentMultiMap;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
-  private final ConcurrentHashMap<ObjectID, ServerMapLocalCache> localCaches = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
+  private final ConcurrentHashMap<ObjectID, ServerMapLocalCache> localCaches      = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
+  private final TCConcurrentMultiMap<LockID, ObjectID>           lockIdsToCdsmIds = new TCConcurrentMultiMap<LockID, ObjectID>();
   private volatile RemoteServerMapManager                        serverMapManager;
 
   public void initialize(RemoteServerMapManager serverManager) {
@@ -38,6 +40,9 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     return map;
   }
 
+  /**
+   * This method should be called only for invalidations
+   */
   public void flush(ObjectID mapID, Set<ObjectID> set) {
     ServerMapLocalCache cache = localCaches.get(mapID);
 
@@ -46,7 +51,22 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     }
   }
 
+  /**
+   * This should be called only when recall happens
+   */
   public void flush(LockID lockID) {
-    // throw new ImplementMe();
+    final Set<ObjectID> cdsmIds = lockIdsToCdsmIds.removeAll(lockID);
+
+    for (ObjectID mapID : cdsmIds) {
+      ServerMapLocalCache localCache = localCaches.get(mapID);
+      localCache.flush(lockID);
+    }
+  }
+
+  public void addId(Object id, ObjectID mapID) {
+    if (id instanceof LockID) {
+      LockID lockID = (LockID) id;
+      lockIdsToCdsmIds.add(lockID, mapID);
+    }
   }
 }

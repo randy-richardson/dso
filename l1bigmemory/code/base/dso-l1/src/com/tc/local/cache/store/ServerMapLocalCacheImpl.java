@@ -102,7 +102,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       return;
     }
 
-    // TODO: Before putting we should put lock id it in GlobalLocalCacheManager
+    // Before putting we should put lock id it in GlobalLocalCacheManager
+    globalLocalCacheManager.addId(item.getID(), this.mapID);
 
     final LocalCacheStoreValue old;
     if (isMutate) {
@@ -213,7 +214,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   public void flush(Object id) {
     List keys = cacheIDStore.remove(id);
     if (keys == null) {
-      // This can happen when remove is called due an "remove" from local cache on a remove frm CDSM
+      // This can happen when remove is called due an "remove" from local cache on a remove from CDSM
       return;
     }
 

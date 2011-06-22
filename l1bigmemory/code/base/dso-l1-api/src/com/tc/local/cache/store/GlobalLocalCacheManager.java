@@ -46,4 +46,6 @@ public interface GlobalLocalCacheManager {
    * Handshake manager tries to get hold of all the objects present in the local caches
    */
   public Map addAllObjectIDsToValidate(Map map);
+
+  public void addId(Object id, ObjectID mapID);
 }
