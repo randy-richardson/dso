@@ -1,9 +1,12 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache.impl;
 
 import com.tc.object.locks.LockID;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
+import com.tc.object.servermap.localcache.LocalCacheStoreValue;
+import com.tc.object.servermap.localcache.ServerMapLocalCache;
 
 import java.util.Collections;
 import java.util.HashSet;

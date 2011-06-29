@@ -1,7 +1,7 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache.impl;
 
 import org.mockito.Mockito;
 
@@ -21,6 +21,11 @@ import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.object.msg.ClientHandshakeMessage;
+import com.tc.object.servermap.localcache.LocalCacheStoreValue;
+import com.tc.object.servermap.localcache.impl.GlobalLocalCacheManagerImpl;
+import com.tc.object.servermap.localcache.impl.L1ServerMapLocalCacheStoreHashMap;
+import com.tc.object.servermap.localcache.impl.ServerMapLocalCacheIDStore;
+import com.tc.object.servermap.localcache.impl.ServerMapLocalCacheImpl;
 import com.tc.object.session.SessionID;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.ClientTransactionManager;
@@ -28,7 +33,6 @@ import com.tc.object.tx.TransactionCompleteListener;
 import com.tc.object.tx.TransactionContext;
 import com.tc.object.tx.TransactionID;
 import com.tc.object.tx.TxnType;
-import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.SequenceID;
@@ -42,7 +46,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
-public class ServerMapLocalCacheImplTest extends TCTestCase {
+import junit.framework.TestCase;
+
+public class ServerMapLocalCacheImplTest extends TestCase {
   private volatile ServerMapLocalCacheImpl cache;
   private final ObjectID                   mapID       = new ObjectID(50000);
   private final int                        maxInMemory = 1000;

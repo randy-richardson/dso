@@ -4,7 +4,6 @@
 package com.tc.object;
 
 import com.tc.invalidation.Invalidations;
-import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.locks.LockID;
@@ -79,9 +78,5 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
 
   public void flush(Invalidations invalidations) {
     //
-  }
-
-  public GlobalLocalCacheManager getGlobalLocalCacheManager() {
-    return null;
   }
 }

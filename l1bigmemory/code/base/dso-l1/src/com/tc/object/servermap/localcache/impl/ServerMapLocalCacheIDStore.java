@@ -1,7 +1,7 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache.impl;
 
 /**
  * Used to be cached item store
@@ -9,6 +9,7 @@ package com.tc.local.cache.store;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.util.ObjectIDSet;
 
 import java.util.ArrayList;

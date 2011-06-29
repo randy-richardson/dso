@@ -3,10 +3,10 @@
  */
 package com.tc.object;
 
-import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.field.TCFieldFactory;
 import com.tc.object.loaders.LoaderDescription;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 
 public class ServerMapTCClassImpl extends TCClassImpl implements TCClass {
 

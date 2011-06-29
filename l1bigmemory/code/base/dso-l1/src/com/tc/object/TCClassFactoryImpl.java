@@ -7,7 +7,6 @@ package com.tc.object;
 import com.tc.aspectwerkz.reflect.ClassInfo;
 import com.tc.aspectwerkz.reflect.impl.java.JavaClassInfo;
 import com.tc.exception.TCRuntimeException;
-import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.applicator.AccessibleObjectApplicator;
@@ -25,6 +24,7 @@ import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.field.TCFieldFactory;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.LoaderDescription;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.util.ClassUtils;
 import com.tc.util.runtime.Vm;
 

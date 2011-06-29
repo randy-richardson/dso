@@ -1,8 +1,9 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache.impl;
 
+import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.object.tx.TransactionCompleteListener;
 import com.tc.object.tx.TransactionID;
 

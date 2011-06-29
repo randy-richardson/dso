@@ -3,9 +3,9 @@
  */
 package com.tc.object;
 
-import com.tc.local.cache.store.L1ServerMapLocalCacheStore;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 
 import java.util.Set;
 

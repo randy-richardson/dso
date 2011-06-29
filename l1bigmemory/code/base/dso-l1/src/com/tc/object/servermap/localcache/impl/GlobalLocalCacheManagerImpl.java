@@ -1,11 +1,15 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache.impl;
 
+import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.RemoteServerMapManager;
+import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
 
 import java.util.Map;
@@ -21,16 +25,24 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     this.serverMapManager = serverManager;
   }
 
-  public void addLocalCache(ObjectID mapID, ServerMapLocalCache cache) {
-    localCaches.put(mapID, cache);
+  public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
+                                              boolean localCacheEnabled) {
+    ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
+                                                                          localCacheEnabled);
+    ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
+    if (old != null) {
+      serverMapLocalCache = old;
+    }
+    return serverMapLocalCache;
+  }
+
+  // TODO: is this method needed?
+  public void removeLocalCache(ObjectID mapID) {
+    localCaches.remove(mapID);
   }
 
   public void recallLocks(Set<LockID> toEvict) {
     serverMapManager.recallLocks(toEvict);
-  }
-
-  public void removeLocalCache(ObjectID mapID) {
-    localCaches.remove(mapID);
   }
 
   public Map addAllObjectIDsToValidate(Map map) {
@@ -63,9 +75,9 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     }
   }
 
-  public void addId(Object id, ObjectID mapID) {
-    if (id instanceof LockID) {
-      LockID lockID = (LockID) id;
+  public void rememberMapIdForValue(Object valueId, ObjectID mapID) {
+    if (valueId instanceof LockID) {
+      LockID lockID = (LockID) valueId;
       lockIdsToCdsmIds.add(lockID, mapID);
     }
   }

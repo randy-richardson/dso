@@ -4,11 +4,6 @@
 package com.tc.object;
 
 import com.tc.exception.TCObjectNotFoundException;
-import com.tc.local.cache.store.GlobalLocalCacheManager;
-import com.tc.local.cache.store.L1ServerMapLocalCacheStore;
-import com.tc.local.cache.store.LocalCacheStoreValue;
-import com.tc.local.cache.store.ServerMapLocalCache;
-import com.tc.local.cache.store.ServerMapLocalCacheImpl;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.GroupID;
@@ -17,6 +12,10 @@ import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
+import com.tc.object.servermap.localcache.LocalCacheStoreValue;
+import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 
@@ -60,15 +59,13 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.objectManager = objectManager;
     this.serverMapManager = serverMapManager;
     this.manager = manager;
-    this.cache = new ServerMapLocalCacheImpl(id, objectManager, manager, globalLocalCacheManager,
-                                             this.localCacheEnabled);
+    this.cache = globalLocalCacheManager.getOrCreateLocalCache(id, objectManager, manager, localCacheEnabled);
     if (serverMapLocalStore != null) {
       logger.debug(getObjectID() + ": Setting serverMapLocalStore in constructor");
       cache.setupLocalStore(serverMapLocalStore);
     } else {
       logger.debug(getObjectID() + ": serverMapLocalStore not initialized yet (in constructor)");
     }
-
   }
 
   public void initialize(final int maxTTISeconds, final int maxTTLSeconds, final int targetMaxInMemoryCount,

@@ -1,7 +1,7 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache;
 
 import com.tc.object.ObjectID;
 import com.tc.object.locks.LockID;
@@ -47,9 +47,9 @@ public interface ServerMapLocalCache {
    */
   void addAllObjectIDsToValidate(Map map);
 
-  /**
-   * TCObjectServerMap methods
-   */
+  // ///////////////////////////////
+  // TCObjectServerMap methods
+  // ///////////////////////////////
 
   /**
    * Add a coherent value to the cache

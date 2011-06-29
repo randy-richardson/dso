@@ -1,12 +1,17 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache.impl;
 
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
+import com.tc.object.servermap.localcache.LocalCacheStoreValue;
+import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.UnlockedSharedObjectException;
 
@@ -24,14 +29,16 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private final ClientObjectManager                                              objectManager;
   private final Manager                                                          manager;
 
-  public ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
-                                 GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled) {
+  /**
+   * Not public constructor, should be created only by the global local cache manager
+   */
+  ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
+                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled) {
     this.mapID = mapID;
     this.objectManager = objectManager;
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.localCacheEnabled = islocalCacheEnbaled;
-    this.globalLocalCacheManager.addLocalCache(this.mapID, this);
     this.localStoreEvictionListener = new L1ServerMapLocalCacheStoreListenerImpl(this);
   }
 
@@ -69,8 +76,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     addToCache(key, item, isMutate, txnCompleteListener);
   }
 
-  private void registerForCallbackOnComplete(
-                                             final L1ServerMapLocalStoreTransactionCompletionListener l1ServerMapLocalStoreTransactionCompletionListener) {
+  private void registerForCallbackOnComplete(final L1ServerMapLocalStoreTransactionCompletionListener l1ServerMapLocalStoreTransactionCompletionListener) {
     if (l1ServerMapLocalStoreTransactionCompletionListener == null) { return; }
     ClientTransaction txn = this.objectManager.getTransactionManager().getCurrentTransaction();
     if (txn == null) { throw new UnlockedSharedObjectException(
@@ -102,8 +108,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       return;
     }
 
-    // Before putting we should put lock id it in GlobalLocalCacheManager
-    globalLocalCacheManager.addId(item.getID(), this.mapID);
+    // Before putting we should remember the mapId for the lock Id as upon recall need to flush from those maps
+    globalLocalCacheManager.rememberMapIdForValue(item.getID(), this.mapID);
 
     final LocalCacheStoreValue old;
     if (isMutate) {

@@ -1,9 +1,12 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache;
 
+import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
+import com.tc.object.RemoteServerMapManager;
+import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
 
 import java.util.Map;
@@ -14,16 +17,17 @@ import java.util.Set;
  * This acts a multiplexer between RemoteServerMapManager, HandshakeManager and the LocalCaches present
  */
 public interface GlobalLocalCacheManager {
-  /**
-   * Add a local cache to the system
-   */
-  public void addLocalCache(ObjectID mapID, ServerMapLocalCache listener);
 
   /**
-   * Remove a local cache to the system<br>
-   * TODO
+   * Initialize the global local cache manager
    */
-  public void removeLocalCache(ObjectID mapID);
+  public void initialize(RemoteServerMapManager remoteServerMapManager);
+
+  /**
+   * Create a local cache for use or return already created local cache for the mapId
+   */
+  public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
+                                                   boolean localCacheEnabled);
 
   /**
    * Recall locks. Called from LocalCache.
@@ -47,5 +51,9 @@ public interface GlobalLocalCacheManager {
    */
   public Map addAllObjectIDsToValidate(Map map);
 
-  public void addId(Object id, ObjectID mapID);
+  /**
+   * Remember the mapId associated with the valueLockId
+   */
+  public void rememberMapIdForValue(Object valueId, ObjectID mapID);
+
 }

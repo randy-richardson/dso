@@ -4,7 +4,6 @@
 package com.tc.object;
 
 import com.tc.async.api.Sink;
-import com.tc.local.cache.store.GlobalLocalCacheManager;
 import com.tc.logging.ClientIDLogger;
 import com.tc.logging.TCLogger;
 import com.tc.management.ClientLockStatManager;
@@ -46,6 +45,7 @@ import com.tc.object.msg.NodeMetaDataMessageFactory;
 import com.tc.object.msg.NodesWithKeysMessageFactory;
 import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.net.DSOClientMessageChannel;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.object.session.SessionManager;
 import com.tc.object.session.SessionProvider;
 import com.tc.object.tx.RemoteTransactionManager;

@@ -1,7 +1,10 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache.impl;
+
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -1,7 +1,7 @@
 /*
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
-package com.tc.local.cache.store;
+package com.tc.object.servermap.localcache;
 
 import com.tc.object.ObjectID;
 import com.tc.properties.TCPropertiesConsts;
