@@ -319,7 +319,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
   public void flush(final LockID id) {
     if (id == null) { throw new AssertionError("ID cannot be null"); }
-    this.globalLocalCacheManager.flush(id);
+    this.globalLocalCacheManager.removeEntriesForLockId(id);
   }
 
   /**
@@ -505,7 +505,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     for (Entry<ObjectID, ObjectIDSet> entry : map.entrySet()) {
       ObjectID mapID = entry.getKey();
       ObjectIDSet set = entry.getValue();
-      globalLocalCacheManager.flush(mapID, set);
+      globalLocalCacheManager.removeEntriesForObjectId(mapID, set);
     }
   }
 }

@@ -292,7 +292,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
     // Flush
     for (int i = 0; i < 25; i++) {
-      cache.flush(new ObjectID(i));
+      cache.removeEntriesForObjectId(new ObjectID(i));
     }
 
     for (int i = 0; i < 25; i++) {
@@ -735,7 +735,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     public void recallLocks(Set<LockID> toEvict) {
       lockIDs = toEvict;
       for (LockID id : lockIDs) {
-        globalLocalCacheManager.flush(id);
+        globalLocalCacheManager.removeEntriesForLockId(id);
       }
     }
 

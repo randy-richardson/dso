@@ -38,13 +38,13 @@ public interface GlobalLocalCacheManager {
    * flush the entries from the LocalCache associated with the given map id.<br>
    * This is used in the process of invalidations
    */
-  public void flush(ObjectID mapID, Set<ObjectID> set);
+  public void removeEntriesForObjectId(ObjectID mapID, Set<ObjectID> set);
 
   /**
    * Used when a lock recall happens<br>
    * All the local cache entries associated with this lock id will be removed
    */
-  public void flush(LockID lockID);
+  public void removeEntriesForLockId(LockID lockID);
 
   /**
    * Handshake manager tries to get hold of all the objects present in the local caches

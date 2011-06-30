@@ -237,13 +237,21 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     globalLocalCacheManager.recallLocks(evictedLockIds);
   }
 
+  public void removeEntriesForObjectId(ObjectID objectId) {
+    removeEntriesForId(objectId);
+  }
+
+  public void removeEntriesForLockId(LockID lockId) {
+    removeEntriesForId(lockId);
+  }
+
   /**
    * When a flush is called here it means do this:<br>
    * 1) Remove from ID Store i.e. store flush <br>
    * 2) Remove keys obtained from ID Store<br>
    * This method wont call in to recall locks, hence if u want to recall locks call clearCachedItemsForLocks
    */
-  public void flush(Object id) {
+  private void removeEntriesForId(Object id) {
     List keys = cacheIDStore.remove(id);
     if (keys == null) {
       // This can happen when remove is called due an "remove" from local cache on a remove from CDSM

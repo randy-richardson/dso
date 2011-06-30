@@ -56,23 +56,22 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   /**
    * This method should be called only for invalidations
    */
-  public void flush(ObjectID mapID, Set<ObjectID> set) {
+  public void removeEntriesForObjectId(ObjectID mapID, Set<ObjectID> set) {
     ServerMapLocalCache cache = localCaches.get(mapID);
-
     for (ObjectID id : set) {
-      cache.flush(id);
+      cache.removeEntriesForObjectId(id);
     }
   }
 
   /**
    * This should be called only when recall happens
    */
-  public void flush(LockID lockID) {
+  public void removeEntriesForLockId(LockID lockID) {
     final Set<ObjectID> cdsmIds = lockIdsToCdsmIds.removeAll(lockID);
 
     for (ObjectID mapID : cdsmIds) {
       ServerMapLocalCache localCache = localCaches.get(mapID);
-      localCache.flush(lockID);
+      localCache.removeEntriesForLockId(lockID);
     }
   }
 

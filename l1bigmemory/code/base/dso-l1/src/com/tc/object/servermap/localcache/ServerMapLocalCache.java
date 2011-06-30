@@ -25,7 +25,12 @@ public interface ServerMapLocalCache {
   /**
    * Remove the entry associated with this id from the LocalCache and the ID store as well
    */
-  void flush(Object id);
+  void removeEntriesForObjectId(ObjectID objectId);
+
+  /**
+   * Remove the entry associated with this id from the LocalCache and the ID store as well
+   */
+  void removeEntriesForLockId(LockID lockId);
 
   /**
    * Same as flush and also initiate recall

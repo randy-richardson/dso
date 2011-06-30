@@ -45,7 +45,7 @@ public class L1ServerMapLocalCacheStoreListenerImpl implements L1ServerMapLocalC
 
       // if eventual
       if (value.isEventualConsistentValue()) {
-        this.serverMapLocalCache.flush(value.asEventualValue().getObjectId());
+        this.serverMapLocalCache.removeEntriesForObjectId(value.asEventualValue().getObjectId());
       } else if (value.isIncoherentValue()) {
         // incoherent
         // do nothing
