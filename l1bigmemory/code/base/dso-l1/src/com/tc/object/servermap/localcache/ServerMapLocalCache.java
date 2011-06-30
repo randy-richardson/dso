@@ -40,7 +40,7 @@ public interface ServerMapLocalCache {
   /**
    * Remove this element from the local cache. Note that this doesn't initiate recalls.
    */
-  void evictFromLocalCache(Object key, LocalCacheStoreValue value);
+  void evictFromLocalCache(Object key, AbstractLocalCacheStoreValue value);
 
   /**
    * Used in handshake to send a list of ObjectIDs to the server
@@ -54,27 +54,33 @@ public interface ServerMapLocalCache {
   /**
    * Add a coherent value to the cache
    */
-  void addCoherentValueToCache(Object id, Object key, Object value, boolean isMutate);
+  // void addCoherentValueToCache(Object id, Object key, Object value, boolean isMutate);
+
+  void addStrongValueToCache(LockID lockId, Object key, Object value, MapOperationType operationType);
+
+  void addEventualValueToCache(ObjectID valueObjectId, Object key, Object value, MapOperationType operationType);
+
+  void addIncoherentValueToCache(Object key, Object value, MapOperationType operationType);
 
   /**
    * Add a coherent value to the cache. This method is called when a remove operation is called from CDSM.
    */
-  void addCoherentValueToCache(Object id, Object key, Object value, boolean isMutate, boolean isRemove);
+  // void addCoherentValueToCache(Object id, Object key, Object value, boolean isMutate, boolean isRemove);
 
   /**
    * Add a incoherent value to the cache
    */
-  void addIncoherentValueToCache(Object key, Object value, boolean isMutate);
+  // void addIncoherentValueToCache(Object key, Object value, boolean isMutate);
 
   /**
    * Get a coherent value from the local cache. If an incoherent value is present, then return null.
    */
-  LocalCacheStoreValue getCoherentLocalValue(Object key);
+  AbstractLocalCacheStoreValue getCoherentLocalValue(Object key);
 
   /**
    * Get the value corresponding to the key if present
    */
-  LocalCacheStoreValue getLocalValue(Object key);
+  AbstractLocalCacheStoreValue getLocalValue(Object key);
 
   /**
    * Returns the size of the local cache ...<br>

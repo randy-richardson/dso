@@ -76,10 +76,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     }
   }
 
-  public void rememberMapIdForValue(Object valueId, ObjectID mapID) {
-    if (valueId instanceof LockID) {
-      LockID lockID = (LockID) valueId;
-      lockIdsToCdsmIds.add(lockID, mapID);
-    }
+  public void rememberMapIdForValueLockId(LockID valueLockId, ObjectID mapID) {
+    lockIdsToCdsmIds.add(valueLockId, mapID);
   }
 }

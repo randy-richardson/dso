@@ -18,12 +18,12 @@ public interface L1ServerMapLocalCacheStore<K, V> {
   public V put(K key, V value);
 
   /**
-   * Put an entry in the backing map<br>
+   * Put a pinned entry in the backing map<br>
+   * Items inserted with this method should not be evicted unless {@link #unpinEntry(Object)} is called for the same key
    * 
-   * @param pinned true if the entry is not to be considered for eviction
    * @return the old value if present
    */
-  public V put(K key, V value, boolean pinned);
+  public V putPinnedEntry(K key, V value);
 
   /**
    * @return the value if present

@@ -12,8 +12,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -62,9 +62,7 @@ public class InMemoryL1ServerMapLocalCacheStore<K, V> implements L1ServerMapLoca
     }
   }
 
-  public V put(K key, V value, boolean isPinned) {
-    if (!isPinned) { return put(key, value); }
-
+  public V putPinnedEntry(K key, V value) {
     Map<K, StoreValue<V>> store = getStoreFor(key);
     ReentrantReadWriteLock lock = getLockFor(key);
 

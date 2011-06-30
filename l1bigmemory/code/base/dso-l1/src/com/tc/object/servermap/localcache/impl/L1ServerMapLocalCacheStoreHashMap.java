@@ -11,8 +11,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocalCacheStore<K, V> {
@@ -50,9 +50,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     return oldValue;
   }
 
-  public V put(K key, V value, boolean isPinned) {
-    if (!isPinned) { return put(key, value); }
-
+  public V putPinnedEntry(K key, V value) {
     V oldValue = null;
     int size;
     synchronized (this) {

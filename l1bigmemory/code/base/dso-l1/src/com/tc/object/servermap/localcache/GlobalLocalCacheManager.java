@@ -54,6 +54,6 @@ public interface GlobalLocalCacheManager {
   /**
    * Remember the mapId associated with the valueLockId
    */
-  public void rememberMapIdForValue(Object valueId, ObjectID mapID);
+  public void rememberMapIdForValueLockId(LockID valueLockId, ObjectID mapID);
 
 }

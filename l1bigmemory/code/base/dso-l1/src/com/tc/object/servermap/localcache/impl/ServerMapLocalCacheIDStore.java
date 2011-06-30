@@ -38,12 +38,6 @@ public class ServerMapLocalCacheIDStore<L> {
   }
 
   // Used in tests
-  int size() {
-    // TODO
-    return 0;
-  }
-
-  // Used in tests
   List get(final L id) {
     ReentrantReadWriteLock lock = getLock(id);
     try {
@@ -74,7 +68,7 @@ public class ServerMapLocalCacheIDStore<L> {
     List list = (List) backingMap.get(id);
     if (list == null) {
       list = new ArrayList();
-      this.backingMap.put(id, list, true);
+      this.backingMap.putPinnedEntry(id, list);
     }
     list.add(key);
     // TODO: need to put back the list in the store?
@@ -185,15 +179,15 @@ public class ServerMapLocalCacheIDStore<L> {
       }
     }
 
-    void put(Object key, List value) {
-      if (isStoreInitialized()) {
-        store.put(key, value);
-      }
-    }
+    // void put(Object key, List value) {
+    // if (isStoreInitialized()) {
+    // store.put(key, value);
+    // }
+    // }
 
-    void put(Object key, List value, boolean isPinned) {
+    void putPinnedEntry(Object key, List value) {
       if (isStoreInitialized()) {
-        store.put(key, value, isPinned);
+        store.putPinnedEntry(key, value);
       }
     }
 

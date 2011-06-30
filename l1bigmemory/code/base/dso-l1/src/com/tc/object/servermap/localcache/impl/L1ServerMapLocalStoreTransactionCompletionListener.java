@@ -11,23 +11,27 @@ import com.tc.object.tx.TransactionID;
  * To be used only when a transaction is completed.
  */
 public class L1ServerMapLocalStoreTransactionCompletionListener implements TransactionCompleteListener {
-  private final ServerMapLocalCache serverMapLocalCache;
-  private final Object              key;
-  private final boolean             removeEntryOnTransactionComplete;
+  private final ServerMapLocalCache          serverMapLocalCache;
+  private final Object                       key;
+  private final TransactionCompleteOperation transactionCompleteOperation;
 
   public L1ServerMapLocalStoreTransactionCompletionListener(ServerMapLocalCache serverMapLocalCache, Object key,
-                                                            boolean removeEntryOnTransactionComplete) {
+                                                            TransactionCompleteOperation onCompleteOperation) {
     this.serverMapLocalCache = serverMapLocalCache;
     this.key = key;
-    this.removeEntryOnTransactionComplete = removeEntryOnTransactionComplete;
+    this.transactionCompleteOperation = onCompleteOperation;
   }
 
   public void transactionComplete(TransactionID txnID) {
     serverMapLocalCache.unpinEntry(key);
-    if (removeEntryOnTransactionComplete) {
+    if (transactionCompleteOperation == TransactionCompleteOperation.UNPIN_AND_REMOVE_ENTRY) {
       // TODO: could this be a race or a problem ?
       // It could be a problem actually
       serverMapLocalCache.evictFromLocalCache(key, null);
     }
+  }
+
+  public static enum TransactionCompleteOperation {
+    UNPIN_ENTRY, UNPIN_AND_REMOVE_ENTRY;
   }
 }
