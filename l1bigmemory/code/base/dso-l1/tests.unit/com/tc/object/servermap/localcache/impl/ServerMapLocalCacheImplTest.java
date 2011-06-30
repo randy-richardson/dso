@@ -21,11 +21,8 @@ import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.object.msg.ClientHandshakeMessage;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.object.servermap.localcache.LocalCacheStoreValue;
-import com.tc.object.servermap.localcache.impl.GlobalLocalCacheManagerImpl;
-import com.tc.object.servermap.localcache.impl.L1ServerMapLocalCacheStoreHashMap;
-import com.tc.object.servermap.localcache.impl.ServerMapLocalCacheIDStore;
-import com.tc.object.servermap.localcache.impl.ServerMapLocalCacheImpl;
 import com.tc.object.session.SessionID;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.ClientTransactionManager;
@@ -62,15 +59,15 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   }
 
   public void setLocalCache(CountDownLatch latch1, CountDownLatch latch2, int maxElementsInMemory) {
-    remoteServerMapManager = new MyRemoteServerMapManager();
     GlobalLocalCacheManagerImpl globalLocalCacheManager = new GlobalLocalCacheManagerImpl();
+    remoteServerMapManager = new MyRemoteServerMapManager(globalLocalCacheManager);
     globalLocalCacheManager.initialize(remoteServerMapManager);
     final ClientTransaction clientTransaction = new MyClientTransaction(latch1, latch2);
     ClientObjectManager com = Mockito.mock(ClientObjectManager.class);
     ClientTransactionManager ctm = Mockito.mock(ClientTransactionManager.class);
     Mockito.when(com.getTransactionManager()).thenReturn(ctm);
     Mockito.when(ctm.getCurrentTransaction()).thenReturn(clientTransaction);
-    cache = new ServerMapLocalCacheImpl(mapID, com, null, globalLocalCacheManager, true);
+    cache = (ServerMapLocalCacheImpl) globalLocalCacheManager.getOrCreateLocalCache(mapID, com, null, true);
     cache.setupLocalStore(new L1ServerMapLocalCacheStoreHashMap(maxElementsInMemory));
     cacheIDStore = cache.getCacheIDStore();
   }
@@ -597,7 +594,12 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   }
 
   private static class MyRemoteServerMapManager implements RemoteServerMapManager {
-    public volatile Set<LockID> lockIDs;
+    public volatile Set<LockID>           lockIDs;
+    private final GlobalLocalCacheManager globalLocalCacheManager;
+
+    public MyRemoteServerMapManager(GlobalLocalCacheManager globalLocalCacheManager) {
+      this.globalLocalCacheManager = globalLocalCacheManager;
+    }
 
     public void addResponseForGetAllKeys(SessionID localSessionID, ObjectID mapID, ServerMapRequestID requestID,
                                          Set keys, NodeID nodeID) {
@@ -646,6 +648,9 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
     public void recallLocks(Set<LockID> toEvict) {
       lockIDs = toEvict;
+      for (LockID id : lockIDs) {
+        globalLocalCacheManager.flush(id);
+      }
     }
 
     public void initializeHandshake(NodeID thisNode, NodeID remoteNode, ClientHandshakeMessage handshakeMessage) {

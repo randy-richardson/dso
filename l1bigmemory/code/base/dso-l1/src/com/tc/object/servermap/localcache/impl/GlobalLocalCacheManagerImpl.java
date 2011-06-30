@@ -26,13 +26,14 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   }
 
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
-                                              boolean localCacheEnabled) {
+                                                   boolean localCacheEnabled) {
     ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
                                                                           localCacheEnabled);
     ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
     if (old != null) {
       serverMapLocalCache = old;
     }
+    localCaches.put(mapId, serverMapLocalCache);
     return serverMapLocalCache;
   }
 
