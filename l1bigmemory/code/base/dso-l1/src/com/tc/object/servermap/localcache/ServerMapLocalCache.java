@@ -52,25 +52,19 @@ public interface ServerMapLocalCache {
   // ///////////////////////////////
 
   /**
-   * Add a coherent value to the cache
+   * Cache strong consistent values
    */
-  // void addCoherentValueToCache(Object id, Object key, Object value, boolean isMutate);
-
   void addStrongValueToCache(LockID lockId, Object key, Object value, MapOperationType operationType);
 
+  /**
+   * Cache eventual consistent values
+   */
   void addEventualValueToCache(ObjectID valueObjectId, Object key, Object value, MapOperationType operationType);
 
+  /**
+   * Cache incoherent/bulk-load values
+   */
   void addIncoherentValueToCache(Object key, Object value, MapOperationType operationType);
-
-  /**
-   * Add a coherent value to the cache. This method is called when a remove operation is called from CDSM.
-   */
-  // void addCoherentValueToCache(Object id, Object key, Object value, boolean isMutate, boolean isRemove);
-
-  /**
-   * Add a incoherent value to the cache
-   */
-  // void addIncoherentValueToCache(Object key, Object value, boolean isMutate);
 
   /**
    * Get a coherent value from the local cache. If an incoherent value is present, then return null.
@@ -84,7 +78,6 @@ public interface ServerMapLocalCache {
 
   /**
    * Returns the size of the local cache ...<br>
-   * TODO: Do we need to support this
    */
   int size();
 
@@ -99,12 +92,12 @@ public interface ServerMapLocalCache {
   void removeFromLocalCache(Object key);
 
   /**
-   * Called when l1 cache manager tries to free memory
+   * Attempt to remove 'count' entries from the local cache. May be called under memory pressure
    */
-  int evictCachedEntries(int toClear);
+  int evictCachedEntries(int count);
 
   /**
-   * Used in non stop cache
+   * Returns the keys present in the local cache (does not include meta items stored)
    */
   Set getKeySet();
 }

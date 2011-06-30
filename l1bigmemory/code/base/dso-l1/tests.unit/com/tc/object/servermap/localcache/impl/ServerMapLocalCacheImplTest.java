@@ -21,8 +21,12 @@ import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.object.msg.ClientHandshakeMessage;
+import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
-import com.tc.object.servermap.localcache.LocalCacheStoreValue;
+import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
+import com.tc.object.servermap.localcache.LocalCacheStoreIncoherentValue;
+import com.tc.object.servermap.localcache.LocalCacheStoreStrongValue;
+import com.tc.object.servermap.localcache.MapOperationType;
 import com.tc.object.session.SessionID;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.ClientTransactionManager;
@@ -30,7 +34,6 @@ import com.tc.object.tx.TransactionCompleteListener;
 import com.tc.object.tx.TransactionContext;
 import com.tc.object.tx.TransactionID;
 import com.tc.object.tx.TxnType;
-import com.tc.util.Assert;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.SequenceID;
 import com.tc.util.concurrent.ThreadUtil;
@@ -43,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
+import junit.framework.Assert;
 import junit.framework.TestCase;
 
 public class ServerMapLocalCacheImplTest extends TestCase {
@@ -76,22 +80,105 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     Assert.assertEquals(mapID, cache.getMapID());
   }
 
-  public void testAddCoherentValueToCache() throws Exception {
+  private void assertValueType(AbstractLocalCacheStoreValue value, LocalCacheValueType type) {
+    for (LocalCacheValueType t : LocalCacheValueType.values()) {
+      if (t == type) {
+        Assert.assertTrue(t.isValueOfType(value));
+      } else {
+        Assert.assertFalse(t.isValueOfType(value));
+      }
+    }
+  }
+
+  private void assertEventualValue(Object expectedValue, ObjectID expectedObjectId, AbstractLocalCacheStoreValue value) {
+    assertValueType(value, LocalCacheValueType.EVENTUAL);
+    Assert.assertTrue(value instanceof LocalCacheStoreEventualValue);
+    try {
+      value.asEventualValue();
+    } catch (Throwable t) {
+      Assert.fail("Should be able to retrieve value as Eventual value: " + t);
+    }
+    try {
+      value.asStrongValue();
+      fail("Should have failed");
+    } catch (ClassCastException ignored) {
+      // expected
+    }
+    try {
+      value.asIncoherentValue();
+      fail("Should have failed");
+    } catch (ClassCastException ignored) {
+      // expected
+    }
+
+    Assert.assertEquals(expectedValue, value.getValue());
+    Assert.assertEquals(expectedObjectId, value.getId());
+    Assert.assertEquals(expectedObjectId, value.asEventualValue().getObjectId());
+  }
+
+  private void assertIncoherentValue(Object expectedValue, AbstractLocalCacheStoreValue value) {
+    assertValueType(value, LocalCacheValueType.INCOHERENT);
+    Assert.assertTrue(value instanceof LocalCacheStoreIncoherentValue);
+    try {
+      value.asIncoherentValue();
+    } catch (Throwable t) {
+      Assert.fail("Should be able to retrieve value as Incoherent value: " + t);
+    }
+    try {
+      value.asStrongValue();
+      fail("Should have failed");
+    } catch (ClassCastException ignored) {
+      // expected
+    }
+    try {
+      value.asEventualValue();
+      fail("Should have failed");
+    } catch (ClassCastException ignored) {
+      // expected
+    }
+    Assert.assertEquals(expectedValue, value.getValue());
+    Assert.assertEquals(null, value.getId());
+  }
+
+  private void assertStrongValue(Object expectedValue, LockID expectedLockId, AbstractLocalCacheStoreValue value) {
+    assertValueType(value, LocalCacheValueType.STRONG);
+    Assert.assertTrue(value instanceof LocalCacheStoreStrongValue);
+    try {
+      value.asStrongValue();
+    } catch (Throwable t) {
+      Assert.fail("Should be able to retrieve value as Strong value: " + t);
+    }
+    try {
+      value.asIncoherentValue();
+      fail("Should have failed");
+    } catch (ClassCastException ignored) {
+      // expected
+    }
+    try {
+      value.asEventualValue();
+      fail("Should have failed");
+    } catch (ClassCastException ignored) {
+      // expected
+    }
+    Assert.assertEquals(expectedValue, value.getValue());
+    Assert.assertEquals(expectedLockId, value.getId());
+    Assert.assertEquals(expectedLockId, value.asStrongValue().getLockId());
+  }
+
+  public void testAddEventualValueToCache() throws Exception {
 
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 0; i < 50; i++) {
@@ -105,35 +192,33 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     // Assert.assertEquals(50, cacheIDStore.size());
   }
 
-  public void testAddCoherentValueToCacheRemove1() throws Exception {
+  public void testAddEventualValueRemove1() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     // Assert.assertEquals(50, cache.size());
 
     // REMOVE
     for (int i = 0; i < 25; i++) {
-      cache.addCoherentValueToCache(ObjectID.NULL_ID, "key" + i, null, true, true);
+      cache.addEventualValueToCache(ObjectID.NULL_ID, "key" + i, null, MapOperationType.REMOVE);
     }
 
     for (int i = 0; i < 25; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       Assert.assertNull(value);
       List list = cacheIDStore.get(new ObjectID(i));
       Assert.assertNull(list);
     }
 
     for (int i = 25; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 25; i < 50; i++) {
@@ -145,24 +230,25 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     // Assert.assertEquals(25, cache.size());
   }
 
-  public void testAddCoherentValueToCacheRemove2() throws Exception {
+  public void testAddEventualValueRemove2() throws Exception {
     CountDownLatch latch1 = new CountDownLatch(1);
     CountDownLatch latch2 = new CountDownLatch(1);
     setLocalCache(latch1, latch2, this.maxInMemory);
 
     // GET - add to the local cache
-    cache.addCoherentValueToCache(new ObjectID(1), "key1", "value1", false);
-    LocalCacheStoreValue value = cache.getCoherentLocalValue("key1");
+    cache.addEventualValueToCache(new ObjectID(1), "key1", "value1", MapOperationType.GET);
+    AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key1");
+    assertEventualValue("value1", new ObjectID(1), value);
     List list = cacheIDStore.get(new ObjectID(1));
     Assert.assertEquals(1, list.size());
     Assert.assertEquals("key1", list.get(0));
 
     // REMOVE
-    cache.addCoherentValueToCache(ObjectID.NULL_ID, "key1", null, true, true);
+    cache.addEventualValueToCache(ObjectID.NULL_ID, "key1", null, MapOperationType.REMOVE);
 
     value = cache.getCoherentLocalValue("key1");
     Assert.assertEquals(null, value.getValue());
-    Assert.assertEquals(ObjectID.NULL_ID, value.getID());
+    Assert.assertEquals(ObjectID.NULL_ID, value.asEventualValue().getId());
     // Assert.assertEquals(1, cache.size());
     list = cacheIDStore.get(new ObjectID(1));
     Assert.assertNull(list);
@@ -178,18 +264,17 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testAddIncoherentValueToCache() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addIncoherentValueToCache("key" + i, "value" + i, true);
+      cache.addIncoherentValueToCache("key" + i, "value" + i, MapOperationType.PUT);
     }
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertNull(value.getID());
+      AbstractLocalCacheStoreValue value = cache.getLocalValue("key" + i);
+      assertIncoherentValue("value" + i, value);
     }
     Assert.assertEquals(50, cache.size());
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       Assert.assertNull(value);
     }
     Assert.assertEquals(0, cache.size());
@@ -197,13 +282,12 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testFlush() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     // Flush
@@ -212,16 +296,15 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     }
 
     for (int i = 0; i < 25; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       Assert.assertNull(value);
       List list = cacheIDStore.get(new ObjectID(i));
       Assert.assertNull(list);
     }
 
     for (int i = 25; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 25; i < 50; i++) {
@@ -234,7 +317,16 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testClearForIDsAndRecallLocks() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new LongLockID(i), "key" + i, "value" + i, true);
+      cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.PUT);
+    }
+
+    for (int i = 0; i < 50; i++) {
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertStrongValue("value" + i, new LongLockID(i), value);
+      List list = cacheIDStore.get(new LongLockID(i));
+      Assert.assertNotNull(list);
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + i, list.get(0));
     }
 
     Set<LockID> evictLocks = new HashSet<LockID>();
@@ -247,16 +339,15 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     Assert.assertEquals(evictLocks, remoteServerMapManager.lockIDs);
 
     for (int i = 0; i < 25; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       Assert.assertNull(value);
       List list = cacheIDStore.get(new LongLockID(i));
       Assert.assertNull(list);
     }
 
     for (int i = 25; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new LongLockID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertStrongValue("value" + i, new LongLockID(i), value);
     }
 
     for (int i = 25; i < 50; i++) {
@@ -276,13 +367,12 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testEvictFromLocalCache() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 0; i < 25; i++) {
@@ -290,16 +380,15 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     }
 
     for (int i = 0; i < 25; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       Assert.assertNull(value);
       List list = cacheIDStore.get(new ObjectID(i));
       Assert.assertNull(list);
     }
 
     for (int i = 25; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 25; i < 50; i++) {
@@ -311,7 +400,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testAddAllObjectIDsToValidate() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new LongLockID(i), "key" + i, "value" + i, true);
+      cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     Map<ObjectID, ObjectIDSet> map = new HashMap<ObjectID, ObjectIDSet>();
@@ -320,14 +409,14 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     Assert.assertEquals(0, map.size());
 
     for (int i = 50; i < 100; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
     cache.addAllObjectIDsToValidate(map);
 
-    ObjectIDSet set = map.get(this.mapID);
     Assert.assertEquals(1, map.size());
-    Assert.assertEquals(50, set.size());
 
+    ObjectIDSet set = map.get(this.mapID);
+    Assert.assertEquals(50, set.size());
     for (int i = 50; i < 100; i++) {
       Assert.assertTrue(set.contains(new ObjectID(i)));
     }
@@ -339,13 +428,13 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testClearAllLocalCache() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     cache.clearAllLocalCache();
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       Assert.assertNull(value);
       List list = cacheIDStore.get(new ObjectID(i));
       Assert.assertNull(list);
@@ -354,13 +443,12 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testRemoveFromLocalCache() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 0; i < 25; i++) {
@@ -368,16 +456,15 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     }
 
     for (int i = 0; i < 25; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       Assert.assertNull(value);
       List list = cacheIDStore.get(new ObjectID(i));
       Assert.assertNull(list);
     }
 
     for (int i = 25; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
-      Assert.assertEquals("value" + i, value.getValue());
-      Assert.assertEquals(new ObjectID(i), value.getID());
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertEventualValue("value" + i, new ObjectID(i), value);
     }
 
     for (int i = 25; i < 50; i++) {
@@ -389,7 +476,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void testEvictCachedEntries() throws Exception {
     for (int i = 0; i < 50; i++) {
-      cache.addCoherentValueToCache(new ObjectID(i), "key" + i, "value" + i, true);
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
     cache.evictCachedEntries(25);
@@ -397,10 +484,9 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     int evicted = 0;
     int notEvicted = 0;
     for (int i = 0; i < 50; i++) {
-      LocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
       if (value != null) {
-        Assert.assertEquals("value" + i, value.getValue());
-        Assert.assertEquals(new ObjectID(i), value.getID());
+        assertEventualValue("value" + i, new ObjectID(i), value);
         List list = cacheIDStore.get(new ObjectID(i));
         Assert.assertEquals(1, list.size());
         Assert.assertEquals("key" + i, list.get(0));
@@ -673,6 +759,33 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
     }
 
+  }
+
+  public static enum LocalCacheValueType {
+    STRONG() {
+
+      @Override
+      public boolean isValueOfType(AbstractLocalCacheStoreValue value) {
+        return value.isStrongConsistentValue();
+      }
+
+    },
+    EVENTUAL() {
+
+      @Override
+      public boolean isValueOfType(AbstractLocalCacheStoreValue value) {
+        return value.isEventualConsistentValue();
+      }
+    },
+    INCOHERENT() {
+
+      @Override
+      public boolean isValueOfType(AbstractLocalCacheStoreValue value) {
+        return value.isIncoherentValue();
+      }
+    };
+
+    public abstract boolean isValueOfType(AbstractLocalCacheStoreValue value);
   }
 
 }
