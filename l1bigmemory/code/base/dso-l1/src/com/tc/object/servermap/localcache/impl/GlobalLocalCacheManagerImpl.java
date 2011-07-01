@@ -19,8 +19,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
@@ -143,7 +143,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
       }
 
       if (evictedLockIds.size() > 0) {
-        recallLocks(evictedLockIds);
+        initiateLockRecall(evictedLockIds);
       }
     }
 
