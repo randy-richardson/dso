@@ -167,10 +167,16 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   // return now >= ee.expiresAt(TCObjectServerMapImpl.this.tti, TCObjectServerMapImpl.this.ttl);
   // }
 
+  /**
+   * TODO: this is a very bad implementation, we need to make this better in future
+   */
   public void clearAllLocalCache() {
-    // TODO: need to clear id store too?
-    // TODO:why are we not recalling locks
-    this.localStore.clear();
+    Set localKeySet = this.localStore.getKeySet();
+    for (Object key : localKeySet) {
+      AbstractLocalCacheStoreValue value = this.localStore.get(key);
+      this.localStoreEvictionListener.notifyElementEvicted(key, value);
+    }
+    // CachedItem store should clear automatically now
   }
 
   public int size() {
