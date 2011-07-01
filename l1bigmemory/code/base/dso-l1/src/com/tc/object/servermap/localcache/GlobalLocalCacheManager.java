@@ -56,4 +56,9 @@ public interface GlobalLocalCacheManager {
    */
   public void rememberMapIdForValueLockId(LockID valueLockId, ObjectID mapID);
 
+  /**
+   * TODO: Should we move it to some other place
+   */
+  public void addListenerToStore(L1ServerMapLocalCacheStore store);
+
 }

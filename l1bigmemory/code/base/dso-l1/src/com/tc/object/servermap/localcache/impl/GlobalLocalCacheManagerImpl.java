@@ -8,18 +8,26 @@ import com.tc.object.ObjectID;
 import com.tc.object.RemoteServerMapManager;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
+import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
-  private final ConcurrentHashMap<ObjectID, ServerMapLocalCache> localCaches      = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
-  private final TCConcurrentMultiMap<LockID, ObjectID>           lockIdsToCdsmIds = new TCConcurrentMultiMap<LockID, ObjectID>();
+  private final ConcurrentHashMap<ObjectID, ServerMapLocalCache> localCaches             = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
+  private final TCConcurrentMultiMap<LockID, ObjectID>           lockIdsToCdsmIds        = new TCConcurrentMultiMap<LockID, ObjectID>();
   private volatile RemoteServerMapManager                        serverMapManager;
+  private final GlobalL1ServerMapLocalCacheStoreListener         localCacheStoreListener = new GlobalL1ServerMapLocalCacheStoreListener();
 
   public void initialize(RemoteServerMapManager serverManager) {
     this.serverMapManager = serverManager;
@@ -28,13 +36,17 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
                                                    boolean localCacheEnabled) {
     ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
-                                                                          localCacheEnabled);
+                                                                          localCacheEnabled, localCacheStoreListener);
     ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
     if (old != null) {
       serverMapLocalCache = old;
     }
     localCaches.put(mapId, serverMapLocalCache);
     return serverMapLocalCache;
+  }
+
+  public void addListenerToStore(L1ServerMapLocalCacheStore store) {
+    localCacheStoreListener.addListener(store);
   }
 
   // TODO: is this method needed?
@@ -77,5 +89,59 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
 
   public void rememberMapIdForValueLockId(LockID valueLockId, ObjectID mapID) {
     lockIdsToCdsmIds.add(valueLockId, mapID);
+  }
+
+  private class GlobalL1ServerMapLocalCacheStoreListener<K, V> implements L1ServerMapLocalCacheStoreListener<K, V> {
+    private final Map<L1ServerMapLocalCacheStore, Object> storeSet = new IdentityHashMap<L1ServerMapLocalCacheStore, Object>();
+
+    public void notifyElementEvicted(K key, V value) {
+      notifyElementsEvicted(Collections.singletonMap(key, value));
+    }
+
+    public synchronized void addListener(L1ServerMapLocalCacheStore store) {
+      if (!storeSet.containsKey(store)) {
+        storeSet.put(store, null);
+        store.addListener(this);
+      }
+    }
+
+    // TODO: does this need to be present in the interface? not called from outside
+    public void notifyElementsEvicted(Map<K, V> evictedElements) {
+      // TODO: should the flushing logic be done inside another thread, since this might delay "put" if eviction called
+      // within that thread
+      final Set<LockID> evictedLockIds = new HashSet<LockID>();
+      Set<Map.Entry<K, V>> entries = evictedElements.entrySet();
+
+      for (Entry entry : entries) {
+        if (!(entry.getValue() instanceof AbstractLocalCacheStoreValue)) {
+          continue;
+        }
+
+        // check if incoherent
+        AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) entry.getValue();
+
+        // if eventual
+        if (value.isEventualConsistentValue()) {
+          ObjectID mapID = value.getMapID();
+          ServerMapLocalCache serverMapLocalCache = localCaches.get(mapID);
+          if (serverMapLocalCache != null) {
+            serverMapLocalCache.removeEntriesForObjectId(value.asEventualValue().getObjectId());
+          }
+        } else if (value.isIncoherentValue()) {
+          // incoherent
+          // do nothing
+        } else if (value.isStrongConsistentValue()) {
+          // strong
+          evictedLockIds.add(value.asStrongValue().getLockId());
+        } else {
+          throw new AssertionError("AbstractLocalCacheStoreValue should be one of: STRONG, EVENTUAL, INCOHERENT");
+        }
+      }
+
+      if (evictedLockIds.size() > 0) {
+        recallLocks(evictedLockIds);
+      }
+    }
+
   }
 }

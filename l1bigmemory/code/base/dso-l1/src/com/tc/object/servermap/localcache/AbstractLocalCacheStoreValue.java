@@ -16,10 +16,12 @@ public abstract class AbstractLocalCacheStoreValue {
    * TODO: make this Serializable. This would be a SerializedEntry for the serialized caches.
    */
   protected final Object value;
+  private final ObjectID mapID;
 
-  public AbstractLocalCacheStoreValue(Object id, Object value) {
+  public AbstractLocalCacheStoreValue(Object id, Object value, ObjectID mapID) {
     this.id = id;
     this.value = value;
+    this.mapID = mapID;
   }
 
   public Object getId() {
@@ -28,6 +30,10 @@ public abstract class AbstractLocalCacheStoreValue {
 
   public Object getValue() {
     return value;
+  }
+
+  public ObjectID getMapID() {
+    return this.mapID;
   }
 
   /**

@@ -38,19 +38,20 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
    * Not public constructor, should be created only by the global local cache manager
    */
   ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
-                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled) {
+                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled,
+                          L1ServerMapLocalCacheStoreListener localStoreEvictionListener) {
     this.mapID = mapID;
     this.objectManager = objectManager;
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.localCacheEnabled = islocalCacheEnbaled;
-    this.localStoreEvictionListener = new L1ServerMapLocalCacheStoreListenerImpl(this);
+    this.localStoreEvictionListener = localStoreEvictionListener;
   }
 
   public void setupLocalStore(L1ServerMapLocalCacheStore store) {
     this.localStore = store;
     this.cacheIDStore.setupLocalStore(store);
-    this.localStore.addListener(localStoreEvictionListener);
+    this.globalLocalCacheManager.addListenerToStore(store);
   }
 
   public void addStrongValueToCache(LockID lockId, Object key, Object value, MapOperationType mapOperation) {
@@ -135,7 +136,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     } // else: incoherent items no need to be remembered
   }
 
-  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(final Object key,
+  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(
+                                                                                            final Object key,
                                                                                             MapOperationType mapOperation) {
     if (!mapOperation.isMutateOperation()) {
       // no listener required for non mutate ops
@@ -166,6 +168,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
   public void clearAllLocalCache() {
     // TODO: need to clear id store too?
+    // TODO:why are we not recalling locks
     this.localStore.clear();
   }
 
