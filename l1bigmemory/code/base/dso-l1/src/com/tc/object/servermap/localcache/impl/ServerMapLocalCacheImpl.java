@@ -244,7 +244,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   }
 
   public void clearForIDsAndRecallLocks(Set<LockID> evictedLockIds) {
-    globalLocalCacheManager.recallLocks(evictedLockIds);
+    globalLocalCacheManager.initiateLockRecall(evictedLockIds);
   }
 
   public void removeEntriesForObjectId(ObjectID objectId) {

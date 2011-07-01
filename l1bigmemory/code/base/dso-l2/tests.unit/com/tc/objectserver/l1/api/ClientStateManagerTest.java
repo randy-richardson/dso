@@ -153,7 +153,7 @@ public class ClientStateManagerTest extends TestCase {
     }
 
     Invalidations totalInvalidations = applyTransactionInfo.getObjectIDsToInvalidate();
-    Map<ObjectID, ObjectIDSet> totalInvalidationsMap = totalInvalidations.getIternalMap();
+    Map<ObjectID, ObjectIDSet> totalInvalidationsMap = totalInvalidations.getInternalMap();
     Assert.assertEquals(3, totalInvalidationsMap.size());
     ObjectIDSet oidSetInvalidated = totalInvalidationsMap.get(mapid1);
     for (int i = 1; i <= 50; i++) {
@@ -172,7 +172,7 @@ public class ClientStateManagerTest extends TestCase {
     Invalidations invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid1,
                                                      new ObjectIDSet(), invalidationsForClient);
-    Map<ObjectID, ObjectIDSet> invalidationsMapForClient = invalidationsForClient.getIternalMap();
+    Map<ObjectID, ObjectIDSet> invalidationsMapForClient = invalidationsForClient.getInternalMap();
     Assert.assertEquals(1, invalidationsMapForClient.size());
     oidSetInvalidated = invalidationsMapForClient.get(mapid1);
     Assert.assertEquals(50, oidSetInvalidated.size());
@@ -184,7 +184,7 @@ public class ClientStateManagerTest extends TestCase {
     invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid2,
                                                      new ObjectIDSet(), invalidationsForClient);
-    invalidationsMapForClient = invalidationsForClient.getIternalMap();
+    invalidationsMapForClient = invalidationsForClient.getInternalMap();
     Assert.assertEquals(1, invalidationsMapForClient.size());
     oidSetInvalidated = invalidationsMapForClient.get(mapid2);
     Assert.assertEquals(75, oidSetInvalidated.size());
@@ -196,7 +196,7 @@ public class ClientStateManagerTest extends TestCase {
     invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid3,
                                                      new ObjectIDSet(), invalidationsForClient);
-    invalidationsMapForClient = invalidationsForClient.getIternalMap();
+    invalidationsMapForClient = invalidationsForClient.getInternalMap();
     Assert.assertEquals(2, invalidationsMapForClient.size());
     oidSetInvalidated = invalidationsMapForClient.get(mapid2);
     Assert.assertEquals(25, oidSetInvalidated.size());

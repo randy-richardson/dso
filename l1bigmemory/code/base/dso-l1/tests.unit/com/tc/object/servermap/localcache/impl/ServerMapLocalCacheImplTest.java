@@ -6,28 +6,21 @@ package com.tc.object.servermap.localcache.impl;
 import org.mockito.Mockito;
 
 import com.tc.exception.ImplementMe;
-import com.tc.invalidation.Invalidations;
-import com.tc.net.GroupID;
-import com.tc.net.NodeID;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
-import com.tc.object.RemoteServerMapManager;
-import com.tc.object.ServerMapGetValueResponse;
-import com.tc.object.ServerMapRequestID;
 import com.tc.object.TCObject;
 import com.tc.object.dmi.DmiDescriptor;
 import com.tc.object.locks.LockID;
+import com.tc.object.locks.LocksRecallHelper;
 import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
-import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
 import com.tc.object.servermap.localcache.LocalCacheStoreIncoherentValue;
 import com.tc.object.servermap.localcache.LocalCacheStoreStrongValue;
 import com.tc.object.servermap.localcache.MapOperationType;
-import com.tc.object.session.SessionID;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.ClientTransactionManager;
 import com.tc.object.tx.TransactionCompleteListener;
@@ -54,7 +47,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   private final ObjectID                   mapID       = new ObjectID(50000);
   private final int                        maxInMemory = 1000;
   private ServerMapLocalCacheIDStore       cacheIDStore;
-  private MyRemoteServerMapManager         remoteServerMapManager;
+  private TestLocksRecallHelper            locksRecallHelper;
 
   @Override
   protected void setUp() throws Exception {
@@ -63,9 +56,9 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   }
 
   public void setLocalCache(CountDownLatch latch1, CountDownLatch latch2, int maxElementsInMemory) {
-    GlobalLocalCacheManagerImpl globalLocalCacheManager = new GlobalLocalCacheManagerImpl();
-    remoteServerMapManager = new MyRemoteServerMapManager(globalLocalCacheManager);
-    globalLocalCacheManager.initialize(remoteServerMapManager);
+    locksRecallHelper = new TestLocksRecallHelper();
+    GlobalLocalCacheManagerImpl globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper);
+    locksRecallHelper.setGlobalLocalCacheManager(globalLocalCacheManager);
     final ClientTransaction clientTransaction = new MyClientTransaction(latch1, latch2);
     ClientObjectManager com = Mockito.mock(ClientObjectManager.class);
     ClientTransactionManager ctm = Mockito.mock(ClientTransactionManager.class);
@@ -336,7 +329,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
     cache.clearForIDsAndRecallLocks(evictLocks);
 
-    Assert.assertEquals(evictLocks, remoteServerMapManager.lockIDs);
+    Assert.assertEquals(evictLocks, locksRecallHelper.lockIds);
 
     for (int i = 0; i < 25; i++) {
       AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
@@ -679,84 +672,26 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   }
 
-  private static class MyRemoteServerMapManager implements RemoteServerMapManager {
-    public volatile Set<LockID>           lockIDs;
-    private final GlobalLocalCacheManager globalLocalCacheManager;
+  private static class TestLocksRecallHelper implements LocksRecallHelper {
+    private volatile Set<LockID>             lockIds;
+    private volatile GlobalLocalCacheManager globalLocalCacheManager;
 
-    public MyRemoteServerMapManager(GlobalLocalCacheManager globalLocalCacheManager) {
-      this.globalLocalCacheManager = globalLocalCacheManager;
+    public void setGlobalLocalCacheManager(GlobalLocalCacheManager globalLocalCacheManagerParam) {
+      this.globalLocalCacheManager = globalLocalCacheManagerParam;
     }
 
-    public void addResponseForGetAllKeys(SessionID localSessionID, ObjectID mapID, ServerMapRequestID requestID,
-                                         Set keys, NodeID nodeID) {
-      throw new ImplementMe();
-
-    }
-
-    public void addResponseForGetAllSize(SessionID localSessionID, GroupID groupID, ServerMapRequestID requestID,
-                                         Long size, NodeID sourceNodeID) {
-      throw new ImplementMe();
-
-    }
-
-    public void addResponseForKeyValueMapping(SessionID localSessionID, ObjectID mapID,
-                                              Collection<ServerMapGetValueResponse> responses, NodeID nodeID) {
-      throw new ImplementMe();
-
-    }
-
-    public void flush(LockID id) {
-      throw new ImplementMe();
-
-    }
-
-    public void flush(Invalidations invalidations) {
-      throw new ImplementMe();
-
-    }
-
-    public Set getAllKeys(ObjectID mapID) {
-      throw new ImplementMe();
-    }
-
-    public long getAllSize(ObjectID[] mapIDs) {
-      throw new ImplementMe();
-    }
-
-    public Object getMappingForKey(ObjectID mapID, Object portableKey) {
-      throw new ImplementMe();
-    }
-
-    public void objectNotFoundFor(SessionID sessionID, ObjectID mapID, ServerMapRequestID requestID, NodeID nodeID) {
-      throw new ImplementMe();
-
-    }
-
-    public void recallLocks(Set<LockID> toEvict) {
-      lockIDs = toEvict;
-      for (LockID id : lockIDs) {
+    public void initiateLockRecall(Set<LockID> locks) {
+      this.lockIds = locks;
+      for (LockID id : lockIds) {
         globalLocalCacheManager.removeEntriesForLockId(id);
       }
     }
 
-    public void initializeHandshake(NodeID thisNode, NodeID remoteNode, ClientHandshakeMessage handshakeMessage) {
-      throw new ImplementMe();
-
-    }
-
-    public void pause(NodeID remoteNode, int disconnected) {
-      throw new ImplementMe();
-
-    }
-
-    public void shutdown() {
-      throw new ImplementMe();
-
-    }
-
-    public void unpause(NodeID remoteNode, int disconnected) {
-      throw new ImplementMe();
-
+    public void recallLocksInline(Set<LockID> locks) {
+      this.lockIds = locks;
+      for (LockID id : lockIds) {
+        globalLocalCacheManager.removeEntriesForLockId(id);
+      }
     }
 
   }

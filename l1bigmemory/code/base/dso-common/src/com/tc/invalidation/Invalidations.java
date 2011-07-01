@@ -13,8 +13,8 @@ import com.tc.util.ObjectIDSet;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 public class Invalidations implements TCSerializable {
   private final Map<ObjectID, ObjectIDSet> invalidationsPerCdsm;
@@ -41,7 +41,7 @@ public class Invalidations implements TCSerializable {
     return invalidationsPerCdsm.keySet();
   }
 
-  public Map<ObjectID, ObjectIDSet> getIternalMap() {
+  public Map<ObjectID, ObjectIDSet> getInternalMap() {
     return invalidationsPerCdsm;
   }
 

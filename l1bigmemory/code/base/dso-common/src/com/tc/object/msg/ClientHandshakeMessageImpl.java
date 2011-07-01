@@ -160,7 +160,7 @@ public class ClientHandshakeMessageImpl extends DSOMessageBase implements Client
       case OBJECTS_TO_VALIDATE:
         Invalidations invalidations = new Invalidations();
         invalidations.deserializeFrom(getInputStream());
-        this.objectsToValidate = invalidations.getIternalMap();
+        this.objectsToValidate = invalidations.getInternalMap();
         return true;
       case LOCK_CONTEXT:
         this.lockContexts.add(getObject(new ClientServerExchangeLockContext()));

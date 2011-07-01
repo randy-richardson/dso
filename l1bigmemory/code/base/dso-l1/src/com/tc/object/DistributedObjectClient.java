@@ -99,6 +99,8 @@ import com.tc.object.loaders.ClassProvider;
 import com.tc.object.locks.ClientLockManager;
 import com.tc.object.locks.ClientLockManagerConfigImpl;
 import com.tc.object.locks.ClientServerExchangeLockContext;
+import com.tc.object.locks.LocksRecallHelper;
+import com.tc.object.locks.LocksRecallHelperImpl;
 import com.tc.object.logging.RuntimeLogger;
 import com.tc.object.msg.AcknowledgeTransactionMessageImpl;
 import com.tc.object.msg.BatchTransactionAcknowledgeMessageImpl;
@@ -543,8 +545,11 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                        .getLogger(RemoteObjectManager.class)), this.channel, faultCount, sessionManager);
     this.dumpHandler.registerForDump(new CallbackDumpAdapter(remoteObjectManager));
 
+    LockRecallHandler lockRecallHandler = new LockRecallHandler();
     final Stage lockRecallStage = stageManager.createStage(ClientConfigurationContext.LOCK_RECALL_STAGE,
-                                                           new LockRecallHandler(), 8, maxSize);
+                                                           lockRecallHandler, 8, maxSize);
+    LocksRecallHelper locksRecallHelper = new LocksRecallHelperImpl(lockRecallHandler, lockRecallStage);
+
     final Stage ttiTTLEvictionStage = stageManager.createStage(ClientConfigurationContext.TTI_TTL_EVICTION_STAGE,
                                                                new TimeBasedEvictionHandler(), 8, maxSize);
 
@@ -552,12 +557,11 @@ public class DistributedObjectClient extends SEDA implements TCClient {
         .createRemoteSearchRequestManager(new ClientIDLogger(this.channel.getClientIDProvider(), TCLogging
                                               .getLogger(RemoteObjectManager.class)), this.channel, sessionManager);
 
-    GlobalLocalCacheManager globalLocalCacheManager = new GlobalLocalCacheManagerImpl();
+    GlobalLocalCacheManager globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper);
     final RemoteServerMapManager remoteServerMapManager = this.dsoClientBuilder
         .createRemoteServerMapManager(new ClientIDLogger(this.channel.getClientIDProvider(), TCLogging
                                           .getLogger(RemoteObjectManager.class)), this.channel, sessionManager,
-                                      lockRecallStage.getSink(), ttiTTLEvictionStage.getSink(), globalLocalCacheManager);
-    globalLocalCacheManager.initialize(remoteServerMapManager);
+                                      ttiTTLEvictionStage.getSink(), globalLocalCacheManager);
 
     final ClientGlobalTransactionManager gtxManager = this.dsoClientBuilder
         .createClientGlobalTransactionManager(this.rtxManager, remoteServerMapManager);

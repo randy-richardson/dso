@@ -5,9 +5,9 @@ package com.tc.object.servermap.localcache.impl;
 
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
-import com.tc.object.RemoteServerMapManager;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
+import com.tc.object.locks.LocksRecallHelper;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
@@ -26,11 +26,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   private final ConcurrentHashMap<ObjectID, ServerMapLocalCache> localCaches             = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
   private final TCConcurrentMultiMap<LockID, ObjectID>           lockIdsToCdsmIds        = new TCConcurrentMultiMap<LockID, ObjectID>();
-  private volatile RemoteServerMapManager                        serverMapManager;
+  private final LocksRecallHelper                                locksRecallHelper;
   private final GlobalL1ServerMapLocalCacheStoreListener         localCacheStoreListener = new GlobalL1ServerMapLocalCacheStoreListener();
 
-  public void initialize(RemoteServerMapManager serverManager) {
-    this.serverMapManager = serverManager;
+  public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper) {
+    this.locksRecallHelper = locksRecallHelper;
   }
 
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
@@ -54,8 +54,12 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     localCaches.remove(mapID);
   }
 
-  public void recallLocks(Set<LockID> toEvict) {
-    serverMapManager.recallLocks(toEvict);
+  public void initiateLockRecall(Set<LockID> lockIds) {
+    locksRecallHelper.initiateLockRecall(lockIds);
+  }
+
+  public void recallLocksInline(Set<LockID> lockIds) {
+    locksRecallHelper.recallLocksInline(lockIds);
   }
 
   public Map addAllObjectIDsToValidate(Map map) {

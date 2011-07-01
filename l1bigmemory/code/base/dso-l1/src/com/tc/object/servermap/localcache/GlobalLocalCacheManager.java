@@ -5,9 +5,9 @@ package com.tc.object.servermap.localcache;
 
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
-import com.tc.object.RemoteServerMapManager;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
+import com.tc.object.locks.LocksRecallHelper;
 
 import java.util.Map;
 import java.util.Set;
@@ -16,23 +16,13 @@ import java.util.Set;
  * A Global cache manager which contains info about all the LocalCache present in the L1.<br>
  * This acts a multiplexer between RemoteServerMapManager, HandshakeManager and the LocalCaches present
  */
-public interface GlobalLocalCacheManager {
-
-  /**
-   * Initialize the global local cache manager
-   */
-  public void initialize(RemoteServerMapManager remoteServerMapManager);
+public interface GlobalLocalCacheManager extends LocksRecallHelper {
 
   /**
    * Create a local cache for use or return already created local cache for the mapId
    */
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
                                                    boolean localCacheEnabled);
-
-  /**
-   * Recall locks. Called from LocalCache.
-   */
-  public void recallLocks(Set<LockID> toEvict);
 
   /**
    * flush the entries from the LocalCache associated with the given map id.<br>

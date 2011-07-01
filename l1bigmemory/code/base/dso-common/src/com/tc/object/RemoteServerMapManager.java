@@ -3,17 +3,18 @@
  */
 package com.tc.object;
 
-import com.tc.invalidation.Invalidations;
+import com.tc.invalidation.InvalidationsProcessor;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
+import com.tc.object.gtx.PreTransactionFlushCallback;
 import com.tc.object.handshakemanager.ClientHandshakeCallback;
-import com.tc.object.locks.LockID;
 import com.tc.object.session.SessionID;
 
 import java.util.Collection;
 import java.util.Set;
 
-public interface RemoteServerMapManager extends ClientHandshakeCallback {
+public interface RemoteServerMapManager extends ClientHandshakeCallback, PreTransactionFlushCallback,
+    InvalidationsProcessor {
   public Object getMappingForKey(ObjectID mapID, Object portableKey);
 
   public Set getAllKeys(ObjectID mapID);
@@ -30,10 +31,4 @@ public interface RemoteServerMapManager extends ClientHandshakeCallback {
                                        Long size, NodeID sourceNodeID);
 
   public void objectNotFoundFor(SessionID sessionID, ObjectID mapID, ServerMapRequestID requestID, NodeID nodeID);
-
-  public void flush(LockID id);
-
-  public void flush(Invalidations invalidations);
-
-  public void recallLocks(Set<LockID> toEvict);
 }

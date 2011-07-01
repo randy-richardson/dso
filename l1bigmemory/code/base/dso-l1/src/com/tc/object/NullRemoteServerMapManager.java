@@ -7,6 +7,7 @@ import com.tc.invalidation.Invalidations;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.locks.LockID;
+import com.tc.object.locks.ServerLockLevel;
 import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 
@@ -44,10 +45,6 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     return null;
   }
 
-  public void flush(final LockID id) {
-    //
-  }
-
   public void addResponseForGetAllSize(final SessionID localSessionID, final GroupID groupID,
                                        final ServerMapRequestID requestID, final Long size, final NodeID sourceNodeID) {
     //
@@ -63,10 +60,6 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void recallLocks(final Set<LockID> toEvict) {
-    //
-  }
-
   public void initiateCachedItemEvictionFor(final TCObjectServerMap serverMap) {
     //
   }
@@ -76,7 +69,12 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void flush(Invalidations invalidations) {
+  public void processInvalidations(Invalidations invalidations) {
     //
   }
+
+  public void preTransactionFlush(LockID lockID, ServerLockLevel level) {
+    //
+  }
+
 }
