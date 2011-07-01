@@ -3,12 +3,13 @@
  */
 package com.tc.object.servermap.localcache;
 
+import com.tc.object.ObjectID;
 import com.tc.object.locks.LockID;
 
 public class LocalCacheStoreStrongValue extends AbstractLocalCacheStoreValue {
 
-  public LocalCacheStoreStrongValue(LockID id, Object value) {
-    super(id, value);
+  public LocalCacheStoreStrongValue(LockID id, Object value, ObjectID mapID) {
+    super(id, value, mapID);
   }
 
   @Override

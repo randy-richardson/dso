@@ -55,17 +55,18 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   }
 
   public void addStrongValueToCache(LockID lockId, Object key, Object value, MapOperationType mapOperation) {
-    final LocalCacheStoreStrongValue localCacheValue = new LocalCacheStoreStrongValue(lockId, value);
+    final LocalCacheStoreStrongValue localCacheValue = new LocalCacheStoreStrongValue(lockId, value, this.mapID);
     addToCache(key, localCacheValue, mapOperation);
   }
 
   public void addEventualValueToCache(ObjectID valueObjectId, Object key, Object value, MapOperationType mapOperation) {
-    final LocalCacheStoreEventualValue localCacheValue = new LocalCacheStoreEventualValue(valueObjectId, value);
+    final LocalCacheStoreEventualValue localCacheValue = new LocalCacheStoreEventualValue(valueObjectId, value,
+                                                                                          this.mapID);
     addToCache(key, localCacheValue, mapOperation);
   }
 
   public void addIncoherentValueToCache(Object key, Object value, MapOperationType mapOperation) {
-    final LocalCacheStoreIncoherentValue localCacheValue = new LocalCacheStoreIncoherentValue(value);
+    final LocalCacheStoreIncoherentValue localCacheValue = new LocalCacheStoreIncoherentValue(value, this.mapID);
     addToCache(key, localCacheValue, mapOperation);
   }
 
