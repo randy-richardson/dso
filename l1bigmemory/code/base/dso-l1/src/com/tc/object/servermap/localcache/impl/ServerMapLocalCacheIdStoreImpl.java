@@ -25,7 +25,6 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   private final static int               CONCURRENCY  = 128;
 
   private final ReentrantReadWriteLock[] segmentLocks = new ReentrantReadWriteLock[CONCURRENCY];
-  private final ReentrantReadWriteLock   mapLock      = new ReentrantReadWriteLock();
   private final BackingMap               backingMap   = new BackingMap();
 
   public ServerMapLocalCacheIdStoreImpl() {
@@ -93,11 +92,15 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   }
 
   private void executeUnderMapWriteLock(ClearAllEntriesCallback callback) {
-    mapLock.writeLock().lock();
+    for (ReentrantReadWriteLock readWriteLock : segmentLocks) {
+      readWriteLock.writeLock().lock();
+    }
     try {
       callback.callback(null, null, backingMap);
     } finally {
-      mapLock.writeLock().unlock();
+      for (ReentrantReadWriteLock readWriteLock : segmentLocks) {
+        readWriteLock.writeLock().unlock();
+      }
     }
   }
 
