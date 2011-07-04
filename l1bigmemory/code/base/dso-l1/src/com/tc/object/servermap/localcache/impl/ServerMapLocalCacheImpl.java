@@ -10,47 +10,44 @@ import com.tc.object.locks.LockID;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
-import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
 import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
 import com.tc.object.servermap.localcache.LocalCacheStoreIncoherentValue;
 import com.tc.object.servermap.localcache.LocalCacheStoreStrongValue;
 import com.tc.object.servermap.localcache.MapOperationType;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
+import com.tc.object.servermap.localcache.ServerMapLocalCacheIdStore;
 import com.tc.object.servermap.localcache.impl.L1ServerMapLocalStoreTransactionCompletionListener.TransactionCompleteOperation;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.UnlockedSharedObjectException;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
-  private final ServerMapLocalCacheIDStore                                               cacheIDStore = new ServerMapLocalCacheIDStore();
-  private final L1ServerMapLocalCacheStoreListener<Object, AbstractLocalCacheStoreValue> localStoreEvictionListener;
-  private final ObjectID                                                                 mapID;
-  private final GlobalLocalCacheManager                                                  globalLocalCacheManager;
-  private final boolean                                                                  localCacheEnabled;
-  private volatile L1ServerMapLocalCacheStore<Object, AbstractLocalCacheStoreValue>      localStore;
-  private final ClientObjectManager                                                      objectManager;
-  private final Manager                                                                  manager;
+  private final ServerMapLocalCacheIdStore                                          cacheIdStore;
+  private final ObjectID                                                            mapID;
+  private final GlobalLocalCacheManager                                             globalLocalCacheManager;
+  private final boolean                                                             localCacheEnabled;
+  private volatile L1ServerMapLocalCacheStore<Object, AbstractLocalCacheStoreValue> localStore;
+  private final ClientObjectManager                                                 objectManager;
+  private final Manager                                                             manager;
 
   /**
    * Not public constructor, should be created only by the global local cache manager
    */
   ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
-                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled,
-                          L1ServerMapLocalCacheStoreListener localStoreEvictionListener) {
+                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled) {
     this.mapID = mapID;
     this.objectManager = objectManager;
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.localCacheEnabled = islocalCacheEnbaled;
-    this.localStoreEvictionListener = localStoreEvictionListener;
+    this.cacheIdStore = new ServerMapLocalCacheIdStoreImpl();
   }
 
   public void setupLocalStore(L1ServerMapLocalCacheStore store) {
     this.localStore = store;
-    this.cacheIDStore.setupLocalStore(store);
+    this.cacheIdStore.setupLocalStore(store);
     this.globalLocalCacheManager.addListenerToStore(store);
   }
 
@@ -118,27 +115,20 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
   private void removeIdToKeysMappingIfNecessary(final AbstractLocalCacheStoreValue localCacheValue, final Object key) {
     if (localCacheValue != null) {
-      if (localCacheValue.isStrongConsistentValue() || localCacheValue.isEventualConsistentValue()) {
-        if (localCacheValue.getId() != null && localCacheValue.getId() != ObjectID.NULL_ID) {
-          cacheIDStore.remove(localCacheValue.getId(), key);
-        } // else: we don't add for null_id
-      } // else: no need to remove for incoherent items
+      if (localCacheValue.getId() != null && localCacheValue.getId() != ObjectID.NULL_ID) {
+        cacheIdStore.removeIdKeyMapping(localCacheValue.getId(), key);
+      } // else: we don't add for null_id
     }
   }
 
   private void addIdToKeysMappingIfNecessary(final AbstractLocalCacheStoreValue localCacheValue, final Object key) {
-    if (localCacheValue.isStrongConsistentValue() || localCacheValue.isEventualConsistentValue()) {
-      // remember the key for this id, used on recall of lock or invalidation
-      // for strong and eventual values, multiple keys can be mapped to same single id
-      if (localCacheValue.getId() != null && localCacheValue.getId() != ObjectID.NULL_ID) {
-        // we don't add for null_id
-        cacheIDStore.add(localCacheValue.getId(), key);
-      }
-    } // else: incoherent items no need to be remembered
+    if (localCacheValue.getId() != null && localCacheValue.getId() != ObjectID.NULL_ID) {
+      // we don't add for null_id
+      cacheIdStore.addIdKeyMapping(localCacheValue.getId(), key);
+    }
   }
 
-  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(
-                                                                                            final Object key,
+  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(final Object key,
                                                                                             MapOperationType mapOperation) {
     if (!mapOperation.isMutateOperation()) {
       // no listener required for non mutate ops
@@ -170,13 +160,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   /**
    * TODO: this is a very bad implementation, we need to make this better in future
    */
-  public void clearAllLocalCache() {
-    Set localKeySet = this.localStore.getKeySet();
-    for (Object key : localKeySet) {
-      AbstractLocalCacheStoreValue value = this.localStore.get(key);
-      this.localStoreEvictionListener.notifyElementEvicted(key, value);
-    }
-    // CachedItem store should clear automatically now
+  public void clear() {
+    cacheIdStore.clearAllEntries();
   }
 
   public int size() {
@@ -192,25 +177,18 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
    * When a remove from local cache is called, remove and flush
    */
   public void removeFromLocalCache(Object key) {
-    AbstractLocalCacheStoreValue value = this.localStore.remove(key);
-    // TODO: need to remove from id store?
-    if (value != null) {
-      localStoreEvictionListener.notifyElementEvicted(key, value);
-    }
+    cacheIdStore.removeEntryForKey(key);
+  }
+
+  public void evictedFromStore(Object id, Object key) {
+    if (id != null) {
+      cacheIdStore.evictedFromStore(id, key);
+    } // else: incoherent item, no mapping to remove
   }
 
   public Set getKeySet() {
     // TODO: need to handle to ignore meta entries (id -> List<keys>)
     return this.localStore.getKeySet();
-  }
-
-  // TODO: need to make sure in RemoteServerMapManager that when no CachedItems are 0 for a particular lockid, i need
-  // to recall the lock<br>
-  // Also do we even need this especially when we have removeFromLocalCache
-  public void evictFromLocalCache(Object key, AbstractLocalCacheStoreValue ci) {
-    // TODO: merge/delegate to removeFromLocalCache?
-    AbstractLocalCacheStoreValue value = this.localStore.remove(key);
-    removeIdToKeysMappingIfNecessary(value, key);
   }
 
   /**
@@ -243,10 +221,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     this.localStore.unpinEntry(key);
   }
 
-  public void clearForIDsAndRecallLocks(Set<LockID> evictedLockIds) {
-    globalLocalCacheManager.initiateLockRecall(evictedLockIds);
-  }
-
   public void removeEntriesForObjectId(ObjectID objectId) {
     removeEntriesForId(objectId);
   }
@@ -255,33 +229,22 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     removeEntriesForId(lockId);
   }
 
-  /**
-   * When a flush is called here it means do this:<br>
-   * 1) Remove from ID Store i.e. store flush <br>
-   * 2) Remove keys obtained from ID Store<br>
-   * This method wont call in to recall locks, hence if u want to recall locks call clearCachedItemsForLocks
-   */
   private void removeEntriesForId(Object id) {
-    List keys = cacheIDStore.remove(id);
-    if (keys == null) {
-      // This can happen when remove is called due an "remove" from local cache on a remove from CDSM
-      return;
-    }
-
-    for (Object key : keys) {
-      this.localStore.remove(key);
-    }
+    this.cacheIdStore.removeEntries(id);
   }
 
   public ObjectID getMapID() {
     return this.mapID;
   }
 
-  public void addAllObjectIDsToValidate(Map tempMap) {
-    this.cacheIDStore.addAllObjectIDsToValidate(mapID, tempMap);
+  public void addAllObjectIDsToValidate(Map map) {
+    this.cacheIdStore.addAllObjectIDsToValidate(mapID, map);
   }
 
-  ServerMapLocalCacheIDStore getCacheIDStore() {
-    return cacheIDStore;
+  /**
+   * used for tests
+   */
+  ServerMapLocalCacheIdStoreImpl getCacheIDStore() {
+    return (ServerMapLocalCacheIdStoreImpl) cacheIdStore;
   }
 }

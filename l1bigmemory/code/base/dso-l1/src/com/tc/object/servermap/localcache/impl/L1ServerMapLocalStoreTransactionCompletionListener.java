@@ -27,7 +27,7 @@ public class L1ServerMapLocalStoreTransactionCompletionListener implements Trans
     if (transactionCompleteOperation == TransactionCompleteOperation.UNPIN_AND_REMOVE_ENTRY) {
       // TODO: could this be a race or a problem ?
       // It could be a problem actually
-      serverMapLocalCache.evictFromLocalCache(key, null);
+      serverMapLocalCache.removeFromLocalCache(key);
     }
   }
 

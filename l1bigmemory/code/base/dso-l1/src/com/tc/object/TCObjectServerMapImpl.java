@@ -340,7 +340,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
    * @param map ServerTCMap
    */
   public void clearLocalCache(final TCServerMap map) {
-    this.cache.clearAllLocalCache();
+    this.cache.clear();
   }
 
   public void removeFromLocalCache(Object key) {

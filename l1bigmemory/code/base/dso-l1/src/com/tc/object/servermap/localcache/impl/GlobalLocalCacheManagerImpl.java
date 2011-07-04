@@ -16,7 +16,6 @@ import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,7 +35,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
                                                    boolean localCacheEnabled) {
     ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
-                                                                          localCacheEnabled, localCacheStoreListener);
+                                                                          localCacheEnabled);
     ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
     if (old != null) {
       serverMapLocalCache = old;
@@ -74,8 +73,10 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
    */
   public void removeEntriesForObjectId(ObjectID mapID, Set<ObjectID> set) {
     ServerMapLocalCache cache = localCaches.get(mapID);
-    for (ObjectID id : set) {
-      cache.removeEntriesForObjectId(id);
+    if (cache != null) {
+      for (ObjectID id : set) {
+        cache.removeEntriesForObjectId(id);
+      }
     }
   }
 
@@ -113,37 +114,21 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     public void notifyElementsEvicted(Map<K, V> evictedElements) {
       // TODO: should the flushing logic be done inside another thread, since this might delay "put" if eviction called
       // within that thread
-      final Set<LockID> evictedLockIds = new HashSet<LockID>();
       Set<Map.Entry<K, V>> entries = evictedElements.entrySet();
 
       for (Entry entry : entries) {
         if (!(entry.getValue() instanceof AbstractLocalCacheStoreValue)) {
+          // TODO: log warn here?
           continue;
         }
 
-        // check if incoherent
         AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) entry.getValue();
-
-        // if eventual
-        if (value.isEventualConsistentValue()) {
-          ObjectID mapID = value.getMapID();
-          ServerMapLocalCache serverMapLocalCache = localCaches.get(mapID);
-          if (serverMapLocalCache != null) {
-            serverMapLocalCache.removeEntriesForObjectId(value.asEventualValue().getObjectId());
-          }
-        } else if (value.isIncoherentValue()) {
-          // incoherent
-          // do nothing
-        } else if (value.isStrongConsistentValue()) {
-          // strong
-          evictedLockIds.add(value.asStrongValue().getLockId());
-        } else {
-          throw new AssertionError("AbstractLocalCacheStoreValue should be one of: STRONG, EVENTUAL, INCOHERENT");
+        ObjectID mapID = value.getMapID();
+        ServerMapLocalCache localCache = localCaches.get(mapID);
+        if (localCache != null) {
+          // the entry has been already removed from the local store, this will remove the id->key mapping if it exists
+          localCache.evictedFromStore(value.getId(), entry.getKey());
         }
-      }
-
-      if (evictedLockIds.size() > 0) {
-        initiateLockRecall(evictedLockIds);
       }
     }
 

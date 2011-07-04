@@ -46,8 +46,9 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   private volatile ServerMapLocalCacheImpl cache;
   private final ObjectID                   mapID       = new ObjectID(50000);
   private final int                        maxInMemory = 1000;
-  private ServerMapLocalCacheIDStore       cacheIDStore;
+  private ServerMapLocalCacheIdStoreImpl   cacheIDStore;
   private TestLocksRecallHelper            locksRecallHelper;
+  private GlobalLocalCacheManagerImpl      globalLocalCacheManager;
 
   @Override
   protected void setUp() throws Exception {
@@ -57,7 +58,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   public void setLocalCache(CountDownLatch latch1, CountDownLatch latch2, int maxElementsInMemory) {
     locksRecallHelper = new TestLocksRecallHelper();
-    GlobalLocalCacheManagerImpl globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper);
+    globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper);
     locksRecallHelper.setGlobalLocalCacheManager(globalLocalCacheManager);
     final ClientTransaction clientTransaction = new MyClientTransaction(latch1, latch2);
     ClientObjectManager com = Mockito.mock(ClientObjectManager.class);
@@ -327,7 +328,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
       evictLocks.add(new LongLockID(i));
     }
 
-    cache.clearForIDsAndRecallLocks(evictLocks);
+    globalLocalCacheManager.initiateLockRecall(evictLocks);
 
     Assert.assertEquals(evictLocks, locksRecallHelper.lockIds);
 
@@ -369,7 +370,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     }
 
     for (int i = 0; i < 25; i++) {
-      cache.evictFromLocalCache("key" + i, null);
+      cache.removeFromLocalCache("key" + i);
     }
 
     for (int i = 0; i < 25; i++) {
@@ -424,7 +425,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
       cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
-    cache.clearAllLocalCache();
+    cache.clear();
 
     for (int i = 0; i < 50; i++) {
       AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);

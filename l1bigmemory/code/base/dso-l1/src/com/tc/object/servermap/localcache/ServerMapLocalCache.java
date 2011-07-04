@@ -17,38 +17,32 @@ public interface ServerMapLocalCache {
   void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore);
 
   /**
-   * Each ServerMapLocalCache cache is associated with a TCObjectServerMap<br>
-   * This ObjectID is the id of that TCObject
-   */
-  ObjectID getMapID();
-
-  /**
-   * Remove the entry associated with this id from the LocalCache and the ID store as well
+   * Removes all entries associated with this objectId
    */
   void removeEntriesForObjectId(ObjectID objectId);
 
   /**
-   * Remove the entry associated with this id from the LocalCache and the ID store as well
+   * Remove all the entries associated with this lockId
    */
   void removeEntriesForLockId(LockID lockId);
 
   /**
-   * Same as flush and also initiate recall
+   * Removes a key from the Local cache
    */
-  void clearForIDsAndRecallLocks(Set<LockID> evictedLockIds);
+  void removeFromLocalCache(Object key);
 
   /**
-   * Unpin entry for this object key. That is evict it if required.
+   * Called when the key has been evicted from the local store
+   */
+  void evictedFromStore(Object id, Object key);
+
+  /**
+   * Unpin entry for this object key. Becomes eligible for eviction if not before
    */
   void unpinEntry(Object key);
 
   /**
-   * Remove this element from the local cache. Note that this doesn't initiate recalls.
-   */
-  void evictFromLocalCache(Object key, AbstractLocalCacheStoreValue value);
-
-  /**
-   * Used in handshake to send a list of ObjectIDs to the server
+   * Used in handshake to send a list of ObjectIDs to the server for validation
    */
   void addAllObjectIDsToValidate(Map map);
 
@@ -82,19 +76,14 @@ public interface ServerMapLocalCache {
   AbstractLocalCacheStoreValue getLocalValue(Object key);
 
   /**
-   * Returns the size of the local cache ...<br>
+   * Returns the size of the local cache
    */
   int size();
 
   /**
-   * clear all elements from the local cache
+   * Clear all elements from the local cache
    */
-  void clearAllLocalCache();
-
-  /**
-   * Remove a key from the Local cache, this will try to recall locks if possible
-   */
-  void removeFromLocalCache(Object key);
+  void clear();
 
   /**
    * Attempt to remove 'count' entries from the local cache. May be called under memory pressure
