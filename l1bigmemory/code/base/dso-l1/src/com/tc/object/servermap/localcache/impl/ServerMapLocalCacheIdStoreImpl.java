@@ -110,7 +110,8 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
     }
   }
 
-  private Object executeUnderSegmentWriteLock(final Object id, final Object key, final ExecuteUnderLockCallback callback) {
+  private <V> V executeUnderSegmentWriteLock(final Object id, final Object key,
+                                             final ExecuteUnderLockCallback<V> callback) {
     ReentrantReadWriteLock lock = getLock(id);
     try {
       lock.writeLock().lock();
@@ -125,7 +126,7 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   }
 
   public void removeIdKeyMapping(final Object id, final Object key) {
-    Object lockID = executeUnderSegmentWriteLock(id, key, RemoveIdKeyMappingCallback.INSTANCE);
+    LockID lockID = executeUnderSegmentWriteLock(id, key, RemoveIdKeyMappingCallback.INSTANCE);
     initiateLockRecall(lockID);
   }
 
@@ -135,7 +136,7 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   }
 
   public void evictedFromStore(Object id, Object key) {
-    Object lockID = executeUnderSegmentWriteLock(id, key, RemoveEntryForKeyCallback.INSTANCE);
+    LockID lockID = executeUnderSegmentWriteLock(id, key, RemoveEntryForKeyCallback.INSTANCE);
     initiateLockRecall(lockID);
   }
 
@@ -145,7 +146,7 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
       AbstractLocalCacheStoreValue localValue = (AbstractLocalCacheStoreValue) value;
       if (localValue.getId() != null) {
         // not incoherent item, remove id-key mapping
-        Object id = executeUnderSegmentWriteLock(localValue.getId(), key, RemoveEntryForKeyCallback.INSTANCE);
+        LockID id = executeUnderSegmentWriteLock(localValue.getId(), key, RemoveEntryForKeyCallback.INSTANCE);
         initiateLockRecall(id);
         // TODO: should we do a recall/unpin when list size becomes 0 OR unpin the lock
       }
@@ -241,10 +242,10 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
     }
   }
 
-  private static class RemoveIdKeyMappingCallback implements ExecuteUnderLockCallback {
+  private static class RemoveIdKeyMappingCallback implements ExecuteUnderLockCallback<LockID> {
     public static RemoveIdKeyMappingCallback INSTANCE = new RemoveIdKeyMappingCallback();
 
-    public Object callback(Object id, Object key, BackingMap backingMap) {
+    public LockID callback(Object id, Object key, BackingMap backingMap) {
       List list = (List) backingMap.get(id);
       if (list == null) { return null; }
       list.remove(key);
@@ -276,10 +277,10 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
     }
   }
 
-  private static class RemoveEntryForKeyCallback implements ExecuteUnderLockCallback {
+  private static class RemoveEntryForKeyCallback implements ExecuteUnderLockCallback<LockID> {
     public static RemoveEntryForKeyCallback INSTANCE = new RemoveEntryForKeyCallback();
 
-    public Object callback(Object id, Object key, BackingMap backingMap) {
+    public LockID callback(Object id, Object key, BackingMap backingMap) {
       List list = (List) backingMap.get(id);
       if (list != null) {
         // remove the key from the id->list(keys)
@@ -315,9 +316,9 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
     }
   }
 
-  private void initiateLockRecall(Object id) {
-    if (id instanceof LockID) {
-      Set<LockID> lockID = Collections.singleton((LockID) id);
+  private void initiateLockRecall(LockID id) {
+    if (id != null) {
+      Set<LockID> lockID = Collections.singleton(id);
       locksRecallHelper.initiateLockRecall(lockID);
     }
   }
