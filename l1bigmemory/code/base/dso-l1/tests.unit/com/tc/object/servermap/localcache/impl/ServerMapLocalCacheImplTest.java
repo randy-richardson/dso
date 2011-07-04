@@ -459,7 +459,11 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   }
 
   public void testSize() throws Exception {
-    //
+    for (int i = 0; i < 50; i++) {
+      cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
+    }
+
+    Assert.assertEquals(50, cache.size());
   }
 
   public void testClearAllLocalCache() throws Exception {

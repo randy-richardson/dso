@@ -11,15 +11,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocalCacheStore<K, V> {
   private final List<L1ServerMapLocalCacheStoreListener<K, V>> listeners     = new CopyOnWriteArrayList<L1ServerMapLocalCacheStoreListener<K, V>>();
   private final HashMap<K, V>                                  backingCache  = new HashMap<K, V>();
   private final int                                            maxElementInMemory;
   private final HashSet<K>                                     pinnedEntries = new HashSet<K>();
+  private final AtomicInteger                                  cacheSize     = new AtomicInteger();
 
   public L1ServerMapLocalCacheStoreHashMap(int maxInMemory) {
     if (maxInMemory == 0) {
@@ -124,7 +126,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   }
 
   public synchronized int size() {
-    return this.backingCache.size();
+    return this.cacheSize.get();
   }
 
   // TODO: Remove it using an iterator
@@ -140,5 +142,9 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   public String toString() {
     return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache + ", maxElementInMemory="
            + maxElementInMemory + ", pinnedEntries=" + pinnedEntries + "]";
+  }
+
+  public AtomicInteger getSizeObject() {
+    return this.cacheSize;
   }
 }

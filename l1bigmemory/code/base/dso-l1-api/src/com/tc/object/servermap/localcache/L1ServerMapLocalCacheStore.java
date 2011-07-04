@@ -4,6 +4,7 @@
 package com.tc.object.servermap.localcache;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The backing Cache Store for the Local Cache present in TCObjectServerMapImpl
@@ -73,4 +74,6 @@ public interface L1ServerMapLocalCacheStore<K, V> {
    * Unpin entry so that it is eligible for eviction
    */
   public void unpinEntry(K key);
+
+  public AtomicInteger getSizeObject();
 }
