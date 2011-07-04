@@ -25,12 +25,12 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStore {
-  private static final TCLogger          LOGGER       = TCLogging.getLogger(ServerMapLocalCacheIdStoreImpl.class);
-  private final static int               CONCURRENCY  = 128;
+  private static final TCLogger               LOGGER       = TCLogging.getLogger(ServerMapLocalCacheIdStoreImpl.class);
+  private final static int                    CONCURRENCY  = 128;
 
-  private final ReentrantReadWriteLock[] segmentLocks = new ReentrantReadWriteLock[CONCURRENCY];
-  private final BackingMap               backingMap   = new BackingMap();
-  private final LocksRecallHelper        locksRecallHelper;
+  private final ReentrantReadWriteLock[]      segmentLocks = new ReentrantReadWriteLock[CONCURRENCY];
+  private volatile L1ServerMapLocalCacheStore backingMap;
+  private final LocksRecallHelper             locksRecallHelper;
 
   public ServerMapLocalCacheIdStoreImpl(LocksRecallHelper locksRecallHelper) {
     this.locksRecallHelper = locksRecallHelper;
@@ -40,7 +40,15 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   }
 
   public void setupLocalStore(L1ServerMapLocalCacheStore localCacheStore) {
-    backingMap.setupLocalStore(localCacheStore);
+    backingMap = localCacheStore;
+  }
+
+  private boolean isStoreInitialized() {
+    if (backingMap == null) {
+      LOGGER.warn("Store yet not initialized");
+      return false;
+    }
+    return true;
   }
 
   // Used in tests
@@ -64,6 +72,8 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
    * Used only in handshake
    */
   public void addAllObjectIDsToValidate(ObjectID mapID, Map map) {
+    if (!isStoreInitialized()) { return; }
+
     for (ReentrantReadWriteLock readWriteLock : segmentLocks) {
       readWriteLock.readLock().lock();
     }
@@ -122,25 +132,34 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   }
 
   public void addIdKeyMapping(final Object id, final Object key) {
+    if (!isStoreInitialized()) { return; }
     executeUnderSegmentWriteLock(id, key, AddIdKeyMappingCallback.INSTANCE);
   }
 
   public void removeIdKeyMapping(final Object id, final Object key) {
+    if (!isStoreInitialized()) { return; }
+
     LockID lockID = executeUnderSegmentWriteLock(id, key, RemoveIdKeyMappingCallback.INSTANCE);
     initiateLockRecall(lockID);
   }
 
   public void removeEntries(Object id) {
+    if (!isStoreInitialized()) { return; }
+
     // This should be called when a lock has already been recalled, so shouldn't be a problem
     executeUnderSegmentWriteLock(id, null, RemoveEntriesForIdCallback.INSTANCE);
   }
 
   public void evictedFromStore(Object id, Object key) {
+    if (!isStoreInitialized()) { return; }
+
     LockID lockID = executeUnderSegmentWriteLock(id, key, RemoveEntryForKeyCallback.INSTANCE);
     initiateLockRecall(lockID);
   }
 
   public void removeEntryForKey(Object key) {
+    if (!isStoreInitialized()) { return; }
+
     Object value = backingMap.remove(key);
     if (value != null && value instanceof AbstractLocalCacheStoreValue) {
       AbstractLocalCacheStoreValue localValue = (AbstractLocalCacheStoreValue) value;
@@ -154,81 +173,22 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   }
 
   public void clearAllEntries() {
+    if (!isStoreInitialized()) { return; }
+
     Set<LockID> lockIDs = executeUnderMapWriteLock(ClearAllEntriesCallback.INSTANCE);
     // TODO some places we need to do this inline, will handle that later
     initiateLockRecall(lockIDs);
   }
 
-  private static class BackingMap {
-    private volatile L1ServerMapLocalCacheStore store;
-
-    public void setupLocalStore(L1ServerMapLocalCacheStore localCacheStore) {
-      this.store = localCacheStore;
-    }
-
-    private boolean isStoreInitialized() {
-      if (store == null) {
-        LOGGER.info("Store is not setup yet");
-        return false;
-      }
-      return true;
-    }
-
-    Object get(Object key) {
-      if (isStoreInitialized()) {
-        return store.get(key);
-      } else {
-        return null;
-      }
-    }
-
-    void putPinnedEntry(Object key, List value) {
-      if (isStoreInitialized()) {
-        store.putPinnedEntry(key, value);
-      }
-    }
-
-    Object remove(Object key) {
-      if (isStoreInitialized()) {
-        return store.remove(key);
-      } else {
-        return null;
-      }
-    }
-
-    int size() {
-      if (isStoreInitialized()) {
-        return store.size();
-      } else {
-        return 0;
-      }
-    }
-
-    Set getKeySet() {
-      if (isStoreInitialized()) {
-        return store.getKeySet();
-      } else {
-        return null;
-      }
-    }
-
-    public void clear() {
-      if (isStoreInitialized()) {
-        store.clear();
-      }
-    }
-
-  }
-
   private static interface ExecuteUnderLockCallback<V> {
-    V callback(Object key, Object value, BackingMap backingMap);
+    V callback(Object key, Object value, L1ServerMapLocalCacheStore backingMap);
   }
 
   private static class AddIdKeyMappingCallback implements ExecuteUnderLockCallback<Void> {
 
     public static AddIdKeyMappingCallback INSTANCE = new AddIdKeyMappingCallback();
 
-    public Void callback(Object id, Object key, BackingMap backingMap) {
+    public Void callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap) {
       List list = (List) backingMap.get(id);
       if (list == null) {
         list = new ArrayList();
@@ -245,7 +205,7 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   private static class RemoveIdKeyMappingCallback implements ExecuteUnderLockCallback<LockID> {
     public static RemoveIdKeyMappingCallback INSTANCE = new RemoveIdKeyMappingCallback();
 
-    public LockID callback(Object id, Object key, BackingMap backingMap) {
+    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap) {
       List list = (List) backingMap.get(id);
       if (list == null) { return null; }
       list.remove(key);
@@ -264,7 +224,7 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   private static class RemoveEntriesForIdCallback implements ExecuteUnderLockCallback<Void> {
     public static RemoveEntriesForIdCallback INSTANCE = new RemoveEntriesForIdCallback();
 
-    public Void callback(Object id, Object unusedParam, BackingMap backingMap) {
+    public Void callback(Object id, Object unusedParam, L1ServerMapLocalCacheStore backingMap) {
       // remove the list
       List list = (List) backingMap.remove(id);
       if (list != null) {
@@ -280,7 +240,7 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   private static class RemoveEntryForKeyCallback implements ExecuteUnderLockCallback<LockID> {
     public static RemoveEntryForKeyCallback INSTANCE = new RemoveEntryForKeyCallback();
 
-    public LockID callback(Object id, Object key, BackingMap backingMap) {
+    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap) {
       List list = (List) backingMap.get(id);
       if (list != null) {
         // remove the key from the id->list(keys)
@@ -302,7 +262,7 @@ public class ServerMapLocalCacheIdStoreImpl implements ServerMapLocalCacheIdStor
   private static class ClearAllEntriesCallback implements ExecuteUnderLockCallback<Set<LockID>> {
     public static ClearAllEntriesCallback INSTANCE = new ClearAllEntriesCallback();
 
-    public Set<LockID> callback(Object unused1, Object unused2, BackingMap backingMap) {
+    public Set<LockID> callback(Object unused1, Object unused2, L1ServerMapLocalCacheStore backingMap) {
       HashSet<LockID> lockIDs = new HashSet<LockID>();
       Set keySet = backingMap.getKeySet();
       for (Object key : keySet) {
