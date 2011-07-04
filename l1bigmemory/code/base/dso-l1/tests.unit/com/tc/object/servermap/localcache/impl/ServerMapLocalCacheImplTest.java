@@ -57,7 +57,12 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   }
 
   public void setLocalCache(CountDownLatch latch1, CountDownLatch latch2, int maxElementsInMemory) {
-    locksRecallHelper = new TestLocksRecallHelper();
+    setLocalCache(latch1, latch2, maxElementsInMemory, new TestLocksRecallHelper());
+  }
+
+  public void setLocalCache(CountDownLatch latch1, CountDownLatch latch2, int maxElementsInMemory,
+                            TestLocksRecallHelper testLocksRecallHelper) {
+    locksRecallHelper = testLocksRecallHelper;
     globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper);
     locksRecallHelper.setGlobalLocalCacheManager(globalLocalCacheManager);
     final ClientTransaction clientTransaction = new MyClientTransaction(latch1, latch2);
@@ -309,7 +314,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   }
 
-  public void testClearForIDsAndRecallLocks() throws Exception {
+  public void testRecalledLocks() throws Exception {
     for (int i = 0; i < 50; i++) {
       cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
@@ -325,12 +330,55 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
     Set<LockID> evictLocks = new HashSet<LockID>();
     for (int i = 0; i < 25; i++) {
-      evictLocks.add(new LongLockID(i));
+      LockID lockID = new LongLockID(i);
+      evictLocks.add(lockID);
+      globalLocalCacheManager.removeEntriesForLockId(lockID);
     }
 
-    globalLocalCacheManager.initiateLockRecall(evictLocks);
+    for (int i = 0; i < 25; i++) {
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      Assert.assertNull(value);
+      List list = cacheIDStore.get(new LongLockID(i));
+      Assert.assertNull(list);
+    }
 
-    Assert.assertEquals(evictLocks, locksRecallHelper.lockIds);
+    for (int i = 25; i < 50; i++) {
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertStrongValue("value" + i, new LongLockID(i), value);
+    }
+
+    for (int i = 25; i < 50; i++) {
+      List list = cacheIDStore.get(new LongLockID(i));
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + i, list.get(0));
+    }
+  }
+
+  public void testRemovedEntries() throws Exception {
+    Test2LocksRecallHelper test2LocksRecallHelper = new Test2LocksRecallHelper();
+    setLocalCache(null, null, maxInMemory, test2LocksRecallHelper);
+
+    for (int i = 0; i < 50; i++) {
+      cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.PUT);
+    }
+
+    for (int i = 0; i < 50; i++) {
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertStrongValue("value" + i, new LongLockID(i), value);
+      List list = cacheIDStore.get(new LongLockID(i));
+      Assert.assertNotNull(list);
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + i, list.get(0));
+    }
+
+    Set<LockID> evictLocks = new HashSet<LockID>();
+    for (int i = 0; i < 25; i++) {
+      LockID lockID = new LongLockID(i);
+      evictLocks.add(lockID);
+      cache.removeFromLocalCache("key" + i);
+    }
+
+    Assert.assertEquals(evictLocks, test2LocksRecallHelper.lockIdsToEvict);
 
     for (int i = 0; i < 25; i++) {
       AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
@@ -692,6 +740,25 @@ public class ServerMapLocalCacheImplTest extends TestCase {
       this.lockIds = locks;
       for (LockID id : lockIds) {
         globalLocalCacheManager.removeEntriesForLockId(id);
+      }
+    }
+
+  }
+
+  private static class Test2LocksRecallHelper extends TestLocksRecallHelper {
+    private volatile Set<LockID> lockIdsToEvict = new HashSet<LockID>();
+
+    @Override
+    public void initiateLockRecall(Set<LockID> locks) {
+      for (LockID id : locks) {
+        lockIdsToEvict.add(id);
+      }
+    }
+
+    @Override
+    public void recallLocksInline(Set<LockID> locks) {
+      for (LockID id : locks) {
+        lockIdsToEvict.add(id);
       }
     }
 

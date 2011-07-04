@@ -42,7 +42,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.localCacheEnabled = islocalCacheEnbaled;
-    this.cacheIdStore = new ServerMapLocalCacheIdStoreImpl();
+    this.cacheIdStore = new ServerMapLocalCacheIdStoreImpl(this.globalLocalCacheManager);
   }
 
   public void setupLocalStore(L1ServerMapLocalCacheStore store) {
