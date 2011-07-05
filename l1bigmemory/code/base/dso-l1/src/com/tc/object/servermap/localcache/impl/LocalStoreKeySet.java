@@ -60,15 +60,11 @@ public class LocalStoreKeySet extends AbstractSet<Object> {
     }
 
     public synchronized Object next() {
-      if (nextAvailable) {
-        nextAvailable = false;
+      if (hasNext()) {
         Object rv = currentNext;
         currentNext = null;
+        nextAvailable = false;
         return rv;
-      }
-      while (internalIterator.hasNext()) {
-        Object object = internalIterator.next();
-        if (filter.accept(object)) { return object; }
       }
       throw new NoSuchElementException();
     }
