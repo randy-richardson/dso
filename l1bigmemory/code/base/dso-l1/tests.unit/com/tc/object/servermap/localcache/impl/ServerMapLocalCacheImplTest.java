@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
@@ -574,12 +575,67 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     while (iterator.hasNext()) {
       Object key = iterator.next();
       keysFromKeySet.add(key);
+      try {
+        iterator.remove();
+        fail("iterator.remove() should throw unsupported operation exception");
+      } catch (UnsupportedOperationException e) {
+        // expected
+      }
     }
+
+    try {
+      iterator.next();
+      fail("Calling next after iteration should throw NoSuchElementException");
+    } catch (NoSuchElementException e) {
+      System.out.println("Caught expected exception: " + e);
+    }
+
     Assert.assertEquals(2 * count, keysFromKeySet.size());
+    Set expectedKeys = new HashSet();
     for (int i = 0; i < count; i++) {
       int eventualId = count + i;
+      expectedKeys.add("key" + i);
+      expectedKeys.add("key" + eventualId);
+
       Assert.assertTrue(keysFromKeySet.contains("key" + i));
       Assert.assertTrue(keysFromKeySet.contains("key" + eventualId));
+
+      Assert.assertTrue(keySet.contains("key" + i));
+      Assert.assertTrue(keySet.contains("key" + eventualId));
+    }
+
+    keySet = cache.getKeySet();
+    try {
+      keySet.add(new Object());
+      fail("Adding to keyset should fail");
+    } catch (UnsupportedOperationException e) {
+      // expected
+      System.out.println("Caught expected exception: " + e);
+    }
+    try {
+      keySet.remove(new Object());
+      fail("Remove from keyset should fail");
+    } catch (UnsupportedOperationException e) {
+      // expected
+      System.out.println("Caught expected exception: " + e);
+    }
+    iterator = keySet.iterator();
+    // calling hasNext multiple times
+    for (int i = 0; i < 20 * count; i++) {
+      Assert.assertTrue(iterator.hasNext());
+    }
+    // iterating without hasNext()
+    keysFromKeySet = new HashSet();
+    for (int i = 0; i < 2 * count; i++) {
+      keysFromKeySet.add(iterator.next());
+    }
+    Assert.assertEquals(expectedKeys, keysFromKeySet);
+
+    try {
+      iterator.next();
+      fail("Calling next after iteration should throw NoSuchElementException");
+    } catch (NoSuchElementException e) {
+      System.out.println("Caught expected exception: " + e);
     }
 
     final int half = count / 2;
@@ -612,11 +668,20 @@ public class ServerMapLocalCacheImplTest extends TestCase {
       Object key = iterator.next();
       keysFromKeySet.add(key);
     }
+    try {
+      iterator.next();
+      fail("Calling next after iteration should throw NoSuchElementException");
+    } catch (NoSuchElementException e) {
+      System.out.println("Caught expected exception: " + e);
+    }
     Assert.assertEquals(count, keysFromKeySet.size());
     for (int i = half; i < count; i++) {
       int eventualId = count + i;
       Assert.assertTrue(keysFromKeySet.contains("key" + i));
       Assert.assertTrue(keysFromKeySet.contains("key" + eventualId));
+
+      Assert.assertTrue(keySet.contains("key" + i));
+      Assert.assertTrue(keySet.contains("key" + eventualId));
     }
 
     for (int i = half; i < count; i++) {
