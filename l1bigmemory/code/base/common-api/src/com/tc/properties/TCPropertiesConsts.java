@@ -659,6 +659,9 @@ public interface TCPropertiesConsts {
    *                              storage strategy of DCV2
    *  storageStrategy.dcv2.localcache.incoherentCachedItemsRecycleMillis
    *                            : The maximum time in millis after which incoherent cached items will be discarded from the local cache.
+   *  storageStrategy.dcv2.eviction.overshoot
+   *                            : % overshoot required to trigger capacity eviction
+   * 
    * </code>
    ********************************************************************************************************************/
   public static final String EHCACHE_CLUSTER_ALL_CACHE_MANAGERS                              = "ehcache.clusterAllCacheManagers";
@@ -678,6 +681,7 @@ public interface TCPropertiesConsts {
   public static final String EHCACHE_STORAGESTRATEGY_DCV2_EVICT_UNEXPIRED_ENTRIES_ENABLED    = "ehcache.storageStrategy.dcv2.evictUnexpiredEntries.enabled";
   public static final String EHCACHE_STORAGESTRATEGY_DCV2_PERIODICEVICTION_ENABLED           = "ehcache.storageStrategy.dcv2.periodicEviction.enabled";
   public static final String EHCACHE_STORAGESTRATEGY_DCV2_PINSEGMENTS_ENABLED                = "ehcache.storageStrategy.dcv2.pinSegments.enabled";
+  public static final String EHCACHE_STORAGESTRATEGY_DCV2_EVICTION_OVERSHOOT                 = "ehcache.storageStrategy.dcv2.eviction.overshoot";
   /*********************************************************************************************************************
    * <code>
    * Section : L1 Lock Manager Properties
@@ -863,7 +867,7 @@ public interface TCPropertiesConsts {
    *                                    in the panel before it starts recycling
    *  l2.operator.events.store      -   Number of operator events L2s will store to keep the history of the events
    *  tc.time.sync.threshold        -   Number of second of tolerable system time difference between
-   *                                    two nodes of cluster beyond which and operator event will be thrown 
+   *                                    two nodes of cluster beyond which and operator event will be thrown
    * </code>
    ********************************************************************************************************************/
   public static final String DEV_CONSOLE_MAX_OPERATOR_EVENTS                                 = "dev.console.max.operator.events";
