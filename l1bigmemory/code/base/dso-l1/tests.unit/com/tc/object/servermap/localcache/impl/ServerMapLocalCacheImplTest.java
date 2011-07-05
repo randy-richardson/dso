@@ -701,7 +701,51 @@ public class ServerMapLocalCacheImplTest extends TestCase {
       Assert.assertEquals(1, list.size());
       Assert.assertEquals("key" + eventualId, list.get(0));
     }
+  }
 
+  public void testGlobalLocalCacheManagerShutdown() {
+    int count = 50;
+    for (int i = 0; i < count; i++) {
+      int eventualId = count + i;
+      cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.PUT);
+      cache.addEventualValueToCache(new ObjectID(eventualId), "key" + eventualId, "value" + eventualId,
+                                    MapOperationType.PUT);
+    }
+
+    for (int i = 0; i < count; i++) {
+      int eventualId = count + i;
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertStrongValue("value" + i, new LongLockID(i), value);
+      List list = (List) cacheIDStore.get(new LongLockID(i));
+      Assert.assertNotNull(list);
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + i, list.get(0));
+
+      value = cache.getCoherentLocalValue("key" + eventualId);
+      assertEventualValue("value" + eventualId, new ObjectID(eventualId), value);
+      list = (List) cacheIDStore.get(new ObjectID(eventualId));
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + eventualId, list.get(0));
+    }
+
+    Assert.assertEquals(2 * count, cache.size());
+
+    globalLocalCacheManager.shutdown();
+    for (int i = 0; i < count; i++) {
+      int eventualId = count + i;
+
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      Assert.assertNull(value);
+      Assert.assertNull(cacheIDStore.get(new LongLockID(i)));
+
+      value = cache.getCoherentLocalValue("key" + eventualId);
+      Assert.assertNull(value);
+      Assert.assertNull(cacheIDStore.get(new ObjectID(eventualId)));
+    }
+
+    Assert.assertEquals(0, cache.size());
+    Set keySet = cache.getKeySet();
+    Assert.assertFalse(keySet.iterator().hasNext());
   }
 
   public class MyClientTransaction implements ClientTransaction {

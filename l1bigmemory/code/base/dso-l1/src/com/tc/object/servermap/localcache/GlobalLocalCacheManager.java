@@ -51,4 +51,9 @@ public interface GlobalLocalCacheManager extends LocksRecallHelper {
    */
   public void addListenerToStore(L1ServerMapLocalCacheStore store);
 
+  /**
+   * Shut down all local caches
+   */
+  public void shutdown();
+
 }
