@@ -3,6 +3,7 @@
  */
 package com.tc.object.servermap.localcache.impl;
 
+import com.tc.async.api.Sink;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.bytecode.Manager;
@@ -18,8 +19,8 @@ import com.tc.util.concurrent.TCConcurrentMultiMap;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
@@ -27,15 +28,17 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   private final TCConcurrentMultiMap<LockID, ObjectID>           lockIdsToCdsmIds        = new TCConcurrentMultiMap<LockID, ObjectID>();
   private final LocksRecallHelper                                locksRecallHelper;
   private final GlobalL1ServerMapLocalCacheStoreListener         localCacheStoreListener = new GlobalL1ServerMapLocalCacheStoreListener();
+  private final Sink                                             capacityEvictionSink;
 
-  public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper) {
+  public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper, Sink capacityEvictionSink) {
     this.locksRecallHelper = locksRecallHelper;
+    this.capacityEvictionSink = capacityEvictionSink;
   }
 
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
                                                    boolean localCacheEnabled) {
     ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
-                                                                          localCacheEnabled);
+                                                                          localCacheEnabled, capacityEvictionSink);
     ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
     if (old != null) {
       serverMapLocalCache = old;

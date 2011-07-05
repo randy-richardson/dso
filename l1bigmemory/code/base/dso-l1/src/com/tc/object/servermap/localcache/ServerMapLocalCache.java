@@ -14,7 +14,7 @@ public interface ServerMapLocalCache {
   /**
    * Set up local cache store for use
    */
-  void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore);
+  void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore, int maxElementsInMemory);
 
   /**
    * Removes all entries associated with this objectId
@@ -94,4 +94,6 @@ public interface ServerMapLocalCache {
    * Returns the keys present in the local cache (does not include meta items stored)
    */
   Set getKeySet();
+
+  void evictionCompleted();
 }
