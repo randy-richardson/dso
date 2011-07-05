@@ -4,7 +4,6 @@
 package com.tc.object.servermap.localcache;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The backing Cache Store for the Local Cache present in TCObjectServerMapImpl
@@ -12,19 +11,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public interface L1ServerMapLocalCacheStore<K, V> {
 
   /**
-   * Put an entry in the backing map<br>
+   * Put an entry in the backing map
+   * <p/>
+   * The behavior depends on the putType - the entry may be pinned on put, size may not increment even on put etc
    * 
    * @return the old value if present
    */
-  public V put(K key, V value);
-
-  /**
-   * Put a pinned entry in the backing map<br>
-   * Items inserted with this method should not be evicted unless {@link #unpinEntry(Object)} is called for the same key
-   * 
-   * @return the old value if present
-   */
-  public V putPinnedEntry(K key, V value);
+  public V put(K key, V value, PutType putType);
 
   /**
    * @return the value if present
@@ -36,7 +29,7 @@ public interface L1ServerMapLocalCacheStore<K, V> {
    * 
    * @return the old value if present
    */
-  public V remove(K key);
+  public V remove(K key, RemoveType removeType);
 
   /**
    * Add a listener which will get called when <br>
@@ -66,6 +59,9 @@ public interface L1ServerMapLocalCacheStore<K, V> {
   public Set getKeySet();
 
   /**
+   * Size does not take into consideration for elements inserted with {@link PutType#incrementSizeOnPut()} returning
+   * false
+   * 
    * @return size of the map
    */
   public int size();
@@ -75,5 +71,4 @@ public interface L1ServerMapLocalCacheStore<K, V> {
    */
   public void unpinEntry(K key);
 
-  public AtomicInteger getSizeObject();
 }

@@ -8,7 +8,6 @@ import com.tc.object.locks.LockID;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public interface ServerMapLocalCache {
 
@@ -95,6 +94,4 @@ public interface ServerMapLocalCache {
    * Returns the keys present in the local cache (does not include meta items stored)
    */
   Set getKeySet();
-
-  AtomicInteger getSizeObject();
 }

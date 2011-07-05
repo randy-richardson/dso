@@ -5,14 +5,16 @@ package com.tc.object.servermap.localcache.impl;
 
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
+import com.tc.object.servermap.localcache.PutType;
+import com.tc.object.servermap.localcache.RemoveType;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -39,29 +41,20 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     return backingCache.get(key);
   }
 
-  public V put(K key, V value) {
+  public V put(K key, V value, PutType putType) {
     V oldValue = null;
-    int size;
     synchronized (this) {
       oldValue = backingCache.put(key, value);
-      size = this.backingCache.size();
+      if (putType.isPinned()) {
+        pinEntry(key);
+      }
     }
 
-    doCapacityEviction(key, size);
-
-    return oldValue;
-  }
-
-  public V putPinnedEntry(K key, V value) {
-    V oldValue = null;
-    int size;
-    synchronized (this) {
-      oldValue = backingCache.put(key, value);
-      size = this.backingCache.size();
-      pinEntry(key);
+    if (putType.incrementSizeOnPut()) {
+      cacheSize.incrementAndGet();
     }
 
-    doCapacityEviction(key, size);
+    doCapacityEviction(key, cacheSize.get());
 
     return oldValue;
   }
@@ -83,10 +76,13 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     pinnedEntries.remove(key);
   }
 
-  public V remove(K key) {
+  public V remove(K key, RemoveType removeType) {
     final V value;
     synchronized (this) {
       value = backingCache.remove(key);
+    }
+    if (removeType.decrementSizeOnRemove()) {
+      cacheSize.decrementAndGet();
     }
     return value;
   }
@@ -132,6 +128,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   // TODO: Remove it using an iterator
   public synchronized void clear() {
     this.evict(Integer.MAX_VALUE);
+    cacheSize.set(0);
   }
 
   public synchronized Set getKeySet() {
@@ -142,9 +139,5 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   public String toString() {
     return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache + ", maxElementInMemory="
            + maxElementInMemory + ", pinnedEntries=" + pinnedEntries + "]";
-  }
-
-  public AtomicInteger getSizeObject() {
-    return this.cacheSize;
   }
 }
