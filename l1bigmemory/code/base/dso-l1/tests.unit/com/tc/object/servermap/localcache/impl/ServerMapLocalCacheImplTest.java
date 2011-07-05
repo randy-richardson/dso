@@ -33,8 +33,10 @@ import com.tc.util.SequenceID;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -540,7 +542,99 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   }
 
   public void testGetKeySet() throws Exception {
-    //
+    int count = 50;
+    for (int i = 0; i < count; i++) {
+      int eventualId = count + i;
+      cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.PUT);
+      cache.addEventualValueToCache(new ObjectID(eventualId), "key" + eventualId, "value" + eventualId,
+                                    MapOperationType.PUT);
+    }
+
+    for (int i = 0; i < count; i++) {
+      int eventualId = count + i;
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertStrongValue("value" + i, new LongLockID(i), value);
+      List list = (List) cacheIDStore.get(new LongLockID(i));
+      Assert.assertNotNull(list);
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + i, list.get(0));
+
+      value = cache.getCoherentLocalValue("key" + eventualId);
+      assertEventualValue("value" + eventualId, new ObjectID(eventualId), value);
+      list = (List) cacheIDStore.get(new ObjectID(eventualId));
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + eventualId, list.get(0));
+    }
+
+    Assert.assertEquals(2 * count, cache.size());
+    Set keySet = cache.getKeySet();
+    Iterator iterator = keySet.iterator();
+    Assert.assertEquals(2 * count, keySet.size());
+    Set keysFromKeySet = new HashSet();
+    while (iterator.hasNext()) {
+      Object key = iterator.next();
+      keysFromKeySet.add(key);
+    }
+    Assert.assertEquals(2 * count, keysFromKeySet.size());
+    for (int i = 0; i < count; i++) {
+      int eventualId = count + i;
+      Assert.assertTrue(keysFromKeySet.contains("key" + i));
+      Assert.assertTrue(keysFromKeySet.contains("key" + eventualId));
+    }
+
+    final int half = count / 2;
+    for (int i = 0; i < half; i++) {
+      int eventualId = count + i;
+      LockID lockID = new LongLockID(i);
+      ObjectID objectId = new ObjectID(eventualId);
+      globalLocalCacheManager.removeEntriesForLockId(lockID);
+      globalLocalCacheManager.removeEntriesForObjectId(mapID, Collections.singleton(objectId));
+    }
+
+    for (int i = 0; i < half; i++) {
+      int eventualId = count + i;
+
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      Assert.assertNull(value);
+      Assert.assertNull(cacheIDStore.get(new LongLockID(i)));
+
+      value = cache.getCoherentLocalValue("key" + eventualId);
+      Assert.assertNull(value);
+      Assert.assertNull(cacheIDStore.get(new ObjectID(eventualId)));
+    }
+
+    Assert.assertEquals(count, cache.size());
+    keySet = cache.getKeySet();
+    iterator = keySet.iterator();
+    Assert.assertEquals(count, keySet.size());
+    keysFromKeySet = new HashSet();
+    while (iterator.hasNext()) {
+      Object key = iterator.next();
+      keysFromKeySet.add(key);
+    }
+    Assert.assertEquals(count, keysFromKeySet.size());
+    for (int i = half; i < count; i++) {
+      int eventualId = count + i;
+      Assert.assertTrue(keysFromKeySet.contains("key" + i));
+      Assert.assertTrue(keysFromKeySet.contains("key" + eventualId));
+    }
+
+    for (int i = half; i < count; i++) {
+      int eventualId = count + i;
+      AbstractLocalCacheStoreValue value = cache.getCoherentLocalValue("key" + i);
+      assertStrongValue("value" + i, new LongLockID(i), value);
+      List list = (List) cacheIDStore.get(new LongLockID(i));
+      Assert.assertNotNull(list);
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + i, list.get(0));
+
+      value = cache.getCoherentLocalValue("key" + eventualId);
+      assertEventualValue("value" + eventualId, new ObjectID(eventualId), value);
+      list = (List) cacheIDStore.get(new ObjectID(eventualId));
+      Assert.assertEquals(1, list.size());
+      Assert.assertEquals("key" + eventualId, list.get(0));
+    }
+
   }
 
   public class MyClientTransaction implements ClientTransaction {

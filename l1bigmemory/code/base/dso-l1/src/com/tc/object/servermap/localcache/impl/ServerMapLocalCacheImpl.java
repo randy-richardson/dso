@@ -18,6 +18,7 @@ import com.tc.object.servermap.localcache.LocalCacheStoreStrongValue;
 import com.tc.object.servermap.localcache.MapOperationType;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.object.servermap.localcache.impl.L1ServerMapLocalStoreTransactionCompletionListener.TransactionCompleteOperation;
+import com.tc.object.servermap.localcache.impl.LocalStoreKeySet.LocalStoreKeySetFilter;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.UnlockedSharedObjectException;
 import com.tc.util.ObjectIDSet;
@@ -32,9 +33,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
-  private static final TCLogger                                                     LOGGER       = TCLogging
-                                                                                                     .getLogger(ServerMapLocalCacheImpl.class);
-  private final static int                                                          CONCURRENCY  = 128;
+  private static final TCLogger                                                     LOGGER           = TCLogging
+                                                                                                         .getLogger(ServerMapLocalCacheImpl.class);
+  private final static int                                                          CONCURRENCY      = 128;
+  private static final LocalStoreKeySetFilter                                       IGNORE_ID_FILTER = new IgnoreIdsFilter();
 
   // private final ServerMapLocalCacheIdStore cacheIdStore;
   private final ObjectID                                                            mapID;
@@ -44,7 +46,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private final ClientObjectManager                                                 objectManager;
   private final Manager                                                             manager;
 
-  private final ReentrantReadWriteLock[]                                            segmentLocks = new ReentrantReadWriteLock[CONCURRENCY];
+  private final ReentrantReadWriteLock[]                                            segmentLocks     = new ReentrantReadWriteLock[CONCURRENCY];
   private volatile AtomicInteger                                                    localStoreSize;
 
   /**
@@ -169,8 +171,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     }
   }
 
-  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(
-                                                                                            final Object key,
+  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(final Object key,
                                                                                             MapOperationType mapOperation) {
     if (!mapOperation.isMutateOperation()) {
       // no listener required for non mutate ops
@@ -247,8 +248,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   }
 
   public Set getKeySet() {
-    // TODO: need to handle to ignore meta entries (id -> List<keys>)
-    return this.localStore.getKeySet();
+    return Collections.unmodifiableSet(new LocalStoreKeySet(localStore.getKeySet(), localStoreSize.get(),
+                                                            IGNORE_ID_FILTER));
   }
 
   /**
@@ -476,5 +477,14 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       cacheSize.set(0);
       return lockIDs;
     }
+  }
+
+  static class IgnoreIdsFilter implements LocalStoreKeySetFilter {
+
+    public boolean accept(Object value) {
+      if (value instanceof ObjectID || value instanceof LockID) { return false; }
+      return true;
+    }
+
   }
 }
