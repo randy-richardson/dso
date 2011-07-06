@@ -32,14 +32,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
-  private static final TCLogger                                                     LOGGER             = TCLogging
-                                                                                                           .getLogger(ServerMapLocalCacheImpl.class);
-  private final static int                                                          CONCURRENCY        = 128;
-  private static final LocalStoreKeySetFilter                                       IGNORE_ID_FILTER   = new IgnoreIdsFilter();
+  private static final TCLogger                                                     LOGGER           = TCLogging
+                                                                                                         .getLogger(ServerMapLocalCacheImpl.class);
+  private final static int                                                          CONCURRENCY      = 128;
+  private static final LocalStoreKeySetFilter                                       IGNORE_ID_FILTER = new IgnoreIdsFilter();
 
   // private final ServerMapLocalCacheIdStore cacheIdStore;
   private final ObjectID                                                            mapID;
@@ -48,11 +47,10 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private volatile L1ServerMapLocalCacheStore<Object, AbstractLocalCacheStoreValue> localStore;
   private final ClientObjectManager                                                 objectManager;
   private final Manager                                                             manager;
+  private final ReentrantReadWriteLock[]                                            segmentLocks     = new ReentrantReadWriteLock[CONCURRENCY];
 
-  private final ReentrantReadWriteLock[]                                            segmentLocks       = new ReentrantReadWriteLock[CONCURRENCY];
-  private final AtomicBoolean                                                       evictionInProgress = new AtomicBoolean();
+  private volatile L1ServerMapLocalStoreEvictionInfo                                l1ServerMapLocalStoreEvictionInfo;
   private final Sink                                                                capacityEvictionSink;
-  private volatile int                                                              maxElementsInMemory;
 
   /**
    * Not public constructor, should be created only by the global local cache manager
@@ -64,8 +62,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     this.objectManager = objectManager;
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
-    this.capacityEvictionSink = capacityEvictionSink;
     this.localCacheEnabled = islocalCacheEnbaled;
+    this.capacityEvictionSink = capacityEvictionSink;
     for (int i = 0; i < segmentLocks.length; i++) {
       this.segmentLocks[i] = new ReentrantReadWriteLock();
     }
@@ -73,8 +71,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
   public void setupLocalStore(L1ServerMapLocalCacheStore store, int maxElementsInMemory) {
     this.localStore = store;
-    this.globalLocalCacheManager.addListenerToStore(store);
-    this.maxElementsInMemory = maxElementsInMemory;
+    l1ServerMapLocalStoreEvictionInfo = this.globalLocalCacheManager
+        .addStoreAndGetCapacityEvictionInfo(store, maxElementsInMemory);
   }
 
   private boolean isStoreInitialized() {
@@ -141,7 +139,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       }
 
       if (old != null) {
-        initiateCapacityEvictionIfRequired();
+        l1ServerMapLocalStoreEvictionInfo.initiateCapacityEvictionIfRequired(localStore, capacityEvictionSink);
       }
       removeIdToKeysMappingIfNecessary(old, key);
     }
@@ -154,23 +152,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       if (listener == null) { throw new AssertionError("Transaction Complete Listener cannot be null for mutate ops"); }
       registerTransactionCompleteListener(listener);
     }
-  }
-
-  private void initiateCapacityEvictionIfRequired() {
-    if (!evictionInProgress.get() && maxElementsInMemory < size()) {
-      synchronized (this) {
-        if (!evictionInProgress.get()) {
-          evictionInProgress.set(true);
-          L1ServerMapCapacityEvictionContext context = new L1ServerMapCapacityEvictionContext(this,
-                                                                                              this.maxElementsInMemory);
-          capacityEvictionSink.add(context);
-        }
-      }
-    }
-  }
-
-  public void evictionCompleted() {
-    evictionInProgress.set(false);
   }
 
   private void removeIdToKeysMappingIfNecessary(final AbstractLocalCacheStoreValue localCacheValue, final Object key) {

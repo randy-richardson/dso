@@ -8,6 +8,7 @@ import com.tc.object.ObjectID;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallHelper;
+import com.tc.object.servermap.localcache.impl.L1ServerMapLocalStoreEvictionInfo;
 
 import java.util.Map;
 import java.util.Set;
@@ -48,8 +49,10 @@ public interface GlobalLocalCacheManager extends LocksRecallHelper {
 
   /**
    * TODO: Should we move it to some other place
+   * 
+   * @param maxElementsInMemory
    */
-  public void addListenerToStore(L1ServerMapLocalCacheStore store);
+  public L1ServerMapLocalStoreEvictionInfo addStoreAndGetCapacityEvictionInfo(L1ServerMapLocalCacheStore store, int maxElementsInMemory);
 
   /**
    * Shut down all local caches

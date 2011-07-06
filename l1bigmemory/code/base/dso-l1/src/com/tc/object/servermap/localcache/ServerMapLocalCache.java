@@ -94,6 +94,4 @@ public interface ServerMapLocalCache {
    * Returns the keys present in the local cache (does not include meta items stored)
    */
   Set getKeySet();
-
-  void evictionCompleted();
 }

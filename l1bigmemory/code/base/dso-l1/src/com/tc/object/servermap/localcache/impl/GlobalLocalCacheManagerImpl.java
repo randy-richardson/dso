@@ -3,8 +3,8 @@
  */
 package com.tc.object.servermap.localcache.impl;
 
-import com.tc.exception.TCRuntimeException;
 import com.tc.async.api.Sink;
+import com.tc.exception.TCRuntimeException;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.bytecode.Manager;
@@ -27,13 +27,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
 
-  private final ConcurrentHashMap<ObjectID, ServerMapLocalCache> localCaches             = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
-  private final TCConcurrentMultiMap<LockID, ObjectID>           lockIdsToCdsmIds        = new TCConcurrentMultiMap<LockID, ObjectID>();
-  private final Map<L1ServerMapLocalCacheStore, Boolean>         stores                  = new IdentityHashMap<L1ServerMapLocalCacheStore, Boolean>();
-  private final GlobalL1ServerMapLocalCacheStoreListener         localCacheStoreListener = new GlobalL1ServerMapLocalCacheStoreListener();
-  private final AtomicBoolean                                    shutdown                = new AtomicBoolean();
-  private final LocksRecallHelper                                locksRecallHelper;
-  private final Sink                                             capacityEvictionSink;
+  private final ConcurrentHashMap<ObjectID, ServerMapLocalCache>                   localCaches             = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
+  private final TCConcurrentMultiMap<LockID, ObjectID>                             lockIdsToCdsmIds        = new TCConcurrentMultiMap<LockID, ObjectID>();
+  private final Map<L1ServerMapLocalCacheStore, L1ServerMapLocalStoreEvictionInfo> stores                  = new IdentityHashMap<L1ServerMapLocalCacheStore, L1ServerMapLocalStoreEvictionInfo>();
+  private final GlobalL1ServerMapLocalCacheStoreListener                           localCacheStoreListener = new GlobalL1ServerMapLocalCacheStoreListener();
+  private final AtomicBoolean                                                      shutdown                = new AtomicBoolean();
+  private final LocksRecallHelper                                                  locksRecallHelper;
+  private final Sink                                                               capacityEvictionSink;
 
   public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper, Sink capacityEvictionSink) {
     this.locksRecallHelper = locksRecallHelper;
@@ -46,7 +46,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
       throwAlreadyShutdownException();
     }
     ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
-                                                                          localCacheEnabled, capacityEvictionSink);
+                                                                          localCacheEnabled, this.capacityEvictionSink);
     ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
     if (old != null) {
       serverMapLocalCache = old;
@@ -55,15 +55,20 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     return serverMapLocalCache;
   }
 
-  public void addListenerToStore(L1ServerMapLocalCacheStore store) {
+  public L1ServerMapLocalStoreEvictionInfo addStoreAndGetCapacityEvictionInfo(L1ServerMapLocalCacheStore store, int maxElementsInMemory) {
     if (shutdown.get()) {
       throwAlreadyShutdownException();
     }
     synchronized (stores) {
+      final L1ServerMapLocalStoreEvictionInfo l1ServerMapLocalStoreEvictionInfo;
       if (!stores.containsKey(store)) {
         store.addListener(localCacheStoreListener);
-        stores.put(store, Boolean.TRUE);
+        l1ServerMapLocalStoreEvictionInfo = new L1ServerMapLocalStoreEvictionInfo(maxElementsInMemory);
+        stores.put(store, l1ServerMapLocalStoreEvictionInfo);
+      } else {
+        l1ServerMapLocalStoreEvictionInfo = stores.get(store);
       }
+      return l1ServerMapLocalStoreEvictionInfo;
     }
   }
 
@@ -156,9 +161,9 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     }
 
     // What a terrible failure! ;-)
+    // Ha Ha Ha
     private void wtf(String msg) {
       throw new AssertionError(msg);
     }
-
   }
 }
