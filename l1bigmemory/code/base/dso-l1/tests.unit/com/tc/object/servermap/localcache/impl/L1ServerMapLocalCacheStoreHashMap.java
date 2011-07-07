@@ -21,17 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocalCacheStore<K, V> {
   private final List<L1ServerMapLocalCacheStoreListener<K, V>> listeners     = new CopyOnWriteArrayList<L1ServerMapLocalCacheStoreListener<K, V>>();
   private final HashMap<K, V>                                  backingCache  = new HashMap<K, V>();
-  private final int                                            maxElementInMemory;
   private final HashSet<K>                                     pinnedEntries = new HashSet<K>();
   private final AtomicInteger                                  cacheSize     = new AtomicInteger();
-
-  public L1ServerMapLocalCacheStoreHashMap(int maxInMemory) {
-    if (maxInMemory == 0) {
-      this.maxElementInMemory = Integer.MAX_VALUE;
-    } else {
-      this.maxElementInMemory = maxInMemory;
-    }
-  }
 
   public boolean addListener(L1ServerMapLocalCacheStoreListener<K, V> listener) {
     return listeners.add(listener);
@@ -89,8 +80,8 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   public int evict(int count) {
     Map<K, V> tempMap = new HashMap<K, V>();
     synchronized (this) {
-      Iterator<Entry<K, V>> iterator = backingCache.entrySet().iterator();
       int deletedElements = 0;
+      Iterator<Entry<K, V>> iterator = backingCache.entrySet().iterator();
       while (iterator.hasNext() && deletedElements < count) {
         Entry<K, V> entry = iterator.next();
         if (pinnedEntries.contains(entry.getKey())) {
@@ -98,6 +89,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
         }
         tempMap.put(entry.getKey(), entry.getValue());
         iterator.remove();
+        cacheSize.decrementAndGet();
         deletedElements++;
       }
     }
@@ -122,7 +114,6 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
 
   @Override
   public String toString() {
-    return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache + ", maxElementInMemory="
-           + maxElementInMemory + ", pinnedEntries=" + pinnedEntries + "]";
+    return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache + ", pinnedEntries=" + pinnedEntries + "]";
   }
 }

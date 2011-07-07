@@ -84,7 +84,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     Mockito.when(com.getTransactionManager()).thenReturn(ctm);
     Mockito.when(ctm.getCurrentTransaction()).thenReturn(clientTransaction);
     cache = (ServerMapLocalCacheImpl) globalLocalCacheManager.getOrCreateLocalCache(mapID, com, null, true);
-    cache.setupLocalStore(new L1ServerMapLocalCacheStoreHashMap(maxElementsInMemory), maxElementsInMemory);
+    cache.setupLocalStore(new L1ServerMapLocalCacheStoreHashMap(), maxElementsInMemory);
     cacheIDStore = cache.getL1ServerMapLocalCacheStore();
   }
 
