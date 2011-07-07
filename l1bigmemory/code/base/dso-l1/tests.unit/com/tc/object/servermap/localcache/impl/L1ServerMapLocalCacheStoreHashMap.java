@@ -41,7 +41,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
       }
     }
 
-    if (putType.incrementSizeOnPut()) {
+    if (oldValue == null && putType.incrementSizeOnPut()) {
       cacheSize.incrementAndGet();
     }
 
@@ -60,6 +60,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     final V value;
     synchronized (this) {
       value = backingCache.remove(key);
+      pinnedEntries.remove(key);
     }
     if (removeType.decrementSizeOnRemove()) {
       cacheSize.decrementAndGet();
