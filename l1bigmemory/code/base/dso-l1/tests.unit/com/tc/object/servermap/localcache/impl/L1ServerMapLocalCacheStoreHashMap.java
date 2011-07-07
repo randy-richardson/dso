@@ -13,8 +13,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,18 +54,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
       cacheSize.incrementAndGet();
     }
 
-    doCapacityEviction(key, cacheSize.get());
-
     return oldValue;
-  }
-
-  private void doCapacityEviction(K key, int size) {
-    /**
-     * capacity eviction
-     */
-    if (maxElementInMemory != Integer.MAX_VALUE && size > maxElementInMemory) {
-      removeExcept(size - maxElementInMemory, key);
-    }
   }
 
   private synchronized void pinEntry(K key) {
@@ -87,10 +76,6 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     return value;
   }
 
-  public int evict(int count) {
-    return removeExcept(count, null);
-  }
-
   public boolean removeListener(L1ServerMapLocalCacheStoreListener<K, V> listener) {
     return listeners.remove(listener);
   }
@@ -101,14 +86,14 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     }
   }
 
-  private int removeExcept(int count, K key) {
+  public int evict(int count) {
     Map<K, V> tempMap = new HashMap<K, V>();
     synchronized (this) {
       Iterator<Entry<K, V>> iterator = backingCache.entrySet().iterator();
       int deletedElements = 0;
       while (iterator.hasNext() && deletedElements < count) {
         Entry<K, V> entry = iterator.next();
-        if ((key != null && key.equals(entry.getKey())) || pinnedEntries.contains(entry.getKey())) {
+        if (pinnedEntries.contains(entry.getKey())) {
           continue;
         }
         tempMap.put(entry.getKey(), entry.getValue());
