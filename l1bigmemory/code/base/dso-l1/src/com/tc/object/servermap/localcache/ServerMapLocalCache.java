@@ -14,7 +14,7 @@ public interface ServerMapLocalCache {
   /**
    * Set up local cache store for use
    */
-  void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore, int maxElementsInMemory);
+  void setupLocalStore(L1ServerMapLocalCacheStore serverMapLocalStore);
 
   /**
    * Removes all entries associated with this objectId

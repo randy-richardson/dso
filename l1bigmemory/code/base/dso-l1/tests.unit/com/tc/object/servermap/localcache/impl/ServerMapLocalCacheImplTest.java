@@ -21,6 +21,7 @@ import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
 import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
 import com.tc.object.servermap.localcache.LocalCacheStoreIncoherentValue;
 import com.tc.object.servermap.localcache.LocalCacheStoreStrongValue;
@@ -84,7 +85,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     Mockito.when(com.getTransactionManager()).thenReturn(ctm);
     Mockito.when(ctm.getCurrentTransaction()).thenReturn(clientTransaction);
     cache = (ServerMapLocalCacheImpl) globalLocalCacheManager.getOrCreateLocalCache(mapID, com, null, true);
-    cache.setupLocalStore(new L1ServerMapLocalCacheStoreHashMap(), maxElementsInMemory);
+    cache.setupLocalStore(new L1ServerMapLocalCacheStoreHashMap(maxElementsInMemory));
     cacheIDStore = cache.getL1ServerMapLocalCacheStore();
   }
 
@@ -802,6 +803,12 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     }
     int cacheSize = cache.size();
     System.err.println("Current size in testCapacityEviction " + cacheSize);
+
+    L1ServerMapLocalCacheStoreHashMap store = (L1ServerMapLocalCacheStoreHashMap) cache.getL1ServerMapLocalCacheStore();
+    List<L1ServerMapLocalCacheStoreListener> listeners = store.getListeners();
+    for (L1ServerMapLocalCacheStoreListener l : listeners) {
+      l.notifySizeChanged(store);
+    }
 
     sink.waitUntitContextsAddedEqualsAndCompletedEquals(1, 1);
 

@@ -20,8 +20,8 @@ import com.tc.util.concurrent.TCConcurrentMultiMap;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,7 +46,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
       throwAlreadyShutdownException();
     }
     ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
-                                                                          localCacheEnabled, this.capacityEvictionSink);
+                                                                          localCacheEnabled);
     ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
     if (old != null) {
       serverMapLocalCache = old;
@@ -55,20 +55,15 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     return serverMapLocalCache;
   }
 
-  public L1ServerMapLocalStoreEvictionInfo addStoreAndGetCapacityEvictionInfo(L1ServerMapLocalCacheStore store, int maxElementsInMemory) {
+  public void addStoreListener(L1ServerMapLocalCacheStore store) {
     if (shutdown.get()) {
       throwAlreadyShutdownException();
     }
     synchronized (stores) {
-      final L1ServerMapLocalStoreEvictionInfo l1ServerMapLocalStoreEvictionInfo;
       if (!stores.containsKey(store)) {
         store.addListener(localCacheStoreListener);
-        l1ServerMapLocalStoreEvictionInfo = new L1ServerMapLocalStoreEvictionInfo(maxElementsInMemory);
-        stores.put(store, l1ServerMapLocalStoreEvictionInfo);
-      } else {
-        l1ServerMapLocalStoreEvictionInfo = stores.get(store);
+        stores.put(store, new L1ServerMapLocalStoreEvictionInfo(store));
       }
-      return l1ServerMapLocalStoreEvictionInfo;
     }
   }
 
@@ -131,6 +126,15 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     }
   }
 
+  private void initiateCapacityEvictionIfRequired(L1ServerMapLocalCacheStore store) {
+    L1ServerMapLocalStoreEvictionInfo evictionInfo = stores.get(store);
+    if (evictionInfo == null) { throw new AssertionError(); }
+
+    if (evictionInfo.attemptEvictionStart()) {
+      capacityEvictionSink.add(evictionInfo);
+    }
+  }
+
   private class GlobalL1ServerMapLocalCacheStoreListener<K, V> implements L1ServerMapLocalCacheStoreListener<K, V> {
 
     public void notifyElementEvicted(K key, V value) {
@@ -158,6 +162,15 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
           wtf("LocalCache not mapped for mapId: " + mapID);
         }
       }
+    }
+
+    public void notifyElementExpired(K key, V value) {
+      // handle same as eviction
+      this.notifyElementEvicted(key, value);
+    }
+
+    public void notifySizeChanged(L1ServerMapLocalCacheStore store) {
+      initiateCapacityEvictionIfRequired(store);
     }
 
     // What a terrible failure! ;-)

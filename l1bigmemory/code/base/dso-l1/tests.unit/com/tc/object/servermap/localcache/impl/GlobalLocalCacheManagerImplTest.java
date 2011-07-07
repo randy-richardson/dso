@@ -15,6 +15,7 @@ import com.tc.exception.ImplementMe;
 import com.tc.object.ClientConfigurationContext;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
+import com.tc.object.context.LocksToRecallContext;
 import com.tc.object.handler.LockRecallHandler;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallHelper;
@@ -22,6 +23,7 @@ import com.tc.object.locks.LocksRecallHelperImpl;
 import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.MockClientLockManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
 import com.tc.object.servermap.localcache.LocalCacheStoreStrongValue;
 import com.tc.object.servermap.localcache.MapOperationType;
 import com.tc.object.servermap.localcache.PutType;
@@ -31,6 +33,7 @@ import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +44,7 @@ import junit.framework.TestCase;
 public class GlobalLocalCacheManagerImplTest extends TestCase {
   private GlobalLocalCacheManagerImpl globalLocalCacheManagerImpl;
   private MockClientLockManager       clientLockManager;
-  private MySink                      lockSink;
+  private MySink                      testSink;
 
   @Override
   protected void setUp() throws Exception {
@@ -54,21 +57,19 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     LockRecallHandler lockRecallHandler = new LockRecallHandler();
     lockRecallHandler.initialize(configurationContext);
 
-    lockSink = new MySink(lockRecallHandler);
+    testSink = new MySink(new MyHandler(lockRecallHandler, new L1ServerMapCapacityEvictionHandler()));
     Stage lockRecallStage = Mockito.mock(Stage.class);
-    Mockito.when(lockRecallStage.getSink()).thenReturn(lockSink);
+    Mockito.when(lockRecallStage.getSink()).thenReturn(testSink);
 
     LocksRecallHelper locksRecallHelper = new LocksRecallHelperImpl(lockRecallHandler, lockRecallStage);
-    this.globalLocalCacheManagerImpl = new GlobalLocalCacheManagerImpl(locksRecallHelper, lockSink);
+    this.globalLocalCacheManagerImpl = new GlobalLocalCacheManagerImpl(locksRecallHelper, testSink);
   }
 
-  public void testAddStoreAndGetCapacityEvictionInfo() {
+  public void testCapacityEviction() {
     int maxInMemory = 10;
 
-    L1ServerMapLocalCacheStore store = new L1ServerMapLocalCacheStoreHashMap();
-    L1ServerMapLocalStoreEvictionInfo serverMapLocalStoreEvictionInfo = this.globalLocalCacheManagerImpl
-        .addStoreAndGetCapacityEvictionInfo(store, maxInMemory);
-    Assert.assertNotNull(serverMapLocalStoreEvictionInfo);
+    L1ServerMapLocalCacheStoreHashMap store = new L1ServerMapLocalCacheStoreHashMap(maxInMemory);
+    this.globalLocalCacheManagerImpl.addStoreListener(store);
 
     ObjectID mapID = new ObjectID(100);
     this.globalLocalCacheManagerImpl.getOrCreateLocalCache(mapID, Mockito.mock(ClientObjectManager.class), null, true);
@@ -79,21 +80,21 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
 
     Assert.assertEquals(15, store.size());
 
-    MySink capacityEvictionSink = new MySink(new L1ServerMapCapacityEvictionHandler());
-    serverMapLocalStoreEvictionInfo.initiateCapacityEvictionIfRequired(store, capacityEvictionSink);
+    List<L1ServerMapLocalCacheStoreListener> listeners = store.getListeners();
+    for (L1ServerMapLocalCacheStoreListener l : listeners) {
+      l.notifySizeChanged(store);
+    }
 
-    capacityEvictionSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
+    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
 
     System.err.println("Store size is " + store.size());
     Assert.assertTrue(store.size() < maxInMemory);
 
     int sizeBefore = store.size();
 
-    serverMapLocalStoreEvictionInfo.initiateCapacityEvictionIfRequired(store, capacityEvictionSink);
-
     System.err.println("Sleeping for 10 seconds -- ");
     ThreadUtil.reallySleep(10 * 1000);
-    capacityEvictionSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
+    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
 
     int sizeAfter = store.size();
     Assert.assertEquals(sizeBefore, sizeAfter);
@@ -104,7 +105,7 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     Set<LockID> lockIDs = Collections.singleton(lockID);
 
     globalLocalCacheManagerImpl.initiateLockRecall(lockIDs);
-    lockSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
+    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
 
     Assert.assertEquals(1, clientLockManager.getRecallList().size());
     Assert.assertEquals(lockID, clientLockManager.getRecallList().get(0));
@@ -121,18 +122,15 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
   }
 
   public void testRememberMapIDToLockID() {
-    int maxInMemory = 10;
 
     L1ServerMapLocalCacheStore store = new L1ServerMapLocalCacheStoreHashMap();
-    L1ServerMapLocalStoreEvictionInfo serverMapLocalStoreEvictionInfo = this.globalLocalCacheManagerImpl
-        .addStoreAndGetCapacityEvictionInfo(store, maxInMemory);
-    Assert.assertNotNull(serverMapLocalStoreEvictionInfo);
+    this.globalLocalCacheManagerImpl.addStoreListener(store);
 
     ObjectID mapID = new ObjectID(100);
     LockID lockID = new LongLockID(100);
     ServerMapLocalCache localCache = this.globalLocalCacheManagerImpl.getOrCreateLocalCache(mapID, Mockito
         .mock(ClientObjectManager.class), null, true);
-    localCache.setupLocalStore(store, maxInMemory);
+    localCache.setupLocalStore(store);
 
     localCache.addStrongValueToCache(lockID, "key", "value", MapOperationType.GET);
 
@@ -238,6 +236,29 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
 
     public void resetStats() {
       throw new ImplementMe();
+    }
+
+  }
+
+  private static class MyHandler extends AbstractEventHandler {
+
+    private final LockRecallHandler                  lockRecallHandler;
+    private final L1ServerMapCapacityEvictionHandler l1ServerMapCapacityEvictionHandler;
+
+    public MyHandler(LockRecallHandler lockRecallHandler,
+                     L1ServerMapCapacityEvictionHandler l1ServerMapCapacityEvictionHandler) {
+      this.lockRecallHandler = lockRecallHandler;
+      this.l1ServerMapCapacityEvictionHandler = l1ServerMapCapacityEvictionHandler;
+
+    }
+
+    @Override
+    public void handleEvent(EventContext context) {
+      if (context instanceof LocksToRecallContext) {
+        lockRecallHandler.handleEvent(context);
+      } else if (context instanceof L1ServerMapLocalStoreEvictionInfo) {
+        l1ServerMapCapacityEvictionHandler.handleEvent(context);
+      }
     }
 
   }

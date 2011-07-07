@@ -71,4 +71,9 @@ public interface L1ServerMapLocalCacheStore<K, V> {
    */
   public void unpinEntry(K key);
 
+  /**
+   * Max elements in memory
+   */
+  public int getMaxElementsInMemory();
+
 }

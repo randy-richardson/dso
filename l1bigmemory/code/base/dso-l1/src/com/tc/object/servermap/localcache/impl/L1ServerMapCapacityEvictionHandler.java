@@ -11,21 +11,24 @@ public class L1ServerMapCapacityEvictionHandler extends AbstractEventHandler {
 
   @Override
   public void handleEvent(EventContext context) {
-    L1ServerMapCapacityEvictionContext capacityEvictionContext = (L1ServerMapCapacityEvictionContext) context;
-    evictFromCache(capacityEvictionContext.getServerMapLocalCacheStore(), capacityEvictionContext
-        .getMaxElementsInMemory(), capacityEvictionContext.getL1ServerMapCapacityEvictionContext());
+    doCapacityEviction((L1ServerMapLocalStoreEvictionInfo) context);
   }
 
-  private void evictFromCache(L1ServerMapLocalCacheStore serverMapLocalCacheStore, int maxElementsInMemory,
-                              L1ServerMapLocalStoreEvictionInfo l1ServerMapLocalStoreEvictionInfo) {
+  private void doCapacityEviction(L1ServerMapLocalStoreEvictionInfo evictionInfo) {
     try {
-      int overshoot = serverMapLocalCacheStore.size() - maxElementsInMemory;
+      L1ServerMapLocalCacheStore store = evictionInfo.getL1ServerMapLocalCacheStore();
+      final int maxElementsInMemory = store.getMaxElementsInMemory();
+      if (maxElementsInMemory == 0) {
+        // 0 means disabled
+        return;
+      }
+      int overshoot = store.size() - maxElementsInMemory;
       if (overshoot <= 0) { return; }
 
       int elementsToEvict = (int) ((maxElementsInMemory * 20.0) / 100 + overshoot);
-      serverMapLocalCacheStore.evict(elementsToEvict);
+      store.evict(elementsToEvict);
     } finally {
-      l1ServerMapLocalStoreEvictionInfo.notifyEvictionCompleted();
+      evictionInfo.markEvictionComplete();
     }
   }
 }

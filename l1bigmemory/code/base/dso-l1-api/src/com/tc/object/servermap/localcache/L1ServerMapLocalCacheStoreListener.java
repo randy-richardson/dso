@@ -22,4 +22,14 @@ public interface L1ServerMapLocalCacheStoreListener<K, V> {
    * When a set if keys get evicted.
    */
   public void notifyElementsEvicted(Map<K, V> evictedElements);
+
+  /**
+   * When a key is expired
+   */
+  public void notifyElementExpired(K key, V value);
+
+  /**
+   * Called whenever the store size changes
+   */
+  public void notifySizeChanged(L1ServerMapLocalCacheStore store);
 }

@@ -3,7 +3,6 @@
  */
 package com.tc.object.servermap.localcache.impl;
 
-import com.tc.async.api.Sink;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ClientObjectManager;
@@ -49,30 +48,24 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private final Manager                                                             manager;
   private final ReentrantReadWriteLock[]                                            segmentLocks     = new ReentrantReadWriteLock[CONCURRENCY];
 
-  private volatile L1ServerMapLocalStoreEvictionInfo                                l1ServerMapLocalStoreEvictionInfo;
-  private final Sink                                                                capacityEvictionSink;
-
   /**
    * Not public constructor, should be created only by the global local cache manager
    */
   ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
-                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled,
-                          Sink capacityEvictionSink) {
+                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled) {
     this.mapID = mapID;
     this.objectManager = objectManager;
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.localCacheEnabled = islocalCacheEnbaled;
-    this.capacityEvictionSink = capacityEvictionSink;
     for (int i = 0; i < segmentLocks.length; i++) {
       this.segmentLocks[i] = new ReentrantReadWriteLock();
     }
   }
 
-  public void setupLocalStore(L1ServerMapLocalCacheStore store, int maxElementsInMemory) {
+  public void setupLocalStore(L1ServerMapLocalCacheStore store) {
     this.localStore = store;
-    l1ServerMapLocalStoreEvictionInfo = this.globalLocalCacheManager
-        .addStoreAndGetCapacityEvictionInfo(store, maxElementsInMemory);
+    this.globalLocalCacheManager.addStoreListener(store);
   }
 
   private boolean isStoreInitialized() {
@@ -137,10 +130,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       } else {
         old = this.localStore.put(key, localCacheValue, PutType.NORMAL);
       }
-
-      if (old == null) {
-        l1ServerMapLocalStoreEvictionInfo.initiateCapacityEvictionIfRequired(localStore, capacityEvictionSink);
-      }
       removeIdToKeysMappingIfNecessary(old, key);
     }
 
@@ -173,8 +162,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     }
   }
 
-  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(
-                                                                                            final Object key,
+  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(final Object key,
                                                                                             MapOperationType mapOperation) {
     if (!mapOperation.isMutateOperation()) {
       // no listener required for non mutate ops

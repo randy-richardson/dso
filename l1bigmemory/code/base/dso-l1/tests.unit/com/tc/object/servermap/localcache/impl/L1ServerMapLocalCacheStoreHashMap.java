@@ -13,8 +13,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,6 +23,15 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   private final HashMap<K, V>                                  backingCache  = new HashMap<K, V>();
   private final HashSet<K>                                     pinnedEntries = new HashSet<K>();
   private final AtomicInteger                                  cacheSize     = new AtomicInteger();
+  private final int                                            maxElementsInMemory;
+
+  public L1ServerMapLocalCacheStoreHashMap() {
+    this(0);
+  }
+
+  public L1ServerMapLocalCacheStoreHashMap(int maxElementsInMemory) {
+    this.maxElementsInMemory = maxElementsInMemory;
+  }
 
   public boolean addListener(L1ServerMapLocalCacheStoreListener<K, V> listener) {
     return listeners.add(listener);
@@ -113,8 +122,17 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
     return this.backingCache.keySet();
   }
 
+  public int getMaxElementsInMemory() {
+    return maxElementsInMemory;
+  }
+
   @Override
   public String toString() {
     return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache + ", pinnedEntries=" + pinnedEntries + "]";
   }
+
+  public List<L1ServerMapLocalCacheStoreListener<K, V>> getListeners() {
+    return listeners;
+  }
+
 }
