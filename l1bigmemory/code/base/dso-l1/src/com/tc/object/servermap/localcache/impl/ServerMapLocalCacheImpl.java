@@ -138,7 +138,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
         old = this.localStore.put(key, localCacheValue, PutType.NORMAL);
       }
 
-      if (old != null) {
+      if (old == null) {
         l1ServerMapLocalStoreEvictionInfo.initiateCapacityEvictionIfRequired(localStore, capacityEvictionSink);
       }
       removeIdToKeysMappingIfNecessary(old, key);

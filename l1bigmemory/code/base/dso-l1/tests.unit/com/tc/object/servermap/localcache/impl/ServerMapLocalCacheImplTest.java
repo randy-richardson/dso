@@ -5,6 +5,8 @@ package com.tc.object.servermap.localcache.impl;
 
 import org.mockito.Mockito;
 
+import com.tc.async.api.AddPredicate;
+import com.tc.async.api.EventContext;
 import com.tc.async.api.Sink;
 import com.tc.exception.ImplementMe;
 import com.tc.object.ClientObjectManager;
@@ -29,6 +31,7 @@ import com.tc.object.tx.TransactionCompleteListener;
 import com.tc.object.tx.TransactionContext;
 import com.tc.object.tx.TransactionID;
 import com.tc.object.tx.TxnType;
+import com.tc.stats.Stats;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.SequenceID;
 import com.tc.util.concurrent.ThreadUtil;
@@ -43,6 +46,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
 import junit.framework.TestCase;
@@ -50,10 +55,11 @@ import junit.framework.TestCase;
 public class ServerMapLocalCacheImplTest extends TestCase {
   private volatile ServerMapLocalCacheImpl cache;
   private final ObjectID                   mapID       = new ObjectID(50000);
-  private final int                        maxInMemory = 1000;
+  private int                              maxInMemory = 1000;
   private L1ServerMapLocalCacheStore       cacheIDStore;
   private TestLocksRecallHelper            locksRecallHelper;
   private GlobalLocalCacheManagerImpl      globalLocalCacheManager;
+  private MySink                           sink;
 
   @Override
   protected void setUp() throws Exception {
@@ -68,7 +74,8 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   public void setLocalCache(CountDownLatch latch1, CountDownLatch latch2, int maxElementsInMemory,
                             TestLocksRecallHelper testLocksRecallHelper) {
     locksRecallHelper = testLocksRecallHelper;
-    Sink sink = Mockito.mock(Sink.class);
+    maxInMemory = maxElementsInMemory;
+    sink = new MySink();
     globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper, sink);
     locksRecallHelper.setGlobalLocalCacheManager(globalLocalCacheManager);
     final ClientTransaction clientTransaction = new MyClientTransaction(latch1, latch2);
@@ -748,6 +755,24 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     Assert.assertFalse(keySet.iterator().hasNext());
   }
 
+  public void testCapacityEviction() {
+    int count = 45;
+    int maxElementsInMemory = 40;
+    setLocalCache(null, null, maxElementsInMemory);
+
+    for (int i = 0; i < count; i++) {
+      cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.GET);
+    }
+    int cacheSize = cache.size();
+    System.err.println("Current size in testCapacityEviction " + cacheSize);
+
+    sink.waitUntitContextsAddedEqualsAndCompletedEquals(1, 1);
+
+    cacheSize = cache.size();
+    System.err.println("Current size in testCapacityEviction " + cacheSize);
+    Assert.assertTrue(30 < cacheSize && cacheSize < 40);
+  }
+
   public class MyClientTransaction implements ClientTransaction {
     private final CountDownLatch latch1;
     private final CountDownLatch latch2;
@@ -989,6 +1014,103 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     };
 
     public abstract boolean isValueOfType(AbstractLocalCacheStoreValue value);
+  }
+
+  private static class MySink implements Sink {
+    private final LinkedBlockingQueue<EventContext> q                 = new LinkedBlockingQueue<EventContext>();
+    private final AtomicInteger                     contextsAdded     = new AtomicInteger(0);
+    private final AtomicInteger                     contextsCompleted = new AtomicInteger(0);
+
+    public MySink() {
+      final L1ServerMapCapacityEvictionHandler handler = new L1ServerMapCapacityEvictionHandler();
+      Runnable runnable = new Runnable() {
+        public void run() {
+          while (true) {
+            EventContext context;
+            try {
+              context = q.take();
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+            handler.handleEvent(context);
+            contextsCompleted.incrementAndGet();
+          }
+        }
+      };
+
+      Thread t1 = new Thread(runnable, "MySink thread");
+      t1.start();
+    }
+
+    public void add(EventContext context) {
+      try {
+        q.put(context);
+        contextsAdded.incrementAndGet();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    public void waitUntitContextsAddedEqualsAndCompletedEquals(int expectedContextsAdded, int expectedContextsCompleted) {
+      waitUntilAtomicIntegerReaches("expectedContextsAdded", contextsAdded, expectedContextsAdded);
+      waitUntilAtomicIntegerReaches("expectedContextsCompleted", contextsCompleted, expectedContextsCompleted);
+
+      Assert.assertEquals(expectedContextsAdded, contextsAdded.get());
+      Assert.assertEquals(expectedContextsCompleted, contextsCompleted.get());
+    }
+
+    private void waitUntilAtomicIntegerReaches(String integerString, AtomicInteger integer, int expected) {
+      while (integer.get() != expected) {
+        System.err.println("Sleep for 10 seconds for " + integerString + " Current values = " + integer.get()
+                           + " expected = " + expected);
+        ThreadUtil.reallySleep(10 * 1000);
+      }
+    }
+
+    public boolean addLossy(EventContext context) {
+      throw new ImplementMe();
+    }
+
+    public void addMany(Collection contexts) {
+      throw new ImplementMe();
+    }
+
+    public void clear() {
+      throw new ImplementMe();
+    }
+
+    public AddPredicate getPredicate() {
+      throw new ImplementMe();
+    }
+
+    public void setAddPredicate(AddPredicate predicate) {
+      throw new ImplementMe();
+    }
+
+    public int size() {
+      throw new ImplementMe();
+    }
+
+    public void enableStatsCollection(boolean enable) {
+      throw new ImplementMe();
+    }
+
+    public Stats getStats(long frequency) {
+      throw new ImplementMe();
+    }
+
+    public Stats getStatsAndReset(long frequency) {
+      throw new ImplementMe();
+    }
+
+    public boolean isStatsCollectionEnabled() {
+      throw new ImplementMe();
+    }
+
+    public void resetStats() {
+      throw new ImplementMe();
+    }
+
   }
 
 }
