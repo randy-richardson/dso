@@ -155,6 +155,8 @@ import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.metadata.NVPair;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
+import com.tc.object.servermap.localcache.PutType;
+import com.tc.object.servermap.localcache.RemoveType;
 import com.tc.object.util.OverrideCheck;
 import com.tc.object.util.ToggleableStrongReference;
 import com.tc.operatorevent.TerracottaOperatorEvent;
@@ -602,6 +604,14 @@ public class BootJarTool {
       // local cache store classes
       loadTerracottaClass(L1ServerMapLocalCacheStore.class.getName());
       loadTerracottaClass(L1ServerMapLocalCacheStoreListener.class.getName());
+      loadTerracottaClass(PutType.class.getName());
+      for (int i = 1; i <= PutType.values().length; i++) {
+        loadTerracottaClass(PutType.class.getName() + "$" + i);
+      }
+      loadTerracottaClass(RemoveType.class.getName());
+      for (int i = 1; i <= RemoveType.values().length; i++) {
+        loadTerracottaClass(RemoveType.class.getName() + "$" + i);
+      }
 
       addSunStandardLoaders();
       addInstrumentedAccessibleObject();
