@@ -6,7 +6,12 @@ package com.tc.object;
 import com.tc.invalidation.InvalidationsProcessor;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
+<<<<<<< .working
 import com.tc.object.gtx.PreTransactionFlushCallback;
+=======
+import com.tc.object.locks.LockID;
+import com.tc.object.cache.CachedItem;
+>>>>>>> .merge-right.r18129
 import com.tc.object.handshakemanager.ClientHandshakeCallback;
 import com.tc.object.session.SessionID;
 

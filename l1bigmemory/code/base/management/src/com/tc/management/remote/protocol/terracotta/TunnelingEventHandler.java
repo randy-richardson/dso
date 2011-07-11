@@ -9,9 +9,6 @@ import com.tc.async.api.EventContext;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.NodeID;
-import com.tc.net.protocol.tcm.ChannelEvent;
-import com.tc.net.protocol.tcm.ChannelEventListener;
-import com.tc.net.protocol.tcm.ChannelEventType;
 import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.TCMessageType;
 import com.tc.object.config.DSOMBeanConfig;
@@ -25,8 +22,7 @@ import java.io.IOException;
 import javax.management.remote.generic.MessageConnection;
 import javax.management.remote.message.Message;
 
-public class TunnelingEventHandler extends AbstractEventHandler implements ChannelEventListener,
-    ClientHandshakeCallback {
+public class TunnelingEventHandler extends AbstractEventHandler implements ClientHandshakeCallback {
 
   private static final TCLogger      logger     = TCLogging.getLogger(TunnelingEventHandler.class);
 
@@ -50,7 +46,6 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
 
   public TunnelingEventHandler(final MessageChannel channel, final DSOMBeanConfig config) {
     this.channel = channel;
-    this.channel.addListener(this);
     this.config = config;
     acceptOk = false;
     jmxReadyLock = new Object();
@@ -134,20 +129,6 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
     notifyAll();
   }
 
-  public void notifyChannelEvent(final ChannelEvent event) {
-    if (event.getType() == ChannelEventType.TRANSPORT_CONNECTED_EVENT) {
-      synchronized (jmxReadyLock) {
-        transportConnected = true;
-      }
-    } else if (event.getType() == ChannelEventType.CHANNEL_CLOSED_EVENT
-               || event.getType() == ChannelEventType.TRANSPORT_DISCONNECTED_EVENT) {
-      reset();
-      synchronized (jmxReadyLock) {
-        transportConnected = false;
-      }
-    }
-  }
-
   public void jmxIsReady() {
     synchronized (jmxReadyLock) {
       localJmxServerReady.set();
@@ -193,11 +174,21 @@ public class TunnelingEventHandler extends AbstractEventHandler implements Chann
   }
 
   public void pause(NodeID remoteNode, int disconnected) {
-    // Ignore
+    if (remoteNode.equals(channel.getRemoteNodeID())) {
+      reset();
+      synchronized (jmxReadyLock) {
+        transportConnected = false;
+      }
+    }
   }
 
   public void unpause(NodeID remoteNode, int disconnected) {
     if (remoteNode.equals(channel.getRemoteNodeID())) {
+      synchronized (jmxReadyLock) {
+        // MNK-2553: Flip the transportConnected switch here in case we receive the transport connected notification
+        // late (i.e. after ClientHandshakeManager).
+        transportConnected = true;
+      }
       sendJmxReadyMessageIfNecessary();
     }
   }

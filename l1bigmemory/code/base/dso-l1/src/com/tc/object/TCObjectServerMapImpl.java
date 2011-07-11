@@ -343,6 +343,16 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.cache.clear();
   }
 
+  /**
+   * Clears local cache of all entries. It is not immediate as all associated locks needs to be recalled. This method
+   * will wait until lock recall is complete.
+   * 
+   * @param map ServerTCMap
+   */
+  public void clearAllLocalCacheInline(final TCServerMap map) {
+    this.cache.inlineClearAllLocalCache();
+  }
+
   public void removeFromLocalCache(Object key) {
     this.cache.removeFromLocalCache(key);
   }
