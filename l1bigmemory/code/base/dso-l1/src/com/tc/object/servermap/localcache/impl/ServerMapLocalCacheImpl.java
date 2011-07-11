@@ -162,7 +162,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     }
   }
 
-  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(final Object key,
+  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(
+                                                                                            final Object key,
                                                                                             MapOperationType mapOperation) {
     if (!mapOperation.isMutateOperation()) {
       // no listener required for non mutate ops
@@ -198,8 +199,14 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     if (!isStoreInitialized()) { return; }
 
     Set<LockID> lockIDs = executeUnderMapWriteLock(ClearAllEntriesCallback.INSTANCE);
-    // TODO some places we need to do this inline, will handle that later
     initiateLockRecall(lockIDs);
+  }
+
+  public void clearInline() {
+    if (!isStoreInitialized()) { return; }
+
+    Set<LockID> lockIDs = executeUnderMapWriteLock(ClearAllEntriesCallback.INSTANCE);
+    initiateInlineLockRecall(lockIDs);
   }
 
   public int size() {
@@ -330,6 +337,10 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
   private void initiateLockRecall(Set<LockID> ids) {
     globalLocalCacheManager.initiateLockRecall(ids);
+  }
+
+  private void initiateInlineLockRecall(Set<LockID> ids) {
+    globalLocalCacheManager.recallLocksInline(ids);
   }
 
   /**

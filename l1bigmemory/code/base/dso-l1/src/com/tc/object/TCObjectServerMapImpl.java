@@ -348,6 +348,10 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.cache.removeFromLocalCache(key);
   }
 
+  public void clearAllLocalCacheInline(final TCServerMap map) {
+    this.cache.clearInline();
+  }
+
   @Override
   protected boolean isEvictable() {
     return true;

@@ -85,6 +85,8 @@ public interface ServerMapLocalCache {
    */
   void clear();
 
+  void clearInline();
+
   /**
    * Attempt to remove 'count' entries from the local cache. May be called under memory pressure
    */

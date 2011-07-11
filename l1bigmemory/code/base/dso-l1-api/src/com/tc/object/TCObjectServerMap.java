@@ -158,6 +158,8 @@ public interface TCObjectServerMap<L> extends TCObject {
    */
   public void clearLocalCache(final TCServerMap map);
 
+  public void clearAllLocalCacheInline(final TCServerMap map);
+
   /**
    * Clears local cache for the corresponding key
    */
