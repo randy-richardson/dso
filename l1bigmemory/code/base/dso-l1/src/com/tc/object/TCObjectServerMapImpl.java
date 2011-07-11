@@ -28,7 +28,8 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+                                                            .getBoolean(
+                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
 
   private static final Object[]        NO_ARGS          = new Object[] {};
 
@@ -341,16 +342,6 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
    */
   public void clearLocalCache(final TCServerMap map) {
     this.cache.clear();
-  }
-
-  /**
-   * Clears local cache of all entries. It is not immediate as all associated locks needs to be recalled. This method
-   * will wait until lock recall is complete.
-   * 
-   * @param map ServerTCMap
-   */
-  public void clearAllLocalCacheInline(final TCServerMap map) {
-    this.cache.inlineClearAllLocalCache();
   }
 
   public void removeFromLocalCache(Object key) {
