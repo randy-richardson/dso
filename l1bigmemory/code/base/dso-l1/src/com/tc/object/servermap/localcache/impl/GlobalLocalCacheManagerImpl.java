@@ -20,8 +20,8 @@ import com.tc.util.concurrent.TCConcurrentMultiMap;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -45,13 +45,11 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     if (shutdown.get()) {
       throwAlreadyShutdownException();
     }
-    ServerMapLocalCache serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this,
-                                                                          localCacheEnabled);
-    ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
-    if (old != null) {
-      serverMapLocalCache = old;
+    ServerMapLocalCache serverMapLocalCache = localCaches.get(mapId);
+    if (serverMapLocalCache == null) {
+      serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this, localCacheEnabled);
+      localCaches.put(mapId, serverMapLocalCache);
     }
-    localCaches.put(mapId, serverMapLocalCache);
     return serverMapLocalCache;
   }
 
@@ -165,6 +163,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     }
 
     public void notifyElementExpired(K key, V value) {
+      // TODO
       // handle same as eviction
       this.notifyElementEvicted(key, value);
     }

@@ -39,7 +39,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private final static int                                                          CONCURRENCY      = 128;
   private static final LocalStoreKeySetFilter                                       IGNORE_ID_FILTER = new IgnoreIdsFilter();
 
-  // private final ServerMapLocalCacheIdStore cacheIdStore;
   private final ObjectID                                                            mapID;
   private final GlobalLocalCacheManager                                             globalLocalCacheManager;
   private final boolean                                                             localCacheEnabled;

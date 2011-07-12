@@ -7,14 +7,13 @@ import com.tc.io.TCByteBufferInput;
 import com.tc.io.TCByteBufferOutput;
 import com.tc.io.TCSerializable;
 import com.tc.object.ObjectID;
-import com.tc.object.locks.ObjectIDSetSerializer;
 import com.tc.util.ObjectIDSet;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 
 public class Invalidations implements TCSerializable {
   private final Map<ObjectID, ObjectIDSet> invalidationsPerCdsm;
@@ -70,9 +69,9 @@ public class Invalidations implements TCSerializable {
     int size = in.readInt();
     for (int i = 0; i < size; i++) {
       ObjectID mapID = new ObjectID(in.readLong());
-      ObjectIDSetSerializer serializer = new ObjectIDSetSerializer();
-      serializer.deserializeFrom(in);
-      this.invalidationsPerCdsm.put(mapID, serializer.getObjectIDSet());
+      ObjectIDSet oidSet = new ObjectIDSet();
+      oidSet.deserializeFrom(in);
+      this.invalidationsPerCdsm.put(mapID, oidSet);
     }
     return this;
   }
@@ -102,10 +101,9 @@ public class Invalidations implements TCSerializable {
     for (Entry<ObjectID, ObjectIDSet> entry : this.invalidationsPerCdsm.entrySet()) {
       ObjectID oid = entry.getKey();
       ObjectIDSet oidSet = entry.getValue();
-      ObjectIDSetSerializer serializer = new ObjectIDSetSerializer(oidSet);
 
       out.writeLong(oid.toLong());
-      serializer.serializeTo(out);
+      oidSet.serializeTo(out);
     }
   }
 }
