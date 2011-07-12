@@ -5,6 +5,7 @@ package com.tc.object.servermap.localcache;
 
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
+import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallHelper;
@@ -22,7 +23,7 @@ public interface GlobalLocalCacheManager extends LocksRecallHelper {
    * Create a local cache for use or return already created local cache for the mapId
    */
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
-                                                   boolean localCacheEnabled);
+                                                   boolean localCacheEnabled, TCObjectServerMap tcObjectServerMap);
 
   /**
    * flush the entries from the LocalCache associated with the given map id.<br>

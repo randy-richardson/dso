@@ -63,7 +63,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.objectManager = objectManager;
     this.serverMapManager = serverMapManager;
     this.manager = manager;
-    this.cache = globalLocalCacheManager.getOrCreateLocalCache(id, objectManager, manager, localCacheEnabled);
+    this.cache = globalLocalCacheManager.getOrCreateLocalCache(id, objectManager, manager, localCacheEnabled, this);
     if (serverMapLocalStore != null) {
       logger.debug(getObjectID() + ": Setting serverMapLocalStore in constructor");
       cache.setupLocalStore(serverMapLocalStore);
@@ -161,6 +161,17 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     invokeLogicalRemove(map, key);
 
     this.cache.addStrongValueToCache(this.manager.generateLockIdentifier(lockID), key, null, MapOperationType.REMOVE);
+  }
+
+  public boolean evictExpired(final TCServerMap map, final L lockID, final Object key) {
+    // TODO: Don't like this too much, come back and revisit
+    AbstractLocalCacheStoreValue value = this.cache.getLocalValue(key);
+    if (value != null) {
+      return false;
+    } else {
+      doLogicalRemove(map, lockID, key);
+      return true;
+    }
   }
 
   /**

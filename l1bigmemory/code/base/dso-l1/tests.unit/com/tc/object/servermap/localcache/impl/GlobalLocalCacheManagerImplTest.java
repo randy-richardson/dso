@@ -62,7 +62,8 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     Mockito.when(lockRecallStage.getSink()).thenReturn(testSink);
 
     LocksRecallHelper locksRecallHelper = new LocksRecallHelperImpl(lockRecallHandler, lockRecallStage);
-    this.globalLocalCacheManagerImpl = new GlobalLocalCacheManagerImpl(locksRecallHelper, testSink);
+    this.globalLocalCacheManagerImpl = new GlobalLocalCacheManagerImpl(locksRecallHelper, testSink, Mockito
+        .mock(Sink.class));
   }
 
   public void testCapacityEviction() {
@@ -72,7 +73,8 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     this.globalLocalCacheManagerImpl.addStoreListener(store);
 
     ObjectID mapID = new ObjectID(100);
-    this.globalLocalCacheManagerImpl.getOrCreateLocalCache(mapID, Mockito.mock(ClientObjectManager.class), null, true);
+    this.globalLocalCacheManagerImpl.getOrCreateLocalCache(mapID, Mockito.mock(ClientObjectManager.class), null, true,
+                                                           null);
 
     for (int i = 0; i < 15; i++) {
       store.put("key" + i, new LocalCacheStoreStrongValue(new LongLockID(i), "value" + i, mapID), PutType.NORMAL);
@@ -129,7 +131,7 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     ObjectID mapID = new ObjectID(100);
     LockID lockID = new LongLockID(100);
     ServerMapLocalCache localCache = this.globalLocalCacheManagerImpl.getOrCreateLocalCache(mapID, Mockito
-        .mock(ClientObjectManager.class), null, true);
+        .mock(ClientObjectManager.class), null, true, null);
     localCache.setupLocalStore(store);
 
     localCache.addStrongValueToCache(lockID, "key", "value", MapOperationType.GET);

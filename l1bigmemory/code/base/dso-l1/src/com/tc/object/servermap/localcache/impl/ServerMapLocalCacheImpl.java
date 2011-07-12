@@ -7,7 +7,9 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
+import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
+import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.locks.LockID;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
@@ -46,17 +48,20 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private final ClientObjectManager                                                 objectManager;
   private final Manager                                                             manager;
   private final ReentrantReadWriteLock[]                                            segmentLocks     = new ReentrantReadWriteLock[CONCURRENCY];
+  private final TCObjectServerMap                                                   tcObjectServerMap;
 
   /**
    * Not public constructor, should be created only by the global local cache manager
    */
   ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
-                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled) {
+                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled,
+                          TCObjectServerMap tcObjectServerMap) {
     this.mapID = mapID;
     this.objectManager = objectManager;
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.localCacheEnabled = islocalCacheEnbaled;
+    this.tcObjectServerMap = tcObjectServerMap;
     for (int i = 0; i < segmentLocks.length; i++) {
       this.segmentLocks[i] = new ReentrantReadWriteLock();
     }
@@ -340,6 +345,14 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
   private void initiateInlineLockRecall(Set<LockID> ids) {
     globalLocalCacheManager.recallLocksInline(ids);
+  }
+
+  public void evictExpired(Object key, AbstractLocalCacheStoreValue value) {
+    final TCServerMap serverMap = (TCServerMap) tcObjectServerMap.getPeerObject();
+
+    if (serverMap != null && localStore.get(key) == null) {
+      serverMap.evictExpired(key, value);
+    }
   }
 
   /**

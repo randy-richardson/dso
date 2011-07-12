@@ -96,4 +96,9 @@ public interface ServerMapLocalCache {
    * Returns the keys present in the local cache (does not include meta items stored)
    */
   Set getKeySet();
+
+  /**
+   * This is called when an element has been expired.
+   */
+  void evictExpired(Object key, AbstractLocalCacheStoreValue value);
 }

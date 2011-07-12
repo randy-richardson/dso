@@ -34,6 +34,16 @@ public interface TCObjectServerMap<L> extends TCObject {
   public void doLogicalRemove(final TCServerMap map, final L lockID, final Object key);
 
   /**
+   * When an element has expired.<br>
+   * Check if local cache doesn't has this key, then call remove on the server.
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object
+   * @param lockID LockID of lock protecting this key
+   */
+  public boolean evictExpired(final TCServerMap map, final L lockID, final Object key);
+
+  /**
    * Does a logic remove and mark as removed in the local cache if present. The cached item is not associated to a lock.
    * 
    * @param map ServerTCMap

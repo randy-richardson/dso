@@ -7,7 +7,9 @@ import com.tc.async.api.Sink;
 import com.tc.exception.TCRuntimeException;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
+import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
+import com.tc.object.context.CachedItemExpiredContext;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallHelper;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
@@ -34,20 +36,24 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   private final AtomicBoolean                                                      shutdown                = new AtomicBoolean();
   private final LocksRecallHelper                                                  locksRecallHelper;
   private final Sink                                                               capacityEvictionSink;
+  private final Sink                                                               ttittlExpiredSink;
 
-  public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper, Sink capacityEvictionSink) {
+  public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper, Sink capacityEvictionSink,
+                                     Sink ttittlExpiredSink) {
     this.locksRecallHelper = locksRecallHelper;
     this.capacityEvictionSink = capacityEvictionSink;
+    this.ttittlExpiredSink = ttittlExpiredSink;
   }
 
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
-                                                   boolean localCacheEnabled) {
+                                                   boolean localCacheEnabled, TCObjectServerMap tcObjectServerMap) {
     if (shutdown.get()) {
       throwAlreadyShutdownException();
     }
     ServerMapLocalCache serverMapLocalCache = localCaches.get(mapId);
     if (serverMapLocalCache == null) {
-      serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this, localCacheEnabled);
+      serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this, localCacheEnabled,
+                                                        tcObjectServerMap);
       localCaches.put(mapId, serverMapLocalCache);
     }
     return serverMapLocalCache;
@@ -90,7 +96,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   }
 
   /**
-   * This method should be called only for invalidations
+   * This method is called only for invalidations
    */
   public void removeEntriesForObjectId(ObjectID mapID, Set<ObjectID> set) {
     ServerMapLocalCache cache = localCaches.get(mapID);
@@ -102,7 +108,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   }
 
   /**
-   * This should be called only when recall happens
+   * This method is called only when recall happens
    */
   public void removeEntriesForLockId(LockID lockID) {
     final Set<ObjectID> cdsmIds = lockIdsToCdsmIds.removeAll(lockID);
@@ -147,7 +153,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
 
       for (Entry entry : entries) {
         if (!(entry.getValue() instanceof AbstractLocalCacheStoreValue)) {
-          wtf("Eviction should not happen on pinned elements and all unpinned elements should be intances of local cache store value");
+          throwAssert("Eviction should not happen on pinned elements and all unpinned elements should be intances of local cache store value");
         }
 
         AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) entry.getValue();
@@ -157,24 +163,28 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
           // the entry has been already removed from the local store, this will remove the id->key mapping if it exists
           localCache.evictedFromStore(value.getId(), entry.getKey());
         } else {
-          wtf("LocalCache not mapped for mapId: " + mapID);
+          throwAssert("LocalCache not mapped for mapId: " + mapID);
         }
       }
     }
 
-    public void notifyElementExpired(K key, V value) {
-      // TODO
-      // handle same as eviction
-      this.notifyElementEvicted(key, value);
+    public void notifyElementExpired(K key, V v) {
+      AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) v;
+      ObjectID mapID = value.getMapID();
+      ServerMapLocalCache localCache = localCaches.get(mapID);
+      if (localCache != null) {
+        CachedItemExpiredContext cachedItemExpiredContext = new CachedItemExpiredContext(localCache, key, value);
+        ttittlExpiredSink.add(cachedItemExpiredContext);
+      } else {
+        throwAssert("LocalCache not mapped for mapId: " + mapID);
+      }
     }
 
     public void notifySizeChanged(L1ServerMapLocalCacheStore store) {
       initiateCapacityEvictionIfRequired(store);
     }
 
-    // What a terrible failure! ;-)
-    // Ha Ha Ha
-    private void wtf(String msg) {
+    private void throwAssert(String msg) {
       throw new AssertionError(msg);
     }
   }
