@@ -110,7 +110,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     if (!invalidateOnChange || valueID.isNull()) {
       this.cache.addIncoherentValueToCache(key, value, MapOperationType.PUT);
     } else {
-      this.cache.addEventualValueToCache(valueID, key, valueID, MapOperationType.PUT);
+      this.cache.addEventualValueToCache(valueID, key, value, MapOperationType.PUT);
     }
   }
 
