@@ -5,13 +5,26 @@ package com.tc.object.servermap.localcache.impl;
 
 import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.EventContext;
+import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 
+import java.util.Map;
+
 public class L1ServerMapCapacityEvictionHandler extends AbstractEventHandler {
+  private volatile GlobalLocalCacheManager globalLocalCacheManager;
 
   @Override
   public void handleEvent(EventContext context) {
-    doCapacityEviction((L1ServerMapLocalStoreEvictionInfo) context);
+    if (context instanceof L1ServerMapLocalStoreEvictionInfo) {
+      doCapacityEviction((L1ServerMapLocalStoreEvictionInfo) context);
+    } else {
+      evictElements((L1ServerMapEvictedElementsContext) context);
+    }
+  }
+
+  private void evictElements(L1ServerMapEvictedElementsContext context) {
+    Map evictedElements = context.getEvictedElements();
+    globalLocalCacheManager.evictElements(evictedElements);
   }
 
   private void doCapacityEviction(L1ServerMapLocalStoreEvictionInfo evictionInfo) {
@@ -30,5 +43,9 @@ public class L1ServerMapCapacityEvictionHandler extends AbstractEventHandler {
     } finally {
       evictionInfo.markEvictionComplete();
     }
+  }
+
+  public void initialize(GlobalLocalCacheManager localCacheManager) {
+    this.globalLocalCacheManager = localCacheManager;
   }
 }

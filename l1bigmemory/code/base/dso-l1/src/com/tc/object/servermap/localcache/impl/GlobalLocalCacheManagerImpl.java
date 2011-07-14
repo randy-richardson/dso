@@ -123,6 +123,26 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     lockIdsToCdsmIds.add(valueLockId, mapID);
   }
 
+  public void evictElements(Map evictedElements) {
+    Set<Map.Entry> entries = evictedElements.entrySet();
+
+    for (Entry entry : entries) {
+      if (!(entry.getValue() instanceof AbstractLocalCacheStoreValue)) {
+        throwAssert("Eviction should not happen on pinned elements and all unpinned elements should be intances of local cache store value");
+      }
+
+      AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) entry.getValue();
+      ObjectID mapID = value.getMapID();
+      ServerMapLocalCache localCache = localCaches.get(mapID);
+      if (localCache != null) {
+        // the entry has been already removed from the local store, this will remove the id->key mapping if it exists
+        localCache.evictedFromStore(value.getId(), entry.getKey());
+      } else {
+        throwAssert("LocalCache not mapped for mapId: " + mapID);
+      }
+    }
+  }
+
   public void shutdown() {
     shutdown.set(true);
     for (L1ServerMapLocalCacheStore store : stores.keySet()) {
@@ -147,25 +167,11 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
 
     // TODO: does this need to be present in the interface? not called from outside
     public void notifyElementsEvicted(Map<K, V> evictedElements) {
-      // TODO: should the flushing logic be done inside another thread, since this might delay "put" if eviction called
-      // within that thread
-      Set<Map.Entry<K, V>> entries = evictedElements.entrySet();
-
-      for (Entry entry : entries) {
-        if (!(entry.getValue() instanceof AbstractLocalCacheStoreValue)) {
-          throwAssert("Eviction should not happen on pinned elements and all unpinned elements should be intances of local cache store value");
-        }
-
-        AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) entry.getValue();
-        ObjectID mapID = value.getMapID();
-        ServerMapLocalCache localCache = localCaches.get(mapID);
-        if (localCache != null) {
-          // the entry has been already removed from the local store, this will remove the id->key mapping if it exists
-          localCache.evictedFromStore(value.getId(), entry.getKey());
-        } else {
-          throwAssert("LocalCache not mapped for mapId: " + mapID);
-        }
-      }
+      // This should be inside another thread, if not it will cause a deadlock
+      L1ServerMapEvictedElementsContext context = new L1ServerMapEvictedElementsContext(
+                                                                                        evictedElements,
+                                                                                        GlobalLocalCacheManagerImpl.this);
+      capacityEvictionSink.add(context);
     }
 
     public void notifyElementExpired(K key, V v) {
@@ -184,8 +190,9 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
       initiateCapacityEvictionIfRequired(store);
     }
 
-    private void throwAssert(String msg) {
-      throw new AssertionError(msg);
-    }
+  }
+
+  private void throwAssert(String msg) {
+    throw new AssertionError(msg);
   }
 }

@@ -555,10 +555,12 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     searchRequestManager = this.dsoClientBuilder.createRemoteSearchRequestManager(new ClientIDLogger(this.channel
         .getClientIDProvider(), TCLogging.getLogger(RemoteObjectManager.class)), this.channel, sessionManager);
 
+    final L1ServerMapCapacityEvictionHandler l1ServerMapCapacityEvictionHandler = new L1ServerMapCapacityEvictionHandler();
     final Stage capacityEvictionStage = stageManager.createStage(ClientConfigurationContext.CAPACITY_EVICTION_STAGE,
-                                                                 new L1ServerMapCapacityEvictionHandler(), 8, maxSize);
+                                                                 l1ServerMapCapacityEvictionHandler, 8, maxSize);
     globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper, capacityEvictionStage.getSink(),
                                                               ttiTTLEvictionStage.getSink());
+    l1ServerMapCapacityEvictionHandler.initialize(globalLocalCacheManager);
 
     final RemoteServerMapManager remoteServerMapManager = this.dsoClientBuilder
         .createRemoteServerMapManager(new ClientIDLogger(this.channel.getClientIDProvider(), TCLogging
