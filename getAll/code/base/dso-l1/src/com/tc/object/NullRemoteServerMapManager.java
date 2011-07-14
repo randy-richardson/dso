@@ -11,6 +11,7 @@ import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 public final class NullRemoteServerMapManager implements RemoteServerMapManager {
@@ -85,6 +86,10 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
 
   public void addResponseForGetAllKeys(SessionID localSessionID, ObjectID mapID, ServerMapRequestID requestID,
                                        Set keys, NodeID nodeID) {
+    //
+  }
+
+  public void getMappingForAllKeys(ObjectID mapID, Set<Object> keys, Map<Object, Object> rv) {
     //
   }
 

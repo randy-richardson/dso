@@ -40,10 +40,12 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   // TODO::Make its own property
   private static final int                                               MAX_OUTSTANDING_REQUESTS_SENT_IMMEDIATELY = TCPropertiesImpl
                                                                                                                        .getProperties()
-                                                                                                                       .getInt(TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_MAX_REQUEST_SENT_IMMEDIATELY);
+                                                                                                                       .getInt(
+                                                                                                                               TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_MAX_REQUEST_SENT_IMMEDIATELY);
   private static final long                                              BATCH_LOOKUP_TIME_PERIOD                  = TCPropertiesImpl
                                                                                                                        .getProperties()
-                                                                                                                       .getInt(TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_BATCH_LOOKUP_TIME_PERIOD);
+                                                                                                                       .getInt(
+                                                                                                                               TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_BATCH_LOOKUP_TIME_PERIOD);
 
   private final GroupID                                                  groupID;
   private final ServerMapMessageFactory                                  smmFactory;
@@ -95,6 +97,13 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     context.makeLookupRequest();
     sendRequest(context);
     return waitForResult(context);
+  }
+
+  public synchronized void getMappingForAllKeys(ObjectID oid, Set<Object> keys, Map<Object, Object> rv) {
+    assertSameGroupID(oid);
+    waitUntilRunning();
+
+    final AbstractServerMapRequestContext context = createLookupValuesRequestContext(oid, keys);
   }
 
   public synchronized Set getAllKeys(ObjectID mapID) {
@@ -212,8 +221,8 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   }
 
   private void sendRequestNow(final AbstractServerMapRequestContext context) {
-    final ServerMapRequestMessage msg = this.smmFactory.newServerMapRequestMessage(this.groupID,
-                                                                                   context.getRequestType());
+    final ServerMapRequestMessage msg = this.smmFactory.newServerMapRequestMessage(this.groupID, context
+        .getRequestType());
     context.initializeMessage(msg);
     msg.send();
   }
@@ -243,6 +252,11 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
                                                                                         this.groupID);
     this.outstandingRequests.put(requestID, context);
     return context;
+  }
+
+  private AbstractServerMapRequestContext createLookupValuesRequestContext(ObjectID oid, Set<Object> keys) {
+    final ServerMapRequestID requestID = getNextRequestID();
+    return null;
   }
 
   private AbstractServerMapRequestContext createGetAllKeysRequestContext(final ObjectID mapID) {

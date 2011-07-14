@@ -299,23 +299,6 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
     getAllValuesForKeyFromServer(map, keys, rv);
 
-    // TODO : move the following in getAllValuesForKeyFromServer
-    if (CACHE_ENABLED) {
-      if (invalidateOnChange) {
-        for (Object key : keys) {
-          Object value = rv.get(key);
-          if (value != null && !LiteralValues.isLiteralInstance(value)) {
-            this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
-          }
-        }
-      } else {
-        for (Object key : keys) {
-          Object value = rv.get(key);
-          this.cache.addIncoherentValueToCache(key, value, false);
-        }
-      }
-    }
-
     return rv;
 
   }
@@ -367,7 +350,57 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
   }
 
   private void getAllValuesForKeyFromServer(TCServerMap map, Set<Object> keys, Map<Object, Object> rv) {
-    //
+    final TCObject tcObject = map.__tc_managed();
+    if (tcObject == null) { throw new UnsupportedOperationException(
+                                                                    "getValueForKeyInMap is not supported in a non-shared ServerMap"); }
+    final ObjectID mapID = tcObject.getObjectID();
+    Set<Object> portableKeys = new HashSet<Object>();
+
+    for (Object key : keys) {
+      if (key instanceof Manageable) {
+        final TCObject keyObject = ((Manageable) key).__tc_managed();
+        if (keyObject == null) { throw new UnsupportedOperationException(
+                                                                         "Key is portable, but not shared. This is currently not supported with ServerMap. Map ID = "
+                                                                             + mapID + " key = " + key); }
+        Object portableKey = keyObject.getObjectID();
+        if (!LiteralValues.isLiteralInstance(portableKey)) {
+          // formatter
+          throw new UnsupportedOperationException(
+                                                  "Key is not portable. It needs to be a liternal or portable and shared for ServerTCMap. Key = "
+                                                      + portableKey + " map id = " + mapID);
+        }
+        portableKeys.add(keyObject.getObjectID());
+      }
+    }
+
+    this.serverMapManager.getMappingForAllKeys(mapID, keys, rv);
+
+    for (Object key : keys) {
+      Object value = rv.get(key);
+      if (value instanceof ObjectID) {
+        try {
+          rv.put(key, this.objectManager.lookupObject((ObjectID) value));
+        } catch (final ClassNotFoundException e) {
+          logger.warn("Got ClassNotFoundException for objectId: " + value + ". Ignoring exception and returning null");
+          rv.put(key, null);
+        } catch (TCObjectNotFoundException e) {
+          logger.warn("Got TCObjectNotFoundException for objectId: " + value
+                      + ". Ignoring exception and returning null");
+          rv.put(key, null);
+        }
+      }
+
+      value = rv.get(key);
+      if (CACHE_ENABLED) {
+        if (invalidateOnChange) {
+          if (value != null && !LiteralValues.isLiteralInstance(value)) {
+            this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
+          }
+        } else {
+          this.cache.addIncoherentValueToCache(key, value, false);
+        }
+      }
+    }
   }
 
   /**
