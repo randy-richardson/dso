@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 public class GetValueServerMapRequestMessageImpl extends DSOMessageBase implements GetValueServerMapRequestMessage {
@@ -51,14 +53,17 @@ public class GetValueServerMapRequestMessageImpl extends DSOMessageBase implemen
     super(sessionID, monitor, out, channel, type);
   }
 
-  public void addGetValueRequestTo(final ServerMapRequestID serverMapRequestID, final ObjectID id, final Object key) {
-    Assert.assertTrue(LiteralValues.isLiteralInstance(key));
+  public void addGetValueRequestTo(final ServerMapRequestID serverMapRequestID, final ObjectID id,
+                                   final Set<Object> keys) {
+    for (Object key : keys) {
+      Assert.assertTrue(LiteralValues.isLiteralInstance(key));
+    }
     Collection<ServerMapGetValueRequest> requestsForMap = this.requests.get(id);
     if (requestsForMap == null) {
       requestsForMap = new ArrayList<ServerMapGetValueRequest>();
       this.requests.put(id, requestsForMap);
     }
-    requestsForMap.add(new ServerMapGetValueRequest(serverMapRequestID, key));
+    requestsForMap.add(new ServerMapGetValueRequest(serverMapRequestID, keys));
     this.requestsCount++;
   }
 
@@ -75,7 +80,10 @@ public class GetValueServerMapRequestMessageImpl extends DSOMessageBase implemen
       outStream.writeInt(requests4Map.size());
       for (final ServerMapGetValueRequest svr : e.getValue()) {
         outStream.writeLong(svr.getRequestID().toLong());
-        encoder.encode(svr.getKey(), outStream);
+        outStream.writeInt(svr.getKeys().size());
+        for (Object key : svr.getKeys()) {
+          encoder.encode(key, outStream);
+        }
         count++;
       }
     }
@@ -96,8 +104,13 @@ public class GetValueServerMapRequestMessageImpl extends DSOMessageBase implemen
         // Directly decode the key
         while (count-- > 0) {
           try {
-            requests4Map.add(new ServerMapGetValueRequest(new ServerMapRequestID(getLongValue()), decoder
-                .decode(getInputStream())));
+            final long requestId = getLongValue();
+            final int keySize = getIntValue();
+            Set<Object> keys = new HashSet<Object>();
+            for (int i = 0; i < keySize; i++) {
+              keys.add(decoder.decode(getInputStream()));
+            }
+            requests4Map.add(new ServerMapGetValueRequest(new ServerMapRequestID(requestId), keys));
           } catch (final ClassNotFoundException e) {
             throw new AssertionError(e);
           }
