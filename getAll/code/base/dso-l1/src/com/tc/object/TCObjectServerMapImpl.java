@@ -289,8 +289,10 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
       for (Iterator i = keys.iterator(); i.hasNext();) {
         Object key = i.next();
         CachedItem item = getValueUnlockedFromCache(key);
-        if (item != null) i.remove();
-        rv.put(key, item.getValue());
+        if (item != null) {
+          i.remove();
+          rv.put(key, item.getValue());
+        }
       }
     }
 
