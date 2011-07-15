@@ -163,13 +163,15 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.cache.addStrongValueToCache(this.manager.generateLockIdentifier(lockID), key, null, MapOperationType.REMOVE);
   }
 
-  public boolean evictExpired(final TCServerMap map, final L lockID, final Object key) {
+  public boolean evictExpired(final TCServerMap map, final L lockID, final Object key, final Object oldValue) {
     // TODO: Don't like this too much, come back and revisit
     AbstractLocalCacheStoreValue value = this.cache.getLocalValue(key);
     if (value != null) {
       return false;
     } else {
-      doLogicalRemove(map, lockID, key);
+      invokeLogicalRemove(map, key, oldValue);
+      this.cache.addStrongValueToCache(this.manager.generateLockIdentifier(lockID), key, null, MapOperationType.REMOVE);
+
       return true;
     }
   }

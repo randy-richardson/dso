@@ -351,7 +351,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     final TCServerMap serverMap = (TCServerMap) tcObjectServerMap.getPeerObject();
 
     if (serverMap != null && localStore.get(key) == null) {
-      serverMap.evictExpired(key, value);
+      serverMap.evictExpired(key, value.getValue());
     }
   }
 
