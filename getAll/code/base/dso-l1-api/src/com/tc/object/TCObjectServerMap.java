@@ -6,6 +6,7 @@ package com.tc.object;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
 
+import java.util.Map;
 import java.util.Set;
 
 public interface TCObjectServerMap<L> extends TCObject {
@@ -111,6 +112,8 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @return value Object in the mapping, null if no mapping present.
    */
   public Object getValueUnlocked(final TCServerMap map, final Object key);
+
+  public Map<Object, Object> getAllValueUnlocked(TCServerMap map, Set<Object> keys);
 
   /**
    * Returns a snapshot of keys for the giver ServerTCMap

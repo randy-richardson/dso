@@ -372,12 +372,14 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
                                                       + portableKey + " map id = " + mapID);
         }
         portableKeys.add(keyObject.getObjectID());
+      } else {
+        portableKeys.add(key);
       }
     }
 
-    this.serverMapManager.getMappingForAllKeys(mapID, keys, rv);
+    this.serverMapManager.getMappingForAllKeys(mapID, portableKeys, rv);
 
-    for (Object key : keys) {
+    for (Object key : portableKeys) {
       Object value = rv.get(key);
       if (value instanceof ObjectID) {
         try {

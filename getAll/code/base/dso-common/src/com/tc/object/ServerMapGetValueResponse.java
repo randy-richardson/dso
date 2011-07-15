@@ -37,4 +37,9 @@ public class ServerMapGetValueResponse {
     return this.requestID.hashCode();
   }
 
+  @Override
+  public String toString() {
+    return "responses" + this.responseMap;
+  }
+
 }

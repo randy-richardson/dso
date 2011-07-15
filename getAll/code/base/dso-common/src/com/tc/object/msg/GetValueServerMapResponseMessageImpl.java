@@ -58,6 +58,7 @@ public class GetValueServerMapResponseMessageImpl extends DSOMessageBase impleme
     this.mapID = mapObjectID;
   }
 
+  // TODO: write a test to test hydrating and dehydrating
   @Override
   protected void dehydrateValues() {
     putNVPair(MAP_OBJECT_ID, this.mapID.toLong());
@@ -66,7 +67,7 @@ public class GetValueServerMapResponseMessageImpl extends DSOMessageBase impleme
     final TCByteBufferOutputStream outStream = getOutputStream();
     for (final ServerMapGetValueResponse r : this.responses) {
       outStream.writeLong(r.getRequestID().toLong());
-      outStream.writeLong(r.getValues().size());
+      outStream.writeInt(r.getValues().size());
       for (Entry<Object, Object> entry : r.getValues().entrySet()) {
         encoder.encode(entry.getKey(), getOutputStream());
         encoder.encode(entry.getValue(), getOutputStream());
