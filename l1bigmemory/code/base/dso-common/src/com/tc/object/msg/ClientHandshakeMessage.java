@@ -4,14 +4,12 @@
  */
 package com.tc.object.msg;
 
+import com.tc.invalidation.Invalidations;
 import com.tc.net.protocol.tcm.TCMessage;
-import com.tc.object.ObjectID;
 import com.tc.object.locks.ClientServerExchangeLockContext;
-import com.tc.util.ObjectIDSet;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface ClientHandshakeMessage extends TCMessage {
@@ -20,7 +18,7 @@ public interface ClientHandshakeMessage extends TCMessage {
 
   public Set getObjectIDs();
 
-  public Map<ObjectID, ObjectIDSet> getObjectIDsToValidate();
+  public Invalidations getObjectIDsToValidate();
 
   public void addLockContext(ClientServerExchangeLockContext ctxt);
 

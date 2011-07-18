@@ -25,8 +25,6 @@ import com.tc.util.ObjectIDSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import junit.framework.Assert;
 
@@ -148,13 +146,11 @@ public class InvalidateObjectManagerTest extends TCTestCase {
     }
 
     for (int i = 0; i < 10; i++) {
-      Map<ObjectID, ObjectIDSet> objectIDsToValidate = new HashMap<ObjectID, ObjectIDSet>();
-      ObjectIDSet tempOids = new ObjectIDSet();
+      Invalidations objectIDsToValidate = new Invalidations();
       for (int j = 0; j < 100; j++) {
         long longOid = 100 * i + j;
-        tempOids.add(new ObjectID(longOid));
+        objectIDsToValidate.add(new ObjectID(1000 + i), new ObjectID(longOid));
       }
-      objectIDsToValidate.put(new ObjectID(1000 + i), tempOids);
       invalidateObjectManager.addObjectsToValidateFor(cids[i], objectIDsToValidate);
     }
 

@@ -2,6 +2,8 @@
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
 package com.tc.object.servermap.localcache;
+
+import com.tc.invalidation.Invalidations;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObjectServerMap;
@@ -11,7 +13,6 @@ import com.tc.object.locks.LocksRecallHelper;
 
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * A Global cache manager which contains info about all the LocalCache present in the L1.<br>
@@ -40,7 +41,7 @@ public interface GlobalLocalCacheManager extends LocksRecallHelper {
   /**
    * Handshake manager tries to get hold of all the objects present in the local caches
    */
-  public Map addAllObjectIDsToValidate(Map map);
+  public void addAllObjectIDsToValidate(Invalidations invalidations);
 
   /**
    * Remember the mapId associated with the valueLockId

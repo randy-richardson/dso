@@ -3,10 +3,10 @@
  */
 package com.tc.object.servermap.localcache;
 
+import com.tc.invalidation.Invalidations;
 import com.tc.object.ObjectID;
 import com.tc.object.locks.LockID;
 
-import java.util.Map;
 import java.util.Set;
 
 public interface ServerMapLocalCache {
@@ -44,7 +44,7 @@ public interface ServerMapLocalCache {
   /**
    * Used in handshake to send a list of ObjectIDs to the server for validation
    */
-  void addAllObjectIDsToValidate(Map map);
+  void addAllObjectIDsToValidate(Invalidations invalidations);
 
   // ///////////////////////////////
   // TCObjectServerMap methods

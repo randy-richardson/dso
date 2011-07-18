@@ -9,6 +9,7 @@ import com.tc.async.api.AddPredicate;
 import com.tc.async.api.EventContext;
 import com.tc.async.api.Sink;
 import com.tc.exception.ImplementMe;
+import com.tc.invalidation.Invalidations;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObject;
@@ -39,7 +40,6 @@ import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -489,19 +489,19 @@ public class ServerMapLocalCacheImplTest extends TestCase {
       cache.addStrongValueToCache(new LongLockID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
 
-    Map<ObjectID, ObjectIDSet> map = new HashMap<ObjectID, ObjectIDSet>();
-    cache.addAllObjectIDsToValidate(map);
+    Invalidations invalidations = new Invalidations();
+    cache.addAllObjectIDsToValidate(invalidations);
 
-    Assert.assertEquals(0, map.size());
+    Assert.assertEquals(0, invalidations.size());
 
     for (int i = 50; i < 100; i++) {
       cache.addEventualValueToCache(new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
-    cache.addAllObjectIDsToValidate(map);
+    cache.addAllObjectIDsToValidate(invalidations);
 
-    Assert.assertEquals(1, map.size());
+    Assert.assertEquals(50, invalidations.size());
 
-    ObjectIDSet set = map.get(this.mapID);
+    ObjectIDSet set = invalidations.getObjectIDSetForMapId(this.mapID);
     Assert.assertEquals(50, set.size());
     for (int i = 50; i < 100; i++) {
       Assert.assertTrue(set.contains(new ObjectID(i)));

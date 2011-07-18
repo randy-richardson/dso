@@ -29,7 +29,6 @@ import com.tc.util.Util;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,10 +38,12 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   // TODO::Make its own property
   private static final int                                               MAX_OUTSTANDING_REQUESTS_SENT_IMMEDIATELY = TCPropertiesImpl
                                                                                                                        .getProperties()
-                                                                                                                       .getInt(TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_MAX_REQUEST_SENT_IMMEDIATELY);
+                                                                                                                       .getInt(
+                                                                                                                               TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_MAX_REQUEST_SENT_IMMEDIATELY);
   private static final long                                              BATCH_LOOKUP_TIME_PERIOD                  = TCPropertiesImpl
                                                                                                                        .getProperties()
-                                                                                                                       .getInt(TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_BATCH_LOOKUP_TIME_PERIOD);
+                                                                                                                       .getInt(
+                                                                                                                               TCPropertiesConsts.L1_SERVERMAPMANAGER_REMOTE_BATCH_LOOKUP_TIME_PERIOD);
 
   private final GroupID                                                  groupID;
   private final ServerMapMessageFactory                                  smmFactory;
@@ -203,8 +204,8 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   }
 
   private void sendRequestNow(final AbstractServerMapRequestContext context) {
-    final ServerMapRequestMessage msg = this.smmFactory.newServerMapRequestMessage(this.groupID,
-                                                                                   context.getRequestType());
+    final ServerMapRequestMessage msg = this.smmFactory.newServerMapRequestMessage(this.groupID, context
+        .getRequestType());
     context.initializeMessage(msg);
     msg.send();
   }
@@ -490,10 +491,9 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
    */
   public void processInvalidations(Invalidations invalidations) {
     // NOTE: if this impl changes, check RemoteServerMapManagerGroupImpl
-    Map<ObjectID, ObjectIDSet> map = invalidations.getInternalMap();
-    for (Entry<ObjectID, ObjectIDSet> entry : map.entrySet()) {
-      ObjectID mapID = entry.getKey();
-      ObjectIDSet set = entry.getValue();
+    Set<ObjectID> mapIDs = invalidations.getMapIds();
+    for (ObjectID mapID : mapIDs) {
+      ObjectIDSet set = invalidations.getObjectIDSetForMapId(mapID);
       globalLocalCacheManager.removeEntriesForObjectId(mapID, set);
     }
   }

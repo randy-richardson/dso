@@ -3,6 +3,7 @@
  */
 package com.tc.object.servermap.localcache.impl;
 
+import com.tc.invalidation.Invalidations;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.ClientObjectManager;
@@ -25,13 +26,11 @@ import com.tc.object.servermap.localcache.impl.L1ServerMapLocalStoreTransactionC
 import com.tc.object.servermap.localcache.impl.LocalStoreKeySet.LocalStoreKeySetFilter;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.UnlockedSharedObjectException;
-import com.tc.util.ObjectIDSet;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -301,7 +300,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     return this.mapID;
   }
 
-  public void addAllObjectIDsToValidate(Map map) {
+  public void addAllObjectIDsToValidate(Invalidations invalidations) {
     if (!isStoreInitialized()) { return; }
 
     for (ReentrantReadWriteLock readWriteLock : segmentLocks) {
@@ -309,20 +308,14 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     }
     try {
       if (this.localStore.size() != 0) {
-        ObjectIDSet set = new ObjectIDSet();
-
         Set currentSet = this.localStore.getKeySet();
         if (currentSet != null) {
           for (Object id : currentSet) {
             // TODO: keys added from serverMapLocalCache can never be ObjectID, need other special handling here?
             if (id instanceof ObjectID && id != ObjectID.NULL_ID) {
-              set.add((ObjectID) id);
+              invalidations.add(mapID, (ObjectID) id);
             }
           }
-        }
-
-        if (!set.isEmpty()) {
-          map.put(mapID, set);
         }
       }
     } finally {

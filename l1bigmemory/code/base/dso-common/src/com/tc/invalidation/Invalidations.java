@@ -11,6 +11,8 @@ import com.tc.util.ObjectIDSet;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -37,11 +39,7 @@ public class Invalidations implements TCSerializable {
   }
 
   public Set<ObjectID> getMapIds() {
-    return invalidationsPerCdsm.keySet();
-  }
-
-  public Map<ObjectID, ObjectIDSet> getInternalMap() {
-    return invalidationsPerCdsm;
+    return new HashSet(invalidationsPerCdsm.keySet());
   }
 
   public ObjectIDSet getObjectIDSetForMapId(ObjectID mapID) {
@@ -104,6 +102,34 @@ public class Invalidations implements TCSerializable {
 
       out.writeLong(oid.toLong());
       oidSet.serializeTo(out);
+    }
+  }
+
+  public int size() {
+    int size = 0;
+    for (Entry<ObjectID, ObjectIDSet> entry : this.invalidationsPerCdsm.entrySet()) {
+      size += entry.getValue().size();
+    }
+
+    return size;
+  }
+
+  public void removeAll(ObjectIDSet validEntries) {
+    for (Iterator<Entry<ObjectID, ObjectIDSet>> mapIterator = this.invalidationsPerCdsm.entrySet().iterator(); mapIterator
+        .hasNext();) {
+      Entry<ObjectID, ObjectIDSet> entry = mapIterator.next();
+      ObjectIDSet existingOids = entry.getValue();
+
+      for (Iterator<ObjectID> oidSetIterator = existingOids.iterator(); oidSetIterator.hasNext();) {
+        ObjectID oid = oidSetIterator.next();
+        if (!validEntries.contains(oid)) {
+          oidSetIterator.remove();
+        }
+      }
+
+      if (existingOids.size() == 0) {
+        mapIterator.remove();
+      }
     }
   }
 }

@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import junit.framework.Assert;
@@ -153,17 +152,15 @@ public class ClientStateManagerTest extends TestCase {
     }
 
     Invalidations totalInvalidations = applyTransactionInfo.getObjectIDsToInvalidate();
-    Map<ObjectID, ObjectIDSet> totalInvalidationsMap = totalInvalidations.getInternalMap();
-    Assert.assertEquals(3, totalInvalidationsMap.size());
-    ObjectIDSet oidSetInvalidated = totalInvalidationsMap.get(mapid1);
+    ObjectIDSet oidSetInvalidated = totalInvalidations.getObjectIDSetForMapId(mapid1);
     for (int i = 1; i <= 50; i++) {
       oidSetInvalidated.contains(new ObjectID(i));
     }
-    oidSetInvalidated = totalInvalidationsMap.get(mapid2);
+    oidSetInvalidated = totalInvalidations.getObjectIDSetForMapId(mapid2);
     for (int i = 101; i <= 175; i++) {
       oidSetInvalidated.contains(new ObjectID(i));
     }
-    oidSetInvalidated = totalInvalidationsMap.get(mapid3);
+    oidSetInvalidated = totalInvalidations.getObjectIDSetForMapId(mapid3);
     for (int i = 201; i <= 400; i++) {
       oidSetInvalidated.contains(new ObjectID(i));
     }
@@ -172,9 +169,7 @@ public class ClientStateManagerTest extends TestCase {
     Invalidations invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid1,
                                                      new ObjectIDSet(), invalidationsForClient);
-    Map<ObjectID, ObjectIDSet> invalidationsMapForClient = invalidationsForClient.getInternalMap();
-    Assert.assertEquals(1, invalidationsMapForClient.size());
-    oidSetInvalidated = invalidationsMapForClient.get(mapid1);
+    oidSetInvalidated = invalidationsForClient.getObjectIDSetForMapId(mapid1);
     Assert.assertEquals(50, oidSetInvalidated.size());
     for (int i = 1; i <= 50; i++) {
       oidSetInvalidated.contains(new ObjectID(i));
@@ -184,9 +179,7 @@ public class ClientStateManagerTest extends TestCase {
     invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid2,
                                                      new ObjectIDSet(), invalidationsForClient);
-    invalidationsMapForClient = invalidationsForClient.getInternalMap();
-    Assert.assertEquals(1, invalidationsMapForClient.size());
-    oidSetInvalidated = invalidationsMapForClient.get(mapid2);
+    oidSetInvalidated = invalidationsForClient.getObjectIDSetForMapId(mapid2);
     Assert.assertEquals(75, oidSetInvalidated.size());
     for (int i = 101; i <= 175; i++) {
       oidSetInvalidated.contains(new ObjectID(i));
@@ -196,15 +189,13 @@ public class ClientStateManagerTest extends TestCase {
     invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid3,
                                                      new ObjectIDSet(), invalidationsForClient);
-    invalidationsMapForClient = invalidationsForClient.getInternalMap();
-    Assert.assertEquals(2, invalidationsMapForClient.size());
-    oidSetInvalidated = invalidationsMapForClient.get(mapid2);
+    oidSetInvalidated = invalidationsForClient.getObjectIDSetForMapId(mapid2);
     Assert.assertEquals(25, oidSetInvalidated.size());
     for (int i = 151; i <= 175; i++) {
       oidSetInvalidated.contains(new ObjectID(i));
     }
 
-    oidSetInvalidated = invalidationsMapForClient.get(mapid3);
+    oidSetInvalidated = invalidationsForClient.getObjectIDSetForMapId(mapid3);
     Assert.assertEquals(100, oidSetInvalidated.size());
     for (int i = 201; i <= 300; i++) {
       oidSetInvalidated.contains(new ObjectID(i));

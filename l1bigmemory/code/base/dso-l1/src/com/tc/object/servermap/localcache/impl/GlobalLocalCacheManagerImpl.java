@@ -5,6 +5,7 @@ package com.tc.object.servermap.localcache.impl;
 
 import com.tc.async.api.Sink;
 import com.tc.exception.TCRuntimeException;
+import com.tc.invalidation.Invalidations;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObjectServerMap;
@@ -88,11 +89,10 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     locksRecallHelper.recallLocksInline(lockIds);
   }
 
-  public Map addAllObjectIDsToValidate(Map map) {
+  public void addAllObjectIDsToValidate(Invalidations invalidations) {
     for (ServerMapLocalCache localCache : localCaches.values()) {
-      localCache.addAllObjectIDsToValidate(map);
+      localCache.addAllObjectIDsToValidate(invalidations);
     }
-    return map;
   }
 
   /**
