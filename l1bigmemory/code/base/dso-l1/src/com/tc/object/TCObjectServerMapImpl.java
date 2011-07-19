@@ -28,8 +28,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+                                                            .getBoolean(TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
 
   private static final Object[]        NO_ARGS          = new Object[] {};
 
@@ -65,10 +64,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.manager = manager;
     this.cache = globalLocalCacheManager.getOrCreateLocalCache(id, objectManager, manager, localCacheEnabled, this);
     if (serverMapLocalStore != null) {
-      logger.debug(getObjectID() + ": Setting serverMapLocalStore in constructor");
       cache.setupLocalStore(serverMapLocalStore);
-    } else {
-      logger.debug(getObjectID() + ": serverMapLocalStore not initialized yet (in constructor)");
     }
   }
 
@@ -474,12 +470,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     // this is called from CDSMDso.__tc_managed(tco)
     this.serverMapLocalStore = serverMapLocalStore;
     if (cache != null) {
-      logger.debug(getObjectID()
-                   + ": Setting up serverMapLocalStore in setupLocalStore as serverMapLocalCache is not null");
       cache.setupLocalStore(serverMapLocalStore);
-    } else {
-      logger.debug(getObjectID()
-                   + ": NOT setting up serverMapLocalStore in setupLocalStore as serverMapLocalCache IS null");
     }
   }
 }
