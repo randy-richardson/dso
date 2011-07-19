@@ -74,6 +74,11 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.maxInMemoryCount = targetMaxInMemoryCount;
     this.invalidateOnChange = invalidateOnChangeFlag;
     this.localCacheEnabled = localCacheEnabledFlag;
+    // if tcobject is being faulted in, the TCO is created and the peer is hydrated afterwards
+    // meaning initialize is called after the cache has been already created, need to update
+    if (cache != null) {
+      cache.setLocalCacheEnabled(localCacheEnabledFlag);
+    }
   }
 
   /**

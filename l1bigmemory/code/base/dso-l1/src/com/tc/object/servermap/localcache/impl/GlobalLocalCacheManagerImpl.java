@@ -22,8 +22,8 @@ import com.tc.util.concurrent.TCConcurrentMultiMap;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,13 +36,14 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
   private final AtomicBoolean                                                      shutdown                = new AtomicBoolean();
   private final LocksRecallHelper                                                  locksRecallHelper;
   private final Sink                                                               capacityEvictionSink;
-  private final Sink                                                               ttittlExpiredSink;
+
+  // private final Sink ttittlExpiredSink;
 
   public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper, Sink capacityEvictionSink,
                                      Sink ttittlExpiredSink) {
     this.locksRecallHelper = locksRecallHelper;
     this.capacityEvictionSink = capacityEvictionSink;
-    this.ttittlExpiredSink = ttittlExpiredSink;
+    // this.ttittlExpiredSink = ttittlExpiredSink;
   }
 
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,

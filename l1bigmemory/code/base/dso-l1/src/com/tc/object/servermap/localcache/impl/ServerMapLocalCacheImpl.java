@@ -42,7 +42,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
   private final ObjectID                                                            mapID;
   private final GlobalLocalCacheManager                                             globalLocalCacheManager;
-  private final boolean                                                             localCacheEnabled;
+  private volatile boolean                                                          localCacheEnabled;
   private volatile L1ServerMapLocalCacheStore<Object, AbstractLocalCacheStoreValue> localStore;
   private final ClientObjectManager                                                 objectManager;
   private final Manager                                                             manager;
@@ -77,6 +77,10 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       return false;
     }
     return true;
+  }
+
+  public void setLocalCacheEnabled(boolean enable) {
+    this.localCacheEnabled = enable;
   }
 
   private ReentrantReadWriteLock getLock(Object key) {
@@ -165,8 +169,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     }
   }
 
-  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(
-                                                                                            final Object key,
+  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(final Object key,
                                                                                             MapOperationType mapOperation) {
     if (!mapOperation.isMutateOperation()) {
       // no listener required for non mutate ops

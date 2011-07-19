@@ -51,6 +51,11 @@ public interface ServerMapLocalCache {
   // ///////////////////////////////
 
   /**
+   * Enable/disable local caching
+   */
+  void setLocalCacheEnabled(boolean enable);
+
+  /**
    * Cache strong consistent values
    */
   void addStrongValueToCache(LockID lockId, Object key, Object value, MapOperationType operationType);
