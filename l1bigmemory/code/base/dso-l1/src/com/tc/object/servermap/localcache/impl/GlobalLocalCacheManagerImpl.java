@@ -10,7 +10,6 @@ import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
-import com.tc.object.context.CachedItemExpiredContext;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallHelper;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
@@ -175,15 +174,16 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     }
 
     public void notifyElementExpired(K key, V v) {
-      AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) v;
-      ObjectID mapID = value.getMapID();
-      ServerMapLocalCache localCache = localCaches.get(mapID);
-      if (localCache != null) {
-        CachedItemExpiredContext cachedItemExpiredContext = new CachedItemExpiredContext(localCache, key, value);
-        ttittlExpiredSink.add(cachedItemExpiredContext);
-      } else {
-        throwAssert("LocalCache not mapped for mapId: " + mapID);
-      }
+      notifyElementEvicted(key, v);
+      // AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) v;
+      // ObjectID mapID = value.getMapID();
+      // ServerMapLocalCache localCache = localCaches.get(mapID);
+      // if (localCache != null) {
+      // CachedItemExpiredContext cachedItemExpiredContext = new CachedItemExpiredContext(localCache, key, value);
+      // ttittlExpiredSink.add(cachedItemExpiredContext);
+      // } else {
+      // throwAssert("LocalCache not mapped for mapId: " + mapID);
+      // }
     }
 
     public void notifySizeChanged(L1ServerMapLocalCacheStore store) {
