@@ -749,10 +749,14 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       // Object either not in cache or is a new object, return emtpy set
       return TCCollections.EMPTY_OBJECT_ID_SET;
     }
-    final ManagedObject mo = lookup(id, MissingObjects.NOT_OK, NewObjects.LOOKUP, UpdateStats.UPDATE, AccessLevel.READ);
-    final Set references2Return = mo.getObjectReferences();
-    releaseReadOnly(mo);
-    return references2Return;
+    final ManagedObject mo = lookup(id, MissingObjects.OK, NewObjects.LOOKUP, UpdateStats.UPDATE, AccessLevel.READ);
+    if (mo == null) {
+      return TCCollections.EMPTY_OBJECT_ID_SET;
+    } else {
+      final Set references2Return = mo.getObjectReferences();
+      releaseReadOnly(mo);
+      return references2Return;
+    }
   }
 
   private void postRelease() {
@@ -857,10 +861,14 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   public void notifyGCComplete(final GCResultContext gcResult) {
     Assert.assertFalse(this.collector.isPausingOrPaused());
-    final Set<ObjectID> toDelete = gcResult.getGCedObjectIDs();
-    removeAllObjectsByID(toDelete);
+    deleteObjects(gcResult);
     // Process pending, since we disabled process pending while GC pause was initiate.
     processPendingLookups();
+  }
+
+  public void deleteObjects(GCResultContext gcResult) {
+    final Set<ObjectID> toDelete = gcResult.getGCedObjectIDs();
+    removeAllObjectsByID(toDelete);
     this.objectStore.removeAllObjectsByID(gcResult);
   }
 

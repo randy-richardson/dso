@@ -29,9 +29,18 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
   public void handleEvent(final EventContext context) {
     final GCResultContext gcResult = (GCResultContext) context;
     final GarbageCollectionInfo gcInfo = gcResult.getGCInfo();
-
-    this.publisher.fireGCDeleteEvent(gcInfo);
     final SortedSet<ObjectID> sortedGarbage = gcResult.getGCedObjectIDs();
+
+    // TODO:: Ugly null checks
+    if (gcInfo == null) {
+      doInlineDeletes(sortedGarbage);
+    } else {
+      doDGCDeletes(gcInfo, sortedGarbage);
+    }
+  }
+
+  private void doDGCDeletes(GarbageCollectionInfo gcInfo, SortedSet<ObjectID> sortedGarbage) {
+    this.publisher.fireGCDeleteEvent(gcInfo);
     gcInfo.setActualGarbageCount(sortedGarbage.size());
     final long start = System.currentTimeMillis();
     this.objectStore.removeAllObjectsByIDNow(sortedGarbage);
@@ -42,6 +51,11 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
     gcInfo.setElapsedTime(elapsedTime);
     gcInfo.setEndObjectCount(this.objectStore.getObjectCount());
     this.publisher.fireGCCompletedEvent(gcInfo);
+
+  }
+
+  private void doInlineDeletes(SortedSet<ObjectID> sortedGarbage) {
+    this.objectStore.removeAllObjectsByIDNow(sortedGarbage);
   }
 
   @Override

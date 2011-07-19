@@ -34,9 +34,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -49,8 +49,7 @@ public class TransactionalObjectManagerImpl implements TransactionalObjectManage
                                                                            .getLogger(TransactionalObjectManagerImpl.class);
   private static final int                     MAX_COMMIT_SIZE         = TCPropertiesImpl
                                                                            .getProperties()
-                                                                           .getInt(
-                                                                                   TCPropertiesConsts.L2_OBJECTMANAGER_MAXOBJECTS_TO_COMMIT);
+                                                                           .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_MAXOBJECTS_TO_COMMIT);
   private final ObjectManager                  objectManager;
   private final ServerTransactionSequencer     sequencer;
   private final ServerGlobalTransactionManager gtxm;
@@ -375,7 +374,6 @@ public class TransactionalObjectManagerImpl implements TransactionalObjectManage
         break;
       }
     }
-
     ctc.initialize(txnIDs, objects.values(), newRoots);
 
     for (Iterator j = objects.keySet().iterator(); j.hasNext();) {

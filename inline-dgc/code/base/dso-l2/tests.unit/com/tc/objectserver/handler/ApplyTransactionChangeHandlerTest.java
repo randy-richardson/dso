@@ -27,6 +27,7 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.core.impl.TestServerConfigurationContext;
 import com.tc.objectserver.gtx.TestGlobalTransactionManager;
 import com.tc.objectserver.impl.ObjectInstanceMonitorImpl;
+import com.tc.objectserver.impl.TestDeleteObjectManager;
 import com.tc.objectserver.locks.NotifiedWaiters;
 import com.tc.objectserver.tx.NullTransactionalObjectManager;
 import com.tc.objectserver.tx.ServerTransaction;
@@ -51,6 +52,7 @@ public class ApplyTransactionChangeHandlerTest extends TestCase {
   private TestGlobalTransactionManager  gtxm;
   private TestLockManager               lockManager;
   private MockSink                      broadcastSink;
+  private TestDeleteObjectManager       deleteObjectManager;
 
   @Override
   public void setUp() throws Exception {
@@ -58,7 +60,8 @@ public class ApplyTransactionChangeHandlerTest extends TestCase {
     this.transactionManager = new TestServerTransactionManager();
     this.lockManager = new TestLockManager();
     this.gtxm = new TestGlobalTransactionManager();
-    this.handler = new ApplyTransactionChangeHandler(this.instanceMonitor, this.gtxm);
+    this.deleteObjectManager = new TestDeleteObjectManager();
+    this.handler = new ApplyTransactionChangeHandler(this.instanceMonitor, this.gtxm, this.deleteObjectManager);
 
     MockStage stageBo = new MockStage("Bo");
     MockStage stageCo = new MockStage("Co");

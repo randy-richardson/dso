@@ -974,6 +974,10 @@ public class ObjectRequestManagerTest extends TestCase {
       return getObjectByID(id);
     }
 
+    public void deleteObjects(GCResultContext resultContext) {
+      throw new NotImplementedException(TestObjectManager.class);
+    }
+
   }
 
   private static class TestMessageChannel implements MessageChannel {

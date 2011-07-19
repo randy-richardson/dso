@@ -81,6 +81,7 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public static final String SEARCH_QUERY_REQUEST_STAGE                         = "search_query_request_stage";
   public static final String INVALIDATE_OBJECTS_STAGE                           = "invalidate_objects_stage";
   public static final String VALIDATE_OBJECTS_STAGE                             = "validate_objects_stage";
+  public static final String DELETE_OBJECT_STAGE                               = "delete_objects_stage";
 
   // TODO::Move to enterprise
   public static final String AA_TRANSACTION_WATERMARK_BROADCAST_STAGE           = "aa_transaction_watermark_broadcast_stage";

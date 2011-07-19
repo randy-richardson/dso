@@ -4,6 +4,8 @@
  */
 package com.tc.objectserver.tx;
 
+import com.tc.logging.TCLogger;
+import com.tc.logging.TCLogging;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
@@ -22,22 +24,23 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 public final class TxnObjectGrouping implements PrettyPrintable {
-  private static final int          MAX_OBJECTS    = TCPropertiesImpl
-                                                       .getProperties()
-                                                       .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_MAXOBJECTS_INTXNOBJ_GROUPING);
-  private static final int          MAX_TXNS       = TCPropertiesImpl
-                                                       .getProperties()
-                                                       .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_MAXTXNS_INTXNOBJECT_GROUPING);
+  private static final TCLogger           logger         = TCLogging.getLogger(TxnObjectGrouping.class);
+  private static final int                MAX_OBJECTS    = TCPropertiesImpl
+                                                             .getProperties()
+                                                             .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_MAXOBJECTS_INTXNOBJ_GROUPING);
+  private static final int                MAX_TXNS       = TCPropertiesImpl
+                                                             .getProperties()
+                                                             .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_MAXTXNS_INTXNOBJECT_GROUPING);
 
-  private static final State        APPLY_PENDING  = new State("APPLY_PENDING");
-  private static final State        COMMIT_PENDING = new State("COMMIT_PENDING");
+  private static final State              APPLY_PENDING  = new State("APPLY_PENDING");
+  private static final State              COMMIT_PENDING = new State("COMMIT_PENDING");
 
-  private final ServerTransactionID txID;
-  private Map                       txns;
-  private Map                       objects;
-  private Map                       newRootsMap;
-  private int                       pendingApplys;
-  private boolean                   isActive       = true;
+  private final ServerTransactionID       txID;
+  private Map<ServerTransactionID, State> txns;
+  private Map                             objects;
+  private Map                             newRootsMap;
+  private int                             pendingApplys;
+  private boolean                         isActive       = true;
 
   public TxnObjectGrouping(ServerTransactionID sTxID, Map newRootsMap) {
     this.txID = sTxID;
@@ -46,7 +49,7 @@ public final class TxnObjectGrouping implements PrettyPrintable {
     } else {
       this.newRootsMap = new HashMap(newRootsMap);
     }
-    this.txns = new HashMap();
+    this.txns = new HashMap<ServerTransactionID, State>();
     this.txns.put(sTxID, APPLY_PENDING);
     this.pendingApplys = 1;
     this.objects = Collections.EMPTY_MAP;

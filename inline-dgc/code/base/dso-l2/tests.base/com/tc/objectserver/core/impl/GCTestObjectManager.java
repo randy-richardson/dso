@@ -182,7 +182,10 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
 
   // TODO: just garbage collector complete interface.
   public void notifyGCComplete(GCResultContext resultContext) {
+    deleteObjects(resultContext);
+  }
 
+  public void deleteObjects(GCResultContext resultContext) {
     GarbageCollectionInfo gcInfo = resultContext.getGCInfo();
 
     gcPublisher.fireGCDeleteEvent(gcInfo);

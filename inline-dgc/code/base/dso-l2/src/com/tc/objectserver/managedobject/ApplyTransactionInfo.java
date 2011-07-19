@@ -6,6 +6,7 @@ package com.tc.objectserver.managedobject;
 
 import com.tc.object.ObjectID;
 import com.tc.util.ObjectIDSet;
+import com.tc.util.TCCollections;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,15 +14,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 public class ApplyTransactionInfo {
 
-  private final Map     nodes;
-  private final Set     parents;
-  private final boolean activeTxn;
-  private Set<ObjectID> ignoreBroadcasts = Collections.EMPTY_SET;
-  private Set<ObjectID> initiateEviction = Collections.EMPTY_SET;
-  private Set<ObjectID> invalidate       = Collections.EMPTY_SET;
+  private final Map           nodes;
+  private final Set           parents;
+  private final boolean       activeTxn;
+  private Set<ObjectID>       ignoreBroadcasts = Collections.EMPTY_SET;
+  private Set<ObjectID>       initiateEviction = Collections.EMPTY_SET;
+  private Set<ObjectID>       invalidate       = Collections.EMPTY_SET;
+  private SortedSet<ObjectID> deleteObjects    = TCCollections.EMPTY_SORTED_SET;
 
   // For tests
   public ApplyTransactionInfo() {
@@ -149,4 +152,16 @@ public class ApplyTransactionInfo {
   public Set<ObjectID> getObjectIDsToInvalidate() {
     return invalidate;
   }
+
+  public void deleteObject(ObjectID old) {
+    if (this.deleteObjects == TCCollections.EMPTY_SORTED_SET) {
+      this.deleteObjects = new ObjectIDSet();
+    }
+    this.deleteObjects.add(old);
+  }
+
+  public SortedSet<ObjectID> getObjectIDsToDelete() {
+    return deleteObjects;
+  }
+
 }

@@ -153,6 +153,7 @@ import com.tc.object.net.DSOChannelManagerMBean;
 import com.tc.object.session.NullSessionManager;
 import com.tc.object.session.SessionManager;
 import com.tc.objectserver.DSOApplicationEvents;
+import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectRequestManager;
 import com.tc.objectserver.api.ObjectStatsManager;
@@ -182,6 +183,7 @@ import com.tc.objectserver.handler.ClientChannelOperatorEventlistener;
 import com.tc.objectserver.handler.ClientHandshakeHandler;
 import com.tc.objectserver.handler.ClientLockStatisticsHandler;
 import com.tc.objectserver.handler.CommitTransactionChangeHandler;
+import com.tc.objectserver.handler.DeleteObjectHandler;
 import com.tc.objectserver.handler.GarbageDisposeHandler;
 import com.tc.objectserver.handler.GlobalTransactionIDBatchRequestHandler;
 import com.tc.objectserver.handler.InvalidateObjectsHandler;
@@ -942,9 +944,15 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     stageManager.createStage(ServerConfigurationContext.TRANSACTION_LOOKUP_STAGE, new TransactionLookupHandler(), 1,
                              maxStageSize);
 
+    final DeleteObjectManager deleteObjectManager = new DeleteObjectManagerImpl();
+    final Stage deleteObjectStage = stageManager.createStage(ServerConfigurationContext.DELETE_OBJECT_STAGE,
+                                                             new DeleteObjectHandler(deleteObjectManager), 1, -1);
+    deleteObjectManager.setDeleteObjectSink(deleteObjectStage.getSink());
+
     // Lookup stage should never be blocked trying to add to apply stage
     stageManager.createStage(ServerConfigurationContext.APPLY_CHANGES_STAGE,
-                             new ApplyTransactionChangeHandler(instanceMonitor, this.transactionManager), 1, -1);
+                             new ApplyTransactionChangeHandler(instanceMonitor, this.transactionManager,
+                                                               deleteObjectManager), 1, -1);
 
     stageManager.createStage(ServerConfigurationContext.APPLY_COMPLETE_STAGE, new ApplyCompleteTransactionHandler(), 1,
                              maxStageSize);

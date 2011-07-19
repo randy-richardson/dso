@@ -191,6 +191,10 @@ public class TestObjectManager implements ObjectManager, ObjectStatsManager {
     throw new ImplementMe();
   }
 
+  public void deleteObjects(GCResultContext gcResult) {
+    throw new ImplementMe();
+  }
+
   public void flushAndEvict(List objects2Flush) {
     throw new ImplementMe();
   }
