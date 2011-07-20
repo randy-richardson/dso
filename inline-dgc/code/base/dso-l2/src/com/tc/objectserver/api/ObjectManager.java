@@ -7,6 +7,7 @@ package com.tc.objectserver.api;
 import com.tc.net.NodeID;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.context.GCResultContext;
+import com.tc.objectserver.context.GarbageDisposalContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollector;
@@ -112,7 +113,7 @@ public interface ObjectManager extends ManagedObjectProvider, ObjectManagerMBean
    */
   public void notifyGCComplete(GCResultContext resultContext);
 
-  public void deleteObjects(GCResultContext resultContext);
+  public void deleteObjects(GarbageDisposalContext garbageDisposalContext);
 
   public void setStatsListener(ObjectManagerStatsListener listener);
 

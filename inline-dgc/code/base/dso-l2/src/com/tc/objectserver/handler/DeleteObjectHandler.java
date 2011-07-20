@@ -11,7 +11,7 @@ import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectManager;
-import com.tc.objectserver.context.GCResultContext;
+import com.tc.objectserver.context.GarbageDisposalContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 
 import java.util.SortedSet;
@@ -28,7 +28,7 @@ public class DeleteObjectHandler extends AbstractEventHandler {
   @Override
   public void handleEvent(EventContext context) {
     final SortedSet<ObjectID> objectsToDelete = deleteObjectManager.getObjectsToDelete();
-    objectManager.deleteObjects(new GCResultContext(objectsToDelete, null));
+    objectManager.deleteObjects(new GarbageDisposalContext(objectsToDelete));
     deleteObjectManager.deleteObjectsIfNecessary();
   }
 

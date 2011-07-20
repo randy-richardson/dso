@@ -19,6 +19,7 @@ import com.tc.objectserver.api.ObjectManagerLookupResults;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.api.ShutdownError;
 import com.tc.objectserver.context.GCResultContext;
+import com.tc.objectserver.context.GarbageDisposalContext;
 import com.tc.objectserver.context.ManagedObjectFaultingContext;
 import com.tc.objectserver.context.ManagedObjectFlushingContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
@@ -866,8 +867,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     processPendingLookups();
   }
 
-  public void deleteObjects(GCResultContext gcResult) {
-    final Set<ObjectID> toDelete = gcResult.getGCedObjectIDs();
+  public void deleteObjects(final GarbageDisposalContext gcResult) {
+    final Set<ObjectID> toDelete = gcResult.getGarbageIDs();
     removeAllObjectsByID(toDelete);
     this.objectStore.removeAllObjectsByID(gcResult);
   }

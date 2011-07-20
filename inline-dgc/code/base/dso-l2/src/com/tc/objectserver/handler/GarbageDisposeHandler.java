@@ -9,6 +9,7 @@ import com.tc.async.api.ConfigurationContext;
 import com.tc.async.api.EventContext;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.context.GCResultContext;
+import com.tc.objectserver.context.GarbageDisposalContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
@@ -27,23 +28,26 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
 
   @Override
   public void handleEvent(final EventContext context) {
-    final GCResultContext gcResult = (GCResultContext) context;
-    final GarbageCollectionInfo gcInfo = gcResult.getGCInfo();
-    final SortedSet<ObjectID> sortedGarbage = gcResult.getGCedObjectIDs();
+    if (!(context instanceof GarbageDisposalContext)) throw new AssertionError("Unknown context type: "
+                                                                               + context.getClass().getName());
 
-    // TODO:: Ugly null checks
-    if (gcInfo == null) {
-      doInlineDeletes(sortedGarbage);
+    final GarbageDisposalContext garbageDisposalContext = (GarbageDisposalContext) context;
+    if (garbageDisposalContext instanceof GCResultContext) {
+      doDGCDeletes((GCResultContext) garbageDisposalContext);
     } else {
-      doDGCDeletes(gcInfo, sortedGarbage);
+      doGarbageDisposal(garbageDisposalContext);
     }
   }
 
-  private void doDGCDeletes(GarbageCollectionInfo gcInfo, SortedSet<ObjectID> sortedGarbage) {
+  private void doDGCDeletes(GCResultContext gcResultContext) {
+    final GarbageCollectionInfo gcInfo = gcResultContext.getGCInfo();
+    final SortedSet<ObjectID> sortedGarbage = gcResultContext.getGarbageIDs();
+
     this.publisher.fireGCDeleteEvent(gcInfo);
     gcInfo.setActualGarbageCount(sortedGarbage.size());
     final long start = System.currentTimeMillis();
-    this.objectStore.removeAllObjectsByIDNow(sortedGarbage);
+
+    doGarbageDisposal(gcResultContext);
 
     final long elapsed = System.currentTimeMillis() - start;
     gcInfo.setDeleteStageTime(elapsed);
@@ -54,8 +58,8 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
 
   }
 
-  private void doInlineDeletes(SortedSet<ObjectID> sortedGarbage) {
-    this.objectStore.removeAllObjectsByIDNow(sortedGarbage);
+  private void doGarbageDisposal(GarbageDisposalContext garbageDisposalContext) {
+    this.objectStore.removeAllObjectsByIDNow(garbageDisposalContext.getGarbageIDs());
   }
 
   @Override

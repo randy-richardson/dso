@@ -12,6 +12,7 @@ import com.tc.object.cache.Evictable;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.context.GCResultContext;
+import com.tc.objectserver.context.GarbageDisposalContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
@@ -185,13 +186,14 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
     deleteObjects(resultContext);
   }
 
-  public void deleteObjects(GCResultContext resultContext) {
+  public void deleteObjects(GarbageDisposalContext garbageDisposalContext) {
+    GCResultContext resultContext = (GCResultContext) garbageDisposalContext;
     GarbageCollectionInfo gcInfo = resultContext.getGCInfo();
 
     gcPublisher.fireGCDeleteEvent(gcInfo);
     long start = System.currentTimeMillis();
 
-    SortedSet<ObjectID> ids = resultContext.getGCedObjectIDs();
+    SortedSet<ObjectID> ids = resultContext.getGarbageIDs();
     for (Object element : ids) {
       ObjectID objectID = (ObjectID) element;
       managed.remove(objectID);

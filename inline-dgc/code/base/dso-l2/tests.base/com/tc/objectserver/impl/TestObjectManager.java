@@ -15,6 +15,7 @@ import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.api.ObjectStatsManager;
 import com.tc.objectserver.context.GCResultContext;
+import com.tc.objectserver.context.GarbageDisposalContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.impl.TestManagedObject;
@@ -191,7 +192,7 @@ public class TestObjectManager implements ObjectManager, ObjectStatsManager {
     throw new ImplementMe();
   }
 
-  public void deleteObjects(GCResultContext gcResult) {
+  public void deleteObjects(GarbageDisposalContext garbageDisposalContext) {
     throw new ImplementMe();
   }
 

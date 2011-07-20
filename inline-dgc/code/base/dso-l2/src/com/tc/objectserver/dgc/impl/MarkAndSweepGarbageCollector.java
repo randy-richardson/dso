@@ -76,7 +76,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
   public boolean deleteGarbage(final GCResultContext gcResult) {
     if (requestGCDeleteStart()) {
-      this.youngGenReferenceCollector.removeGarbage(gcResult.getGCedObjectIDs());
+      this.youngGenReferenceCollector.removeGarbage(gcResult.getGarbageIDs());
       this.objectManager.notifyGCComplete(gcResult);
       notifyGCComplete();
       return true;
