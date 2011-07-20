@@ -7,8 +7,8 @@ package com.tc.object.config;
 import org.knopflerfish.framework.BundleClassLoader;
 import org.osgi.framework.Bundle;
 import org.terracotta.groupConfigForL1.ServerGroup;
-import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
 import org.terracotta.groupConfigForL1.ServerInfo;
+import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
 import org.terracotta.license.LicenseException;
 
 import com.tc.asm.ClassAdapter;
@@ -69,9 +69,9 @@ import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.properties.ReconnectConfig;
 import com.tc.util.Assert;
 import com.tc.util.ClassUtils;
-import com.tc.util.ClassUtils.ClassSpec;
 import com.tc.util.ProductInfo;
 import com.tc.util.UUID;
+import com.tc.util.ClassUtils.ClassSpec;
 import com.tc.util.runtime.Vm;
 import com.terracottatech.config.DsoApplication;
 import com.terracottatech.config.L1ReconnectPropertiesDocument;
@@ -88,14 +88,15 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -326,13 +327,11 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     if (hasSpec(classInfo)) { return; }
 
     // The addition of the lock expression and the include need to be atomic -- see LKC-2616
-    synchronized (this.instrumentationDescriptors) {
-      // TODO see LKC-1893. Need to check for primitive types, logically managed classes, etc.
-      if (!hasIncludeExcludePattern(classInfo)) {
-        // only add include if not specified in tc-config
-        addIncludePattern(expression, honorTransient, oldStyleCallConstructorOnLoad, honorVolatile);
-        addWriteAutolock(lockExpression);
-      }
+    // TODO see LKC-1893. Need to check for primitive types, logically managed classes, etc.
+    if (!hasIncludeExcludePattern(classInfo)) {
+      // only add include if not specified in tc-config
+      addIncludePattern(expression, honorTransient, oldStyleCallConstructorOnLoad, honorVolatile);
+      addWriteAutolock(lockExpression);
     }
   }
 
@@ -659,9 +658,8 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
       type = fi.getType().getName();
     }
     InjectionInstrumentation instrumentation = injectionRegistry.lookupInstrumentation(type);
-    if (null == instrumentation) { throw new UnsupportedInjectedDsoInstanceTypeException(classInfo.getName(),
-                                                                                         fi.getName(), fi.getType()
-                                                                                             .getName()); }
+    if (null == instrumentation) { throw new UnsupportedInjectedDsoInstanceTypeException(classInfo.getName(), fi
+        .getName(), fi.getType().getName()); }
 
     TransparencyClassSpec spec = getOrCreateSpec(classInfo.getName());
     spec.setHasOnLoadInjection(true);
@@ -1208,15 +1206,29 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     locks.add(0, new Lock(methodPattern, lockDefinition));
   }
 
+  private static void debug(String msg) {
+    Date date = new Date();
+    System.out.println(":::::::: XXX " + date + " [" + date.getTime() + "] " + Thread.currentThread().getName() + ": "
+                       + msg);
+  }
+
   public boolean shouldBeAdapted(final ClassInfo classInfo) {
     // now check if class is adaptable
     String fullClassName = classInfo.getName();
+
+    // XXX: debugging for MNK-2290
+    final boolean DEBUG = fullClassName != null && fullClassName.endsWith("DMITarget");
+
     Boolean cache = readAdaptableCache(fullClassName);
-    if (cache != null) { return cache.booleanValue(); }
+    if (cache != null) {
+      if (DEBUG) debug("cached value: " + cache);
+      return cache.booleanValue();
+    }
 
     // @see isTCPatternMatchingHack() note elsewhere
     if (isTCPatternMatchingHack(classInfo) || permanentExcludesMatcher.match(classInfo)) {
       // permanent Excludes
+      if (DEBUG) debug("permanent exclude");
       return cacheIsAdaptable(fullClassName, false);
     }
 
@@ -1233,16 +1245,24 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
       // We make inner classes of logical classes not instrumented while logical
       // bases are instrumented...UNLESS there is a explicit spec for said inner class
       boolean adaptable = getSpec(fullClassName) != null || outerClassname.equals(fullClassName);
+      if (DEBUG) debug("outer is logical, this class adaptable = " + adaptable);
       return cacheIsAdaptable(fullClassName, adaptable);
     }
 
     // If a root is defined then we automagically instrument
-    if (classContainsAnyRoots(classInfo)) { return cacheIsAdaptable(fullClassName, true); }
+    if (classContainsAnyRoots(classInfo)) {
+      if (DEBUG) debug("contains roots");
+      return cacheIsAdaptable(fullClassName, true);
+    }
 
     // existing class specs trump config
-    if (hasSpec(fullClassName)) { return cacheIsAdaptable(fullClassName, true); }
+    if (hasSpec(fullClassName)) {
+      if (DEBUG) debug("has spec");
+      return cacheIsAdaptable(fullClassName, true);
+    }
 
     InstrumentationDescriptor desc = getInstrumentationDescriptorFor(classInfo);
+    if (DEBUG) debug("matched desc: " + desc);
     return cacheIsAdaptable(fullClassName, desc.isInclude());
   }
 
@@ -1861,8 +1881,8 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
       ConnectionInfo[] connectionInfo = connectionInfoItems[i].getConnectionInfos();
       for (int j = 0; j < connectionInfo.length; j++) {
         ConnectionInfo connectionIn = new ConnectionInfo(getIpAddressOfServer(connectionInfo[j].getHostname()),
-                                                         connectionInfo[j].getPort(), i * j + j,
-                                                         connectionInfo[j].getGroupName());
+                                                         connectionInfo[j].getPort(), i * j + j, connectionInfo[j]
+                                                             .getGroupName());
         connInfoFromL1.add(connectionIn);
       }
     }
