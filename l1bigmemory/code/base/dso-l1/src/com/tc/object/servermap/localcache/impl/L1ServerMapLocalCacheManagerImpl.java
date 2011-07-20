@@ -55,7 +55,10 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     if (serverMapLocalCache == null) {
       serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this, localCacheEnabled,
                                                         tcObjectServerMap);
-      localCaches.put(mapId, serverMapLocalCache);
+      ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
+      if (old != null) {
+        serverMapLocalCache = old;
+      }
     }
     return serverMapLocalCache;
   }
