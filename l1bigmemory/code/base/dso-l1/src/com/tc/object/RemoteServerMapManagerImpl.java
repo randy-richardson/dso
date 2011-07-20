@@ -18,7 +18,7 @@ import com.tc.object.msg.GetAllSizeServerMapRequestMessage;
 import com.tc.object.msg.GetValueServerMapRequestMessage;
 import com.tc.object.msg.ServerMapMessageFactory;
 import com.tc.object.msg.ServerMapRequestMessage;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionManager;
 import com.tc.properties.TCPropertiesConsts;
@@ -59,7 +59,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private boolean                                                        pendingSendTaskScheduled                  = false;
 
   // private final Sink ttiTTLEvitionSink;
-  private final GlobalLocalCacheManager                                  globalLocalCacheManager;
+  private final L1ServerMapLocalCacheManager                                  globalLocalCacheManager;
 
   private static enum State {
     PAUSED, RUNNING, STARTING, STOPPED
@@ -67,7 +67,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
   public RemoteServerMapManagerImpl(final GroupID groupID, final TCLogger logger,
                                     final ServerMapMessageFactory smmFactory, final SessionManager sessionManager,
-                                    final Sink ttiTTLEvitionSink, GlobalLocalCacheManager globalLocalCacheManager) {
+                                    final Sink ttiTTLEvitionSink, L1ServerMapLocalCacheManager globalLocalCacheManager) {
     this.groupID = groupID;
     this.logger = logger;
     this.smmFactory = smmFactory;

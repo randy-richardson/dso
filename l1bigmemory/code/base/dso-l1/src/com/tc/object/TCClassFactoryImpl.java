@@ -24,7 +24,7 @@ import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.field.TCFieldFactory;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.LoaderDescription;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.util.ClassUtils;
 import com.tc.util.runtime.Vm;
 
@@ -45,13 +45,13 @@ public class TCClassFactoryImpl implements TCClassFactory {
   protected final DSOClientConfigHelper            config;
   protected final ClassProvider                    classProvider;
   protected final DNAEncoding                      encoding;
-  private final GlobalLocalCacheManager            globalLocalCacheManager;
+  private final L1ServerMapLocalCacheManager            globalLocalCacheManager;
   private final RemoteServerMapManager             remoteServerMapManager;
   private final Manager                            manager;
 
   public TCClassFactoryImpl(final TCFieldFactory fieldFactory, final DSOClientConfigHelper config,
                             final ClassProvider classProvider, final DNAEncoding dnaEncoding, Manager manager,
-                            final GlobalLocalCacheManager globalLocalCacheManager,
+                            final L1ServerMapLocalCacheManager globalLocalCacheManager,
                             final RemoteServerMapManager remoteServerMapManager) {
     this.fieldFactory = fieldFactory;
     this.config = config;

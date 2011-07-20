@@ -15,12 +15,12 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCObject;
 import com.tc.object.dmi.DmiDescriptor;
 import com.tc.object.locks.LockID;
-import com.tc.object.locks.LocksRecallHelper;
+import com.tc.object.locks.LocksRecallService;
 import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
 import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
@@ -59,7 +59,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
   private int                              maxInMemory = 1000;
   private L1ServerMapLocalCacheStore       cacheIDStore;
   private TestLocksRecallHelper            locksRecallHelper;
-  private GlobalLocalCacheManagerImpl      globalLocalCacheManager;
+  private L1ServerMapLocalCacheManagerImpl      globalLocalCacheManager;
   private MySink                           sink;
 
   @Override
@@ -77,7 +77,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     locksRecallHelper = testLocksRecallHelper;
     maxInMemory = maxElementsInMemory;
     sink = new MySink();
-    globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper, sink, Mockito.mock(Sink.class));
+    globalLocalCacheManager = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, sink, Mockito.mock(Sink.class));
     locksRecallHelper.setGlobalLocalCacheManager(globalLocalCacheManager);
     final ClientTransaction clientTransaction = new MyClientTransaction(latch1, latch2);
     ClientObjectManager com = Mockito.mock(ClientObjectManager.class);
@@ -990,15 +990,15 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   }
 
-  private static class TestLocksRecallHelper implements LocksRecallHelper {
+  private static class TestLocksRecallHelper implements LocksRecallService {
     private volatile Set<LockID>             lockIds;
-    private volatile GlobalLocalCacheManager globalLocalCacheManager;
+    private volatile L1ServerMapLocalCacheManager globalLocalCacheManager;
 
-    public void setGlobalLocalCacheManager(GlobalLocalCacheManager globalLocalCacheManagerParam) {
+    public void setGlobalLocalCacheManager(L1ServerMapLocalCacheManager globalLocalCacheManagerParam) {
       this.globalLocalCacheManager = globalLocalCacheManagerParam;
     }
 
-    public void initiateLockRecall(Set<LockID> locks) {
+    public void recallLocks(Set<LockID> locks) {
       this.lockIds = locks;
       for (LockID id : lockIds) {
         globalLocalCacheManager.removeEntriesForLockId(id);
@@ -1018,7 +1018,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     private volatile Set<LockID> lockIdsToEvict = new HashSet<LockID>();
 
     @Override
-    public void initiateLockRecall(Set<LockID> locks) {
+    public void recallLocks(Set<LockID> locks) {
       for (LockID id : locks) {
         lockIdsToEvict.add(id);
       }

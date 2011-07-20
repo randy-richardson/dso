@@ -13,7 +13,7 @@ import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.MapOperationType;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
@@ -56,7 +56,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
   public TCObjectServerMapImpl(final Manager manager, final ClientObjectManager objectManager,
                                final RemoteServerMapManager serverMapManager, final ObjectID id, final Object peer,
                                final TCClass tcc, final boolean isNew,
-                               final GlobalLocalCacheManager globalLocalCacheManager) {
+                               final L1ServerMapLocalCacheManager globalLocalCacheManager) {
     super(id, peer, tcc, isNew);
     this.groupID = new GroupID(id.getGroupID());
     this.objectManager = objectManager;

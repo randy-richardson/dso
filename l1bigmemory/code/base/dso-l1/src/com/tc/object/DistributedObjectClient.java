@@ -99,8 +99,8 @@ import com.tc.object.loaders.ClassProvider;
 import com.tc.object.locks.ClientLockManager;
 import com.tc.object.locks.ClientLockManagerConfigImpl;
 import com.tc.object.locks.ClientServerExchangeLockContext;
-import com.tc.object.locks.LocksRecallHelper;
-import com.tc.object.locks.LocksRecallHelperImpl;
+import com.tc.object.locks.LocksRecallService;
+import com.tc.object.locks.LocksRecallServiceImpl;
 import com.tc.object.logging.RuntimeLogger;
 import com.tc.object.msg.AcknowledgeTransactionMessageImpl;
 import com.tc.object.msg.BatchTransactionAcknowledgeMessageImpl;
@@ -142,8 +142,8 @@ import com.tc.object.msg.SearchQueryResponseMessageImpl;
 import com.tc.object.msg.ServerMapEvictionBroadcastMessageImpl;
 import com.tc.object.msg.SyncWriteTransactionReceivedMessage;
 import com.tc.object.net.DSOClientMessageChannel;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
-import com.tc.object.servermap.localcache.impl.GlobalLocalCacheManagerImpl;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
+import com.tc.object.servermap.localcache.impl.L1ServerMapLocalCacheManagerImpl;
 import com.tc.object.servermap.localcache.impl.L1ServerMapCapacityEvictionHandler;
 import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionManager;
@@ -266,7 +266,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
   private Stage                                      clusterEventsStage;
 
-  private GlobalLocalCacheManager                    globalLocalCacheManager;
+  private L1ServerMapLocalCacheManager                    globalLocalCacheManager;
 
   public DistributedObjectClient(final DSOClientConfigHelper config, final TCThreadGroup threadGroup,
                                  final ClassProvider classProvider,
@@ -547,7 +547,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     LockRecallHandler lockRecallHandler = new LockRecallHandler();
     final Stage lockRecallStage = stageManager.createStage(ClientConfigurationContext.LOCK_RECALL_STAGE,
                                                            lockRecallHandler, 8, maxSize);
-    LocksRecallHelper locksRecallHelper = new LocksRecallHelperImpl(lockRecallHandler, lockRecallStage);
+    LocksRecallService locksRecallHelper = new LocksRecallServiceImpl(lockRecallHandler, lockRecallStage);
 
     final Stage ttiTTLEvictionStage = stageManager.createStage(ClientConfigurationContext.TTI_TTL_EVICTION_STAGE,
                                                                new TimeBasedEvictionHandler(), 8, maxSize);
@@ -558,7 +558,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final L1ServerMapCapacityEvictionHandler l1ServerMapCapacityEvictionHandler = new L1ServerMapCapacityEvictionHandler();
     final Stage capacityEvictionStage = stageManager.createStage(ClientConfigurationContext.CAPACITY_EVICTION_STAGE,
                                                                  l1ServerMapCapacityEvictionHandler, 8, maxSize);
-    globalLocalCacheManager = new GlobalLocalCacheManagerImpl(locksRecallHelper, capacityEvictionStage.getSink(),
+    globalLocalCacheManager = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, capacityEvictionStage.getSink(),
                                                               ttiTTLEvictionStage.getSink());
     l1ServerMapCapacityEvictionHandler.initialize(globalLocalCacheManager);
 

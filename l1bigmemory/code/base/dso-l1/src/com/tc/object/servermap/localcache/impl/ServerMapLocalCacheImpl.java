@@ -13,7 +13,7 @@ import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.locks.LockID;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
 import com.tc.object.servermap.localcache.LocalCacheStoreIncoherentValue;
@@ -41,7 +41,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private static final LocalStoreKeySetFilter                                       IGNORE_ID_FILTER = new IgnoreIdsFilter();
 
   private final ObjectID                                                            mapID;
-  private final GlobalLocalCacheManager                                             globalLocalCacheManager;
+  private final L1ServerMapLocalCacheManager                                             globalLocalCacheManager;
   private volatile boolean                                                          localCacheEnabled;
   private volatile L1ServerMapLocalCacheStore<Object, AbstractLocalCacheStoreValue> localStore;
   private final ClientObjectManager                                                 objectManager;
@@ -53,7 +53,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
    * Not public constructor, should be created only by the global local cache manager
    */
   ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
-                          GlobalLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled,
+                          L1ServerMapLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled,
                           TCObjectServerMap tcObjectServerMap) {
     this.mapID = mapID;
     this.objectManager = objectManager;
@@ -331,12 +331,12 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private void initiateLockRecall(LockID id) {
     if (id != null) {
       Set<LockID> lockID = Collections.singleton(id);
-      globalLocalCacheManager.initiateLockRecall(lockID);
+      globalLocalCacheManager.recallLocks(lockID);
     }
   }
 
   private void initiateLockRecall(Set<LockID> ids) {
-    globalLocalCacheManager.initiateLockRecall(ids);
+    globalLocalCacheManager.recallLocks(ids);
   }
 
   private void initiateInlineLockRecall(Set<LockID> ids) {

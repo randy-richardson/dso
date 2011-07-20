@@ -5,13 +5,13 @@ package com.tc.object.servermap.localcache.impl;
 
 import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.EventContext;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 
 import java.util.Map;
 
 public class L1ServerMapCapacityEvictionHandler extends AbstractEventHandler {
-  private volatile GlobalLocalCacheManager globalLocalCacheManager;
+  private volatile L1ServerMapLocalCacheManager globalLocalCacheManager;
 
   @Override
   public void handleEvent(EventContext context) {
@@ -45,7 +45,7 @@ public class L1ServerMapCapacityEvictionHandler extends AbstractEventHandler {
     }
   }
 
-  public void initialize(GlobalLocalCacheManager localCacheManager) {
+  public void initialize(L1ServerMapLocalCacheManager localCacheManager) {
     this.globalLocalCacheManager = localCacheManager;
   }
 }

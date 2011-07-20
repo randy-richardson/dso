@@ -11,9 +11,9 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
-import com.tc.object.locks.LocksRecallHelper;
+import com.tc.object.locks.LocksRecallService;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
@@ -27,20 +27,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
+public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheManager {
 
   private final ConcurrentHashMap<ObjectID, ServerMapLocalCache>                   localCaches             = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
   private final TCConcurrentMultiMap<LockID, ObjectID>                             lockIdsToCdsmIds        = new TCConcurrentMultiMap<LockID, ObjectID>();
   private final Map<L1ServerMapLocalCacheStore, L1ServerMapLocalStoreEvictionInfo> stores                  = new IdentityHashMap<L1ServerMapLocalCacheStore, L1ServerMapLocalStoreEvictionInfo>();
   private final GlobalL1ServerMapLocalCacheStoreListener                           localCacheStoreListener = new GlobalL1ServerMapLocalCacheStoreListener();
   private final AtomicBoolean                                                      shutdown                = new AtomicBoolean();
-  private final LocksRecallHelper                                                  locksRecallHelper;
+  private final LocksRecallService                                                 locksRecallHelper;
   private final Sink                                                               capacityEvictionSink;
 
   // private final Sink ttittlExpiredSink;
 
-  public GlobalLocalCacheManagerImpl(LocksRecallHelper locksRecallHelper, Sink capacityEvictionSink,
-                                     Sink ttittlExpiredSink) {
+  public L1ServerMapLocalCacheManagerImpl(LocksRecallService locksRecallHelper, Sink capacityEvictionSink,
+                                          Sink ttittlExpiredSink) {
     this.locksRecallHelper = locksRecallHelper;
     this.capacityEvictionSink = capacityEvictionSink;
     // this.ttittlExpiredSink = ttittlExpiredSink;
@@ -81,8 +81,8 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
     localCaches.remove(mapID);
   }
 
-  public void initiateLockRecall(Set<LockID> lockIds) {
-    locksRecallHelper.initiateLockRecall(lockIds);
+  public void recallLocks(Set<LockID> lockIds) {
+    locksRecallHelper.recallLocks(lockIds);
   }
 
   public void recallLocksInline(Set<LockID> lockIds) {
@@ -170,7 +170,7 @@ public class GlobalLocalCacheManagerImpl implements GlobalLocalCacheManager {
       // This should be inside another thread, if not it will cause a deadlock
       L1ServerMapEvictedElementsContext context = new L1ServerMapEvictedElementsContext(
                                                                                         evictedElements,
-                                                                                        GlobalLocalCacheManagerImpl.this);
+                                                                                        L1ServerMapLocalCacheManagerImpl.this);
       capacityEvictionSink.add(context);
     }
 

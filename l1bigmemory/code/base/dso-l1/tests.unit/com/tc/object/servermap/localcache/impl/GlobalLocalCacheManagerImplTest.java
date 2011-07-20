@@ -18,8 +18,8 @@ import com.tc.object.ObjectID;
 import com.tc.object.context.LocksToRecallContext;
 import com.tc.object.handler.LockRecallHandler;
 import com.tc.object.locks.LockID;
-import com.tc.object.locks.LocksRecallHelper;
-import com.tc.object.locks.LocksRecallHelperImpl;
+import com.tc.object.locks.LocksRecallService;
+import com.tc.object.locks.LocksRecallServiceImpl;
 import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.MockClientLockManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
@@ -42,7 +42,7 @@ import junit.framework.Assert;
 import junit.framework.TestCase;
 
 public class GlobalLocalCacheManagerImplTest extends TestCase {
-  private GlobalLocalCacheManagerImpl globalLocalCacheManagerImpl;
+  private L1ServerMapLocalCacheManagerImpl globalLocalCacheManagerImpl;
   private MockClientLockManager       clientLockManager;
   private MySink                      testSink;
 
@@ -61,8 +61,8 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     Stage lockRecallStage = Mockito.mock(Stage.class);
     Mockito.when(lockRecallStage.getSink()).thenReturn(testSink);
 
-    LocksRecallHelper locksRecallHelper = new LocksRecallHelperImpl(lockRecallHandler, lockRecallStage);
-    this.globalLocalCacheManagerImpl = new GlobalLocalCacheManagerImpl(locksRecallHelper, testSink, Mockito
+    LocksRecallService locksRecallHelper = new LocksRecallServiceImpl(lockRecallHandler, lockRecallStage);
+    this.globalLocalCacheManagerImpl = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, testSink, Mockito
         .mock(Sink.class));
   }
 
@@ -106,7 +106,7 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     LockID lockID = new LongLockID(500);
     Set<LockID> lockIDs = Collections.singleton(lockID);
 
-    globalLocalCacheManagerImpl.initiateLockRecall(lockIDs);
+    globalLocalCacheManagerImpl.recallLocks(lockIDs);
     testSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
 
     Assert.assertEquals(1, clientLockManager.getRecallList().size());

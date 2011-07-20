@@ -46,7 +46,7 @@ import com.tc.object.msg.NodeMetaDataMessageFactory;
 import com.tc.object.msg.NodesWithKeysMessageFactory;
 import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.net.DSOClientMessageChannel;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.session.SessionManager;
 import com.tc.object.session.SessionProvider;
 import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
@@ -94,7 +94,7 @@ public interface DSOClientBuilder {
 
   RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
                                                       final SessionManager sessionManager, Sink ttiTTLEvitionSink,
-                                                      final GlobalLocalCacheManager globalLocalCacheManager);
+                                                      final L1ServerMapLocalCacheManager globalLocalCacheManager);
 
   RemoteSearchRequestManager createRemoteSearchRequestManager(final TCLogger logger,
                                                               final DSOClientMessageChannel dsoChannel,
@@ -161,7 +161,7 @@ public interface DSOClientBuilder {
 
   TCClassFactory createTCClassFactory(final DSOClientConfigHelper config, final ClassProvider classProvider,
                                       final DNAEncoding dnaEncoding, final Manager manager,
-                                      final GlobalLocalCacheManager globalLocalCacheManager,
+                                      final L1ServerMapLocalCacheManager globalLocalCacheManager,
                                       final RemoteServerMapManager remoteServerMapManager);
 
   LongGCLogger createLongGCLogger(long gcTimeOut);

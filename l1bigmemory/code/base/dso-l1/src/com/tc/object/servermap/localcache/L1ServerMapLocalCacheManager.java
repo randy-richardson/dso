@@ -9,7 +9,7 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
-import com.tc.object.locks.LocksRecallHelper;
+import com.tc.object.locks.LocksRecallService;
 
 import java.util.Map;
 import java.util.Set;
@@ -18,7 +18,7 @@ import java.util.Set;
  * A Global cache manager which contains info about all the LocalCache present in the L1.<br>
  * This acts a multiplexer between RemoteServerMapManager, HandshakeManager and the LocalCaches present
  */
-public interface GlobalLocalCacheManager extends LocksRecallHelper {
+public interface L1ServerMapLocalCacheManager extends LocksRecallService {
 
   /**
    * Create a local cache for use or return already created local cache for the mapId

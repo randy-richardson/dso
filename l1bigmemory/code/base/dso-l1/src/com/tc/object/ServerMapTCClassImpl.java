@@ -6,15 +6,15 @@ package com.tc.object;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.field.TCFieldFactory;
 import com.tc.object.loaders.LoaderDescription;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 
 public class ServerMapTCClassImpl extends TCClassImpl implements TCClass {
 
-  private final GlobalLocalCacheManager globalLocalCacheManager;
+  private final L1ServerMapLocalCacheManager globalLocalCacheManager;
   private final RemoteServerMapManager  remoteServerMapManager;
   private final Manager                 manager;
 
-  ServerMapTCClassImpl(final Manager manager, final GlobalLocalCacheManager globalLocalCacheManager,
+  ServerMapTCClassImpl(final Manager manager, final L1ServerMapLocalCacheManager globalLocalCacheManager,
                        final RemoteServerMapManager remoteServerMapManager, final TCFieldFactory factory,
                        final TCClassFactory clazzFactory, final ClientObjectManager objectManager, final Class peer,
                        final Class logicalSuperClass, final LoaderDescription loaderDesc,

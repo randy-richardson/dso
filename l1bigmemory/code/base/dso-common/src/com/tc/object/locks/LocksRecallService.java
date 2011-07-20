@@ -5,12 +5,12 @@ package com.tc.object.locks;
 
 import java.util.Set;
 
-public interface LocksRecallHelper {
+public interface LocksRecallService {
 
   /**
    * Locks are recalled asynchronously
    */
-  void initiateLockRecall(Set<LockID> lockIds);
+  void recallLocks(Set<LockID> lockIds);
 
   /**
    * Locks are recalled synchronously

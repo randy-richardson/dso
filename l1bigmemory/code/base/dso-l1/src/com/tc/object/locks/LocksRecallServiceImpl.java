@@ -10,17 +10,17 @@ import com.tc.object.handler.LockRecaller;
 
 import java.util.Set;
 
-public class LocksRecallHelperImpl implements LocksRecallHelper {
+public class LocksRecallServiceImpl implements LocksRecallService {
 
   private final LockRecaller lockRecaller;
   private final Sink         lockRecallSink;
 
-  public LocksRecallHelperImpl(LockRecaller lockRecaller, Stage lockRecallStage) {
+  public LocksRecallServiceImpl(LockRecaller lockRecaller, Stage lockRecallStage) {
     this.lockRecaller = lockRecaller;
     this.lockRecallSink = lockRecallStage.getSink();
   }
 
-  public void initiateLockRecall(Set<LockID> lockIds) {
+  public void recallLocks(Set<LockID> lockIds) {
     this.lockRecallSink.add(new LocksToRecallContext(lockIds));
   }
 

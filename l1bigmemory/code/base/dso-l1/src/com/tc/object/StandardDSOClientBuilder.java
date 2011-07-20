@@ -60,7 +60,7 @@ import com.tc.object.msg.NodeMetaDataMessageFactory;
 import com.tc.object.msg.NodesWithKeysMessageFactory;
 import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.net.DSOClientMessageChannel;
-import com.tc.object.servermap.localcache.GlobalLocalCacheManager;
+import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.session.SessionManager;
 import com.tc.object.session.SessionProvider;
 import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
@@ -274,7 +274,7 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
 
   public TCClassFactory createTCClassFactory(final DSOClientConfigHelper config, final ClassProvider classProvider,
                                              final DNAEncoding dnaEncoding, final Manager manager,
-                                             final GlobalLocalCacheManager localCacheManager,
+                                             final L1ServerMapLocalCacheManager localCacheManager,
                                              final RemoteServerMapManager remoteServerMapManager) {
     return new TCClassFactoryImpl(new TCFieldFactory(config), config, classProvider, dnaEncoding, manager,
                                   localCacheManager, remoteServerMapManager);
@@ -284,7 +284,7 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
                                                              final DSOClientMessageChannel dsoChannel,
                                                              final SessionManager sessionManager,
                                                              final Sink ttiTTLEvitionSink,
-                                                             final GlobalLocalCacheManager globalLocalCacheManager) {
+                                                             final L1ServerMapLocalCacheManager globalLocalCacheManager) {
     final GroupID defaultGroups[] = dsoChannel.getGroupIDs();
     Assert.assertNotNull(defaultGroups);
     Assert.assertEquals(1, defaultGroups.length);
