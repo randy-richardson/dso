@@ -211,8 +211,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
 
   @Override
   protected void clearedMap(ApplyTransactionInfo applyInfo, Collection values) {
-    // invalidation happens from the clients with CLEAR_LOCAL_CACHE
-    // TODO:: break it to multiple txn for large clears !!!
+    // Does not need to be batched here since deletion batching will happen in the lower layers.
     if (deleteValueOnRemove) {
       for (Object o : values) {
         if (o instanceof ObjectID) {

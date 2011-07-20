@@ -4,8 +4,6 @@
  */
 package com.tc.objectserver.tx;
 
-import com.tc.logging.TCLogger;
-import com.tc.logging.TCLogging;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
@@ -24,7 +22,6 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 public final class TxnObjectGrouping implements PrettyPrintable {
-  private static final TCLogger           logger         = TCLogging.getLogger(TxnObjectGrouping.class);
   private static final int                MAX_OBJECTS    = TCPropertiesImpl
                                                              .getProperties()
                                                              .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_MAXOBJECTS_INTXNOBJ_GROUPING);

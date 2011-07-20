@@ -867,10 +867,10 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     processPendingLookups();
   }
 
-  public void deleteObjects(final GarbageDisposalContext gcResult) {
-    final Set<ObjectID> toDelete = gcResult.getGarbageIDs();
+  public void deleteObjects(final GarbageDisposalContext garbageDisposalContext) {
+    final Set<ObjectID> toDelete = garbageDisposalContext.getGarbageIDs();
     removeAllObjectsByID(toDelete);
-    this.objectStore.removeAllObjectsByID(gcResult);
+    this.objectStore.removeAllObjectsByID(garbageDisposalContext);
   }
 
   private void flushAndCommit(final PersistenceTransaction persistenceTransaction, final ManagedObject managedObject) {

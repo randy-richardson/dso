@@ -4,8 +4,6 @@
 package com.tc.objectserver.impl;
 
 import com.tc.async.api.Sink;
-import com.tc.logging.TCLogger;
-import com.tc.logging.TCLogging;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.context.DeleteObjectContext;
@@ -14,8 +12,6 @@ import com.tc.util.ObjectIDSet;
 import java.util.SortedSet;
 
 public class DeleteObjectManagerImpl implements DeleteObjectManager {
-  private static final TCLogger     logger          = TCLogging.getLogger(DeleteObjectManager.class);
-
   private final SortedSet<ObjectID> objectsToDelete = new ObjectIDSet();
   private volatile Sink             deleteObjectSink;
 
