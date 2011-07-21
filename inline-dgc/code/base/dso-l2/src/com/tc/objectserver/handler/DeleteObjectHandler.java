@@ -15,16 +15,12 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import java.util.SortedSet;
 
 public class DeleteObjectHandler extends AbstractEventHandler {
-  private ObjectManager             objectManager;
-  private final DeleteObjectManager deleteObjectManager;
-
-  public DeleteObjectHandler(final DeleteObjectManager deleteObjectManager) {
-    this.deleteObjectManager = deleteObjectManager;
-  }
+  private ObjectManager       objectManager;
+  private DeleteObjectManager deleteObjectManager;
 
   @Override
   public void handleEvent(EventContext context) {
-    final SortedSet<ObjectID> objectsToDelete = deleteObjectManager.getObjectsToDelete();
+    final SortedSet<ObjectID> objectsToDelete = deleteObjectManager.nextObjectsToDelete();
     objectManager.deleteObjects(new GarbageDisposalContext(objectsToDelete));
     deleteObjectManager.deleteObjectsIfNecessary();
   }
@@ -34,5 +30,6 @@ public class DeleteObjectHandler extends AbstractEventHandler {
     super.initialize(context);
     final ServerConfigurationContext scc = (ServerConfigurationContext) context;
     objectManager = scc.getObjectManager();
+    deleteObjectManager = scc.getDeleteObjectManager();
   }
 }

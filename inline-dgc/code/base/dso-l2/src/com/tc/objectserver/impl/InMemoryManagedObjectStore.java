@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
 
 public class InMemoryManagedObjectStore implements ManagedObjectStore {
 
@@ -76,7 +75,7 @@ public class InMemoryManagedObjectStore implements ManagedObjectStore {
   }
 
   public void removeAllObjectsByID(final GarbageDisposalContext garbageDisposalContext) {
-    removeAllObjectsByIDNow(new TreeSet(garbageDisposalContext.getGarbageIDs()));
+    removeAllObjectsByIDNow(garbageDisposalContext.getGarbageIDs());
   }
 
   public synchronized ObjectIDSet getAllObjectIDs() {

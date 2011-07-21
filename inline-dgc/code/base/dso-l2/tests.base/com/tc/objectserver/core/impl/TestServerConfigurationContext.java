@@ -11,6 +11,7 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.net.ChannelStats;
 import com.tc.object.net.DSOChannelManager;
+import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectRequestManager;
 import com.tc.objectserver.api.ServerMapRequestManager;
@@ -142,4 +143,7 @@ public class TestServerConfigurationContext implements ServerConfigurationContex
     throw new ImplementMe();
   }
 
+  public DeleteObjectManager getDeleteObjectManager() {
+    throw new ImplementMe();
+  }
 }

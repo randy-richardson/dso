@@ -8,6 +8,7 @@ import com.tc.async.api.ConfigurationContext;
 import com.tc.l2.api.L2Coordinator;
 import com.tc.object.net.ChannelStats;
 import com.tc.object.net.DSOChannelManager;
+import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectRequestManager;
 import com.tc.objectserver.api.ServerMapRequestManager;
@@ -129,4 +130,6 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public IndexManager getIndexManager();
 
   public SearchRequestManager getSearchRequestManager();
+
+  public DeleteObjectManager getDeleteObjectManager();
 }

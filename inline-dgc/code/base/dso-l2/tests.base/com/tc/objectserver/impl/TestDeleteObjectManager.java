@@ -16,7 +16,7 @@ public class TestDeleteObjectManager implements DeleteObjectManager {
     // do nothing
   }
 
-  public SortedSet<ObjectID> getObjectsToDelete() {
+  public SortedSet<ObjectID> nextObjectsToDelete() {
     return TCCollections.EMPTY_OBJECT_ID_SET;
   }
 

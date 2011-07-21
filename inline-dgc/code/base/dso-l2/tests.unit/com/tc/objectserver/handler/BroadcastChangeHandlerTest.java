@@ -42,6 +42,7 @@ import com.tc.object.tx.ServerTransactionID;
 import com.tc.object.tx.TransactionID;
 import com.tc.object.tx.TxnBatchID;
 import com.tc.object.tx.TxnType;
+import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectManagerTest.TestDateDNA;
@@ -308,6 +309,9 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       throw new ImplementMe();
     }
 
+    public DeleteObjectManager getDeleteObjectManager() {
+      throw new ImplementMe();
+    }
   }
 
   private static class TestStage implements Stage {

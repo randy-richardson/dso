@@ -13,7 +13,11 @@ import java.util.SortedSet;
 
 public class DeleteObjectManagerImpl implements DeleteObjectManager {
   private final SortedSet<ObjectID> objectsToDelete = new ObjectIDSet();
-  private volatile Sink             deleteObjectSink;
+  private final Sink                deleteObjectSink;
+
+  public DeleteObjectManagerImpl(Sink deleteObjectSink) {
+    this.deleteObjectSink = deleteObjectSink;
+  }
 
   public synchronized void deleteObjects(SortedSet<ObjectID> objects) {
     if (!objects.isEmpty()) {
@@ -22,7 +26,7 @@ public class DeleteObjectManagerImpl implements DeleteObjectManager {
     }
   }
 
-  public synchronized SortedSet<ObjectID> getObjectsToDelete() {
+  public synchronized SortedSet<ObjectID> nextObjectsToDelete() {
     SortedSet<ObjectID> oids = new ObjectIDSet(objectsToDelete);
     objectsToDelete.clear();
     return oids;
@@ -36,9 +40,5 @@ public class DeleteObjectManagerImpl implements DeleteObjectManager {
 
   private void deleteObjects() {
     deleteObjectSink.addLossy(new DeleteObjectContext());
-  }
-
-  public void setDeleteObjectSink(Sink deleteObjectSink) {
-    this.deleteObjectSink = deleteObjectSink;
   }
 }
