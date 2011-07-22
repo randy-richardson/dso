@@ -923,13 +923,18 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
     this.metaDataManager = this.serverBuilder.createMetaDataManager(searchEventSink);
 
+    final Stage deleteObjectStage = stageManager.createStage(ServerConfigurationContext.DELETE_OBJECT_STAGE,
+                                                             new DeleteObjectHandler(), 1, -1);
+    this.deleteObjectManager = new DeleteObjectManagerImpl(deleteObjectStage.getSink());
+
     this.transactionManager = new ServerTransactionManagerImpl(gtxm, transactionStore, this.lockManager,
                                                                this.clientStateManager, this.objectManager,
                                                                this.txnObjectManager, taa, globalTxnCounter,
                                                                channelStats,
                                                                new ServerTransactionManagerConfig(this.l2Properties
                                                                    .getPropertiesFor("transactionmanager")),
-                                                               this.objectStatsRecorder, this.metaDataManager);
+                                                               this.objectStatsRecorder, this.metaDataManager,
+                                                               this.deleteObjectManager);
 
     this.metaDataManager.setTransactionManager(transactionManager);
 
@@ -945,14 +950,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     stageManager.createStage(ServerConfigurationContext.TRANSACTION_LOOKUP_STAGE, new TransactionLookupHandler(), 1,
                              maxStageSize);
 
-    final Stage deleteObjectStage = stageManager.createStage(ServerConfigurationContext.DELETE_OBJECT_STAGE,
-                                                             new DeleteObjectHandler(), 1, -1);
-    this.deleteObjectManager = new DeleteObjectManagerImpl(deleteObjectStage.getSink());
-
     // Lookup stage should never be blocked trying to add to apply stage
     stageManager.createStage(ServerConfigurationContext.APPLY_CHANGES_STAGE,
-                             new ApplyTransactionChangeHandler(instanceMonitor, this.transactionManager,
-                                                               deleteObjectManager), 1, -1);
+                             new ApplyTransactionChangeHandler(instanceMonitor, this.transactionManager), 1, -1);
 
     stageManager.createStage(ServerConfigurationContext.APPLY_COMPLETE_STAGE, new ApplyCompleteTransactionHandler(), 1,
                              maxStageSize);

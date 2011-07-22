@@ -13,7 +13,6 @@ import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.object.gtx.GlobalTransactionManager;
 import com.tc.object.locks.Notify;
 import com.tc.object.tx.ServerTransactionID;
-import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.context.ApplyTransactionContext;
 import com.tc.objectserver.context.BroadcastChangeContext;
@@ -47,18 +46,14 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
   private Sink                           evictionInitiateSink;
   private final ObjectInstanceMonitor    instanceMonitor;
   private final GlobalTransactionManager gtxm;
-  private final DeleteObjectManager      deleteObjectManager;
   private TransactionalObjectManager     txnObjectMgr;
 
   private int                            count                           = 0;
   private GlobalTransactionID            lowWaterMark                    = GlobalTransactionID.NULL_ID;
 
-  public ApplyTransactionChangeHandler(final ObjectInstanceMonitor instanceMonitor,
-                                       final GlobalTransactionManager gtxm,
-                                       final DeleteObjectManager deleteObjectManager) {
+  public ApplyTransactionChangeHandler(final ObjectInstanceMonitor instanceMonitor, final GlobalTransactionManager gtxm) {
     this.instanceMonitor = instanceMonitor;
     this.gtxm = gtxm;
-    this.deleteObjectManager = deleteObjectManager;
   }
 
   @Override
@@ -68,11 +63,11 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
 
     NotifiedWaiters notifiedWaiters = new NotifiedWaiters();
     final ServerTransactionID stxnID = txn.getServerTransactionID();
-    final ApplyTransactionInfo applyInfo = new ApplyTransactionInfo(txn.isActiveTxn());
+    final ApplyTransactionInfo applyInfo = new ApplyTransactionInfo(txn.isActiveTxn(), stxnID);
 
     if (atc.needsApply()) {
       this.transactionManager.apply(txn, atc.getObjects(), applyInfo, this.instanceMonitor);
-      this.txnObjectMgr.applyTransactionComplete(stxnID);
+      this.txnObjectMgr.applyTransactionComplete(applyInfo);
     } else {
       this.transactionManager.skipApplyAndCommit(txn);
       getLogger().warn("Not applying previously applied transaction: " + stxnID);
@@ -85,8 +80,6 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
       notifiedWaiters = this.lockManager.notify(notify.getLockID(), (ClientID) txn.getSourceID(), notify.getThreadID(),
                                                 allOrOne, notifiedWaiters);
     }
-
-    this.deleteObjectManager.deleteObjects(applyInfo.getObjectIDsToDelete());
 
     if (txn.isActiveTxn()) {
       final Set initiateEviction = applyInfo.getObjectIDsToInitateEviction();

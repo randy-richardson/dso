@@ -1450,8 +1450,8 @@ public class ObjectManagerTest extends TCTestCase {
     assertTrue(this.coordinator.applySink.queue.isEmpty());
 
     // Apply and initate commit the txn
-    applyTxn(aoc);
-    this.txObjectManager.applyTransactionComplete(stxn1.getServerTransactionID());
+    ApplyTransactionInfo applyTxnInfo1 = applyTxn(aoc);
+    this.txObjectManager.applyTransactionComplete(applyTxnInfo1);
     ApplyCompleteEventContext acec = (ApplyCompleteEventContext) this.coordinator.applyCompleteSink.queue.take();
     assertNotNull(acec);
     assertTrue(this.coordinator.applyCompleteSink.queue.isEmpty());
@@ -1539,8 +1539,8 @@ public class ObjectManagerTest extends TCTestCase {
      * STEP 4: Commit but not release Object 2 so even when we check object 1 back stxn3 is still pending
      */
     // Apply and initiate commit the txn for object 2
-    applyTxn(aoc);
-    this.txObjectManager.applyTransactionComplete(stxn2.getServerTransactionID());
+    ApplyTransactionInfo applyTxnInfo2 = applyTxn(aoc);
+    this.txObjectManager.applyTransactionComplete(applyTxnInfo2);
     acec = (ApplyCompleteEventContext) this.coordinator.applyCompleteSink.queue.take();
     assertNotNull(acec);
     assertTrue(this.coordinator.applyCompleteSink.queue.isEmpty());
@@ -1626,8 +1626,8 @@ public class ObjectManagerTest extends TCTestCase {
     assertTrue(this.coordinator.applySink.queue.isEmpty());
 
     // Apply and initiate commit the txn
-    applyTxn(aoc);
-    this.txObjectManager.applyTransactionComplete(stxn3.getServerTransactionID());
+    ApplyTransactionInfo applyTxnInfo3 = applyTxn(aoc);
+    this.txObjectManager.applyTransactionComplete(applyTxnInfo3);
     acec = (ApplyCompleteEventContext) this.coordinator.applyCompleteSink.queue.take();
     assertNotNull(acec);
     assertTrue(this.coordinator.applyCompleteSink.queue.isEmpty());
@@ -1740,16 +1740,18 @@ public class ObjectManagerTest extends TCTestCase {
 
   }
 
-  private void applyTxn(final ApplyTransactionContext aoc) {
+  private ApplyTransactionInfo applyTxn(final ApplyTransactionContext aoc) {
     final ServerTransaction txn = aoc.getTxn();
     final Map managedObjects = aoc.getObjects();
     final ObjectInstanceMonitorImpl instanceMonitor = new ObjectInstanceMonitorImpl();
+    final ApplyTransactionInfo applyTxnInfo = new ApplyTransactionInfo(txn.isActiveTxn(), txn.getServerTransactionID());
     for (final Iterator i = txn.getChanges().iterator(); i.hasNext();) {
       final DNA dna = (DNA) i.next();
       final ManagedObject mo = (ManagedObject) managedObjects.get(dna.getObjectID());
-      mo.apply(new VersionizedDNAWrapper(dna, ++this.version), txn.getTransactionID(), new ApplyTransactionInfo(),
-               instanceMonitor, false);
+      mo.apply(new VersionizedDNAWrapper(dna, ++this.version), txn.getTransactionID(), applyTxnInfo, instanceMonitor,
+               false);
     }
+    return applyTxnInfo;
   }
 
   private static class TestArrayDNA implements DNA {
