@@ -42,7 +42,7 @@ public final class TxnObjectGrouping implements PrettyPrintable {
   private Map<ServerTransactionID, State> txns;
   private Map<ObjectID, ManagedObject>    objects;
   private Map<String, ObjectID>           newRootsMap;
-  private final SortedSet<ObjectID>       deletedObjects;
+  private SortedSet<ObjectID>             deletedObjects;
   private int                             pendingApplys;
   private boolean                         isActive       = true;
 
@@ -102,14 +102,14 @@ public final class TxnObjectGrouping implements PrettyPrintable {
     if (txns.size() >= oldGrouping.txns.size()) {
       txns.putAll(oldGrouping.txns);
     } else {
-      Map temp = txns;
+      Map<ServerTransactionID, State> temp = txns;
       txns = oldGrouping.txns;
       txns.putAll(temp);
     }
     if (objects.size() >= oldGrouping.objects.size()) {
       objects.putAll(oldGrouping.objects);
     } else {
-      Map temp = objects;
+      Map<ObjectID, ManagedObject> temp = objects;
       objects = oldGrouping.objects;
       objects.putAll(temp);
     }
@@ -120,12 +120,14 @@ public final class TxnObjectGrouping implements PrettyPrintable {
         newRootsMap.putAll(oldGrouping.newRootsMap);
       }
     }
+    deletedObjects.addAll(oldGrouping.getDeletedObjects());
     pendingApplys += oldGrouping.pendingApplys;
 
-    // Setting these references to null so that we disable any futher access to these through old grouping
+    // Setting these references to null so that we disable any further access to these through old grouping
     oldGrouping.txns = null;
     oldGrouping.objects = null;
     oldGrouping.newRootsMap = null;
+    oldGrouping.deletedObjects = null;
     oldGrouping.isActive = false;
   }
 
