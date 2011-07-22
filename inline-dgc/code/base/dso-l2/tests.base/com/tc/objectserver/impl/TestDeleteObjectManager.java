@@ -3,7 +3,6 @@
  */
 package com.tc.objectserver.impl;
 
-import com.tc.async.api.Sink;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.util.TCCollections;
@@ -20,12 +19,7 @@ public class TestDeleteObjectManager implements DeleteObjectManager {
     return TCCollections.EMPTY_OBJECT_ID_SET;
   }
 
-  public void deleteObjectsIfNecessary() {
+  public void deleteMoreObjectsIfNecessary() {
     // do nothing
   }
-
-  public void setDeleteObjectSink(Sink deleteObjectSink) {
-    // do nothing
-  }
-
 }

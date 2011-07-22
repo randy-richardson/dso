@@ -12,8 +12,8 @@ import com.tc.util.ObjectIDSet;
 import java.util.SortedSet;
 
 public class DeleteObjectManagerImpl implements DeleteObjectManager {
-  private final SortedSet<ObjectID> objectsToDelete = new ObjectIDSet();
-  private final Sink                deleteObjectSink;
+  private SortedSet<ObjectID> objectsToDelete = new ObjectIDSet();
+  private final Sink          deleteObjectSink;
 
   public DeleteObjectManagerImpl(Sink deleteObjectSink) {
     this.deleteObjectSink = deleteObjectSink;
@@ -27,12 +27,12 @@ public class DeleteObjectManagerImpl implements DeleteObjectManager {
   }
 
   public synchronized SortedSet<ObjectID> nextObjectsToDelete() {
-    SortedSet<ObjectID> oids = new ObjectIDSet(objectsToDelete);
-    objectsToDelete.clear();
-    return oids;
+    SortedSet<ObjectID> temp = objectsToDelete;
+    objectsToDelete = new ObjectIDSet();
+    return temp;
   }
 
-  public synchronized void deleteObjectsIfNecessary() {
+  public synchronized void deleteMoreObjectsIfNecessary() {
     if (objectsToDelete.size() > 0) {
       deleteObjects();
     }

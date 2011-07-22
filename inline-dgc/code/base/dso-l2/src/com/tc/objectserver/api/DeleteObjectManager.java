@@ -12,5 +12,5 @@ public interface DeleteObjectManager {
 
   public SortedSet<ObjectID> nextObjectsToDelete();
 
-  public void deleteObjectsIfNecessary();
+  public void deleteMoreObjectsIfNecessary();
 }

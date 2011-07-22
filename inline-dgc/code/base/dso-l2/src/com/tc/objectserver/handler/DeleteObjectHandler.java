@@ -22,7 +22,7 @@ public class DeleteObjectHandler extends AbstractEventHandler {
   public void handleEvent(EventContext context) {
     final SortedSet<ObjectID> objectsToDelete = deleteObjectManager.nextObjectsToDelete();
     objectManager.deleteObjects(new GarbageDisposalContext(objectsToDelete));
-    deleteObjectManager.deleteObjectsIfNecessary();
+    deleteObjectManager.deleteMoreObjectsIfNecessary();
   }
 
   @Override
