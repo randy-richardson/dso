@@ -5,7 +5,6 @@
 package com.tc.net.protocol.transport;
 
 import com.tc.exception.ImplementMe;
-import com.tc.util.Assert;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,10 +24,10 @@ public class TestConnectionPolicy implements ConnectionPolicy {
     if (jvmClients == null) {
       jvmClients = new HashSet<ConnectionID>();
       clientsByJvm.put(connID.getJvmID(), jvmClients);
-      clientConnected++;
     }
 
     if (!jvmClients.contains(connID)) {
+      clientConnected++;
       jvmClients.add(connID);
     }
 
@@ -41,12 +40,10 @@ public class TestConnectionPolicy implements ConnectionPolicy {
 
     if (jvmClients == null) return; // must have already received the event for this client
 
-    jvmClients.remove(connID);
+    if (jvmClients.remove(connID)) clientConnected--;
 
     if (jvmClients.size() == 0) {
       clientsByJvm.remove(connID.getJvmID());
-      Assert.assertTrue(clientConnected > 0);
-      clientConnected--;
     }
   }
 
@@ -60,6 +57,10 @@ public class TestConnectionPolicy implements ConnectionPolicy {
   }
 
   public int getNumberOfActiveConnections() {
+    throw new ImplementMe();
+  }
+
+  public int getConnectionHighWatermark() {
     throw new ImplementMe();
   }
 }
