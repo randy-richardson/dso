@@ -4,6 +4,8 @@
  */
 package com.tc.objectserver.control;
 
+import com.tc.stats.api.DSOMBean;
+
 public class NullServerControl implements ServerControl {
 
   private boolean isRunning;
@@ -58,6 +60,10 @@ public class NullServerControl implements ServerControl {
 
   public int waitFor() throws Exception {
     return 1;
+  }
+
+  public DSOMBean getDSOMBean() throws Exception {
+    return null;
   }
 
 }
