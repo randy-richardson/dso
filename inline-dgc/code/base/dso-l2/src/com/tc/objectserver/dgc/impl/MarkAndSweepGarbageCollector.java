@@ -201,7 +201,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
    * In Active server, state transitions from GC_PAUSED to GC_DELETE and in the passive server, state transitions from
    * GC_SLEEP to GC_DELETE.
    */
-  private synchronized boolean requestGCDeleteStart() {
+  public synchronized boolean requestGCDeleteStart() {
     if (this.state == GC_SLEEP || this.state == GC_PAUSED) {
       this.state = GC_DELETE;
       return true;

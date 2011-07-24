@@ -27,6 +27,11 @@ public interface GarbageCollector extends PrettyPrintable {
 
   public boolean requestGCStart();
 
+  /**
+   * Used by inline GC to delete objects.
+   */
+  public boolean requestGCDeleteStart();
+
   public void enableGC();
 
   public boolean disableGC();

@@ -98,4 +98,8 @@ public class NullGarbageCollector implements GarbageCollector {
   public boolean requestGCStart() {
     return false;
   }
+
+  public boolean requestGCDeleteStart() {
+    return false;
+  }
 }
