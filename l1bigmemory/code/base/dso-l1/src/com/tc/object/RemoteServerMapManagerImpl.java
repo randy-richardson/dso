@@ -59,7 +59,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private boolean                                                        pendingSendTaskScheduled                  = false;
 
   // private final Sink ttiTTLEvitionSink;
-  private final L1ServerMapLocalCacheManager                                  globalLocalCacheManager;
+  private final L1ServerMapLocalCacheManager                             globalLocalCacheManager;
 
   private static enum State {
     PAUSED, RUNNING, STARTING, STOPPED
@@ -506,6 +506,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     if (lockID == null) { throw new AssertionError("ID cannot be null"); }
     if (level == ServerLockLevel.WRITE) {
       this.globalLocalCacheManager.removeEntriesForLockId(lockID);
+      // TODO: remove all TCObjectSelf from here
     }
   }
 

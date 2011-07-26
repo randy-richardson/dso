@@ -166,10 +166,11 @@ public class StandardDSOClientBuilder implements DSOClientBuilder {
                                                      final TCObjectFactory objectFactory,
                                                      final Portability portability,
                                                      final DSOClientMessageChannel dsoChannel,
-                                                     final ToggleableReferenceManager toggleRefMgr) {
+                                                     final ToggleableReferenceManager toggleRefMgr,
+                                                     TCObjectSelfStore tcObjectSelfStore) {
     return new ClientObjectManagerImpl(remoteObjectManager, dsoConfig, idProvider, rtLogger, clientIDProvider,
                                        classProviderLocal, classFactory, objectFactory, portability, dsoChannel,
-                                       toggleRefMgr);
+                                       toggleRefMgr, tcObjectSelfStore);
   }
 
   public ClientLockManager createLockManager(final DSOClientMessageChannel dsoChannel,

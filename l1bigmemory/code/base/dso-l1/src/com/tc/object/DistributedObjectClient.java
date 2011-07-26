@@ -143,8 +143,8 @@ import com.tc.object.msg.ServerMapEvictionBroadcastMessageImpl;
 import com.tc.object.msg.SyncWriteTransactionReceivedMessage;
 import com.tc.object.net.DSOClientMessageChannel;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
-import com.tc.object.servermap.localcache.impl.L1ServerMapLocalCacheManagerImpl;
 import com.tc.object.servermap.localcache.impl.L1ServerMapCapacityEvictionHandler;
+import com.tc.object.servermap.localcache.impl.L1ServerMapLocalCacheManagerImpl;
 import com.tc.object.session.SessionID;
 import com.tc.object.session.SessionManager;
 import com.tc.object.session.SessionManagerImpl;
@@ -266,7 +266,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
   private Stage                                      clusterEventsStage;
 
-  private L1ServerMapLocalCacheManager                    globalLocalCacheManager;
+  private L1ServerMapLocalCacheManager               globalLocalCacheManager;
 
   public DistributedObjectClient(final DSOClientConfigHelper config, final TCThreadGroup threadGroup,
                                  final ClassProvider classProvider,
@@ -559,7 +559,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
     final Stage capacityEvictionStage = stageManager.createStage(ClientConfigurationContext.CAPACITY_EVICTION_STAGE,
                                                                  l1ServerMapCapacityEvictionHandler, 8, maxSize);
     globalLocalCacheManager = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, capacityEvictionStage.getSink(),
-                                                              ttiTTLEvictionStage.getSink());
+                                                                   ttiTTLEvictionStage.getSink());
     l1ServerMapCapacityEvictionHandler.initialize(globalLocalCacheManager);
 
     final RemoteServerMapManager remoteServerMapManager = this.dsoClientBuilder
@@ -580,7 +580,9 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                                                    this.runtimeLogger, this.channel
                                                                        .getClientIDProvider(), this.classProvider,
                                                                    classFactory, objectFactory, this.config
-                                                                       .getPortability(), this.channel, toggleRefMgr);
+                                                                       .getPortability(), this.channel, toggleRefMgr,
+                                                                   globalLocalCacheManager);
+
     this.threadGroup.addCallbackOnExitDefaultHandler(new CallbackDumpAdapter(this.objectManager));
     this.dumpHandler.registerForDump(new CallbackDumpAdapter(this.objectManager));
 

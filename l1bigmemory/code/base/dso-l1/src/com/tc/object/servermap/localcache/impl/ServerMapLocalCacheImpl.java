@@ -15,13 +15,11 @@ import com.tc.object.locks.LockID;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
-import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
-import com.tc.object.servermap.localcache.LocalCacheStoreIncoherentValue;
-import com.tc.object.servermap.localcache.LocalCacheStoreStrongValue;
 import com.tc.object.servermap.localcache.MapOperationType;
 import com.tc.object.servermap.localcache.PutType;
 import com.tc.object.servermap.localcache.RemoveType;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
+import com.tc.object.servermap.localcache.ServerMapLocalCacheRemoveCallback;
 import com.tc.object.servermap.localcache.impl.L1ServerMapLocalStoreTransactionCompletionListener.TransactionCompleteOperation;
 import com.tc.object.servermap.localcache.impl.LocalStoreKeySet.LocalStoreKeySetFilter;
 import com.tc.object.tx.ClientTransaction;
@@ -48,19 +46,21 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private final Manager                                                             manager;
   private final ReentrantReadWriteLock[]                                            segmentLocks     = new ReentrantReadWriteLock[CONCURRENCY];
   private final TCObjectServerMap                                                   tcObjectServerMap;
+  private final ServerMapLocalCacheRemoveCallback                                   removeCallback;
 
   /**
    * Not public constructor, should be created only by the global local cache manager
    */
   ServerMapLocalCacheImpl(ObjectID mapID, ClientObjectManager objectManager, Manager manager,
                           L1ServerMapLocalCacheManager globalLocalCacheManager, boolean islocalCacheEnbaled,
-                          TCObjectServerMap tcObjectServerMap) {
+                          TCObjectServerMap tcObjectServerMap, ServerMapLocalCacheRemoveCallback removeCallback) {
     this.mapID = mapID;
     this.objectManager = objectManager;
     this.manager = manager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.localCacheEnabled = islocalCacheEnbaled;
     this.tcObjectServerMap = tcObjectServerMap;
+    this.removeCallback = removeCallback;
     for (int i = 0; i < segmentLocks.length; i++) {
       this.segmentLocks[i] = new ReentrantReadWriteLock();
     }
@@ -69,6 +69,10 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   public void setupLocalStore(L1ServerMapLocalCacheStore store) {
     this.localStore = store;
     this.globalLocalCacheManager.addStoreListener(store);
+  }
+
+  public L1ServerMapLocalCacheStore getInternalStore() {
+    return localStore;
   }
 
   private boolean isStoreInitialized() {
@@ -88,22 +92,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     return segmentLocks[index];
   }
 
-  public void addStrongValueToCache(LockID lockId, Object key, Object value, MapOperationType mapOperation) {
-    final LocalCacheStoreStrongValue localCacheValue = new LocalCacheStoreStrongValue(lockId, value, this.mapID);
-    addToCache(key, localCacheValue, mapOperation);
-  }
-
-  public void addEventualValueToCache(ObjectID valueObjectId, Object key, Object value, MapOperationType mapOperation) {
-    final LocalCacheStoreEventualValue localCacheValue = new LocalCacheStoreEventualValue(valueObjectId, value,
-                                                                                          this.mapID);
-    addToCache(key, localCacheValue, mapOperation);
-  }
-
-  public void addIncoherentValueToCache(Object key, Object value, MapOperationType mapOperation) {
-    final LocalCacheStoreIncoherentValue localCacheValue = new LocalCacheStoreIncoherentValue(value, this.mapID);
-    addToCache(key, localCacheValue, mapOperation);
-  }
-
   private void registerTransactionCompleteListener(final L1ServerMapLocalStoreTransactionCompletionListener listener) {
     if (listener == null) { throw new AssertionError("Listener cannot be null"); }
     ClientTransaction txn = this.objectManager.getTransactionManager().getCurrentTransaction();
@@ -115,8 +103,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
   // TODO::FIXME:: There is a race for puts for same key from same vm - it races between the map.put() and
   // serverMapManager.put()
-  private void addToCache(final Object key, final AbstractLocalCacheStoreValue localCacheValue,
-                          final MapOperationType mapOperation) {
+  public void addToCache(final Object key, final AbstractLocalCacheStoreValue localCacheValue,
+                         final MapOperationType mapOperation) {
     if (!localCacheEnabled && !mapOperation.isMutateOperation()) {
       // local cache NOT enabled AND NOT a mutate operation, do not cache anything locally
       // for mutate ops keep in local cache till txn is complete
@@ -319,7 +307,10 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
           for (Object id : currentSet) {
             // TODO: keys added from serverMapLocalCache can never be ObjectID, need other special handling here?
             if (id instanceof ObjectID && id != ObjectID.NULL_ID) {
-              invalidations.add(mapID, (ObjectID) id);
+              if (localStore.get(id) instanceof List) {
+                // only add for eventual consistency values
+                invalidations.add(mapID, (ObjectID) id);
+              }
             }
           }
         }
@@ -350,7 +341,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     final TCServerMap serverMap = (TCServerMap) tcObjectServerMap.getPeerObject();
 
     if (serverMap != null && localStore.get(key) == null) {
-      serverMap.evictExpired(key, value.getValue());
+      // TODO: NEED TO IMPLEMENT
+      // serverMap.evictExpired(key, value.getValue());
     }
   }
 
@@ -366,7 +358,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       readWriteLock.writeLock().lock();
     }
     try {
-      return callback.callback(null, null, this.localStore);
+      return callback.callback(null, null, this.localStore, this.removeCallback);
     } finally {
       for (ReentrantReadWriteLock readWriteLock : segmentLocks) {
         readWriteLock.writeLock().unlock();
@@ -379,21 +371,23 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     ReentrantReadWriteLock lock = getLock(id);
     try {
       lock.writeLock().lock();
-      return callback.callback(id, key, this.localStore);
+      return callback.callback(id, key, this.localStore, this.removeCallback);
     } finally {
       lock.writeLock().unlock();
     }
   }
 
   private static interface ExecuteUnderLockCallback<V> {
-    V callback(Object key, Object value, L1ServerMapLocalCacheStore backingMap);
+    V callback(Object key, Object value, L1ServerMapLocalCacheStore backingMap,
+               ServerMapLocalCacheRemoveCallback removeCallback);
   }
 
   private static class AddIdKeyMappingCallback implements ExecuteUnderLockCallback<Void> {
 
     public static AddIdKeyMappingCallback INSTANCE = new AddIdKeyMappingCallback();
 
-    public Void callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap) {
+    public Void callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap,
+                         ServerMapLocalCacheRemoveCallback removeCallback) {
       List list;
       synchronized (id) {
         list = (List) backingMap.get(id);
@@ -414,7 +408,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private static class RemoveIdKeyMappingCallback implements ExecuteUnderLockCallback<LockID> {
     public static RemoveIdKeyMappingCallback INSTANCE = new RemoveIdKeyMappingCallback();
 
-    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap) {
+    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap,
+                           ServerMapLocalCacheRemoveCallback removeCallback) {
       List list = (List) backingMap.get(id);
       if (list == null) { return null; }
       list.remove(key);
@@ -432,13 +427,15 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private static class RemoveEntriesForIdCallback implements ExecuteUnderLockCallback<Void> {
     public static RemoveEntriesForIdCallback INSTANCE = new RemoveEntriesForIdCallback();
 
-    public Void callback(Object id, Object unusedParam, L1ServerMapLocalCacheStore backingMap) {
+    public Void callback(Object id, Object unusedParam, L1ServerMapLocalCacheStore backingMap,
+                         ServerMapLocalCacheRemoveCallback removeCallback) {
       // remove the list
       List list = (List) backingMap.remove(id, RemoveType.NO_SIZE_DECREMENT);
       if (list != null) {
         for (Object key : list) {
           // remove each key from the backing map/store
-          backingMap.remove(key, RemoveType.NORMAL);
+          Object removed = backingMap.remove(key, RemoveType.NORMAL);
+          entryRemovedCallback(removeCallback, key, removed);
         }
       }
       return null;
@@ -456,7 +453,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       this.removeKey = removeKey;
     }
 
-    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap) {
+    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap,
+                           ServerMapLocalCacheRemoveCallback removeCallback) {
       List list = (List) backingMap.get(id);
       if (list != null) {
         // remove the key from the id->list(keys)
@@ -464,7 +462,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
         if (removeKey) {
           // remove the key from the backing map/store
-          backingMap.remove(key, RemoveType.NORMAL);
+          Object removed = backingMap.remove(key, RemoveType.NORMAL);
+          entryRemovedCallback(removeCallback, key, removed);
         }
 
         // put back or remove the list
@@ -481,12 +480,17 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private static class ClearAllEntriesCallback implements ExecuteUnderLockCallback<Set<LockID>> {
     public static ClearAllEntriesCallback INSTANCE = new ClearAllEntriesCallback();
 
-    public Set<LockID> callback(Object unused1, Object unused2, L1ServerMapLocalCacheStore backingMap) {
+    public Set<LockID> callback(Object unused1, Object unused2, L1ServerMapLocalCacheStore backingMap,
+                                ServerMapLocalCacheRemoveCallback removeCallback) {
       HashSet<LockID> lockIDs = new HashSet<LockID>();
       Set keySet = backingMap.getKeySet();
       for (Object key : keySet) {
         if (key instanceof LockID) {
           lockIDs.add((LockID) key);
+        }
+        if (!isMetaInfoMapping(key)) {
+          Object removed = backingMap.remove(key, RemoveType.NORMAL);
+          entryRemovedCallback(removeCallback, key, removed);
         }
       }
 
@@ -495,10 +499,26 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     }
   }
 
+  private static void entryRemovedCallback(ServerMapLocalCacheRemoveCallback removeCallback, Object key, Object removed) {
+    if (removed != null) {
+      // removed has to be of type AbstractLocalCacheStoreValue
+      if (!(removed instanceof AbstractLocalCacheStoreValue)) {
+        //
+        throw new AssertionError("Key was mapped to different type other than AbstractLocalCacheStoreValue, key: "
+                                 + key + ", value: " + removed);
+      }
+      removeCallback.removedElement(key, (AbstractLocalCacheStoreValue) removed);
+    }
+  }
+
+  private static boolean isMetaInfoMapping(Object key) {
+    return (key instanceof ObjectID || key instanceof LockID);
+  }
+
   static class IgnoreIdsFilter implements LocalStoreKeySetFilter {
 
     public boolean accept(Object value) {
-      if (value instanceof ObjectID || value instanceof LockID) { return false; }
+      if (isMetaInfoMapping(value)) { return false; }
       return true;
     }
 

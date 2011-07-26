@@ -114,7 +114,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
 
   // TODO: Remove it using an iterator
   public synchronized void clear() {
-    this.evict(Integer.MAX_VALUE);
+    backingCache.clear();
     cacheSize.set(0);
   }
 

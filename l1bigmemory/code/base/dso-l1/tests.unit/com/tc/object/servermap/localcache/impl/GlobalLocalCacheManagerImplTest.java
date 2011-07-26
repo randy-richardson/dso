@@ -43,8 +43,8 @@ import junit.framework.TestCase;
 
 public class GlobalLocalCacheManagerImplTest extends TestCase {
   private L1ServerMapLocalCacheManagerImpl globalLocalCacheManagerImpl;
-  private MockClientLockManager       clientLockManager;
-  private MySink                      testSink;
+  private MockClientLockManager            clientLockManager;
+  private MySink                           testSink;
 
   @Override
   protected void setUp() throws Exception {
@@ -62,8 +62,8 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
     Mockito.when(lockRecallStage.getSink()).thenReturn(testSink);
 
     LocksRecallService locksRecallHelper = new LocksRecallServiceImpl(lockRecallHandler, lockRecallStage);
-    this.globalLocalCacheManagerImpl = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, testSink, Mockito
-        .mock(Sink.class));
+    this.globalLocalCacheManagerImpl = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, testSink,
+                                                                            Mockito.mock(Sink.class));
   }
 
   public void testCapacityEviction() {
@@ -77,7 +77,8 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
                                                            null);
 
     for (int i = 0; i < 15; i++) {
-      store.put("key" + i, new LocalCacheStoreStrongValue(new LongLockID(i), "value" + i, mapID), PutType.NORMAL);
+      // store.put("key" + i, new LocalCacheStoreStrongValue(new LongLockID(i), "value" + i, mapID), PutType.NORMAL);
+      store.put("key" + i, new LocalCacheStoreStrongValue(new LongLockID(i), new ObjectID(i), mapID), PutType.NORMAL);
     }
 
     Assert.assertEquals(15, store.size());
@@ -87,7 +88,7 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
       l.notifySizeChanged(store);
     }
 
-    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
+    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(2, 2);
 
     System.err.println("Store size is " + store.size());
     Assert.assertTrue(store.size() < maxInMemory);
@@ -96,7 +97,7 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
 
     System.err.println("Sleeping for 10 seconds -- ");
     ThreadUtil.reallySleep(10 * 1000);
-    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
+    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(2, 2);
 
     int sizeAfter = store.size();
     Assert.assertEquals(sizeBefore, sizeAfter);
@@ -134,7 +135,9 @@ public class GlobalLocalCacheManagerImplTest extends TestCase {
         .mock(ClientObjectManager.class), null, true, null);
     localCache.setupLocalStore(store);
 
-    localCache.addStrongValueToCache(lockID, "key", "value", MapOperationType.GET);
+    // localCache.addStrongValueToCache(lockID, "key", "value", MapOperationType.GET);
+    localCache.addToCache("key", new LocalCacheStoreStrongValue(lockID, new ObjectID(12345), mapID),
+                          MapOperationType.GET);
 
     this.globalLocalCacheManagerImpl.removeEntriesForLockId(lockID);
 

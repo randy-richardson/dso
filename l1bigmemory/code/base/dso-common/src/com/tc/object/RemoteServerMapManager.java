@@ -15,6 +15,7 @@ import java.util.Set;
 
 public interface RemoteServerMapManager extends ClientHandshakeCallback, PreTransactionFlushCallback,
     InvalidationsProcessor {
+
   public Object getMappingForKey(ObjectID mapID, Object portableKey);
 
   public Set getAllKeys(ObjectID mapID);

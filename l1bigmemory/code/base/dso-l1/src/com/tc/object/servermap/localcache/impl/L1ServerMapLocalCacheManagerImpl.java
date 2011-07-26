@@ -8,6 +8,10 @@ import com.tc.exception.TCRuntimeException;
 import com.tc.invalidation.Invalidations;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.ObjectID;
+import com.tc.object.TCObject;
+import com.tc.object.TCObjectSelf;
+import com.tc.object.TCObjectSelfRemovedFromStoreCallback;
+import com.tc.object.TCObjectSelfStoreValue;
 import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.locks.LockID;
@@ -16,16 +20,24 @@ import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStoreListener;
+import com.tc.object.servermap.localcache.PutType;
+import com.tc.object.servermap.localcache.RemoveType;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
+import com.tc.object.servermap.localcache.ServerMapLocalCacheRemoveCallback;
+import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheManager {
 
@@ -36,6 +48,12 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   private final AtomicBoolean                                                      shutdown                = new AtomicBoolean();
   private final LocksRecallService                                                 locksRecallHelper;
   private final Sink                                                               capacityEvictionSink;
+  private final RemoveCallback                                                     removeCallback;
+
+  private final ObjectIDSet                                                        tcObjectSelfStoreOids   = new ObjectIDSet();
+  private final ReentrantReadWriteLock                                             tcObjectStoreLock       = new ReentrantReadWriteLock();
+  private final AtomicInteger                                                      tcObjectSelfStoreSize   = new AtomicInteger();
+  private volatile TCObjectSelfRemovedFromStoreCallback                            tcObjectSelfRemovedFromStoreCallback;
 
   // private final Sink ttittlExpiredSink;
 
@@ -44,6 +62,11 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     this.locksRecallHelper = locksRecallHelper;
     this.capacityEvictionSink = capacityEvictionSink;
     // this.ttittlExpiredSink = ttittlExpiredSink;
+    removeCallback = new RemoveCallback();
+  }
+
+  public void initializeTCObjectSelfStore(TCObjectSelfRemovedFromStoreCallback callback) {
+    this.tcObjectSelfRemovedFromStoreCallback = callback;
   }
 
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
@@ -54,7 +77,7 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     ServerMapLocalCache serverMapLocalCache = localCaches.get(mapId);
     if (serverMapLocalCache == null) {
       serverMapLocalCache = new ServerMapLocalCacheImpl(mapId, objectManager, manager, this, localCacheEnabled,
-                                                        tcObjectServerMap);
+                                                        tcObjectServerMap, removeCallback);
       ServerMapLocalCache old = localCaches.putIfAbsent(mapId, serverMapLocalCache);
       if (old != null) {
         serverMapLocalCache = old;
@@ -198,5 +221,163 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
 
   private void throwAssert(String msg) {
     throw new AssertionError(msg);
+  }
+
+  // ----------------------------------------
+  // TCObjectSelfStore methods
+  // ----------------------------------------
+
+  public Object getById(ObjectID oid) {
+    tcObjectStoreLock.readLock().lock();
+    try {
+      for (L1ServerMapLocalCacheStore store : this.stores.keySet()) {
+        Object object = store.get(oid);
+        if (object == null) {
+          continue;
+        }
+        if (object instanceof TCObjectSelfStoreValue) {
+          return ((TCObjectSelfStoreValue) object).getTCObjectSelf();
+        } else if (object instanceof List) {
+          // for eventual value invalidation, use any of them to look up the value
+          List list = (List) object;
+          if (list.size() <= 0) {
+            // all keys have been invalidated already, return null (lookup will happen)
+            return null;
+          }
+          AbstractLocalCacheStoreValue localCacheStoreValue = (AbstractLocalCacheStoreValue) store.get(list.get(0));
+          return localCacheStoreValue == null ? null : localCacheStoreValue.asEventualValue().getValue();
+        } else {
+          throw new AssertionError("Unknown type mapped to oid: " + oid + ", value: " + object
+                                   + ". Expected to be mapped to either of TCObjectSelfStoreValue or a List");
+        }
+      }
+      return null;
+    } finally {
+      tcObjectStoreLock.readLock().unlock();
+    }
+  }
+
+  public Object getByIdFromStore(ObjectID oid, L1ServerMapLocalCacheStore store) {
+    tcObjectStoreLock.readLock().lock();
+    try {
+      Object object = store.get(oid);
+      if (object == null) { return null; }
+      if (object instanceof TCObjectSelfStoreValue) {
+        return ((TCObjectSelfStoreValue) object).getTCObjectSelf();
+      } else if (object instanceof List) {
+        // for eventual value invalidation, use any of them to look up the value
+        List list = (List) object;
+        if (list.size() <= 0) {
+          // all keys have been invalidated already, return null (lookup will happen)
+          return null;
+        }
+        AbstractLocalCacheStoreValue localCacheStoreValue = (AbstractLocalCacheStoreValue) store.get(list.get(0));
+        return localCacheStoreValue == null ? null : localCacheStoreValue.asEventualValue().getValue();
+      } else {
+        throw new AssertionError("Unknown type mapped to oid: " + oid + ", value: " + object
+                                 + ". Expected to be mapped to either of TCObjectSelfStoreValue or a List");
+      }
+    } finally {
+      tcObjectStoreLock.readLock().unlock();
+    }
+  }
+
+  public void addTCObjectSelf(L1ServerMapLocalCacheStore store, AbstractLocalCacheStoreValue localStoreValue,
+                              Object tcoself) {
+    tcObjectStoreLock.writeLock().lock();
+    try {
+      if (tcoself instanceof TCObject) {
+        // no need of instanceof check if tcoself is declared as TCObject only... skipping for tests.. refactor later
+        tcObjectSelfStoreOids.add(((TCObject) tcoself).getObjectID());
+      }
+      tcObjectSelfStoreSize.incrementAndGet();
+      if (!localStoreValue.isEventualConsistentValue()) {
+        store.put(((TCObject) tcoself).getObjectID(), new TCObjectSelfWrapper(tcoself),
+                  PutType.PINNED_NO_SIZE_INCREMENT);
+      } // else no need to store another mapping as for eventual already oid->localCacheEventualValue mapping exists,
+      // and actual value is present in the localCacheEventualValue
+    } finally {
+      tcObjectStoreLock.writeLock().unlock();
+    }
+  }
+
+  private void removeTCObjectSelfForId(ServerMapLocalCache serverMapLocalCache,
+                                       AbstractLocalCacheStoreValue localStoreValue) {
+    tcObjectStoreLock.writeLock().lock();
+    try {
+      ObjectID valueOid = localStoreValue.getObjectId();
+      if (ObjectID.NULL_ID.equals(valueOid) || !tcObjectSelfStoreOids.contains(valueOid)) { return; }
+
+      // some asertions... can be removed?
+      Object object = serverMapLocalCache.getInternalStore().get(valueOid);
+      if (localStoreValue.isEventualConsistentValue()) {
+        if (object != null) {
+          if (!(object instanceof List)) {
+            //
+            throw new AssertionError("With eventual, oid's can be mapped to List only, oid: " + valueOid
+                                     + ", mapped to: " + object);
+          } else {
+            List list = (List) object;
+            if (list.size() > 1) { throw new AssertionError(
+                                                            "With eventual, oid's should be mapped to maximum of one key, oid: "
+                                                                + valueOid + ", list: " + list); }
+          }
+        }
+      } else {
+        if (object != null) {
+          if (!(object instanceof TCObjectSelfStoreValue)) {
+            //
+            throw new AssertionError("Object mapped by oid is not TCObjectSelfStoreValue, oid: " + valueOid
+                                     + ", value: " + object);
+          }
+        }
+      }
+
+      Object removed = serverMapLocalCache.getInternalStore().remove(valueOid, RemoveType.NO_SIZE_DECREMENT);
+
+      tcObjectSelfStoreOids.remove(valueOid);
+      tcObjectSelfStoreSize.decrementAndGet();
+      // TODO: remove the cast to TCObjectSelf, right now done to appease unit tests
+      if (removed != null && removed instanceof TCObjectSelf) {
+        this.tcObjectSelfRemovedFromStoreCallback.removedTCObjectSelfFromStore((TCObjectSelf) removed);
+      }
+    } finally {
+      tcObjectStoreLock.writeLock().unlock();
+    }
+  }
+
+  public int size() {
+    return tcObjectSelfStoreSize.get();
+  }
+
+  public void addAllObjectIDs(Set oids) {
+    oids.addAll(this.tcObjectSelfStoreOids);
+  }
+
+  public boolean contains(ObjectID objectID) {
+    return this.tcObjectSelfStoreOids.contains(objectID);
+  }
+
+  private static class TCObjectSelfWrapper implements TCObjectSelfStoreValue, Serializable {
+    private final Object tcObject;
+
+    private TCObjectSelfWrapper(Object tcObject) {
+      this.tcObject = tcObject;
+    }
+
+    public Object getTCObjectSelf() {
+      return tcObject;
+    }
+
+  }
+
+  private class RemoveCallback implements ServerMapLocalCacheRemoveCallback {
+    public void removedElement(Object key, AbstractLocalCacheStoreValue localStoreValue) {
+      // clear the oid->value mapping from the tcoSelfStore
+      ServerMapLocalCache serverMapLocalCache = localCaches.get(localStoreValue.getMapID());
+      if (serverMapLocalCache == null) { throw new AssertionError("No local cache mapped for mapId: "
+                                                                  + localStoreValue.getMapID()); }
+      removeTCObjectSelfForId(serverMapLocalCache, localStoreValue);
+    }
   }
 }

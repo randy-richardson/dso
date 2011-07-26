@@ -11,8 +11,8 @@ import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 public class ServerMapTCClassImpl extends TCClassImpl implements TCClass {
 
   private final L1ServerMapLocalCacheManager globalLocalCacheManager;
-  private final RemoteServerMapManager  remoteServerMapManager;
-  private final Manager                 manager;
+  private final RemoteServerMapManager       remoteServerMapManager;
+  private final Manager                      manager;
 
   ServerMapTCClassImpl(final Manager manager, final L1ServerMapLocalCacheManager globalLocalCacheManager,
                        final RemoteServerMapManager remoteServerMapManager, final TCFieldFactory factory,

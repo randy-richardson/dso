@@ -4,6 +4,7 @@
 package com.tc.object.servermap.localcache;
 
 import com.tc.object.ObjectID;
+import com.tc.object.TCObjectSelfStore;
 import com.tc.object.locks.LockID;
 
 public abstract class AbstractLocalCacheStoreValue {
@@ -28,12 +29,16 @@ public abstract class AbstractLocalCacheStoreValue {
     return id;
   }
 
-  public Object getValue() {
-    return value;
-  }
-
   public ObjectID getMapID() {
     return this.mapID;
+  }
+
+  public Object getValueObject(TCObjectSelfStore tcObjectSelfStore, L1ServerMapLocalCacheStore store) {
+    if (value instanceof ObjectID) {
+      return tcObjectSelfStore.getByIdFromStore((ObjectID) value, store);
+    } else {
+      return value;
+    }
   }
 
   /**
@@ -99,7 +104,7 @@ public abstract class AbstractLocalCacheStoreValue {
    * Use only when {@link #isEventualConsistentValue()} is true. Returns the object id
    */
   public ObjectID getObjectId() {
-    throw new UnsupportedOperationException("This should only be called for Eventual consistent cached values");
+    if (value instanceof ObjectID) { return (ObjectID) value; }
+    return ObjectID.NULL_ID;
   }
-
 }

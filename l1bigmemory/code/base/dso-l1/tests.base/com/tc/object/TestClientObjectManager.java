@@ -217,4 +217,8 @@ public class TestClientObjectManager implements ClientObjectManager {
   public void preFetchObject(final ObjectID id) {
     throw new ImplementMe();
   }
+
+  public void removedTCObjectSelfFromStore(TCObjectSelf value) {
+    throw new ImplementMe();
+  }
 }

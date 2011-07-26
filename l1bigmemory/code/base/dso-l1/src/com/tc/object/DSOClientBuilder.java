@@ -114,7 +114,8 @@ public interface DSOClientBuilder {
                                               final ClassProvider classProviderLocal,
                                               final TCClassFactory classFactory, final TCObjectFactory objectFactory,
                                               final Portability portability, final DSOClientMessageChannel dsoChannel,
-                                              final ToggleableReferenceManager toggleRefMgr);
+                                              final ToggleableReferenceManager toggleRefMgr,
+                                              TCObjectSelfStore tcObjectSelfStore);
 
   ClientLockManager createLockManager(final DSOClientMessageChannel dsoChannel, final ClientIDLogger clientIDLogger,
                                       final SessionManager sessionManager, final ClientLockStatManager lockStatManager,

@@ -15,6 +15,11 @@ import java.util.Collection;
 import java.util.Set;
 
 public final class NullRemoteServerMapManager implements RemoteServerMapManager {
+
+  public void initialize(ClientObjectManager clientObjectManager) {
+    //
+  }
+
   public void unpause(final NodeID remoteNode, final int disconnected) {
     //
   }
