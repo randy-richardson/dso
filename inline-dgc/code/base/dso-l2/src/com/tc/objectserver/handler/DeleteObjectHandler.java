@@ -25,7 +25,7 @@ public class DeleteObjectHandler extends AbstractEventHandler {
 
   @Override
   public void handleEvent(EventContext context) {
-    if (!garbageCollector.requestGCDeleteStart()) {
+    if (!garbageCollector.requestInlineGCDeleteStart()) {
       logger.info("Couldn't get exclusive access to perform inline-dgc. Skipping this round.");
       return;
     }

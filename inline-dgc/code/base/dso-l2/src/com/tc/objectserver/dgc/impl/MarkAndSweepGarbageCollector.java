@@ -46,6 +46,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   private volatile YoungGenChangeCollector     youngGenReferenceCollector = YoungGenChangeCollector.NULL_YOUNG_CHANGE_COLLECTOR;
   private volatile LifeCycleState              gcState                    = new NullLifeCycleState();
   private volatile boolean                     started                    = false;
+  private boolean                              periodicGCStarted          = false;
 
   public MarkAndSweepGarbageCollector(final ObjectManagerConfig objectManagerConfig, final ObjectManager objectMgr,
                                       final ClientStateManager stateManager,
@@ -162,8 +163,10 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   }
 
   public synchronized boolean requestGCStart() {
+    periodicGCStarted = true;
     if (this.started && this.state == GC_SLEEP) {
       this.state = GC_RUNNING;
+      periodicGCStarted = false;
       return true;
     }
     // Can't start DGC
@@ -173,6 +176,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   public synchronized void enableGC() {
     if (GC_DISABLED == this.state) {
       this.state = GC_SLEEP;
+      notifyAll();
     } else {
       logger.warn("DGC is already enabled : " + this.state);
     }
@@ -193,15 +197,22 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     }
   }
 
-  public void notifyGCComplete() {
+  public synchronized void notifyGCComplete() {
     this.state = GC_SLEEP;
+    notifyAll();
+  }
+
+  public synchronized boolean requestInlineGCDeleteStart() {
+    // Let periodic GC have precedence
+    if (periodicGCStarted) { return false; }
+    return requestGCDeleteStart();
   }
 
   /**
    * In Active server, state transitions from GC_PAUSED to GC_DELETE and in the passive server, state transitions from
    * GC_SLEEP to GC_DELETE.
    */
-  public synchronized boolean requestGCDeleteStart() {
+  private synchronized boolean requestGCDeleteStart() {
     if (this.state == GC_SLEEP || this.state == GC_PAUSED) {
       this.state = GC_DELETE;
       return true;

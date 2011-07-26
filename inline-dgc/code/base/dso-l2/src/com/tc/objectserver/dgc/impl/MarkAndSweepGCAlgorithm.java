@@ -15,7 +15,6 @@ import com.tc.util.ObjectIDSet;
 import com.tc.util.TCCollections;
 import com.tc.util.UUID;
 import com.tc.util.concurrent.LifeCycleState;
-import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -43,8 +42,12 @@ final class MarkAndSweepGCAlgorithm {
     while (!collector.requestGCStart()) {
       MarkAndSweepGarbageCollector.logger
           .info(gcHook.getDescription()
-                + "AA-DGC: It is either disabled or is already running. Waiting for 1 min before checking again ...");
-      ThreadUtil.reallySleep(60000);
+                + "AA-DGC: It is either disabled or is already running. Waiting to try again...");
+      try {
+        collector.wait();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
 
     GarbageCollectionID gcID = new GarbageCollectionID(gcIteration, uuid);

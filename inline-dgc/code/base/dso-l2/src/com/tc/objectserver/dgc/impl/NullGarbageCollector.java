@@ -99,7 +99,7 @@ public class NullGarbageCollector implements GarbageCollector {
     return false;
   }
 
-  public boolean requestGCDeleteStart() {
+  public boolean requestInlineGCDeleteStart() {
     return false;
   }
 }

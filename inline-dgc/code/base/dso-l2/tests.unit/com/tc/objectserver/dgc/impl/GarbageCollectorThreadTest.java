@@ -180,7 +180,7 @@ public class GarbageCollectorThreadTest extends TestCase {
       return true;
     }
 
-    public boolean requestGCDeleteStart() {
+    public boolean requestInlineGCDeleteStart() {
       throw new ImplementMe();
     }
 

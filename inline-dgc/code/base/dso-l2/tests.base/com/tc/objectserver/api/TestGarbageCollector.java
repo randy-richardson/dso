@@ -312,7 +312,7 @@ public class TestGarbageCollector implements GarbageCollector {
     return false;
   }
 
-  public boolean requestGCDeleteStart() {
+  public boolean requestInlineGCDeleteStart() {
     throw new ImplementMe();
   }
 }
