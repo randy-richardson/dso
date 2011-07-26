@@ -544,9 +544,10 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     }
 
     final TCFile location = new TCFileImpl(this.configSetupManager.commonl2Config().dataPath());
-    this.startupLock = new StartupLock(location, this.l2Properties.getBoolean("startuplock.retries.enabled"));
+    boolean retries = this.l2Properties.getBoolean("startuplock.retries.enabled");
+    this.startupLock = this.serverBuilder.createStartupLock(location, retries);
 
-    if (!this.startupLock.canProceed(new TCRandomFileAccessImpl(), persistent)) {
+    if (!this.startupLock.canProceed(new TCRandomFileAccessImpl())) {
       consoleLogger.error("Another L2 process is using the directory " + location + " as data directory.");
       if (!persistent) {
         consoleLogger.error("This is not allowed with persistence mode set to temporary-swap-only.");
@@ -1474,7 +1475,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   }
 
   public boolean isBlocking() {
-    return this.startupLock != null && this.startupLock.isBlocking();
+    return this.startupLock != null && this.startupLock.isBlocked();
   }
 
   public void startActiveMode() {
