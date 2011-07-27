@@ -21,4 +21,13 @@ public class NullConnectionPolicy implements ConnectionPolicy {
   public int getMaxConnections() {
     return -1;
   }
+
+  public int getNumberOfActiveConnections() {
+    return 0;
+  }
+
+  public int getConnectionHighWatermark() {
+    return 0;
+  }
+
 }

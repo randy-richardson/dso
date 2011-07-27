@@ -18,6 +18,8 @@ import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ParameterSubstituter;
 import com.tc.config.schema.setup.ConfigurationSetupException;
+import com.tc.logging.TCLogger;
+import com.tc.logging.TCLogging;
 import com.tc.util.Assert;
 import com.terracottatech.config.BindPort;
 import com.terracottatech.config.DsoServerData;
@@ -25,9 +27,9 @@ import com.terracottatech.config.GarbageCollection;
 import com.terracottatech.config.Offheap;
 import com.terracottatech.config.Persistence;
 import com.terracottatech.config.PersistenceMode;
+import com.terracottatech.config.PersistenceMode.Enum;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.Servers;
-import com.terracottatech.config.PersistenceMode.Enum;
 import com.terracottatech.config.TcConfigDocument.TcConfig;
 
 import java.io.File;
@@ -36,7 +38,9 @@ import java.io.File;
  * The standard implementation of {@link L2DSOConfig}.
  */
 public class L2DSOConfigObject extends BaseConfigObject implements L2DSOConfig {
+  private static final TCLogger   logger                                = TCLogging.getLogger(L2DSOConfigObject.class);
   private static final String     WILDCARD_IP                           = "0.0.0.0";
+  private static final String     LOCALHOST                             = "localhost";
   public static final short       DEFAULT_JMXPORT_OFFSET_FROM_DSOPORT   = 10;
   public static final short       DEFAULT_GROUPPORT_OFFSET_FROM_DSOPORT = 20;
   public static final int         MIN_PORTNUMBER                        = 0x0FFF;
@@ -45,9 +49,9 @@ public class L2DSOConfigObject extends BaseConfigObject implements L2DSOConfig {
   private final Persistence       persistence;
   private final Offheap           offHeapConfig;
   private final GarbageCollection garbageCollection;
+  private final DsoServerData     dso;
   private final BindPort          dsoPort;
   private final BindPort          l2GroupPort;
-  private final int               clientReconnectWindow;
   private final String            host;
   private final String            serverName;
   private final String            bind;
@@ -57,18 +61,22 @@ public class L2DSOConfigObject extends BaseConfigObject implements L2DSOConfig {
 
     this.context.ensureRepositoryProvides(Server.class);
     Server server = (Server) this.context.bean();
+    this.dso = server.getDso();
     this.persistence = server.getDso().getPersistence();
 
     Assert.assertTrue((this.persistence.getMode() == PersistenceMode.PERMANENT_STORE)
                       || (this.persistence.getMode() == PersistenceMode.TEMPORARY_SWAP_ONLY));
 
     this.garbageCollection = server.getDso().getGarbageCollection();
-    this.clientReconnectWindow = server.getDso().getClientReconnectWindow();
 
     this.bind = server.getBind();
     this.host = server.getHost();
+    if (this.host.equalsIgnoreCase(LOCALHOST)) {
+      logger.warn("The specified hostname \"" + this.host
+                  + "\" may not work correctly if clients and operator console are connecting from other hosts. "
+                  + "Replace \"" + this.host + "\" with an appropriate hostname in configuration.");
+    }
     this.serverName = server.getName();
-
     this.dsoPort = server.getDsoPort();
     this.l2GroupPort = server.getL2GroupPort();
     if (server.getDso().getPersistence().isSetOffheap()) {
@@ -106,8 +114,12 @@ public class L2DSOConfigObject extends BaseConfigObject implements L2DSOConfig {
     return this.garbageCollection;
   }
 
+  public DsoServerData getDso() {
+    return this.dso;
+  }
+
   public int clientReconnectWindow() {
-    return this.clientReconnectWindow;
+    return this.dso.getClientReconnectWindow();
   }
 
   public String bind() {

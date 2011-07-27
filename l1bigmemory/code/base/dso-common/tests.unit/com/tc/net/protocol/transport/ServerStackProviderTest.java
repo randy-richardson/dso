@@ -40,6 +40,7 @@ public class ServerStackProviderTest extends TCTestCase {
     super();
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
 
@@ -58,9 +59,10 @@ public class ServerStackProviderTest extends TCTestCase {
                                             transportHandshakeMessageFactory, this.connectionIdFactory,
                                             connectionPolicy, wpaFactory, new ReentrantLock());
     connectionIDProvider = new DefaultConnectionIdFactory();
-    this.connId = connectionIDProvider.nextConnectionId();
+    this.connId = connectionIDProvider.nextConnectionId(JvmIDUtil.getJvmID());
   }
 
+  @Override
   protected void tearDown() throws Exception {
     super.tearDown();
   }
@@ -152,20 +154,20 @@ public class ServerStackProviderTest extends TCTestCase {
     };
   }
 
-  private MockMessageTransport connectNewClient(ServerStackProvider serverProvider, boolean checkNonNullConnID)
-      throws WireProtocolException {
+  private MockMessageTransport connectNewClient(ServerStackProvider serverProvider, String jvmID,
+                                                boolean checkNonNullConnID) throws WireProtocolException {
     serverProvider.getInstance();
     MockMessageTransport serverTxForClient = new MockMessageTransport();
     transportFactory.transport = serverTxForClient;
     WireProtocolMessageSink sink = (WireProtocolMessageSink) wpaFactory.newWireProtocolAdaptorCalls.take();
     TestSynMessage syn = new TestSynMessage();
     syn.connection = new TestTCConnection();
-    syn.connectionID = ConnectionID.NULL_ID;
+    syn.connectionID = new ConnectionID(jvmID, ChannelID.NULL_ID.toLong());
     sink.putMessage(syn);
     SynAckMessage synAckMessage = (SynAckMessage) serverTxForClient.sendToConnectionCalls.take();
     System.out.println("XXX Client connect :" + synAckMessage.getConnectionId());
     if (checkNonNullConnID) {
-      Assert.eval(synAckMessage.getConnectionId() != ConnectionID.NULL_ID);
+      Assert.eval(!synAckMessage.getConnectionId().equals(ConnectionID.NULL_ID));
     } else {
       Assert.eval(synAckMessage.getConnectionId().equals(ConnectionID.NULL_ID));
     }
@@ -177,7 +179,7 @@ public class ServerStackProviderTest extends TCTestCase {
     connectionPolicy.maxConnectionsExceeded = false;
     connectionPolicy.maxConnections = 2;
     connectionPolicy.clientConnected = 0;
-    connectionPolicy.clientSet.clear();
+    connectionPolicy.clientsByJvm.clear();
 
     WireProtocolMessageSink sink;
     TestSynMessage syn;
@@ -190,14 +192,14 @@ public class ServerStackProviderTest extends TCTestCase {
                                             this.connectionIdFactory, connectionPolicy, wpaFactory, new ReentrantLock());
 
     // Client1
-    MockMessageTransport serverTxForClietn1 = connectNewClient(this.provider, true);
+    MockMessageTransport serverTxForClietn1 = connectNewClient(this.provider, "jvm1", true);
     Assert.assertEquals(1, connectionPolicy.clientConnected);
 
     // Client2
     provider.getInstance();
     syn = new TestSynMessage();
     syn.connection = getNewDummyTCConnection();
-    syn.connectionID = ConnectionID.NULL_ID;
+    syn.connectionID = new ConnectionID(JvmIDUtil.getJvmID(), ChannelID.NULL_ID.toLong());
     syn.flag = NetworkLayer.TYPE_TRANSPORT_LAYER;
     MockServerMessageTransport serverTxForClietn2 = new MockServerMessageTransport(ConnectionID.NULL_ID,
                                                                                    syn.connection, null,
@@ -210,17 +212,17 @@ public class ServerStackProviderTest extends TCTestCase {
     synAckMessage = (SynAckMessage) serverTxForClietn2.sendToConnectionCalls.take();
     System.out.println("XXX Client 2 :" + synAckMessage.getConnectionId());
     ConnectionID client2ConnID = synAckMessage.getConnectionId();
-    Assert.eval(synAckMessage.getConnectionId() != ConnectionID.NULL_ID);
+    Assert.eval(!synAckMessage.getConnectionId().equals(ConnectionID.NULL_ID));
     Assert.assertEquals(2, connectionPolicy.clientConnected);
     serverTxForClietn2.status.established();
     serverTxForClietn2.addTransportListener(provider);
 
     // Client3 cannot connect
-    connectNewClient(this.provider, false);
+    connectNewClient(this.provider, "jvm3", false);
     Assert.assertEquals(2, connectionPolicy.clientConnected);
 
     // Client4 cannot connect
-    connectNewClient(this.provider, false);
+    connectNewClient(this.provider, "jvm4", false);
     Assert.assertEquals(2, connectionPolicy.clientConnected);
 
     // client1 disconencted
@@ -228,7 +230,7 @@ public class ServerStackProviderTest extends TCTestCase {
     Assert.assertEquals(1, connectionPolicy.clientConnected);
 
     // Client5 connected
-    MockMessageTransport serverTxForClietn5 = connectNewClient(this.provider, true);
+    MockMessageTransport serverTxForClietn5 = connectNewClient(this.provider, "jvm5", true);
     Assert.assertEquals(2, connectionPolicy.clientConnected);
 
     // client 2 reconnecting without disconnecting
@@ -253,14 +255,14 @@ public class ServerStackProviderTest extends TCTestCase {
     Assert.assertEquals(1, connectionPolicy.clientConnected);
 
     // Client6 connected
-    connectNewClient(this.provider, true);
+    connectNewClient(this.provider, "jvm6", true);
     Assert.assertEquals(2, connectionPolicy.clientConnected);
 
   }
 
   public void testRebuildStack() throws Exception {
-    ConnectionID connectionID1 = connectionIDProvider.nextConnectionId();
-    ConnectionID connectionID2 = connectionIDProvider.nextConnectionId();
+    ConnectionID connectionID1 = connectionIDProvider.nextConnectionId(JvmIDUtil.getJvmID());
+    ConnectionID connectionID2 = connectionIDProvider.nextConnectionId(JvmIDUtil.getJvmID());
     Set rebuild = new HashSet();
     rebuild.add(connectionID1);
 
@@ -286,7 +288,7 @@ public class ServerStackProviderTest extends TCTestCase {
     MockMessageTransport transport = new MockMessageTransport();
     transportFactory.transport = transport;
 
-    provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+    provider.attachNewConnection(new ConnectionID(JvmIDUtil.getJvmID(), ChannelID.NULL_ID.toLong()), conn);
 
     assertEquals(0, connectionPolicy.clientConnected);
 
@@ -306,7 +308,7 @@ public class ServerStackProviderTest extends TCTestCase {
 
   public void testNotifyTransportClose() throws Exception {
     TestTCConnection conn = new TestTCConnection();
-    provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+    provider.attachNewConnection(new ConnectionID(JvmIDUtil.getJvmID(), ChannelID.NULL_ID.toLong()), conn);
 
     // try looking it up again. Make sure it found what it was looking for.
     provider.attachNewConnection(connId, conn);
@@ -330,7 +332,7 @@ public class ServerStackProviderTest extends TCTestCase {
    */
   public void testRemoveNetworkStack() throws Exception {
     MockTCConnection conn = new MockTCConnection();
-    provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+    provider.attachNewConnection(new ConnectionID(JvmIDUtil.getJvmID(), ChannelID.NULL_ID.toLong()), conn);
 
     assertEquals(harness, provider.removeNetworkStack(this.connId));
     assertTrue(provider.removeNetworkStack(this.connId) == null);
@@ -353,7 +355,7 @@ public class ServerStackProviderTest extends TCTestCase {
 
     MockTCConnection conn = new MockTCConnection();
     try {
-      provider.attachNewConnection(ConnectionID.NULL_ID, conn);
+      provider.attachNewConnection(new ConnectionID(JvmIDUtil.getJvmID(), ChannelID.NULL_ID.toLong()), conn);
     } catch (StackNotFoundException e) {
       fail("was virgin, should not throw exception");
     } catch (IllegalReconnectException e) {
@@ -379,7 +381,7 @@ public class ServerStackProviderTest extends TCTestCase {
     assertFalse(harness.wasFinalizeStackCalled);
 
     // cause lookup failure
-    ConnectionID differentConnId = connectionIDProvider.nextConnectionId();
+    ConnectionID differentConnId = connectionIDProvider.nextConnectionId(JvmIDUtil.getJvmID());
     harness.wasAttachNewConnectionCalled = false;
     harness.wasFinalizeStackCalled = false;
 
@@ -395,13 +397,15 @@ public class ServerStackProviderTest extends TCTestCase {
 
   private class TestConnectionIDFactory extends DefaultConnectionIdFactory {
 
-    public synchronized ConnectionID nextConnectionId() {
-      connId = super.nextConnectionId();
+    @Override
+    public synchronized ConnectionID nextConnectionId(String clientJvmID) {
+      connId = super.nextConnectionId(clientJvmID);
       return connId;
     }
 
-    public ConnectionID makeConnectionId(long channelID) {
-      return (super.makeConnectionId(channelID));
+    @Override
+    public ConnectionID makeConnectionId(String clientJvmID, long channelID) {
+      return (super.makeConnectionId(clientJvmID, channelID));
     }
   }
 

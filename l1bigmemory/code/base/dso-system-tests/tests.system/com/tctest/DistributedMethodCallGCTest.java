@@ -6,21 +6,27 @@ package com.tctest;
 
 import EDU.oswego.cs.dl.util.concurrent.SynchronizedInt;
 
+import com.tc.exception.TCNonPortableObjectError;
 import com.tc.object.config.ConfigVisitor;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
+import com.tc.util.AdaptedClassDumper;
 import com.tc.util.concurrent.ThreadUtil;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 public class DistributedMethodCallGCTest extends GCTestBase {
 
-  public DistributedMethodCallGCTest() {
+  public DistributedMethodCallGCTest() throws IOException {
+    AdaptedClassDumper.INSTANCE.setRoot(new File(getTempDirectory(), "adapted"));
     // MNK-714
     // disableAllUntil("2010-3-19"); //extended timebomb
   }
@@ -72,8 +78,21 @@ public class DistributedMethodCallGCTest extends GCTestBase {
     private void makeDMICall() {
       DMITarget t = new DMITarget();
       synchronized (root) {
-        root.add(t);
+        try {
+          root.add(t);
+        } catch (TCNonPortableObjectError npoe) {
+          debug("class: " + t.getClass().getName());
+          for (Class iface : t.getClass().getInterfaces()) {
+            debug("iface: " + iface.getName());
+          }
+          for (Field field : t.getClass().getDeclaredFields()) {
+            debug("field: " + field.getName());
+          }
+          throw npoe;
+        }
+
         root.remove(t);
+
       }
 
       t.foo();

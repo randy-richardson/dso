@@ -54,7 +54,7 @@ public class RootsTool {
         ObjectName objectName = rootBeanNames[i];
         DSORootMBean rootBean = MBeanServerInvocationProxy.newMBeanProxy(context.mbsc, objectName, DSORootMBean.class,
                                                                          false);
-        ManagedObjectFacade facade = rootBean.lookupFacade(10);
+        ManagedObjectFacade facade = rootBean.lookupFacade(Integer.MAX_VALUE);
         String rootId = facade.getObjectId().toString();
         w.println(i + " " + rootBean.getRootName() + " id=" + rootId);
 
@@ -78,7 +78,7 @@ public class RootsTool {
         w.println(off + "  " + name + " = null");
         return;
       }
-      facade = dsoBean.lookupFacade(objectId, 10);
+      facade = dsoBean.lookupFacade(objectId, Integer.MAX_VALUE);
       if (facade.isArray()) {
         int arrayLength = facade.getArrayLength();
         if (arrayLength > 0 && facade.isPrimitive("0")) {

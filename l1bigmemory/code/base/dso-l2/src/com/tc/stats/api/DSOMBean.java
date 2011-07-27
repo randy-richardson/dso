@@ -92,4 +92,8 @@ public interface DSOMBean extends DSOStats, OffheapStats, DGCMBean, TerracottaMB
   void optimizeSearchIndex(String indexName);
 
   String[] getSearchIndexNames();
+
+  int getActiveLicensedClientCount();
+
+  int getLicensedClientHighCount();
 }
