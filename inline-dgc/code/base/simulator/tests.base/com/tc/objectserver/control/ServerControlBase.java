@@ -102,6 +102,7 @@ public abstract class ServerControlBase implements ServerControl {
           JMXConnector jmxConnector = JMXUtils.getJMXConnector(getHost(), getAdminPort());
           MBeanServerConnection msc = jmxConnector.getMBeanServerConnection();
           dsoMBean = MBeanServerInvocationProxy.newMBeanProxy(msc, L2MBeanNames.DSO, DSOMBean.class, false);
+          dsoMBean.getLiveObjectCount();
           return true;
         } catch (Exception e) {
           return false;
