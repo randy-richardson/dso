@@ -168,7 +168,8 @@ import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.core.impl.ServerManagementContext;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.dgc.api.GarbageCollector;
-import com.tc.objectserver.dgc.impl.GCComptrollerImpl;
+import com.tc.objectserver.dgc.api.GarbageCollector.GCType;
+import com.tc.objectserver.dgc.impl.GCControllerImpl;
 import com.tc.objectserver.dgc.impl.GCStatisticsAgentSubSystemEventListener;
 import com.tc.objectserver.dgc.impl.GCStatsEventPublisher;
 import com.tc.objectserver.dgc.impl.GarbageCollectionInfoPublisherImpl;
@@ -339,6 +340,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.management.MBeanServer;
 import javax.management.NotCompliantMBeanException;
@@ -1143,8 +1145,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
       final StoppableThread st = new GarbageCollectorThread(this.threadGroup, "DGC-Thread", gc, objectManagerConfig);
       st.setDaemon(true);
       gc.setState(st);
+      gc.setPeriodicEnabled(true);
     }
-    this.l2Management.findObjectManagementMonitorMBean().registerGCController(new GCComptrollerImpl(this.objectManager
+    this.l2Management.findObjectManagementMonitorMBean().registerGCController(new GCControllerImpl(this.objectManager
                                                                                   .getGarbageCollector()));
     this.l2Management.findObjectManagementMonitorMBean().registerObjectIdFetcher(new ObjectIdsFetcher() {
       public Set getAllObjectIds() {
@@ -1480,6 +1483,16 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   public void startActiveMode() {
     this.transactionManager.goToActiveMode();
+    if (!this.objectManager.getGarbageCollector().isPeriodicEnabled()) {
+      logger.info("Periodic DGC is disabled. Scheduling a DGC to cleanup references missed by inline dgc.");
+      Timer t = new Timer();
+      t.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          objectManager.getGarbageCollector().doGC(GCType.FULL_GC);
+        }
+      }, TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_START_ACTIVE_DELAY));
+    }
   }
 
   public void startL1Listener() throws IOException {

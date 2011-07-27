@@ -26,6 +26,7 @@ import com.tc.util.sequence.DGCSequenceProvider;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  */
@@ -35,6 +36,8 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
                                                                               .getLogger(MarkAndSweepGarbageCollector.class);
 
   private static final LifeCycleState          NULL_LIFECYCLE_STATE       = new NullLifeCycleState();
+  private static final int                     WAIT_INTERVAL              = 10 * 1000;
+  private static final int                     WAIT_LOG_THRESHOLD         = 10 * 1000;
 
   private final GarbageCollectionInfoPublisher gcPublisher;
   private final ObjectManagerConfig            objectManagerConfig;
@@ -47,6 +50,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   private volatile YoungGenChangeCollector     youngGenReferenceCollector = YoungGenChangeCollector.NULL_YOUNG_CHANGE_COLLECTOR;
   private volatile LifeCycleState              gcState                    = new NullLifeCycleState();
   private volatile boolean                     started                    = false;
+  private volatile boolean                     periodicEnabled            = false;
 
   public MarkAndSweepGarbageCollector(final ObjectManagerConfig objectManagerConfig, final ObjectManager objectMgr,
                                       final ClientStateManager stateManager,
@@ -154,6 +158,14 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     return this.started;
   }
 
+  public void setPeriodicEnabled(final boolean periodicEnabled) {
+    this.periodicEnabled = periodicEnabled;
+  }
+
+  public boolean isPeriodicEnabled() {
+    return periodicEnabled;
+  }
+
   public void setState(final StoppableThread st) {
     this.gcState = st;
   }
@@ -164,9 +176,15 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
   public synchronized void waitToStartGC() {
     boolean isInterrupted = false;
+    long lastLogTime = System.nanoTime();
+    final long startTime = System.nanoTime();
     while (!requestGCStart()) {
       try {
-        wait();
+        if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastLogTime) > WAIT_LOG_THRESHOLD) {
+          logger.info("Waited " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime) + "ms to start DGC.");
+          lastLogTime = System.nanoTime();
+        }
+        wait(WAIT_INTERVAL);
       } catch (InterruptedException e) {
         isInterrupted = true;
       }
@@ -194,9 +212,15 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
   public synchronized void waitToDisableGC() {
     boolean isInterrupted = false;
+    long lastLogTime = System.nanoTime();
+    final long startTime = System.nanoTime();
     while (!requestDisableGC()) {
       try {
-        wait();
+        if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastLogTime) > WAIT_LOG_THRESHOLD) {
+          logger.info("Waited " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime) + "ms to disable DGC.");
+          lastLogTime = System.nanoTime();
+        }
+        wait(WAIT_INTERVAL);
       } catch (InterruptedException e) {
         isInterrupted = true;
       }
@@ -225,9 +249,16 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
   public synchronized void waitToStartInlineGC() {
     boolean isInterrupted = false;
+    long lastLogTime = System.nanoTime();
+    final long startTime = System.nanoTime();
     while (!requestGCDeleteStart()) {
       try {
-        wait();
+        if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastLogTime) > WAIT_LOG_THRESHOLD) {
+          logger.info("Waited " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
+                      + "ms to start inline DGC.");
+          lastLogTime = System.nanoTime();
+        }
+        wait(WAIT_INTERVAL);
       } catch (InterruptedException e) {
         isInterrupted = true;
       }

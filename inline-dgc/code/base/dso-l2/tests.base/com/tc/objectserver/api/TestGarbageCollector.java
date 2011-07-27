@@ -323,4 +323,12 @@ public class TestGarbageCollector implements GarbageCollector {
   public void waitToStartGC() {
     // do nothing
   }
+
+  public void setPeriodicEnabled(boolean periodicEnabled) {
+    // do nothing
+  }
+
+  public boolean isPeriodicEnabled() {
+    return false;
+  }
 }

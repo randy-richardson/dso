@@ -110,4 +110,12 @@ public class NullGarbageCollector implements GarbageCollector {
   public void waitToStartInlineGC() {
     // do nothing
   }
+
+  public void setPeriodicEnabled(boolean periodicEnabled) {
+    // do nothing
+  }
+
+  public boolean isPeriodicEnabled() {
+    return false;
+  }
 }

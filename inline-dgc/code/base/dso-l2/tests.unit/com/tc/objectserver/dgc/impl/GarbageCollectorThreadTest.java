@@ -163,6 +163,14 @@ public class GarbageCollectorThreadTest extends TestCase {
       //
     }
 
+    public void setPeriodicEnabled(final boolean periodEnable) {
+      // do nothing
+    }
+
+    public boolean isPeriodicEnabled() {
+      return false;
+    }
+
     public void setState(StoppableThread st) {
       //
     }

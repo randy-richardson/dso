@@ -74,6 +74,10 @@ public interface GarbageCollector extends PrettyPrintable {
 
   public boolean isStarted();
 
+  public void setPeriodicEnabled(final boolean periodicEnabled);
+
+  public boolean isPeriodicEnabled();
+
   public void setState(StoppableThread st);
 
   public void addListener(GarbageCollectorEventListener listener);
