@@ -27,7 +27,10 @@ import com.tc.object.servermap.localcache.ServerMapLocalCacheRemoveCallback;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -448,8 +451,8 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     }
   }
 
-  private static class TCObjectSelfWrapper implements TCObjectSelfStoreValue, Serializable {
-    private final Object tcObject;
+  private static class TCObjectSelfWrapper implements TCObjectSelfStoreValue, Externalizable {
+    private volatile Object tcObject;
 
     private TCObjectSelfWrapper(Object tcObject) {
       this.tcObject = tcObject;
@@ -457,6 +460,14 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
 
     public Object getTCObjectSelf() {
       return tcObject;
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+      tcObject = in.readObject();
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+      out.writeObject(tcObject);
     }
 
   }

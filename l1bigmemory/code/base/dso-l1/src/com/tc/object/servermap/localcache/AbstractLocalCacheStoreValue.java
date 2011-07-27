@@ -7,17 +7,26 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCObjectSelfStore;
 import com.tc.object.locks.LockID;
 
-public abstract class AbstractLocalCacheStoreValue {
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
+public abstract class AbstractLocalCacheStoreValue implements Externalizable {
   /**
    * This corresponds to a ObjectID/LockID
    */
-  protected final Object id;
+  protected volatile Object id;
   /**
    * this is the value object <br>
    * TODO: make this Serializable. This would be a SerializedEntry for the serialized caches.
    */
-  protected final Object value;
-  private final ObjectID mapID;
+  protected volatile Object value;
+  private volatile ObjectID mapID;
+
+  public AbstractLocalCacheStoreValue() {
+    //
+  }
 
   public AbstractLocalCacheStoreValue(Object id, Object value, ObjectID mapID) {
     this.id = id;
@@ -106,6 +115,18 @@ public abstract class AbstractLocalCacheStoreValue {
   public ObjectID getObjectId() {
     if (value instanceof ObjectID) { return (ObjectID) value; }
     return ObjectID.NULL_ID;
+  }
+
+  public void writeExternal(ObjectOutput out) throws IOException {
+    out.writeObject(id);
+    out.writeObject(value);
+    out.writeObject(mapID);
+  }
+
+  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    id = in.readObject();
+    value = in.readObject();
+    mapID = (ObjectID) in.readObject();
   }
 
   @Override
