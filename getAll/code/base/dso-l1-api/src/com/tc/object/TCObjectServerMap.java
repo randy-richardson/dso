@@ -113,7 +113,7 @@ public interface TCObjectServerMap<L> extends TCObject {
    */
   public Object getValueUnlocked(final TCServerMap map, final Object key);
 
-  public Map<Object, Object> getAllValueUnlocked(TCServerMap map, Set<Object> keys);
+  public Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap);
 
   /**
    * Returns a snapshot of keys for the giver ServerTCMap

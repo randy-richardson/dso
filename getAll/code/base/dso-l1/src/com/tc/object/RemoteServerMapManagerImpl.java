@@ -31,10 +31,12 @@ import com.tc.util.Util;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Map.Entry;
 
 public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
@@ -108,16 +110,20 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     return result.get(portableKey);
   }
 
-  public synchronized void getMappingForAllKeys(ObjectID oid, Set<Object> keys, Map<Object, Object> rv) {
-    assertSameGroupID(oid);
-    waitUntilRunning();
+  public synchronized void getMappingForAllKeys(final Map<ObjectID, Set<Object>> mapIdToKeysMap, Map<Object, Object> rv) {
+    Set<AbstractServerMapRequestContext> contextsToWaitFor = new HashSet<AbstractServerMapRequestContext>();
+    for (Entry<ObjectID, Set<Object>> entry : mapIdToKeysMap.entrySet()) {
+      ObjectID mapId = entry.getKey();
+      Set<Object> keys = entry.getValue();
+      assertSameGroupID(mapId);
+      waitUntilRunning();
+      final AbstractServerMapRequestContext context = createLookupValueRequestContext(mapId, keys);
+      context.makeLookupRequest();
+      contextsToWaitFor.add(context);
+      sendRequest(context);
+    }
 
-    final AbstractServerMapRequestContext context = createLookupValueRequestContext(oid, keys);
-    context.makeLookupRequest();
-    sendRequestNow(context);
-    Map<Object, Object> result = waitForResult(context);
-    Assert.assertEquals(keys.size(), result.size());
-    rv.putAll(result);
+    waitForResults(contextsToWaitFor, rv);
   }
 
   public synchronized Set getAllKeys(ObjectID mapID) {
@@ -172,6 +178,36 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
           removeRequestContext(context);
           return result;
         }
+      }
+    } finally {
+      Util.selfInterruptIfNeeded(isInterrupted);
+    }
+  }
+
+  private void waitForResults(Set<AbstractServerMapRequestContext> contextsToWaitFor, Map<Object, Object> rv) {
+    boolean isInterrupted = false;
+    try {
+      while (true) {
+        try {
+          wait();
+        } catch (final InterruptedException e) {
+          isInterrupted = true;
+        }
+        for (Iterator<AbstractServerMapRequestContext> iterator = contextsToWaitFor.iterator(); iterator.hasNext();) {
+          AbstractServerMapRequestContext context = iterator.next();
+          if (context.isMissing()) {
+            removeRequestContext(context);
+            iterator.remove();
+            throw new TCObjectNotFoundException(context.getMapID().toString());
+          }
+          Map<Object, Object> result = context.getResult();
+          if (result != null) {
+            removeRequestContext(context);
+            iterator.remove();
+            rv.putAll(result);
+          }
+        }
+        if (contextsToWaitFor.isEmpty()) { return; }
       }
     } finally {
       Util.selfInterruptIfNeeded(isInterrupted);

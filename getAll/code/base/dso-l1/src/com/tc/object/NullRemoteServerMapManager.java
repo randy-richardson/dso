@@ -89,7 +89,7 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
     //
   }
 
-  public void getMappingForAllKeys(ObjectID mapID, Set<Object> keys, Map<Object, Object> rv) {
+  public void getMappingForAllKeys(final Map<ObjectID, Set<Object>> mapIdToKeysMap, final Map<Object, Object> rv) {
     //
   }
 
