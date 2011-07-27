@@ -4,7 +4,6 @@
  */
 package com.tc.objectserver.dgc.impl;
 
-import com.tc.exception.ImplementMe;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.context.GCResultContext;
 import com.tc.objectserver.dgc.api.GarbageCollector;
@@ -112,7 +111,11 @@ public class GarbageCollectorThreadTest extends TestCase {
       return false;
     }
 
-    public boolean disableGC() {
+    public void waitToDisableGC() {
+      // do nothing
+    }
+
+    public boolean requestDisableGC() {
       return false;
     }
 
@@ -180,8 +183,12 @@ public class GarbageCollectorThreadTest extends TestCase {
       return true;
     }
 
-    public boolean requestInlineGCDeleteStart() {
-      throw new ImplementMe();
+    public void waitToStartGC() {
+      // do nothing
+    }
+
+    public void waitToStartInlineGC() {
+      // do nothing
     }
 
     public void doGC(GCType type) {

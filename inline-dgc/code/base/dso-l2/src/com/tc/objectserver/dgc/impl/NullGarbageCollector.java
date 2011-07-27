@@ -63,12 +63,16 @@ public class NullGarbageCollector implements GarbageCollector {
     //
   }
 
-  public boolean disableGC() {
+  public boolean requestDisableGC() {
     return true;
   }
 
   public void enableGC() {
     // do nothing null
+  }
+
+  public void waitToDisableGC() {
+    // do nothing
   }
 
   public boolean isDisabled() {
@@ -99,7 +103,11 @@ public class NullGarbageCollector implements GarbageCollector {
     return false;
   }
 
-  public boolean requestInlineGCDeleteStart() {
-    return false;
+  public void waitToStartGC() {
+    // do nothing
+  }
+
+  public void waitToStartInlineGC() {
+    // do nothing
   }
 }

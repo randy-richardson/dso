@@ -39,7 +39,6 @@ import com.tc.util.Assert;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.State;
 import com.tc.util.TCCollections;
-import com.tc.util.concurrent.ThreadUtil;
 import com.tc.util.sequence.SequenceGenerator;
 import com.tc.util.sequence.SequenceGenerator.SequenceGeneratorException;
 
@@ -410,19 +409,14 @@ public class ReplicatedObjectManagerImpl implements ReplicatedObjectManager, Gro
 
     private void disableGCIfPossible() {
       if (!this.disabled) {
-        this.disabled = ReplicatedObjectManagerImpl.this.objectManager.getGarbageCollector().disableGC();
+        this.disabled = ReplicatedObjectManagerImpl.this.objectManager.getGarbageCollector().requestDisableGC();
         logger.info((this.disabled ? "DGC is disabled." : "DGC is is not disabled."));
       }
     }
 
     private void disableGC() {
-      while (!this.disabled) {
-        this.disabled = ReplicatedObjectManagerImpl.this.objectManager.getGarbageCollector().disableGC();
-        if (!this.disabled) {
-          logger.warn("DGC is running. Waiting for it to complete before disabling it...");
-          ThreadUtil.reallySleep(3000); // FIXME:: use wait notify instead
-        }
-      }
+      ReplicatedObjectManagerImpl.this.objectManager.getGarbageCollector().waitToDisableGC();
+      this.disabled = true;
     }
 
     private void assertGCDisabled() {

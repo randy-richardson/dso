@@ -270,7 +270,11 @@ public class TestGarbageCollector implements GarbageCollector {
     //
   }
 
-  public boolean disableGC() {
+  public void waitToDisableGC() {
+    // do nothing
+  }
+
+  public boolean requestDisableGC() {
     return false;
   }
 
@@ -312,7 +316,11 @@ public class TestGarbageCollector implements GarbageCollector {
     return false;
   }
 
-  public boolean requestInlineGCDeleteStart() {
-    throw new ImplementMe();
+  public void waitToStartInlineGC() {
+    // do nothing
+  }
+
+  public void waitToStartGC() {
+    // do nothing
   }
 }

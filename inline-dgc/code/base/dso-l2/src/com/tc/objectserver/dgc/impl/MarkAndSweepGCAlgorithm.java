@@ -39,16 +39,7 @@ final class MarkAndSweepGCAlgorithm {
   }
 
   void doGC() {
-    while (!collector.requestGCStart()) {
-      MarkAndSweepGarbageCollector.logger
-          .info(gcHook.getDescription()
-                + "AA-DGC: It is either disabled or is already running. Waiting to try again...");
-      try {
-        collector.wait();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-    }
+    this.collector.waitToStartGC();
 
     GarbageCollectionID gcID = new GarbageCollectionID(gcIteration, uuid);
     GarbageCollectionInfo gcInfo = gcHook.createGCInfo(gcID);

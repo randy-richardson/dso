@@ -18,6 +18,7 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.State;
+import com.tc.util.Util;
 import com.tc.util.concurrent.LifeCycleState;
 import com.tc.util.concurrent.NullLifeCycleState;
 import com.tc.util.concurrent.StoppableThread;
@@ -46,7 +47,6 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   private volatile YoungGenChangeCollector     youngGenReferenceCollector = YoungGenChangeCollector.NULL_YOUNG_CHANGE_COLLECTOR;
   private volatile LifeCycleState              gcState                    = new NullLifeCycleState();
   private volatile boolean                     started                    = false;
-  private boolean                              periodicGCStarted          = false;
 
   public MarkAndSweepGarbageCollector(final ObjectManagerConfig objectManagerConfig, final ObjectManager objectMgr,
                                       final ClientStateManager stateManager,
@@ -162,11 +162,21 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     this.gcPublisher.addListener(listener);
   }
 
+  public synchronized void waitToStartGC() {
+    boolean isInterrupted = false;
+    while (!requestGCStart()) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        isInterrupted = true;
+      }
+    }
+    Util.selfInterruptIfNeeded(isInterrupted);
+  }
+
   public synchronized boolean requestGCStart() {
-    periodicGCStarted = true;
     if (this.started && this.state == GC_SLEEP) {
       this.state = GC_RUNNING;
-      periodicGCStarted = false;
       return true;
     }
     // Can't start DGC
@@ -176,13 +186,25 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   public synchronized void enableGC() {
     if (GC_DISABLED == this.state) {
       this.state = GC_SLEEP;
-      notifyAll();
+      notify();
     } else {
       logger.warn("DGC is already enabled : " + this.state);
     }
   }
 
-  public synchronized boolean disableGC() {
+  public synchronized void waitToDisableGC() {
+    boolean isInterrupted = false;
+    while (!requestDisableGC()) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        isInterrupted = true;
+      }
+    }
+    Util.selfInterruptIfNeeded(isInterrupted);
+  }
+
+  public synchronized boolean requestDisableGC() {
     if (GC_SLEEP == this.state) {
       this.state = GC_DISABLED;
       return true;
@@ -197,15 +219,20 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     }
   }
 
-  public synchronized void notifyGCComplete() {
+  public void notifyGCComplete() {
     this.state = GC_SLEEP;
-    notifyAll();
   }
 
-  public synchronized boolean requestInlineGCDeleteStart() {
-    // Let periodic GC have precedence
-    if (periodicGCStarted) { return false; }
-    return requestGCDeleteStart();
+  public synchronized void waitToStartInlineGC() {
+    boolean isInterrupted = false;
+    while (!requestGCDeleteStart()) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        isInterrupted = true;
+      }
+    }
+    Util.selfInterruptIfNeeded(isInterrupted);
   }
 
   /**
