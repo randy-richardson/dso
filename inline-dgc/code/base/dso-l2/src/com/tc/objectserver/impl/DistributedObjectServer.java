@@ -1483,15 +1483,19 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   public void startActiveMode() {
     this.transactionManager.goToActiveMode();
-    if (!this.objectManager.getGarbageCollector().isPeriodicEnabled()) {
-      logger.info("Periodic DGC is disabled. Scheduling a DGC to cleanup references missed by inline dgc.");
+    if (!this.objectManager.getGarbageCollector().isPeriodicEnabled()
+        && TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_INLINE_ENABLED, true)) {
+      final int startActiveDGCDelay = TCPropertiesImpl.getProperties()
+          .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_START_ACTIVE_DELAY);
+      logger.info("Periodic DGC is disabled. Scheduling a DGC to run in " + startActiveDGCDelay
+                  + "ms to clear up objects missed by inline dgc.");
       Timer t = new Timer();
       t.schedule(new TimerTask() {
         @Override
         public void run() {
           objectManager.getGarbageCollector().doGC(GCType.FULL_GC);
         }
-      }, TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_START_ACTIVE_DELAY));
+      }, startActiveDGCDelay);
     }
   }
 
