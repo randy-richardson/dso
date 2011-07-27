@@ -363,9 +363,9 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   private void removeTCObjectSelfForId(ServerMapLocalCache serverMapLocalCache,
                                        AbstractLocalCacheStoreValue localStoreValue) {
     Object removed = null;
+    ObjectID valueOid = localStoreValue.getObjectId();
     tcObjectStoreLock.writeLock().lock();
     try {
-      ObjectID valueOid = localStoreValue.getObjectId();
       tcObjectSelfTempCache.remove(valueOid);
 
       if (ObjectID.NULL_ID.equals(valueOid) || !tcObjectSelfStoreOids.contains(valueOid)) { return; }
@@ -397,18 +397,23 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
         removed = serverMapLocalCache.getInternalStore().remove(valueOid, RemoveType.NO_SIZE_DECREMENT);
       }
 
-      tcObjectSelfStoreOids.remove(valueOid);
-      signalAll();
-
-      tcObjectSelfStoreSize.decrementAndGet();
-
     } finally {
       tcObjectStoreLock.writeLock().unlock();
     }
+
     // TODO: remove the cast to TCObjectSelf, right now done to appease unit tests
     // to avoid deadlock, do this outside lock
     if (removed != null && removed instanceof TCObjectSelf) {
       this.tcObjectSelfRemovedFromStoreCallback.removedTCObjectSelfFromStore((TCObjectSelf) removed);
+    }
+
+    tcObjectStoreLock.writeLock().lock();
+    try {
+      tcObjectSelfStoreOids.remove(valueOid);
+      signalAll();
+      tcObjectSelfStoreSize.decrementAndGet();
+    } finally {
+      tcObjectStoreLock.writeLock().unlock();
     }
   }
 
