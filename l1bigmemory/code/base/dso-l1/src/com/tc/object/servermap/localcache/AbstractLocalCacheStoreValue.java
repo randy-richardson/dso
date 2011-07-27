@@ -107,4 +107,9 @@ public abstract class AbstractLocalCacheStoreValue {
     if (value instanceof ObjectID) { return (ObjectID) value; }
     return ObjectID.NULL_ID;
   }
+
+  @Override
+  public String toString() {
+    return "AbstractLocalCacheStoreValue [id=" + id + ", mapID=" + mapID + ", value=" + value + "]";
+  }
 }

@@ -431,8 +431,8 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
   }
 
   public boolean containsLocalKey(final Object key) {
-    if (CACHE_ENABLED) {
-      return this.cache.containsKey(key);
+    if (this.localCacheEnabled) {
+      return this.cache.getLocalValue(key) != null;
     } else {
       return false;
     }
@@ -519,10 +519,6 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     this.serverMapLocalStore = serverMapLocalStore;
     if (cache != null) {
       cache.setupLocalStore(serverMapLocalStore);
-    }
-
-    public boolean containsKey(final Object key) {
-      return this.map.containsKey(key);
     }
   }
 }

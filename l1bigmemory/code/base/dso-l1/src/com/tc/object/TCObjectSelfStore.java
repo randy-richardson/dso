@@ -23,4 +23,5 @@ public interface TCObjectSelfStore {
 
   Object getByIdFromStore(ObjectID value, L1ServerMapLocalCacheStore store);
 
+  void addTCObjectSelf(TCObjectSelf obj);
 }

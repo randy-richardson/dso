@@ -144,7 +144,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     if (localCacheValue != null) {
       if (localCacheValue.getId() != null && localCacheValue.getId() != ObjectID.NULL_ID) {
 
-        LockID lockID = executeUnderSegmentWriteLock(localCacheValue.getId(), key, RemoveIdKeyMappingCallback.INSTANCE);
+        LockID lockID = executeUnderSegmentWriteLock(localCacheValue.getId(), key, localCacheValue,
+                                                     RemoveIdKeyMappingCallback.INSTANCE);
         initiateLockRecall(lockID);
       } // else: we don't add for null_id
     }
@@ -157,7 +158,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     }
   }
 
-  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(final Object key,
+  private L1ServerMapLocalStoreTransactionCompletionListener getTransactionCompleteListener(
+                                                                                            final Object key,
                                                                                             MapOperationType mapOperation) {
     if (!mapOperation.isMutateOperation()) {
       // no listener required for non mutate ops
@@ -224,18 +226,19 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       AbstractLocalCacheStoreValue localValue = (AbstractLocalCacheStoreValue) value;
       if (localValue.getId() != null) {
         // not incoherent item, remove id-key mapping
-        LockID id = executeUnderSegmentWriteLock(localValue.getId(),
-                                                 key,
-                                                 RemoveEntryForKeyCallback.REMOVE_KEY_AND_META_MAPPING_CALLBACK_INSTANCE);
+        LockID id = executeUnderSegmentWriteLock(localValue.getId(), key, value,
+                                                 RemoveEntryForKeyCallback.REMOVE_ONLY_META_MAPPING_CALLBACK_INSTANCE);
         initiateLockRecall(id);
+      } else {
+        entryRemovedCallback(removeCallback, key, value);
       }
     }
   }
 
-  public void evictedFromStore(Object id, Object key) {
+  public void evictedFromStore(Object id, Object key, Object value) {
     if (!isStoreInitialized()) { return; }
     // no need to attempt to remove the key again, as its already been removed on eviction notification
-    LockID lockID = executeUnderSegmentWriteLock(id, key,
+    LockID lockID = executeUnderSegmentWriteLock(id, key, value,
                                                  RemoveEntryForKeyCallback.REMOVE_ONLY_META_MAPPING_CALLBACK_INSTANCE);
     initiateLockRecall(lockID);
   }
@@ -358,11 +361,22 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       readWriteLock.writeLock().lock();
     }
     try {
-      return callback.callback(null, null, this.localStore, this.removeCallback);
+      return callback.callback(null, null, null, this.localStore, this.removeCallback);
     } finally {
       for (ReentrantReadWriteLock readWriteLock : segmentLocks) {
         readWriteLock.writeLock().unlock();
       }
+    }
+  }
+
+  private <V> V executeUnderSegmentWriteLock(final Object id, final Object key, Object value,
+                                             final ExecuteUnderLockCallback<V> callback) {
+    ReentrantReadWriteLock lock = getLock(id);
+    try {
+      lock.writeLock().lock();
+      return callback.callback(id, key, value, this.localStore, this.removeCallback);
+    } finally {
+      lock.writeLock().unlock();
     }
   }
 
@@ -371,14 +385,14 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     ReentrantReadWriteLock lock = getLock(id);
     try {
       lock.writeLock().lock();
-      return callback.callback(id, key, this.localStore, this.removeCallback);
+      return callback.callback(id, key, null, this.localStore, this.removeCallback);
     } finally {
       lock.writeLock().unlock();
     }
   }
 
   private static interface ExecuteUnderLockCallback<V> {
-    V callback(Object key, Object value, L1ServerMapLocalCacheStore backingMap,
+    V callback(Object id, Object key, Object value, L1ServerMapLocalCacheStore backingMap,
                ServerMapLocalCacheRemoveCallback removeCallback);
   }
 
@@ -386,16 +400,14 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
     public static AddIdKeyMappingCallback INSTANCE = new AddIdKeyMappingCallback();
 
-    public Void callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap,
+    public Void callback(Object id, Object key, Object unused, L1ServerMapLocalCacheStore backingMap,
                          ServerMapLocalCacheRemoveCallback removeCallback) {
       List list;
-      synchronized (id) {
-        list = (List) backingMap.get(id);
-        if (list == null) {
-          list = new ArrayList();
-          // TODO: use putIfAbsent
-          backingMap.put(id, list, PutType.PINNED_NO_SIZE_INCREMENT);
-        }
+      list = (List) backingMap.get(id);
+      if (list == null) {
+        list = new ArrayList();
+        // TODO: use putIfAbsent
+        backingMap.put(id, list, PutType.PINNED_NO_SIZE_INCREMENT);
       }
       list.add(key);
 
@@ -408,7 +420,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private static class RemoveIdKeyMappingCallback implements ExecuteUnderLockCallback<LockID> {
     public static RemoveIdKeyMappingCallback INSTANCE = new RemoveIdKeyMappingCallback();
 
-    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap,
+    public LockID callback(Object id, Object key, Object removed, L1ServerMapLocalCacheStore backingMap,
                            ServerMapLocalCacheRemoveCallback removeCallback) {
       List list = (List) backingMap.get(id);
       if (list == null) { return null; }
@@ -420,6 +432,8 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       } else {
         backingMap.put(id, list, PutType.PINNED_NO_SIZE_INCREMENT);
       }
+
+      entryRemovedCallback(removeCallback, key, removed);
       return list.size() == 0 && (id instanceof LockID) ? (LockID) id : null;
     }
   }
@@ -427,7 +441,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private static class RemoveEntriesForIdCallback implements ExecuteUnderLockCallback<Void> {
     public static RemoveEntriesForIdCallback INSTANCE = new RemoveEntriesForIdCallback();
 
-    public Void callback(Object id, Object unusedParam, L1ServerMapLocalCacheStore backingMap,
+    public Void callback(Object id, Object unusedParam, Object unusedParam2, L1ServerMapLocalCacheStore backingMap,
                          ServerMapLocalCacheRemoveCallback removeCallback) {
       // remove the list
       List list = (List) backingMap.remove(id, RemoveType.NO_SIZE_DECREMENT);
@@ -443,17 +457,18 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   }
 
   private static class RemoveEntryForKeyCallback implements ExecuteUnderLockCallback<LockID> {
-    public static RemoveEntryForKeyCallback REMOVE_KEY_AND_META_MAPPING_CALLBACK_INSTANCE = new RemoveEntryForKeyCallback(
-                                                                                                                          true);
-    public static RemoveEntryForKeyCallback REMOVE_ONLY_META_MAPPING_CALLBACK_INSTANCE    = new RemoveEntryForKeyCallback(
-                                                                                                                          false);
+    // public static RemoveEntryForKeyCallback REMOVE_KEY_AND_META_MAPPING_CALLBACK_INSTANCE = new
+    // RemoveEntryForKeyCallback(
+    // true);
+    public static RemoveEntryForKeyCallback REMOVE_ONLY_META_MAPPING_CALLBACK_INSTANCE = new RemoveEntryForKeyCallback(
+                                                                                                                       false);
     private final boolean                   removeKey;
 
     private RemoveEntryForKeyCallback(boolean removeKey) {
       this.removeKey = removeKey;
     }
 
-    public LockID callback(Object id, Object key, L1ServerMapLocalCacheStore backingMap,
+    public LockID callback(Object id, Object key, Object removed, L1ServerMapLocalCacheStore backingMap,
                            ServerMapLocalCacheRemoveCallback removeCallback) {
       List list = (List) backingMap.get(id);
       if (list != null) {
@@ -462,9 +477,9 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
 
         if (removeKey) {
           // remove the key from the backing map/store
-          Object removed = backingMap.remove(key, RemoveType.NORMAL);
-          entryRemovedCallback(removeCallback, key, removed);
+          removed = backingMap.remove(key, RemoveType.NORMAL);
         }
+        entryRemovedCallback(removeCallback, key, removed);
 
         // put back or remove the list
         if (list.size() == 0) {
@@ -480,7 +495,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
   private static class ClearAllEntriesCallback implements ExecuteUnderLockCallback<Set<LockID>> {
     public static ClearAllEntriesCallback INSTANCE = new ClearAllEntriesCallback();
 
-    public Set<LockID> callback(Object unused1, Object unused2, L1ServerMapLocalCacheStore backingMap,
+    public Set<LockID> callback(Object unused1, Object unused2, Object unused3, L1ServerMapLocalCacheStore backingMap,
                                 ServerMapLocalCacheRemoveCallback removeCallback) {
       HashSet<LockID> lockIDs = new HashSet<LockID>();
       Set keySet = backingMap.getKeySet();

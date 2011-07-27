@@ -582,6 +582,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
                                                                    classFactory, objectFactory, this.config
                                                                        .getPortability(), this.channel, toggleRefMgr,
                                                                    globalLocalCacheManager);
+    this.globalLocalCacheManager.initializeTCObjectSelfStore(objectManager);
 
     this.threadGroup.addCallbackOnExitDefaultHandler(new CallbackDumpAdapter(this.objectManager));
     this.dumpHandler.registerForDump(new CallbackDumpAdapter(this.objectManager));
