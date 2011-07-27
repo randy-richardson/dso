@@ -36,6 +36,10 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
 
   private static final TCLogger LOGGER                               = TCLogging
                                                                          .getLogger(ConcurrentDistributedMapManagedObjectState.class);
+  private static final boolean  ENABLE_DELETE_VALUE_ON_REMOVE        = TCPropertiesImpl
+                                                                         .getProperties()
+                                                                         .getBoolean(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_INLINE_ENABLED,
+                                                                                     true);
 
   public static final String    MAX_TTI_SECONDS_FIELDNAME            = "maxTTISeconds";
   public static final String    MAX_TTL_SECONDS_FIELDNAME            = "maxTTLSeconds";
@@ -204,7 +208,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
     if (invalidateOnChange) {
       applyInfo.invalidate(old);
     }
-    if (deleteValueOnRemove) {
+    if (deleteValueOnRemove && ENABLE_DELETE_VALUE_ON_REMOVE) {
       applyInfo.deleteObject(old);
     }
   }
@@ -212,7 +216,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends Concurrent
   @Override
   protected void clearedMap(ApplyTransactionInfo applyInfo, Collection values) {
     // Does not need to be batched here since deletion batching will happen in the lower layers.
-    if (deleteValueOnRemove) {
+    if (deleteValueOnRemove && ENABLE_DELETE_VALUE_ON_REMOVE) {
       for (Object o : values) {
         if (o instanceof ObjectID) {
           applyInfo.deleteObject((ObjectID) o);
