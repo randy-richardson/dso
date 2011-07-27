@@ -6,7 +6,7 @@ package com.tc.objectserver.impl;
 
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.ShutdownError;
-import com.tc.objectserver.context.GarbageDisposalContext;
+import com.tc.objectserver.context.DGCResultContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.objectserver.persistence.api.ManagedObjectStore;
@@ -74,8 +74,8 @@ public class InMemoryManagedObjectStore implements ManagedObjectStore {
     }
   }
 
-  public void removeAllObjectsByID(final GarbageDisposalContext garbageDisposalContext) {
-    removeAllObjectsByIDNow(garbageDisposalContext.getGarbageIDs());
+  public void removeAllObjectsByID(final DGCResultContext dgcResultContext) {
+    removeAllObjectsByIDNow(dgcResultContext.getGarbageIDs());
   }
 
   public synchronized ObjectIDSet getAllObjectIDs() {

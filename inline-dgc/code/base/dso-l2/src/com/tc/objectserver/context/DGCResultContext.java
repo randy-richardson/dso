@@ -8,10 +8,10 @@ import com.tc.object.ObjectID;
 
 import java.util.SortedSet;
 
-public class GarbageDisposalContext implements EventContext {
+public class DGCResultContext implements EventContext {
   private final SortedSet<ObjectID> garbage;
 
-  public GarbageDisposalContext(SortedSet<ObjectID> garbage) {
+  public DGCResultContext(SortedSet<ObjectID> garbage) {
     this.garbage = garbage;
   }
 

@@ -9,11 +9,11 @@ import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 
 import java.util.SortedSet;
 
-public class GCResultContext extends GarbageDisposalContext {
+public class PeriodicDGCResultContext extends DGCResultContext {
 
   private final GarbageCollectionInfo gcInfo;
 
-  public GCResultContext(SortedSet<ObjectID> garbage, GarbageCollectionInfo gcInfo) {
+  public PeriodicDGCResultContext(SortedSet<ObjectID> garbage, GarbageCollectionInfo gcInfo) {
     super(garbage);
     this.gcInfo = gcInfo;
   }

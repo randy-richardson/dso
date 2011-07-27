@@ -11,8 +11,8 @@ import com.tc.object.cache.CacheStats;
 import com.tc.object.cache.Evictable;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
-import com.tc.objectserver.context.GCResultContext;
-import com.tc.objectserver.context.GarbageDisposalContext;
+import com.tc.objectserver.context.PeriodicDGCResultContext;
+import com.tc.objectserver.context.DGCResultContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
@@ -182,12 +182,12 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
   }
 
   // TODO: just garbage collector complete interface.
-  public void notifyGCComplete(GCResultContext resultContext) {
-    deleteObjects(resultContext);
+  public void notifyGCComplete(PeriodicDGCResultContext periodicDGCResultContext) {
+    deleteObjects(periodicDGCResultContext);
   }
 
-  public void deleteObjects(GarbageDisposalContext garbageDisposalContext) {
-    GCResultContext resultContext = (GCResultContext) garbageDisposalContext;
+  public void deleteObjects(DGCResultContext dgcResultContext) {
+    PeriodicDGCResultContext resultContext = (PeriodicDGCResultContext) dgcResultContext;
     GarbageCollectionInfo gcInfo = resultContext.getGCInfo();
 
     gcPublisher.fireGCDeleteEvent(gcInfo);

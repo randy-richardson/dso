@@ -40,8 +40,8 @@ import com.tc.objectserver.api.ObjectManagerLookupResults;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.api.ObjectRequestManager;
 import com.tc.objectserver.api.TestSink;
-import com.tc.objectserver.context.GCResultContext;
-import com.tc.objectserver.context.GarbageDisposalContext;
+import com.tc.objectserver.context.PeriodicDGCResultContext;
+import com.tc.objectserver.context.DGCResultContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.context.ObjectRequestServerContextImpl;
 import com.tc.objectserver.context.RespondToObjectRequestContext;
@@ -889,7 +889,7 @@ public class ObjectRequestManagerTest extends TestCase {
       throw new NotImplementedException(TestObjectManager.class);
     }
 
-    public void notifyGCComplete(final GCResultContext resultContext) {
+    public void notifyGCComplete(final PeriodicDGCResultContext dgcResultContext) {
       throw new NotImplementedException(TestObjectManager.class);
     }
 
@@ -975,7 +975,7 @@ public class ObjectRequestManagerTest extends TestCase {
       return getObjectByID(id);
     }
 
-    public void deleteObjects(GarbageDisposalContext garbageDisposalContext) {
+    public void deleteObjects(DGCResultContext dgcResultContext) {
       throw new NotImplementedException(TestObjectManager.class);
     }
 

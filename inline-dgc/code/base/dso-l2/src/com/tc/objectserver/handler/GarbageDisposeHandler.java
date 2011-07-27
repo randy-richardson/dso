@@ -8,8 +8,8 @@ import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.ConfigurationContext;
 import com.tc.async.api.EventContext;
 import com.tc.object.ObjectID;
-import com.tc.objectserver.context.GCResultContext;
-import com.tc.objectserver.context.GarbageDisposalContext;
+import com.tc.objectserver.context.DGCResultContext;
+import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
@@ -28,26 +28,25 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
 
   @Override
   public void handleEvent(final EventContext context) {
-    if (!(context instanceof GarbageDisposalContext)) throw new AssertionError("Unknown context type: "
-                                                                               + context.getClass().getName());
-
-    final GarbageDisposalContext garbageDisposalContext = (GarbageDisposalContext) context;
-    if (garbageDisposalContext instanceof GCResultContext) {
-      doDGCDeletes((GCResultContext) garbageDisposalContext);
+    if (context instanceof PeriodicDGCResultContext) {
+      handlePeriodicDGCResult((PeriodicDGCResultContext) context);
+    } else if (context instanceof DGCResultContext) {
+      // Plain old DGCResult currently only comes from inline DGC
+      handleDGCResult((DGCResultContext) context);
     } else {
-      doGarbageDisposal(garbageDisposalContext);
+      throw new AssertionError("Unknown context type: " + context.getClass().getName());
     }
   }
 
-  private void doDGCDeletes(GCResultContext gcResultContext) {
-    final GarbageCollectionInfo gcInfo = gcResultContext.getGCInfo();
-    final SortedSet<ObjectID> sortedGarbage = gcResultContext.getGarbageIDs();
+  private void handlePeriodicDGCResult(PeriodicDGCResultContext periodicGCResult) {
+    final GarbageCollectionInfo gcInfo = periodicGCResult.getGCInfo();
+    final SortedSet<ObjectID> sortedGarbage = periodicGCResult.getGarbageIDs();
 
     this.publisher.fireGCDeleteEvent(gcInfo);
     gcInfo.setActualGarbageCount(sortedGarbage.size());
     final long start = System.currentTimeMillis();
 
-    doGarbageDisposal(gcResultContext);
+    this.objectStore.removeAllObjectsByIDNow(sortedGarbage);
 
     final long elapsed = System.currentTimeMillis() - start;
     gcInfo.setDeleteStageTime(elapsed);
@@ -58,8 +57,8 @@ public class GarbageDisposeHandler extends AbstractEventHandler {
 
   }
 
-  private void doGarbageDisposal(GarbageDisposalContext garbageDisposalContext) {
-    this.objectStore.removeAllObjectsByIDNow(garbageDisposalContext.getGarbageIDs());
+  private void handleDGCResult(DGCResultContext inlineDGCResult) {
+    this.objectStore.removeAllObjectsByIDNow(inlineDGCResult.getGarbageIDs());
   }
 
   @Override

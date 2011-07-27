@@ -9,7 +9,7 @@ import com.tc.async.api.EventContext;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectManager;
-import com.tc.objectserver.context.GarbageDisposalContext;
+import com.tc.objectserver.context.DGCResultContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 
@@ -24,7 +24,7 @@ public class DeleteObjectHandler extends AbstractEventHandler {
   public void handleEvent(EventContext context) {
     garbageCollector.waitToStartInlineGC();
     final SortedSet<ObjectID> objectsToDelete = deleteObjectManager.nextObjectsToDelete();
-    objectManager.deleteObjects(new GarbageDisposalContext(objectsToDelete));
+    objectManager.deleteObjects(new DGCResultContext(objectsToDelete));
     garbageCollector.notifyGCComplete();
     deleteObjectManager.deleteMoreObjectsIfNecessary();
   }

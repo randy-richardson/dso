@@ -18,8 +18,8 @@ import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectManagerLookupResults;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.api.ShutdownError;
-import com.tc.objectserver.context.GCResultContext;
-import com.tc.objectserver.context.GarbageDisposalContext;
+import com.tc.objectserver.context.PeriodicDGCResultContext;
+import com.tc.objectserver.context.DGCResultContext;
 import com.tc.objectserver.context.ManagedObjectFaultingContext;
 import com.tc.objectserver.context.ManagedObjectFlushingContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
@@ -856,17 +856,17 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
   }
 
-  public void notifyGCComplete(final GCResultContext gcResult) {
+  public void notifyGCComplete(final PeriodicDGCResultContext gcResult) {
     Assert.assertFalse(this.collector.isPausingOrPaused());
     deleteObjects(gcResult);
     // Process pending, since we disabled process pending while GC pause was initiate.
     processPendingLookups();
   }
 
-  public void deleteObjects(final GarbageDisposalContext garbageDisposalContext) {
-    final Set<ObjectID> toDelete = garbageDisposalContext.getGarbageIDs();
+  public void deleteObjects(final DGCResultContext dgcResultContext) {
+    final Set<ObjectID> toDelete = dgcResultContext.getGarbageIDs();
     removeAllObjectsByID(toDelete);
-    this.objectStore.removeAllObjectsByID(garbageDisposalContext);
+    this.objectStore.removeAllObjectsByID(dgcResultContext);
   }
 
   private void flushAndCommit(final PersistenceTransaction persistenceTransaction, final ManagedObject managedObject) {
