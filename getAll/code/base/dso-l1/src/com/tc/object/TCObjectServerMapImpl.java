@@ -12,8 +12,8 @@ import com.tc.object.bytecode.Manageable;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.cache.CachedItem;
-import com.tc.object.cache.IncoherentCachedItem;
 import com.tc.object.cache.CachedItem.CachedItemInitialization;
+import com.tc.object.cache.IncoherentCachedItem;
 import com.tc.object.locks.LockID;
 import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,12 +40,10 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+                                                            .getBoolean(TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
   private final static boolean         CACHE_ENABLED    = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
+                                                            .getBoolean(TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_ENABLED);
 
   private static final Object[]        NO_ARGS          = new Object[] {};
 
@@ -271,14 +269,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     final Object value = getValueForKeyFromServer(map, key);
 
     if (CACHE_ENABLED) {
-      if (invalidateOnChange) {
-        // Null values (i.e. cache misses) & literal values are not cached locally
-        if (value != null && !LiteralValues.isLiteralInstance(value)) {
-          this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
-        }
-      } else {
-        this.cache.addIncoherentValueToCache(key, value, false);
-      }
+      updateLocalCache(key, value);
     }
     return value;
   }
@@ -408,17 +399,16 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     }
   }
 
-  public void addInLocalCache(Object key, Object value) {
-    if (CACHE_ENABLED) {
-      if (invalidateOnChange) {
-        if (value != null && !LiteralValues.isLiteralInstance(value)) {
-          this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
-        }
-      } else {
-        this.cache.addIncoherentValueToCache(key, value, false);
+  // this method does not check CACHE_ENABLED flag, check externally before calling this method
+  public void updateLocalCache(final Object key, final Object value) {
+    if (invalidateOnChange) {
+      // Null values (i.e. cache misses) & literal values are not cached locally
+      if (value != null && !LiteralValues.isLiteralInstance(value)) {
+        this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
       }
+    } else {
+      this.cache.addIncoherentValueToCache(key, value, false);
     }
-
   }
 
   /**
