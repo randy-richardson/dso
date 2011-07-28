@@ -28,6 +28,6 @@ public class PeriodicDGCResultContext extends DGCResultContext {
 
   @Override
   public String toString() {
-    return "GCResultContext [ " + this.gcInfo.getIteration() + " , " + getGarbageIDs().size() + " ]";
+    return "PeriodicDGCResultContext [ " + this.gcInfo.getIteration() + " , " + getGarbageIDs().size() + " ]";
   }
 }
