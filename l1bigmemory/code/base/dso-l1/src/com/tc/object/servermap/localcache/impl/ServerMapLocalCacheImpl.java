@@ -256,6 +256,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     if (value != null && value.isIncoherentValue() && value.isIncoherentTooLong()) {
       // if incoherent and been incoherent too long, remove from cache/map
       this.localStore.remove(key, RemoveType.NORMAL);
+      entryRemovedCallback(removeCallback, key, value);
       return null;
     }
     return value;
@@ -269,6 +270,7 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
     if (value != null && value.isIncoherentValue()) {
       // don't return incoherent items from here
       this.localStore.remove(key, RemoveType.NORMAL);
+      entryRemovedCallback(removeCallback, key, value);
       return null;
     }
     return value;

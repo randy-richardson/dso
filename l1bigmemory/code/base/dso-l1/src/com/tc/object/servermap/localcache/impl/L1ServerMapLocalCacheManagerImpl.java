@@ -41,7 +41,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheManager {
@@ -60,7 +59,6 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   private final AtomicInteger                                                      tcObjectSelfStoreSize   = new AtomicInteger();
   private volatile TCObjectSelfRemovedFromStoreCallback                            tcObjectSelfRemovedFromStoreCallback;
   private final Map<ObjectID, TCObjectSelf>                                        tcObjectSelfTempCache   = new HashMap<ObjectID, TCObjectSelf>();
-  private final Condition                                                          tcRemoveObjectIDCondition;
 
   // private final Sink ttittlExpiredSink;
 
@@ -70,7 +68,6 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     this.capacityEvictionSink = capacityEvictionSink;
     // this.ttittlExpiredSink = ttittlExpiredSink;
     removeCallback = new RemoveCallback();
-    tcRemoveObjectIDCondition = tcObjectStoreLock.writeLock().newCondition();
   }
 
   public void initializeTCObjectSelfStore(TCObjectSelfRemovedFromStoreCallback callback) {
@@ -284,12 +281,14 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   private void waitUntilObjectIDAbsent(ObjectID oid) {
     tcObjectStoreLock.readLock().unlock();
 
-    tcObjectStoreLock.writeLock().lock();
     boolean isInterrupted = false;
     try {
       while (tcObjectSelfStoreOids.contains(oid)) {
         try {
-          this.tcRemoveObjectIDCondition.await();
+          // since i know I am going to wait, let me wait on client lock manager instead of this condition
+          synchronized (this.tcObjectSelfRemovedFromStoreCallback) {
+            this.tcObjectSelfRemovedFromStoreCallback.wait(1000);
+          }
         } catch (InterruptedException e) {
           isInterrupted = true;
         }
@@ -299,7 +298,6 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
       if (isInterrupted) {
         Thread.currentThread().interrupt();
       }
-      tcObjectStoreLock.writeLock().unlock();
     }
 
     tcObjectStoreLock.readLock().lock();
@@ -363,6 +361,23 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     }
   }
 
+  public void removeTCObjectSelf(TCObjectSelf objectSelf) {
+    if (objectSelf == null) { return; }
+
+    tcObjectSelfRemovedFromStoreCallback.removedTCObjectSelfFromStore(objectSelf);
+
+    // Tiny race left to resolve here ...
+    tcObjectStoreLock.writeLock().lock();
+    try {
+      tcObjectSelfTempCache.remove(objectSelf.getObjectID());
+    } finally {
+      tcObjectStoreLock.writeLock().unlock();
+    }
+  }
+
+  /**
+   * TODO: Re-write this method, its a mess right now
+   */
   private void removeTCObjectSelfForId(ServerMapLocalCache serverMapLocalCache,
                                        AbstractLocalCacheStoreValue localStoreValue) {
     Object removed = null;
@@ -413,15 +428,18 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     tcObjectStoreLock.writeLock().lock();
     try {
       tcObjectSelfStoreOids.remove(valueOid);
-      signalAll();
       tcObjectSelfStoreSize.decrementAndGet();
     } finally {
       tcObjectStoreLock.writeLock().unlock();
     }
+
+    signalAll();
   }
 
   private void signalAll() {
-    this.tcRemoveObjectIDCondition.signalAll();
+    synchronized (this.tcObjectSelfRemovedFromStoreCallback) {
+      this.tcObjectSelfRemovedFromStoreCallback.notifyAll();
+    }
   }
 
   public int size() {

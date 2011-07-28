@@ -303,7 +303,11 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
                           ObjectID valueId, MapOperationType mapOperation) {
     cache.addToCache(key, localCacheValue, mapOperation);
     if (value instanceof TCObject) {
-      this.tcObjectSelfStore.addTCObjectSelf(serverMapLocalStore, localCacheValue, value);
+      if (!localCacheEnabled && !mapOperation.isMutateOperation() && value instanceof TCObjectSelf) {
+        this.tcObjectSelfStore.removeTCObjectSelf((TCObjectSelf) value);
+      } else {
+        this.tcObjectSelfStore.addTCObjectSelf(serverMapLocalStore, localCacheValue, value);
+      }
     }
   }
 
