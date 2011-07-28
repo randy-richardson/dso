@@ -29,6 +29,7 @@ import com.tc.util.Assert;
 import com.tc.util.Util;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -99,14 +100,11 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     assertSameGroupID(oid);
     waitUntilRunning();
 
-    Set<Object> portableKeys = new HashSet<Object>();
-    portableKeys.add(portableKey);
-    final AbstractServerMapRequestContext context = createLookupValueRequestContext(oid, portableKeys);
+    final AbstractServerMapRequestContext context = createLookupValueRequestContext(oid, Collections
+        .singleton(portableKey));
     context.makeLookupRequest();
     sendRequest(context);
     Map<Object, Object> result = waitForResult(context);
-    Assert.assertEquals(1, result.size());
-    Assert.assertTrue(result.containsKey(portableKey));
     return result.get(portableKey);
   }
 
@@ -134,7 +132,6 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     context.makeLookupRequest();
     sendRequestNow(context);
     Map<Object, Object> result = waitForResult(context);
-    Assert.assertEquals(1, result.size());
     Assert.assertTrue(result.containsKey(ALL_KEYS));
     return (Set) result.get(ALL_KEYS);
   }
@@ -155,7 +152,6 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     context.makeLookupRequest();
     sendRequestNow(context);
     Map<Object, Object> result = waitForResult(context);
-    Assert.assertEquals(1, result.size());
     Assert.assertTrue(result.containsKey(SIZE_KEY));
     return (Long) result.get(SIZE_KEY);
   }

@@ -10,7 +10,6 @@ import com.tc.net.protocol.tcm.MessageChannel;
 import com.tc.net.protocol.tcm.MessageMonitor;
 import com.tc.net.protocol.tcm.TCMessageHeader;
 import com.tc.net.protocol.tcm.TCMessageType;
-import com.tc.object.LiteralValues;
 import com.tc.object.ObjectID;
 import com.tc.object.ServerMapGetValueRequest;
 import com.tc.object.ServerMapRequestID;
@@ -55,9 +54,6 @@ public class GetValueServerMapRequestMessageImpl extends DSOMessageBase implemen
 
   public void addGetValueRequestTo(final ServerMapRequestID serverMapRequestID, final ObjectID id,
                                    final Set<Object> keys) {
-    for (Object key : keys) {
-      Assert.assertTrue(LiteralValues.isLiteralInstance(key));
-    }
     Collection<ServerMapGetValueRequest> requestsForMap = this.requests.get(id);
     if (requestsForMap == null) {
       requestsForMap = new ArrayList<ServerMapGetValueRequest>();

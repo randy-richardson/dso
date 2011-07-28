@@ -23,7 +23,6 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -275,7 +274,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
   }
 
   public Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap) {
-    Map<Object, Object> rv = new HashMap<Object, Object>();
+    Map<Object, Object> rv = new ConcurrentHashMap<Object, Object>();
     if (CACHE_ENABLED) {
       for (Iterator<Entry<ObjectID, Set<Object>>> iterator = mapIdToKeysMap.entrySet().iterator(); iterator.hasNext();) {
         Entry<ObjectID, Set<Object>> entry = iterator.next();
@@ -364,7 +363,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
           if (!LiteralValues.isLiteralInstance(portableKey)) {
             // formatter
             throw new UnsupportedOperationException(
-                                                    "Key is not portable. It needs to be a liternal or portable and shared for ServerTCMap. Key = "
+                                                    "Key is not portable. It needs to be a liternal or portable and shared for ServerMap. Key = "
                                                         + portableKey + " map id = " + mapID);
           }
           portableKeys.add(keyObject.getObjectID());
