@@ -33,7 +33,7 @@ public class DeleteObjectManagerImpl implements DeleteObjectManager {
   }
 
   public synchronized void deleteMoreObjectsIfNecessary() {
-    if (objectsToDelete.size() > 0) {
+    if (!objectsToDelete.isEmpty()) {
       deleteObjects();
     }
   }

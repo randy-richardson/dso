@@ -11,33 +11,23 @@ import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.core.api.Filter;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
-import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
 import com.tc.objectserver.impl.ObjectManagerConfig;
 import com.tc.objectserver.l1.api.ClientStateManager;
-import com.tc.text.PrettyPrinter;
 import com.tc.util.ObjectIDSet;
-import com.tc.util.State;
-import com.tc.util.Util;
 import com.tc.util.concurrent.LifeCycleState;
-import com.tc.util.concurrent.NullLifeCycleState;
 import com.tc.util.concurrent.StoppableThread;
 import com.tc.util.sequence.DGCSequenceProvider;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  */
-public class MarkAndSweepGarbageCollector implements GarbageCollector {
+public class MarkAndSweepGarbageCollector extends AbstractGarbageCollector {
 
   static final TCLogger                        logger                     = TCLogging
                                                                               .getLogger(MarkAndSweepGarbageCollector.class);
-
-  private static final LifeCycleState          NULL_LIFECYCLE_STATE       = new NullLifeCycleState();
-  private static final int                     WAIT_INTERVAL              = 10 * 1000;
-  private static final int                     WAIT_LOG_THRESHOLD         = 10 * 1000;
 
   private final GarbageCollectionInfoPublisher gcPublisher;
   private final ObjectManagerConfig            objectManagerConfig;
@@ -45,12 +35,10 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
   private final ObjectManager                  objectManager;
   private final DGCSequenceProvider            dgcSequenceProvider;
 
-  private volatile State                       state                      = GC_SLEEP;
   private volatile ChangeCollector             referenceCollector         = ChangeCollector.NULL_CHANGE_COLLECTOR;
   private volatile YoungGenChangeCollector     youngGenReferenceCollector = YoungGenChangeCollector.NULL_YOUNG_CHANGE_COLLECTOR;
-  private volatile LifeCycleState              gcState                    = new NullLifeCycleState();
-  private volatile boolean                     started                    = false;
-  private volatile boolean                     periodicEnabled            = false;
+  protected volatile boolean                   started                    = false;
+  protected volatile LifeCycleState            gcState                    = NULL_LIFECYCLE_STATE;
 
   public MarkAndSweepGarbageCollector(final ObjectManagerConfig objectManagerConfig, final ObjectManager objectMgr,
                                       final ClientStateManager stateManager,
@@ -158,145 +146,11 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     return this.started;
   }
 
-  public void setPeriodicEnabled(final boolean periodicEnabled) {
-    this.periodicEnabled = periodicEnabled;
-  }
-
-  public boolean isPeriodicEnabled() {
-    return periodicEnabled;
-  }
-
   public void setState(final StoppableThread st) {
     this.gcState = st;
   }
 
   public void addListener(final GarbageCollectorEventListener listener) {
     this.gcPublisher.addListener(listener);
-  }
-
-  public synchronized void waitToStartGC() {
-    boolean isInterrupted = false;
-    long lastLogTime = System.nanoTime();
-    final long startTime = System.nanoTime();
-    while (!requestGCStart()) {
-      try {
-        if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastLogTime) > WAIT_LOG_THRESHOLD) {
-          logger.info("Waited " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime) + "ms to start DGC.");
-          lastLogTime = System.nanoTime();
-        }
-        wait(WAIT_INTERVAL);
-      } catch (InterruptedException e) {
-        isInterrupted = true;
-      }
-    }
-    Util.selfInterruptIfNeeded(isInterrupted);
-  }
-
-  public synchronized boolean requestGCStart() {
-    if (this.started && this.state == GC_SLEEP) {
-      this.state = GC_RUNNING;
-      return true;
-    }
-    // Can't start DGC
-    return false;
-  }
-
-  public synchronized void enableGC() {
-    if (GC_DISABLED == this.state) {
-      this.state = GC_SLEEP;
-      notify();
-    } else {
-      logger.warn("DGC is already enabled : " + this.state);
-    }
-  }
-
-  public synchronized void waitToDisableGC() {
-    boolean isInterrupted = false;
-    long lastLogTime = System.nanoTime();
-    final long startTime = System.nanoTime();
-    while (!requestDisableGC()) {
-      try {
-        if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastLogTime) > WAIT_LOG_THRESHOLD) {
-          logger.info("Waited " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime) + "ms to disable DGC.");
-          lastLogTime = System.nanoTime();
-        }
-        wait(WAIT_INTERVAL);
-      } catch (InterruptedException e) {
-        isInterrupted = true;
-      }
-    }
-    Util.selfInterruptIfNeeded(isInterrupted);
-  }
-
-  public synchronized boolean requestDisableGC() {
-    if (GC_SLEEP == this.state) {
-      this.state = GC_DISABLED;
-      return true;
-    }
-    // DGC is already running, can't be disabled
-    return false;
-  }
-
-  public synchronized void notifyReadyToGC() {
-    if (this.state == GC_PAUSING) {
-      this.state = GC_PAUSED;
-    }
-  }
-
-  public synchronized void notifyGCComplete() {
-    this.state = GC_SLEEP;
-    notify();
-  }
-
-  public synchronized void waitToStartInlineGC() {
-    boolean isInterrupted = false;
-    long lastLogTime = System.nanoTime();
-    final long startTime = System.nanoTime();
-    while (!requestGCDeleteStart()) {
-      try {
-        if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastLogTime) > WAIT_LOG_THRESHOLD) {
-          logger.info("Waited " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
-                      + "ms to start inline DGC.");
-          lastLogTime = System.nanoTime();
-        }
-        wait(WAIT_INTERVAL);
-      } catch (InterruptedException e) {
-        isInterrupted = true;
-      }
-    }
-    Util.selfInterruptIfNeeded(isInterrupted);
-  }
-
-  /**
-   * In Active server, state transitions from GC_PAUSED to GC_DELETE and in the passive server, state transitions from
-   * GC_SLEEP to GC_DELETE.
-   */
-  private synchronized boolean requestGCDeleteStart() {
-    if (this.state == GC_SLEEP || this.state == GC_PAUSED) {
-      this.state = GC_DELETE;
-      return true;
-    }
-    return false;
-  }
-
-  public void requestGCPause() {
-    this.state = GC_PAUSING;
-  }
-
-  public boolean isPausingOrPaused() {
-    State localState = this.state;
-    return GC_PAUSED == localState || GC_PAUSING == localState;
-  }
-
-  public boolean isPaused() {
-    return this.state == GC_PAUSED;
-  }
-
-  public boolean isDisabled() {
-    return GC_DISABLED == this.state;
-  }
-
-  public synchronized PrettyPrinter prettyPrint(final PrettyPrinter out) {
-    return out.print(getClass().getName()).print("[").print(this.state).print("]");
   }
 }
