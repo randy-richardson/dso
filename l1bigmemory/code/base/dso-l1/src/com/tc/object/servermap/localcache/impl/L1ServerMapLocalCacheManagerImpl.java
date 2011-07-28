@@ -469,8 +469,12 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     }
   }
 
-  private static class TCObjectSelfWrapper implements TCObjectSelfStoreValue, Externalizable {
+  public static class TCObjectSelfWrapper implements TCObjectSelfStoreValue, Externalizable {
     private volatile Object tcObject;
+
+    public TCObjectSelfWrapper() {
+      //
+    }
 
     private TCObjectSelfWrapper(Object tcObject) {
       this.tcObject = tcObject;
