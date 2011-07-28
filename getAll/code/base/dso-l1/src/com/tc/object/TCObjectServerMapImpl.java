@@ -404,19 +404,21 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
             rv.put(key, null);
           }
         }
-
-        value = rv.get(key);
-        if (CACHE_ENABLED) {
-          if (invalidateOnChange) {
-            if (value != null && !LiteralValues.isLiteralInstance(value)) {
-              this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
-            }
-          } else {
-            this.cache.addIncoherentValueToCache(key, value, false);
-          }
-        }
       }
     }
+  }
+
+  public void addInLocalCache(Object key, Object value) {
+    if (CACHE_ENABLED) {
+      if (invalidateOnChange) {
+        if (value != null && !LiteralValues.isLiteralInstance(value)) {
+          this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
+        }
+      } else {
+        this.cache.addIncoherentValueToCache(key, value, false);
+      }
+    }
+
   }
 
   /**
