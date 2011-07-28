@@ -243,8 +243,9 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
     }
   }
 
-  public void notifyGCComplete() {
+  public synchronized void notifyGCComplete() {
     this.state = GC_SLEEP;
+    notify();
   }
 
   public synchronized void waitToStartInlineGC() {
