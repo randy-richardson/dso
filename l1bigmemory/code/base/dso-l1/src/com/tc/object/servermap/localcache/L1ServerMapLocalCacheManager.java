@@ -9,6 +9,7 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCObjectSelfStore;
 import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
+import com.tc.object.locks.ClientLockManager;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallService;
 
@@ -62,5 +63,7 @@ public interface L1ServerMapLocalCacheManager extends LocksRecallService, TCObje
   public void shutdown();
 
   public void evictElements(Map evictedElements);
+
+  public void setLockManager(ClientLockManager lockManager);
 
 }

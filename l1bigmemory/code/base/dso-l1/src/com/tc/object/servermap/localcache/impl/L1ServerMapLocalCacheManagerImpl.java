@@ -14,6 +14,7 @@ import com.tc.object.TCObjectSelfRemovedFromStoreCallback;
 import com.tc.object.TCObjectSelfStoreValue;
 import com.tc.object.TCObjectServerMap;
 import com.tc.object.bytecode.Manager;
+import com.tc.object.locks.ClientLockManager;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallService;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
@@ -24,6 +25,8 @@ import com.tc.object.servermap.localcache.PutType;
 import com.tc.object.servermap.localcache.RemoveType;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.object.servermap.localcache.ServerMapLocalCacheRemoveCallback;
+import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
 
@@ -45,6 +48,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheManager {
 
+  private static final boolean                                                     PINNING_ENABLED         = TCPropertiesImpl
+                                                                                                               .getProperties()
+                                                                                                               .getBoolean(
+                                                                                                                           TCPropertiesConsts.L1_LOCKMANAGER_PINNING_ENABLED);
+
   private final ConcurrentHashMap<ObjectID, ServerMapLocalCache>                   localCaches             = new ConcurrentHashMap<ObjectID, ServerMapLocalCache>();
   private final TCConcurrentMultiMap<LockID, ObjectID>                             lockIdsToCdsmIds        = new TCConcurrentMultiMap<LockID, ObjectID>();
   private final Map<L1ServerMapLocalCacheStore, L1ServerMapLocalStoreEvictionInfo> stores                  = new IdentityHashMap<L1ServerMapLocalCacheStore, L1ServerMapLocalStoreEvictionInfo>();
@@ -59,6 +67,7 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   private final AtomicInteger                                                      tcObjectSelfStoreSize   = new AtomicInteger();
   private volatile TCObjectSelfRemovedFromStoreCallback                            tcObjectSelfRemovedFromStoreCallback;
   private final Map<ObjectID, TCObjectSelf>                                        tcObjectSelfTempCache   = new HashMap<ObjectID, TCObjectSelf>();
+  private volatile ClientLockManager                                               lockManager;
 
   // private final Sink ttittlExpiredSink;
 
@@ -72,6 +81,10 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
 
   public void initializeTCObjectSelfStore(TCObjectSelfRemovedFromStoreCallback callback) {
     this.tcObjectSelfRemovedFromStoreCallback = callback;
+  }
+
+  public void setLockManager(ClientLockManager lockManager) {
+    this.lockManager = lockManager;
   }
 
   public ServerMapLocalCache getOrCreateLocalCache(ObjectID mapId, ClientObjectManager objectManager, Manager manager,
@@ -117,10 +130,22 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   }
 
   public void recallLocks(Set<LockID> lockIds) {
+    if (PINNING_ENABLED) {
+      for (LockID lockId : lockIds) {
+        this.lockManager.unpinLock(lockId);
+      }
+    }
+
     locksRecallHelper.recallLocks(lockIds);
   }
 
   public void recallLocksInline(Set<LockID> lockIds) {
+    if (PINNING_ENABLED) {
+      for (LockID lockId : lockIds) {
+        this.lockManager.unpinLock(lockId);
+      }
+    }
+
     locksRecallHelper.recallLocksInline(lockIds);
   }
 
@@ -146,6 +171,10 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
    * This method is called only when recall happens
    */
   public void removeEntriesForLockId(LockID lockID) {
+    if (PINNING_ENABLED) {
+      this.lockManager.unpinLock(lockID);
+    }
+
     final Set<ObjectID> cdsmIds = lockIdsToCdsmIds.removeAll(lockID);
 
     for (ObjectID mapID : cdsmIds) {
@@ -155,6 +184,10 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   }
 
   public void rememberMapIdForValueLockId(LockID valueLockId, ObjectID mapID) {
+    if (PINNING_ENABLED) {
+      this.lockManager.pinLock(valueLockId);
+    }
+
     lockIdsToCdsmIds.add(valueLockId, mapID);
   }
 
