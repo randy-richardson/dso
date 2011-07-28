@@ -39,8 +39,8 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -382,13 +382,13 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
         ObjectID oid = ((TCObject) tcoself).getObjectID();
         tcObjectSelfStoreOids.add(oid);
         tcObjectSelfTempCache.remove(oid);
+        tcObjectSelfStoreSize.incrementAndGet();
+        if (!localStoreValue.isEventualConsistentValue()) {
+          store.put(((TCObject) tcoself).getObjectID(), new TCObjectSelfWrapper(tcoself),
+                    PutType.PINNED_NO_SIZE_INCREMENT);
+        } // else no need to store another mapping as for eventual already oid->localCacheEventualValue mapping exists,
+        // and actual value is present in the localCacheEventualValue
       }
-      tcObjectSelfStoreSize.incrementAndGet();
-      if (!localStoreValue.isEventualConsistentValue()) {
-        store.put(((TCObject) tcoself).getObjectID(), new TCObjectSelfWrapper(tcoself),
-                  PutType.PINNED_NO_SIZE_INCREMENT);
-      } // else no need to store another mapping as for eventual already oid->localCacheEventualValue mapping exists,
-      // and actual value is present in the localCacheEventualValue
     } finally {
       tcObjectStoreLock.writeLock().unlock();
     }

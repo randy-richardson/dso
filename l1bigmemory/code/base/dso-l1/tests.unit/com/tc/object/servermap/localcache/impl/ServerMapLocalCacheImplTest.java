@@ -80,6 +80,7 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     maxInMemory = maxElementsInMemory;
     sink = new MySink();
     globalLocalCacheManager = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, sink, Mockito.mock(Sink.class));
+    sink.setGlobalLocalCacheManager(globalLocalCacheManager);
     locksRecallHelper.setGlobalLocalCacheManager(globalLocalCacheManager);
     final ClientTransaction clientTransaction = new MyClientTransaction(latch1, latch2);
     ClientObjectManager com = Mockito.mock(ClientObjectManager.class);
@@ -305,15 +306,13 @@ public class ServerMapLocalCacheImplTest extends TestCase {
 
   private void addStrongValueToCache(ServerMapLocalCacheImpl localCache, LongLockID longLockID, String key,
                                      String value, MapOperationType op) {
-    ObjectID valueId = getNextId();
-    LocalCacheStoreStrongValue storeValue = new LocalCacheStoreStrongValue(longLockID, valueId, mapID);
+    LocalCacheStoreStrongValue storeValue = new LocalCacheStoreStrongValue(longLockID, value, mapID);
     addToCache(localCache, key, storeValue, value, op);
   }
 
   private void addIncoherentValueToCache(ServerMapLocalCacheImpl localCache, String key, String value,
                                          MapOperationType op) {
-    ObjectID valueId = getNextId();
-    LocalCacheStoreIncoherentValue storeValue = new LocalCacheStoreIncoherentValue(valueId, mapID);
+    LocalCacheStoreIncoherentValue storeValue = new LocalCacheStoreIncoherentValue(value, mapID);
     addToCache(localCache, key, storeValue, value, op);
   }
 
@@ -598,9 +597,8 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     for (int i = 0; i < 50; i++) {
       addEventualValueToCache(cache, new ObjectID(i), "key" + i, "value" + i, MapOperationType.PUT);
     }
-
     cache.evictCachedEntries(25);
-
+    System.err.println("Current size in testEvictCachedEntries " + cache.size());
     int evicted = 0;
     int notEvicted = 0;
     for (int i = 0; i < 50; i++) {
@@ -1101,9 +1099,11 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     private final LinkedBlockingQueue<EventContext> q                 = new LinkedBlockingQueue<EventContext>();
     private final AtomicInteger                     contextsAdded     = new AtomicInteger(0);
     private final AtomicInteger                     contextsCompleted = new AtomicInteger(0);
+    private final Thread                            t1;
+    final L1ServerMapCapacityEvictionHandler        handler;
 
     public MySink() {
-      final L1ServerMapCapacityEvictionHandler handler = new L1ServerMapCapacityEvictionHandler();
+      handler = new L1ServerMapCapacityEvictionHandler();
       Runnable runnable = new Runnable() {
         public void run() {
           while (true) {
@@ -1119,7 +1119,11 @@ public class ServerMapLocalCacheImplTest extends TestCase {
         }
       };
 
-      Thread t1 = new Thread(runnable, "MySink thread");
+      t1 = new Thread(runnable, "MySink thread");
+    }
+
+    public void setGlobalLocalCacheManager(L1ServerMapLocalCacheManager gloLocalCacheManager) {
+      handler.initialize(gloLocalCacheManager);
       t1.start();
     }
 

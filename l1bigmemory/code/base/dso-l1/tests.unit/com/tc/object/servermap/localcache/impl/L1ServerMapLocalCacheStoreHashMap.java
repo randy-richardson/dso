@@ -119,7 +119,7 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
   }
 
   public synchronized Set getKeySet() {
-    return this.backingCache.keySet();
+    return new HashSet(this.backingCache.keySet());
   }
 
   public int getMaxElementsInMemory() {
