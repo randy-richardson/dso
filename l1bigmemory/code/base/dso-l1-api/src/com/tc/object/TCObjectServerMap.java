@@ -126,12 +126,10 @@ public interface TCObjectServerMap<L> extends TCObject {
 
   public Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap);
 
-  // public void updateLocalCache(final Object key, final Object value);
-
   /**
-   * Returns a snapshot of keys for the giver ServerTCMap
+   * Returns a snapshot of keys for the giver TCServerMap
    * 
-   * @param map ServerTCMap
+   * @param map TCServerMap
    * @return set Set return snapshot of keys
    */
   public Set keySet(final TCServerMap map);

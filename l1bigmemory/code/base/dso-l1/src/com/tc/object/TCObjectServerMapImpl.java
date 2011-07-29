@@ -24,12 +24,12 @@ import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObject, TCObjectServerMap<L> {
 
@@ -252,6 +252,17 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
     return value;
   }
 
+  public void updateLocalCacheIfNecessary(final Object key, final Object value) {
+    if (invalidateOnChange) {
+      // Null values (i.e. cache misses) & literal values are not cached locally
+      if (value != null && !LiteralValues.isLiteralInstance(value)) {
+        addEventualValueToCache(objectManager.lookupExistingObjectID(value), key, value, MapOperationType.GET);
+      }
+    } else {
+      addIncoherentValueToCache(key, value, objectManager.lookupExistingObjectID(value), MapOperationType.GET);
+    }
+  }
+
   /**
    * Returns the value for a particular Key in a ServerTCMap outside a lock context.
    * 
@@ -263,23 +274,13 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
   public Object getValueUnlocked(TCServerMap map, Object key) {
     AbstractLocalCacheStoreValue item = getValueUnlockedFromCache(key);
     if (item != null) return item.getValueObject(tcObjectSelfStore, serverMapLocalStore);
-
     final Object value = getValueForKeyFromServer(map, key);
-
-    if (invalidateOnChange) {
-      // Null values (i.e. cache misses) & literal values are not cached locally
-      if (value != null && !LiteralValues.isLiteralInstance(value)) {
-        addEventualValueToCache(objectManager.lookupExistingObjectID(value), key, value, MapOperationType.GET);
-      }
-    } else {
-      addIncoherentValueToCache(key, value, objectManager.lookupExistingObjectID(value), MapOperationType.GET);
-    }
+    updateLocalCacheIfNecessary(key, value);
     return value;
   }
 
   public Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap) {
-    Map<Object, Object> rv = new ConcurrentHashMap<Object, Object>();
-    // if (CACHE_ENABLED) {
+    Map<Object, Object> rv = new HashMap<Object, Object>();
     for (Iterator<Entry<ObjectID, Set<Object>>> iterator = mapIdToKeysMap.entrySet().iterator(); iterator.hasNext();) {
       Entry<ObjectID, Set<Object>> entry = iterator.next();
       Set<Object> keys = entry.getValue();
@@ -295,7 +296,6 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
         iterator.remove();
       }
     }
-    // }
 
     // if everything was in local cache
     if (mapIdToKeysMap.isEmpty()) return rv;
@@ -400,34 +400,45 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
                                                     "Key is not portable. It needs to be a liternal or portable and shared for ServerMap. Key = "
                                                         + portableKey + " map id = " + mapID);
           }
-          portableKeys.add(keyObject.getObjectID());
-          System.out.println("XXXXXX replacing non literal key " + key + " with " + keyObject.getObjectID());
+          portableKeys.add(portableKey);
         } else {
           portableKeys.add(key);
         }
       }
+      // converting Map from <mapID, key> to <mapID, portableKey>
       mapIdToKeysMap.put(entry.getKey(), portableKeys);
     }
 
     this.serverMapManager.getMappingForAllKeys(mapIdToKeysMap, rv);
 
     for (Entry<ObjectID, Set<Object>> entry : mapIdToKeysMap.entrySet()) {
+      ObjectID mapID = entry.getKey();
       Set<Object> portableKeys = entry.getValue();
       for (Object key : portableKeys) {
         Object value = rv.get(key);
+        Object correctValue = value;
         if (value instanceof ObjectID) {
           try {
-            rv.put(key, this.objectManager.lookupObject((ObjectID) value));
+            correctValue = this.objectManager.lookupObject((ObjectID) value);
           } catch (final ClassNotFoundException e) {
             logger
                 .warn("Got ClassNotFoundException for objectId: " + value + ". Ignoring exception and returning null");
-            rv.put(key, null);
+            correctValue = null;
           } catch (TCObjectNotFoundException e) {
             logger.warn("Got TCObjectNotFoundException for objectId: " + value
                         + ". Ignoring exception and returning null");
-            rv.put(key, null);
+            correctValue = null;
           }
         }
+        // update the local cache of corresponding TCServerMap
+        TCObjectServerMapImpl map;
+        try {
+          map = (TCObjectServerMapImpl) this.objectManager.lookup(mapID);
+          map.updateLocalCacheIfNecessary(key, correctValue);
+        } catch (ClassNotFoundException e) {
+          throw new RuntimeException("ClassNotFoundException for mapID " + mapID);
+        }
+        rv.put(key, correctValue);
       }
     }
   }
