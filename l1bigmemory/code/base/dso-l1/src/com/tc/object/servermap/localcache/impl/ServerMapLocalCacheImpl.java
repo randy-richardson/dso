@@ -408,8 +408,6 @@ public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {
       list = (List) backingMap.get(id);
       if (list == null) {
         list = new ArrayList();
-        // TODO: use putIfAbsent
-        backingMap.put(id, list, PutType.PINNED_NO_SIZE_INCREMENT);
       }
       list.add(key);
 
