@@ -4,8 +4,6 @@
 package com.tc.object.servermap.localcache;
 
 import com.tc.object.ObjectID;
-import com.tc.properties.TCPropertiesConsts;
-import com.tc.properties.TCPropertiesImpl;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -13,12 +11,13 @@ import java.io.ObjectOutput;
 import java.util.concurrent.TimeUnit;
 
 public class LocalCacheStoreIncoherentValue extends AbstractLocalCacheStoreValue {
-  private static final long SERVERMAP_INCOHERENT_CACHED_ITEMS_RECYCLE_TIME_MILLIS = TCPropertiesImpl
-                                                                                      .getProperties()
-                                                                                      .getLong(
-                                                                                               TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_INCOHERENT_READ_TIMEOUT);
+  public static final long SERVERMAP_INCOHERENT_CACHED_ITEMS_RECYCLE_TIME_MILLIS = 300000;
+  // TCPropertiesImpl
+  // .getProperties()
+  // .getLong(
+  // TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_LOCALCACHE_INCOHERENT_READ_TIMEOUT);
 
-  private volatile long     lastCoherentTime;
+  private volatile long    lastCoherentTime;
 
   public LocalCacheStoreIncoherentValue() {
     //
