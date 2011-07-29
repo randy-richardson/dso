@@ -19,19 +19,22 @@ import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollector.GCType;
 import com.tc.objectserver.impl.ObjectManagerConfig;
 import com.tc.util.concurrent.LifeCycleState;
+import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.SortedSet;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 public class GarbageCollectHandler extends AbstractEventHandler {
 
-  private final Timer          timer   = new Timer();
+  private final Timer          timer     = new Timer();
   private final boolean        fullGCEnabled;
   private final boolean        youngGCEnabled;
   private final long           fullGCInterval;
   private final long           youngGCInterval;
-  private final LifeCycleState gcState = new GCState();
+  private final LifeCycleState gcState   = new GCState();
+  private volatile boolean     gcRunning = false;
   private GarbageCollector     collector;
   private ObjectManager        objectManager;
   private DeleteObjectManager  deleteObjectManager;
@@ -52,7 +55,10 @@ public class GarbageCollectHandler extends AbstractEventHandler {
                   delayedGarbageCollectContext.reschedule());
     } else if (context instanceof GarbageCollectContext) {
       GarbageCollectContext gcc = (GarbageCollectContext) context;
+      gcRunning = true;
       collector.doGC(gcc.getType());
+      gcRunning = false;
+      scheduleInlineGC(); // give inline gc a chance to run before another full/young gc is started
       if (gcc.reschedule() && gcc.getType() == GCType.FULL_GC && fullGCEnabled) {
         scheduledFullGC(gcc.reschedule());
       } else if (gcc.reschedule() && gcc.getType() == GCType.YOUNG_GEN_GC && youngGCEnabled) {
@@ -67,6 +73,10 @@ public class GarbageCollectHandler extends AbstractEventHandler {
     } else {
       throw new AssertionError("Unknown context type: " + context.getClass().getName());
     }
+  }
+
+  public void scheduleInlineGC() {
+    gcSink.add(new InlineGCContext());
   }
 
   public void scheduleYoungGC(final boolean reschedule) {
@@ -115,7 +125,14 @@ public class GarbageCollectHandler extends AbstractEventHandler {
     }
 
     public boolean stopAndWait(long waitTime) {
-      // TODO: fix this
+      stopRequested = true;
+      // Purge the sink of any scheduled gc's, this needs to be equivalent to stopping the garbage collector thread.
+      gcSink.clear();
+      long start = System.nanoTime();
+      while (gcRunning) {
+        ThreadUtil.reallySleep(1000);
+        if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) > waitTime) { return false; }
+      }
       return true;
     }
   }
