@@ -5,6 +5,6 @@ package com.tc.objectserver.context;
 
 import com.tc.async.api.EventContext;
 
-public class DeleteObjectContext implements EventContext {
-  // Nothing here for now
+public class InlineGCContext implements EventContext {
+  // nothing here
 }

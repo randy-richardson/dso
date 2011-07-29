@@ -8,7 +8,7 @@ import com.tc.object.ObjectID;
 import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.text.PrettyPrintable;
 import com.tc.util.State;
-import com.tc.util.concurrent.StoppableThread;
+import com.tc.util.concurrent.LifeCycleState;
 
 import java.util.Collection;
 
@@ -78,7 +78,7 @@ public interface GarbageCollector extends PrettyPrintable {
 
   public boolean isPeriodicEnabled();
 
-  public void setState(StoppableThread st);
+  public void setState(LifeCycleState st);
 
   public void addListener(GarbageCollectorEventListener listener);
 

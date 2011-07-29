@@ -16,7 +16,6 @@ import com.tc.objectserver.impl.ObjectManagerConfig;
 import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.LifeCycleState;
-import com.tc.util.concurrent.StoppableThread;
 import com.tc.util.sequence.DGCSequenceProvider;
 
 import java.util.Collection;
@@ -146,7 +145,7 @@ public class MarkAndSweepGarbageCollector extends AbstractGarbageCollector {
     return this.started;
   }
 
-  public void setState(final StoppableThread st) {
+  public void setState(final LifeCycleState st) {
     this.gcState = st;
   }
 

@@ -18,7 +18,6 @@ import com.tc.util.Assert;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.LifeCycleState;
 import com.tc.util.concurrent.NullLifeCycleState;
-import com.tc.util.concurrent.StoppableThread;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -262,7 +261,7 @@ public class TestGarbageCollector implements GarbageCollector {
     throw new ImplementMe();
   }
 
-  public void setState(final StoppableThread st) {
+  public void setState(final LifeCycleState st) {
     throw new ImplementMe();
   }
 

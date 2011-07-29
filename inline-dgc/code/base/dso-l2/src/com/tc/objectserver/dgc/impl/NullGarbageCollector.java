@@ -9,7 +9,7 @@ import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
 import com.tc.text.PrettyPrinter;
-import com.tc.util.concurrent.StoppableThread;
+import com.tc.util.concurrent.LifeCycleState;
 
 import java.util.Collection;
 
@@ -55,7 +55,7 @@ public class NullGarbageCollector implements GarbageCollector {
     // do nothing null
   }
 
-  public void setState(StoppableThread st) {
+  public void setState(LifeCycleState st) {
     // do nothing null
   }
 

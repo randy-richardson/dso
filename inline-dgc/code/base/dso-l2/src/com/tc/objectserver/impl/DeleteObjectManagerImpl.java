@@ -6,17 +6,17 @@ package com.tc.objectserver.impl;
 import com.tc.async.api.Sink;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.DeleteObjectManager;
-import com.tc.objectserver.context.DeleteObjectContext;
+import com.tc.objectserver.context.InlineGCContext;
 import com.tc.util.ObjectIDSet;
 
 import java.util.SortedSet;
 
 public class DeleteObjectManagerImpl implements DeleteObjectManager {
   private SortedSet<ObjectID> objectsToDelete = new ObjectIDSet();
-  private final Sink          deleteObjectSink;
+  private final Sink          garbageCollectSink;
 
-  public DeleteObjectManagerImpl(Sink deleteObjectSink) {
-    this.deleteObjectSink = deleteObjectSink;
+  public DeleteObjectManagerImpl(Sink garbageCollectSink) {
+    this.garbageCollectSink = garbageCollectSink;
   }
 
   public synchronized void deleteObjects(SortedSet<ObjectID> objects) {
@@ -39,6 +39,6 @@ public class DeleteObjectManagerImpl implements DeleteObjectManager {
   }
 
   private void deleteObjects() {
-    deleteObjectSink.addLossy(new DeleteObjectContext());
+    garbageCollectSink.addLossy(new InlineGCContext());
   }
 }

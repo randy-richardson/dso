@@ -10,7 +10,7 @@ import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollectorEventListener;
 import com.tc.objectserver.impl.ObjectManagerConfig;
 import com.tc.text.PrettyPrinter;
-import com.tc.util.concurrent.StoppableThread;
+import com.tc.util.concurrent.LifeCycleState;
 
 import java.util.Collection;
 
@@ -171,7 +171,7 @@ public class GarbageCollectorThreadTest extends TestCase {
       return false;
     }
 
-    public void setState(StoppableThread st) {
+    public void setState(LifeCycleState st) {
       //
     }
 

@@ -18,13 +18,16 @@ import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectManagerLookupResults;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.api.ShutdownError;
-import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.context.DGCResultContext;
+import com.tc.objectserver.context.DelayedGarbageCollectContext;
+import com.tc.objectserver.context.GarbageCollectContext;
 import com.tc.objectserver.context.ManagedObjectFaultingContext;
 import com.tc.objectserver.context.ManagedObjectFlushingContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
+import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollector;
+import com.tc.objectserver.dgc.api.GarbageCollector.GCType;
 import com.tc.objectserver.dgc.impl.NullGarbageCollector;
 import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.managedobject.ManagedObjectChangeListener;
@@ -121,6 +124,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private final PersistenceTransactionProvider                  persistenceTransactionProvider;
   private final Sink                                            faultSink;
   private final Sink                                            flushSink;
+  private final Sink                                            garbageCollectSink;
 
   private final ObjectStatsRecorder                             objectStatsRecorder;
   private final NoReferencesIDStore                             noReferencesIDStore;
@@ -128,7 +132,8 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   public ObjectManagerImpl(final ObjectManagerConfig config, final ClientStateManager stateManager,
                            final ManagedObjectStore objectStore, final EvictionPolicy cache,
                            final PersistenceTransactionProvider persistenceTransactionProvider, final Sink faultSink,
-                           final Sink flushSink, final ObjectStatsRecorder objectStatsRecorder) {
+                           final Sink flushSink, final ObjectStatsRecorder objectStatsRecorder,
+                           final Sink garbageCollectSink) {
     this.faultSink = faultSink;
     this.flushSink = flushSink;
     Assert.assertNotNull(objectStore);
@@ -140,6 +145,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     this.references = new ConcurrentHashMap<ObjectID, ManagedObjectReference>(16384, 0.75f, 256);
     this.objectStatsRecorder = objectStatsRecorder;
     this.noReferencesIDStore = new NoReferencesIDStoreImpl();
+    this.garbageCollectSink = garbageCollectSink;
   }
 
   public void setTransactionalObjectManager(final TransactionalObjectManager txnObjectManager) {
@@ -932,6 +938,16 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
       this.collector.stop();
     }
     this.collector = newCollector;
+  }
+
+  public void scheduleGarbageCollection(GCType type, long delay) {
+    if (delay > 0) {
+      logger.info("Scheduling DGC to run in " + delay + "ms");
+      garbageCollectSink.add(new DelayedGarbageCollectContext(type, false, delay));
+    } else {
+      logger.info("Initiating DGC...");
+      garbageCollectSink.add(new GarbageCollectContext(type, false));
+    }
   }
 
   private void processPendingLookups() {

@@ -173,7 +173,6 @@ import com.tc.objectserver.dgc.impl.GCControllerImpl;
 import com.tc.objectserver.dgc.impl.GCStatisticsAgentSubSystemEventListener;
 import com.tc.objectserver.dgc.impl.GCStatsEventPublisher;
 import com.tc.objectserver.dgc.impl.GarbageCollectionInfoPublisherImpl;
-import com.tc.objectserver.dgc.impl.GarbageCollectorThread;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManagerImpl;
 import com.tc.objectserver.handler.ApplyCompleteTransactionHandler;
@@ -184,7 +183,7 @@ import com.tc.objectserver.handler.ClientChannelOperatorEventlistener;
 import com.tc.objectserver.handler.ClientHandshakeHandler;
 import com.tc.objectserver.handler.ClientLockStatisticsHandler;
 import com.tc.objectserver.handler.CommitTransactionChangeHandler;
-import com.tc.objectserver.handler.DeleteObjectHandler;
+import com.tc.objectserver.handler.GarbageCollectHandler;
 import com.tc.objectserver.handler.GarbageDisposeHandler;
 import com.tc.objectserver.handler.GlobalTransactionIDBatchRequestHandler;
 import com.tc.objectserver.handler.InvalidateObjectsHandler;
@@ -255,6 +254,7 @@ import com.tc.objectserver.tx.TransactionBatchManagerImpl;
 import com.tc.objectserver.tx.TransactionFilter;
 import com.tc.objectserver.tx.TransactionalObjectManagerImpl;
 import com.tc.objectserver.tx.TransactionalStagesCoordinatorImpl;
+import com.tc.objectserver.tx.TxnsInSystemCompletionListener;
 import com.tc.operatorevent.DsoOperatorEventHistoryProvider;
 import com.tc.operatorevent.TerracottaOperatorEventHistoryProvider;
 import com.tc.operatorevent.TerracottaOperatorEventLogging;
@@ -315,7 +315,6 @@ import com.tc.util.SequenceValidator;
 import com.tc.util.StartupLock;
 import com.tc.util.TCTimeoutException;
 import com.tc.util.UUID;
-import com.tc.util.concurrent.StoppableThread;
 import com.tc.util.runtime.LockInfoByThreadID;
 import com.tc.util.runtime.NullThreadIDMapImpl;
 import com.tc.util.runtime.ThreadIDMap;
@@ -340,7 +339,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.management.MBeanServer;
 import javax.management.NotCompliantMBeanException;
@@ -764,10 +762,15 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                                                             youngGenDGCFrequency,
                                                                             enterpriseMarkStageInterval);
 
+    final Stage garbageCollectStage = stageManager.createStage(ServerConfigurationContext.GARBAGE_COLLECT_STAGE,
+                                                               new GarbageCollectHandler(objectManagerConfig), 1, -1);
+
+    this.deleteObjectManager = new DeleteObjectManagerImpl(garbageCollectStage.getSink());
+
     this.objectManager = new ObjectManagerImpl(objectManagerConfig, this.clientStateManager, this.objectStore,
                                                swapCache, dbenv.getPersistenceTransactionProvider(),
                                                faultManagedObjectStage.getSink(), flushManagedObjectStage.getSink(),
-                                               this.objectStatsRecorder);
+                                               this.objectStatsRecorder, garbageCollectStage.getSink());
 
     this.objectManager.setStatsListener(objMgrStats);
     this.gcStatsEventPublisher = new GCStatsEventPublisher();
@@ -925,10 +928,6 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.objectManager.setTransactionalObjectManager(this.txnObjectManager);
 
     this.metaDataManager = this.serverBuilder.createMetaDataManager(searchEventSink);
-
-    final Stage deleteObjectStage = stageManager.createStage(ServerConfigurationContext.DELETE_OBJECT_STAGE,
-                                                             new DeleteObjectHandler(), 1, -1);
-    this.deleteObjectManager = new DeleteObjectManagerImpl(deleteObjectStage.getSink());
 
     this.transactionManager = new ServerTransactionManagerImpl(gtxm, transactionStore, this.lockManager,
                                                                this.clientStateManager, this.objectManager,
@@ -1141,12 +1140,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                                                           dgcSequenceProvider, this.transactionManager);
     gc.addListener(new GCStatisticsAgentSubSystemEventListener(getStatisticsAgentSubSystem()));
     this.objectManager.setGarbageCollector(gc);
-    if (objectManagerConfig.startGCThread()) {
-      final StoppableThread st = new GarbageCollectorThread(this.threadGroup, "DGC-Thread", gc, objectManagerConfig);
-      st.setDaemon(true);
-      gc.setState(st);
-      gc.setPeriodicEnabled(true);
-    }
+
     this.l2Management.findObjectManagementMonitorMBean().registerGCController(new GCControllerImpl(this.objectManager
                                                                                   .getGarbageCollector()));
     this.l2Management.findObjectManagementMonitorMBean().registerObjectIdFetcher(new ObjectIdsFetcher() {
@@ -1485,17 +1479,14 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.transactionManager.goToActiveMode();
     if (!this.objectManager.getGarbageCollector().isPeriodicEnabled()
         && TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_INLINE_ENABLED, true)) {
-      final int startActiveDGCDelay = TCPropertiesImpl.getProperties()
-          .getInt(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_START_ACTIVE_DELAY);
-      logger.info("Periodic DGC is disabled. Scheduling a DGC to run in " + startActiveDGCDelay
-                  + "ms to clear up objects missed by inline dgc.");
-      Timer t = new Timer();
-      t.schedule(new TimerTask() {
-        @Override
-        public void run() {
-          objectManager.getGarbageCollector().doGC(GCType.FULL_GC);
+      this.transactionManager.callBackOnResentTxnsInSystemCompletion(new TxnsInSystemCompletionListener() {
+        public void onCompletion() {
+          long startActiveDGCDelay = TCPropertiesImpl.getProperties()
+              .getLong(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_START_ACTIVE_DELAY);
+          logger.info("Performing a DGC to cleanup objects missed by inline-dgc in " + startActiveDGCDelay + "ms.");
+          objectManager.scheduleGarbageCollection(GCType.FULL_GC, startActiveDGCDelay);
         }
-      }, startActiveDGCDelay);
+      });
     }
   }
 

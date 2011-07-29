@@ -40,11 +40,11 @@ import com.tc.object.tx.TxnType;
 import com.tc.objectserver.context.ApplyCompleteEventContext;
 import com.tc.objectserver.context.ApplyTransactionContext;
 import com.tc.objectserver.context.CommitTransactionContext;
-import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.context.LookupEventContext;
 import com.tc.objectserver.context.ManagedObjectFaultingContext;
 import com.tc.objectserver.context.ManagedObjectFlushingContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
+import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.context.RecallObjectsContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.api.TestDNA;
@@ -186,9 +186,10 @@ public class ObjectManagerTest extends TCTestCase {
                                  final ManagedObjectStore store) {
     final TestSink faultSink = new TestSink();
     final TestSink flushSink = new TestSink();
+    final TestSink garbageCollectSink = new TestSink();
     this.objectManager = new ObjectManagerImpl(this.config, this.clientStateManager, store, cache,
                                                this.persistenceTransactionProvider, faultSink, flushSink,
-                                               this.objectStatsRecorder);
+                                               this.objectStatsRecorder, garbageCollectSink);
     this.testFaultSinkContext = new TestSinkContext();
     new TestMOFaulter(this.objectManager, store, faultSink, this.testFaultSinkContext).start();
     new TestMOFlusher(this.objectManager, flushSink, new NullSinkContext()).start();
@@ -198,10 +199,11 @@ public class ObjectManagerTest extends TCTestCase {
                                                                 final EvictionPolicy cache) {
     final TestSink faultSink = new TestSink();
     final TestSink flushSink = new TestSink();
+    final TestSink garbageCollectSink = new TestSink();
     this.objectStore = new InMemoryManagedObjectStore(this.managed);
     this.objectManager = new ObjectManagerImpl(this.config, this.clientStateManager, this.objectStore, cache,
                                                this.persistenceTransactionProvider, faultSink, flushSink,
-                                               this.objectStatsRecorder);
+                                               this.objectStatsRecorder, garbageCollectSink);
     this.testFaultSinkContext = new TestSinkContext();
     new TestMOFaulter(this.objectManager, this.objectStore, faultSink, this.testFaultSinkContext).start();
     TestMOFlusherWithLatch flusherWithLatch = new TestMOFlusherWithLatch(objectManager, flushSink,
@@ -851,10 +853,11 @@ public class ObjectManagerTest extends TCTestCase {
     final PersistentManagedObjectStore store = new PersistentManagedObjectStore(mop, new MockSink());
     final TestSink faultSink = new TestSink();
     final TestSink flushSink = new TestSink();
+    final TestSink garbageCollectSink = new TestSink();
     this.config.paranoid = paranoid;
     this.objectManager = new ObjectManagerImpl(this.config, this.clientStateManager, store, new LRUEvictionPolicy(100),
                                                this.persistenceTransactionProvider, faultSink, flushSink,
-                                               this.objectStatsRecorder);
+                                               this.objectStatsRecorder, garbageCollectSink);
     new TestMOFaulter(this.objectManager, store, faultSink, new NullSinkContext()).start();
     new TestMOFlusher(this.objectManager, flushSink, new NullSinkContext()).start();
 

@@ -11,13 +11,14 @@ import com.tc.object.cache.CacheStats;
 import com.tc.object.cache.Evictable;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
-import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.context.DGCResultContext;
 import com.tc.objectserver.context.ObjectManagerResultsContext;
+import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfo;
 import com.tc.objectserver.dgc.api.GarbageCollectionInfoPublisher;
 import com.tc.objectserver.dgc.api.GarbageCollector;
+import com.tc.objectserver.dgc.api.GarbageCollector.GCType;
 import com.tc.objectserver.impl.ManagedObjectReference;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.storage.api.PersistenceTransaction;
@@ -288,6 +289,10 @@ public class GCTestObjectManager implements ObjectManager, Evictable {
 
   public ManagedObject getQuietObjectByID(ObjectID id) {
     return getObjectByID(id);
+  }
+
+  public void scheduleGarbageCollection(GCType type, long delay) {
+    throw new ImplementMe();
   }
 
 }
