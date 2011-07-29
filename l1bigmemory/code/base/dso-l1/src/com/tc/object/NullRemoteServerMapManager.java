@@ -12,6 +12,7 @@ import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 public final class NullRemoteServerMapManager implements RemoteServerMapManager {
@@ -79,6 +80,10 @@ public final class NullRemoteServerMapManager implements RemoteServerMapManager 
   }
 
   public void preTransactionFlush(LockID lockID, ServerLockLevel level) {
+    //
+  }
+
+  public void getMappingForAllKeys(final Map<ObjectID, Set<Object>> mapIdToKeysMap, final Map<Object, Object> rv) {
     //
   }
 
