@@ -128,7 +128,8 @@ public class L1ServerMapLocalCacheStoreHashMap<K, V> implements L1ServerMapLocal
 
   @Override
   public String toString() {
-    return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache + ", pinnedEntries=" + pinnedEntries + "]";
+    return "L1ServerMapLocalCacheStoreHashMap [backingCache=" + backingCache.size() + " " + backingCache
+           + "\npinnedEntries=" + pinnedEntries.size() + " " + pinnedEntries + "]";
   }
 
   public List<L1ServerMapLocalCacheStoreListener<K, V>> getListeners() {

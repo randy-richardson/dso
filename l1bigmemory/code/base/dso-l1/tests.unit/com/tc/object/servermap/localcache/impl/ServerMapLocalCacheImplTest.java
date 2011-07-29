@@ -55,14 +55,13 @@ import junit.framework.TestCase;
 
 public class ServerMapLocalCacheImplTest extends TestCase {
   private volatile ServerMapLocalCacheImpl  cache;
-  private final ObjectID                    mapID         = new ObjectID(50000);
-  private int                               maxInMemory   = 1000;
+  private final ObjectID                    mapID       = new ObjectID(50000);
+  private int                               maxInMemory = 1000;
   private L1ServerMapLocalCacheStore        cacheIDStore;
   private TestLocksRecallHelper             locksRecallHelper;
   private L1ServerMapLocalCacheManagerImpl  globalLocalCacheManager;
   private MySink                            sink;
   private L1ServerMapLocalCacheStoreHashMap localCacheStore;
-  private final AtomicInteger               objectIdCount = new AtomicInteger(10000);
 
   @Override
   protected void setUp() throws Exception {
@@ -599,6 +598,8 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     }
     cache.evictCachedEntries(25);
     System.err.println("Current size in testEvictCachedEntries " + cache.size());
+    System.err.println(localCacheStore.toString());
+    System.err.println(cacheIDStore.toString());
     int evicted = 0;
     int notEvicted = 0;
     for (int i = 0; i < 50; i++) {
@@ -846,10 +847,6 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     cacheSize = cache.size();
     System.err.println("Current size in testCapacityEviction " + cacheSize);
     Assert.assertTrue(cacheSize < 40);
-  }
-
-  private ObjectID getNextId() {
-    return new ObjectID(objectIdCount.incrementAndGet());
   }
 
   public class MyClientTransaction implements ClientTransaction {
