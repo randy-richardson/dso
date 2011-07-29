@@ -424,18 +424,7 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
       // some asertions... can be removed?
       Object object = serverMapLocalCache.getInternalStore().get(valueOid);
       if (localStoreValue.isEventualConsistentValue()) {
-        if (object != null) {
-          if (!(object instanceof List)) {
-            //
-            throw new AssertionError("With eventual, oid's can be mapped to List only, oid: " + valueOid
-                                     + ", mapped to: " + object);
-          } else {
-            List list = (List) object;
-            if (list.size() > 1) { throw new AssertionError(
-                                                            "With eventual, oid's should be mapped to maximum of one key, oid: "
-                                                                + valueOid + ", list: " + list); }
-          }
-        }
+        assertEventualIdMappingValue(valueOid, object);
         removed = localStoreValue.asEventualValue().getValue();
       } else {
         if (object != null) {
@@ -467,6 +456,21 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     }
 
     signalAll();
+  }
+
+  private void assertEventualIdMappingValue(ObjectID valueOid, Object object) throws AssertionError {
+    if (object != null) {
+      if (!(object instanceof List)) {
+        //
+        throw new AssertionError("With eventual, oid's can be mapped to List only, oid: " + valueOid
+                                 + ", mapped to: " + object);
+      } else {
+        List list = (List) object;
+        if (list.size() > 1) { throw new AssertionError(
+                                                        "With eventual, oid's should be mapped to maximum of one key, oid: "
+                                                            + valueOid + ", list: " + list); }
+      }
+    }
   }
 
   private void signalAll() {

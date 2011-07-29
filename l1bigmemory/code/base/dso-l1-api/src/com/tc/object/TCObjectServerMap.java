@@ -126,7 +126,7 @@ public interface TCObjectServerMap<L> extends TCObject {
 
   public Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap);
 
-  public void updateLocalCache(final Object key, final Object value);
+  // public void updateLocalCache(final Object key, final Object value);
 
   /**
    * Returns a snapshot of keys for the giver ServerTCMap

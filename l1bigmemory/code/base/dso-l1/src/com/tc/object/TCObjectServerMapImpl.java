@@ -24,9 +24,12 @@ import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObject, TCObjectServerMap<L> {
 
@@ -34,8 +37,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(
-                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+                                                            .getBoolean(TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
 
   private static final Object[]        NO_ARGS          = new Object[] {};
 
@@ -277,24 +279,24 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   public Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap) {
     Map<Object, Object> rv = new ConcurrentHashMap<Object, Object>();
-//    if (CACHE_ENABLED) {
-      for (Iterator<Entry<ObjectID, Set<Object>>> iterator = mapIdToKeysMap.entrySet().iterator(); iterator.hasNext();) {
-        Entry<ObjectID, Set<Object>> entry = iterator.next();
-        Set<Object> keys = entry.getValue();
-        for (Iterator i = keys.iterator(); i.hasNext();) {
-          Object key = i.next();
-          CachedItem item = getValueUnlockedFromCache(key);
-          if (item != null) {
-            i.remove();
-            rv.put(key, item.getValue());
-          }
-        }
-        if (keys.isEmpty()) {
-          iterator.remove();
+    // if (CACHE_ENABLED) {
+    for (Iterator<Entry<ObjectID, Set<Object>>> iterator = mapIdToKeysMap.entrySet().iterator(); iterator.hasNext();) {
+      Entry<ObjectID, Set<Object>> entry = iterator.next();
+      Set<Object> keys = entry.getValue();
+      for (Iterator i = keys.iterator(); i.hasNext();) {
+        Object key = i.next();
+        AbstractLocalCacheStoreValue item = getValueUnlockedFromCache(key);
+        if (item != null) {
+          i.remove();
+          rv.put(key, item.getValueObject(tcObjectSelfStore, serverMapLocalStore));
         }
       }
-//    }
-  
+      if (keys.isEmpty()) {
+        iterator.remove();
+      }
+    }
+    // }
+
     // if everything was in local cache
     if (mapIdToKeysMap.isEmpty()) return rv;
 
@@ -427,18 +429,6 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
           }
         }
       }
-    }
-  }
-
-  // this method does not check CACHE_ENABLED flag, check externally before calling this method
-  public void updateLocalCache(final Object key, final Object value) {
-    if (invalidateOnChange) {
-      // Null values (i.e. cache misses) & literal values are not cached locally
-      if (value != null && !LiteralValues.isLiteralInstance(value)) {
-        this.cache.addCoherentValueToCache(objectManager.lookupExistingObjectID(value), key, value, false);
-      }
-    } else {
-      this.cache.addIncoherentValueToCache(key, value, false);
     }
   }
 

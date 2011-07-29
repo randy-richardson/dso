@@ -8,7 +8,6 @@ import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.gtx.PreTransactionFlushCallback;
 import com.tc.object.handshakemanager.ClientHandshakeCallback;
-import com.tc.object.locks.LockID;
 import com.tc.object.session.SessionID;
 
 import java.util.Collection;
