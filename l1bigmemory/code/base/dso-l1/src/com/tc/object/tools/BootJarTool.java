@@ -79,7 +79,7 @@ import com.tc.object.TCObject;
 import com.tc.object.TCObjectExternal;
 import com.tc.object.TCObjectSelf;
 import com.tc.object.TCObjectSelfImpl;
-import com.tc.object.TCObjectSelfRemovedFromStoreCallback;
+import com.tc.object.TCObjectSelfCallback;
 import com.tc.object.TCObjectSelfStore;
 import com.tc.object.TCObjectSelfStoreValue;
 import com.tc.object.TCObjectServerMap;
@@ -730,7 +730,7 @@ public class BootJarTool {
   private void loadTerracottaClassesForTCObjectSelf() {
     loadTerracottaClass(TCObjectSelf.class.getName());
     loadTerracottaClass(TCObjectSelfImpl.class.getName());
-    loadTerracottaClass(TCObjectSelfRemovedFromStoreCallback.class.getName());
+    loadTerracottaClass(TCObjectSelfCallback.class.getName());
   }
 
   private void loadTerracottaClassesReachableFromTCObject() {

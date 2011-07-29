@@ -221,4 +221,9 @@ public class TestClientObjectManager implements ClientObjectManager {
   public void removedTCObjectSelfFromStore(TCObjectSelf value) {
     throw new ImplementMe();
   }
+
+  public void initializeTCClazzIfRequired(TCObjectSelf tcoObjectSelf) {
+    throw new ImplementMe();
+
+  }
 }

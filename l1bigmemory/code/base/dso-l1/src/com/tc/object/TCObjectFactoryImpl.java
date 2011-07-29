@@ -42,6 +42,11 @@ public class TCObjectFactoryImpl implements TCObjectFactory {
     return rv;
   }
 
+  public void initClazzIfRequired(Class clazz, TCObjectSelf tcObjectSelf) {
+    TCClass tcc = clazzFactory.getOrCreate(clazz, objectManager);
+    tcObjectSelf.initClazzIfRequired(tcc);
+  }
+
   // public TCObject getNewInstance(ObjectID id, Class clazz, boolean isNew) {
   // return getNewInstance(id, null, clazz, isNew);
   // }

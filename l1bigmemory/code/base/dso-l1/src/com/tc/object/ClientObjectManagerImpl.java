@@ -1456,4 +1456,8 @@ public class ClientObjectManagerImpl implements ClientObjectManager, ClientHands
     Map<Object, List<Method>> getPostCreateMethods();
   }
 
+  public void initializeTCClazzIfRequired(TCObjectSelf tcObjectSelf) {
+    this.factory.initClazzIfRequired(tcObjectSelf.getClass(), tcObjectSelf);
+  }
+
 }

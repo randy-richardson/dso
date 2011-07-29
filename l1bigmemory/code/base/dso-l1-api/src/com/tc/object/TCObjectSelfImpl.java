@@ -21,10 +21,10 @@ import java.lang.ref.WeakReference;
  */
 public class TCObjectSelfImpl implements TCObjectSelf {
 
-  private transient ObjectID oid;
-  private transient TCClass  tcClazz;
-  private transient boolean  isNew;
-  private transient long     version;
+  private volatile transient ObjectID oid;
+  private volatile transient TCClass  tcClazz;
+  private volatile transient boolean  isNew;
+  private volatile transient long     version;
 
   // DO NOT ADD ANY CONSTRUCTORS AS THEY WILL BE SKIPPED WHILE MERGE
 
@@ -36,10 +36,20 @@ public class TCObjectSelfImpl implements TCObjectSelf {
 
   public void serialize(ObjectOutput out) throws IOException {
     out.writeLong(version);
+    out.writeLong(oid.toLong());
   }
 
   public void deserialize(ObjectInput in) throws IOException {
     this.version = in.readLong();
+    this.oid = new ObjectID(in.readLong());
+    // Assuming isNew to be false
+    this.isNew = false;
+  }
+
+  public void initClazzIfRequired(TCClass tcc) {
+    if (tcClazz == null) {
+      tcClazz = tcc;
+    }
   }
 
   public void dehydrate(DNAWriter writer) {

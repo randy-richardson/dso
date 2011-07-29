@@ -526,6 +526,11 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
       return tcObj;
     }
 
+    public void initClazzIfRequired(Class clazz, TCObjectSelf tcObjectSelf) {
+      throw new ImplementMe();
+
+    }
+
   }
 
   private static class TestObject implements TransparentAccess, Manageable {

@@ -350,5 +350,10 @@ public class ManagerImplTest extends BaseDSOTestCase {
       throw new ImplementMe();
 
     }
+
+    public void initializeTCClazzIfRequired(TCObjectSelf tcoObjectSelf) {
+      throw new ImplementMe();
+
+    }
   }
 }
