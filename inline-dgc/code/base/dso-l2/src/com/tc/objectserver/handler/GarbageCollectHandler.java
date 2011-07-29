@@ -58,7 +58,8 @@ public class GarbageCollectHandler extends AbstractEventHandler {
       gcRunning = true;
       collector.doGC(gcc.getType());
       gcRunning = false;
-      scheduleInlineGC(); // give inline gc a chance to run before another full/young gc is started
+      deleteObjectManager.deleteMoreObjectsIfNecessary(); // give inline gc a chance to run before another full/young gc
+                                                          // is started
       if (gcc.reschedule() && gcc.getType() == GCType.FULL_GC && fullGCEnabled) {
         scheduledFullGC(gcc.reschedule());
       } else if (gcc.reschedule() && gcc.getType() == GCType.YOUNG_GEN_GC && youngGCEnabled) {
@@ -73,10 +74,6 @@ public class GarbageCollectHandler extends AbstractEventHandler {
     } else {
       throw new AssertionError("Unknown context type: " + context.getClass().getName());
     }
-  }
-
-  public void scheduleInlineGC() {
-    gcSink.add(new InlineGCContext());
   }
 
   public void scheduleYoungGC(final boolean reschedule) {
