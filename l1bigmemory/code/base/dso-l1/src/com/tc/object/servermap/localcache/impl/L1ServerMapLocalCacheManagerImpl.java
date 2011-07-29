@@ -192,7 +192,8 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
 
     for (Entry entry : entries) {
       if (!(entry.getValue() instanceof AbstractLocalCacheStoreValue)) {
-        throwAssert("Eviction should not happen on pinned elements and all unpinned elements should be intances of local cache store value");
+        throwAssert("Eviction should not happen on pinned elements and all unpinned elements should be intances of local cache store value "
+                    + entry.getValue());
       }
 
       AbstractLocalCacheStoreValue value = (AbstractLocalCacheStoreValue) entry.getValue();
