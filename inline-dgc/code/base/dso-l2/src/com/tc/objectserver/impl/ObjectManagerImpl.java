@@ -19,7 +19,6 @@ import com.tc.objectserver.api.ObjectManagerLookupResults;
 import com.tc.objectserver.api.ObjectManagerStatsListener;
 import com.tc.objectserver.api.ShutdownError;
 import com.tc.objectserver.context.DGCResultContext;
-import com.tc.objectserver.context.DelayedGarbageCollectContext;
 import com.tc.objectserver.context.GarbageCollectContext;
 import com.tc.objectserver.context.ManagedObjectFaultingContext;
 import com.tc.objectserver.context.ManagedObjectFlushingContext;
@@ -943,10 +942,10 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   public void scheduleGarbageCollection(GCType type, long delay) {
     if (delay > 0) {
       logger.info("Scheduling DGC to run in " + delay + "ms");
-      garbageCollectSink.add(new DelayedGarbageCollectContext(type, false, delay));
+      garbageCollectSink.add(new GarbageCollectContext(type, delay));
     } else {
       logger.info("Initiating DGC...");
-      garbageCollectSink.add(new GarbageCollectContext(type, false));
+      garbageCollectSink.add(new GarbageCollectContext(type));
     }
   }
 

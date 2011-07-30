@@ -11,9 +11,9 @@ import com.tc.object.ObjectID;
 import com.tc.objectserver.api.DeleteObjectManager;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.context.DGCResultContext;
-import com.tc.objectserver.context.DelayedGarbageCollectContext;
 import com.tc.objectserver.context.GarbageCollectContext;
 import com.tc.objectserver.context.InlineGCContext;
+import com.tc.objectserver.context.PeriodicGarbageCollectContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.dgc.api.GarbageCollector;
 import com.tc.objectserver.dgc.api.GarbageCollector.GCType;
@@ -49,21 +49,26 @@ public class GarbageCollectHandler extends AbstractEventHandler {
 
   @Override
   public void handleEvent(EventContext context) {
-    if (context instanceof DelayedGarbageCollectContext) {
-      DelayedGarbageCollectContext delayedGarbageCollectContext = (DelayedGarbageCollectContext) context;
-      scheduleDGC(delayedGarbageCollectContext.getType(), delayedGarbageCollectContext.getDelay(),
-                  delayedGarbageCollectContext.reschedule());
-    } else if (context instanceof GarbageCollectContext) {
+    timer.purge(); // Get rid of finished tasks
+    if (context instanceof GarbageCollectContext) {
       GarbageCollectContext gcc = (GarbageCollectContext) context;
-      gcRunning = true;
-      collector.doGC(gcc.getType());
-      gcRunning = false;
-      deleteObjectManager.deleteMoreObjectsIfNecessary(); // give inline gc a chance to run before another full/young gc
-                                                          // is started
-      if (gcc.reschedule() && gcc.getType() == GCType.FULL_GC && fullGCEnabled) {
-        scheduledFullGC(gcc.reschedule());
-      } else if (gcc.reschedule() && gcc.getType() == GCType.YOUNG_GEN_GC && youngGCEnabled) {
-        scheduleYoungGC(gcc.reschedule());
+      if (gcc.getDelay() > 0) {
+        final long delay = gcc.getDelay();
+        gcc.setDelay(0);
+        scheduleDGC(gcc, delay);
+      } else {
+        gcRunning = true;
+        collector.doGC(gcc.getType());
+        gcRunning = false;
+        deleteObjectManager.deleteMoreObjectsIfNecessary(); // give inline gc a chance to run before another full/young
+                                                            // gc
+                                                            // is started
+        if (gcc instanceof PeriodicGarbageCollectContext) {
+          // Rearm and requeue if it's a periodic gc.
+          PeriodicGarbageCollectContext pgcc = (PeriodicGarbageCollectContext) gcc;
+          pgcc.reset();
+          gcSink.add(pgcc);
+        }
       }
     } else if (context instanceof InlineGCContext) {
       collector.waitToStartInlineGC();
@@ -76,19 +81,11 @@ public class GarbageCollectHandler extends AbstractEventHandler {
     }
   }
 
-  public void scheduleYoungGC(final boolean reschedule) {
-    scheduleDGC(GCType.YOUNG_GEN_GC, youngGCInterval, reschedule);
-  }
-
-  public void scheduledFullGC(final boolean reschedule) {
-    scheduleDGC(GCType.FULL_GC, fullGCInterval, reschedule);
-  }
-
-  public void scheduleDGC(final GCType type, final long delay, final boolean reschedule) {
+  public void scheduleDGC(final GarbageCollectContext gcc, final long delay) {
     timer.schedule(new TimerTask() {
       @Override
       public void run() {
-        gcSink.add(new GarbageCollectContext(type, reschedule));
+        gcSink.add(gcc);
       }
     }, delay);
   }
@@ -110,9 +107,9 @@ public class GarbageCollectHandler extends AbstractEventHandler {
     public void start() {
       if (fullGCEnabled) {
         if (youngGCEnabled) {
-          scheduleYoungGC(true);
+          gcSink.add(new PeriodicGarbageCollectContext(GCType.YOUNG_GEN_GC, youngGCInterval));
         }
-        scheduledFullGC(true);
+        gcSink.add(new PeriodicGarbageCollectContext(GCType.FULL_GC, fullGCInterval));
         collector.setPeriodicEnabled(true);
       }
     }
