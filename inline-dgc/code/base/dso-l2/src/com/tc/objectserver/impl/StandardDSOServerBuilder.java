@@ -41,7 +41,7 @@ import com.tc.object.msg.MessageRecycler;
 import com.tc.object.net.ChannelStatsImpl;
 import com.tc.object.net.DSOChannelManager;
 import com.tc.object.persistence.api.PersistentMapStore;
-import com.tc.objectserver.api.DeleteObjectManager;
+import com.tc.objectserver.api.GarbageCollectionManager;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectRequestManager;
 import com.tc.objectserver.api.ServerMapRequestManager;
@@ -221,7 +221,7 @@ public class StandardDSOServerBuilder implements DSOServerBuilder {
                                                                      MetaDataManager metaDataManager,
                                                                      IndexManager indexManager,
                                                                      SearchRequestManager searchRequestManager,
-                                                                     DeleteObjectManager deleteObjectManager) {
+                                                                     GarbageCollectionManager deleteObjectManager) {
     return new ServerConfigurationContextImpl(stageManager, objMgr, objRequestMgr, serverTCMapRequestManager, objStore,
                                               lockMgr, channelManager, clientStateMgr, txnMgr, txnObjectMgr,
                                               clientHandshakeManager, channelStats, coordinator,

@@ -153,7 +153,7 @@ import com.tc.object.net.DSOChannelManagerMBean;
 import com.tc.object.session.NullSessionManager;
 import com.tc.object.session.SessionManager;
 import com.tc.objectserver.DSOApplicationEvents;
-import com.tc.objectserver.api.DeleteObjectManager;
+import com.tc.objectserver.api.GarbageCollectionManager;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectRequestManager;
 import com.tc.objectserver.api.ObjectStatsManager;
@@ -380,7 +380,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   private StartupLock                            startupLock;
   private ClientStateManager                     clientStateManager;
   private ManagedObjectStore                     objectStore;
-  private DeleteObjectManager                    deleteObjectManager;
+  private GarbageCollectionManager               garbageCollectionManager;
   private Persistor                              persistor;
   private ServerTransactionManagerImpl           transactionManager;
 
@@ -767,12 +767,12 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     final Stage garbageCollectStage = stageManager.createStage(ServerConfigurationContext.GARBAGE_COLLECT_STAGE,
                                                                new GarbageCollectHandler(objectManagerConfig), 1, -1);
 
-    this.deleteObjectManager = new DeleteObjectManagerImpl(garbageCollectStage.getSink());
+    this.garbageCollectionManager = new GarbageCollectionManagerImpl(garbageCollectStage.getSink());
 
     this.objectManager = new ObjectManagerImpl(objectManagerConfig, this.clientStateManager, this.objectStore,
                                                swapCache, dbenv.getPersistenceTransactionProvider(),
                                                faultManagedObjectStage.getSink(), flushManagedObjectStage.getSink(),
-                                               this.objectStatsRecorder, garbageCollectStage.getSink());
+                                               this.objectStatsRecorder);
 
     this.objectManager.setStatsListener(objMgrStats);
     this.gcStatsEventPublisher = new GCStatsEventPublisher();
@@ -938,7 +938,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                                                new ServerTransactionManagerConfig(this.l2Properties
                                                                    .getPropertiesFor("transactionmanager")),
                                                                this.objectStatsRecorder, this.metaDataManager,
-                                                               this.deleteObjectManager);
+                                                               this.garbageCollectionManager);
 
     this.metaDataManager.setTransactionManager(transactionManager);
 
@@ -1210,7 +1210,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                                                        maxStageSize,
                                                                        this.l1Listener.getChannelManager(), this,
                                                                        metaDataManager, indexHACoordinator,
-                                                                       searchRequestManager, deleteObjectManager);
+                                                                       searchRequestManager, garbageCollectionManager);
     toInit.add(this.serverBuilder);
 
     stageManager.startAll(this.context, toInit);
@@ -1491,7 +1491,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
           long startActiveDGCDelay = TCPropertiesImpl.getProperties()
               .getLong(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_START_ACTIVE_DELAY);
           logger.info("Performing a DGC to cleanup objects missed by inline-dgc in " + startActiveDGCDelay + "ms.");
-          objectManager.scheduleGarbageCollection(GCType.FULL_GC, startActiveDGCDelay);
+          garbageCollectionManager.scheduleGarbageCollection(GCType.FULL_GC, startActiveDGCDelay);
         }
       });
     }

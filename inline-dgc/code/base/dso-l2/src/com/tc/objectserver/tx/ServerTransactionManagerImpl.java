@@ -20,7 +20,7 @@ import com.tc.object.gtx.GlobalTransactionManager;
 import com.tc.object.net.ChannelStats;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.object.tx.TransactionID;
-import com.tc.objectserver.api.DeleteObjectManager;
+import com.tc.objectserver.api.GarbageCollectionManager;
 import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.core.api.ManagedObject;
@@ -70,7 +70,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
                                                                                          .synchronizedMap(new HashMap<NodeID, TransactionAccount>());
   private final ClientStateManager                      stateManager;
   private final ObjectManager                           objectManager;
-  private final DeleteObjectManager                     deleteObjectManager;
+  private final GarbageCollectionManager                garbageCollectionManager;
   private final ResentTransactionSequencer              resentTxnSequencer;
   private final TransactionAcknowledgeAction            action;
   private final LockManager                             lockManager;
@@ -110,7 +110,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
                                       final ChannelStats channelStats, final ServerTransactionManagerConfig config,
                                       final ObjectStatsRecorder objectStatsRecorder,
                                       final MetaDataManager metaDataManager,
-                                      final DeleteObjectManager deleteObjectManager) {
+                                      final GarbageCollectionManager garbageCollectionManager) {
     this.gtxm = gtxm;
     this.lockManager = lockManager;
     this.objectManager = objectManager;
@@ -128,7 +128,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     this.broadcastStatsLoggingEnabled = config.isPrintBroadcastStatsEnabled();
     this.objectStatsRecorder = objectStatsRecorder;
     this.metaDataManager = metaDataManager;
-    this.deleteObjectManager = deleteObjectManager;
+    this.garbageCollectionManager = garbageCollectionManager;
   }
 
   public void enableTransactionLogger() {
@@ -394,7 +394,7 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     this.gtxm.commitAll(ptx, appliedServerTransactionIDs);
     // This call commits the transaction too.
     this.objectManager.releaseAllAndCommit(ptx, objects);
-    this.deleteObjectManager.deleteObjects(deletedObjects);
+    this.garbageCollectionManager.deleteObjects(deletedObjects);
     fireRootCreatedEvents(newRoots);
     committed(appliedServerTransactionIDs);
     if (this.commitLoggingEnabled) {

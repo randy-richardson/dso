@@ -27,7 +27,7 @@ import com.tc.object.tx.TxnType;
 import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.gtx.TestGlobalTransactionManager;
 import com.tc.objectserver.impl.ObjectInstanceMonitorImpl;
-import com.tc.objectserver.impl.TestDeleteObjectManager;
+import com.tc.objectserver.impl.TestGarbageCollectionManager;
 import com.tc.objectserver.impl.TestObjectManager;
 import com.tc.objectserver.l1.api.TestClientStateManager;
 import com.tc.objectserver.l1.impl.TransactionAcknowledgeAction;
@@ -98,7 +98,7 @@ public class ServerTransactionManagerImplTest extends TestCase {
                                                                this.transactionRateCounter, this.channelStats,
                                                                new ServerTransactionManagerConfig(),
                                                                new ObjectStatsRecorder(), new NullMetaDataManager(),
-                                                               new TestDeleteObjectManager());
+                                                               new TestGarbageCollectionManager());
     this.transactionManager.goToActiveMode();
     this.transactionManager.start(Collections.EMPTY_SET);
   }

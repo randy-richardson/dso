@@ -11,7 +11,6 @@ import com.tc.objectserver.context.ObjectManagerResultsContext;
 import com.tc.objectserver.context.PeriodicDGCResultContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.dgc.api.GarbageCollector;
-import com.tc.objectserver.dgc.api.GarbageCollector.GCType;
 import com.tc.objectserver.storage.api.PersistenceTransaction;
 import com.tc.util.ObjectIDSet;
 
@@ -87,8 +86,6 @@ public interface ObjectManager extends ManagedObjectProvider, ObjectManagerMBean
   public void createNewObjects(Set<ObjectID> ids);
 
   public ObjectID lookupRootID(String name);
-
-  public void scheduleGarbageCollection(GCType type, long delay);
 
   public GarbageCollector getGarbageCollector();
 
