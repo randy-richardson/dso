@@ -1488,10 +1488,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
         && TCPropertiesImpl.getProperties().getBoolean(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_INLINE_ENABLED, true)) {
       this.transactionManager.callBackOnResentTxnsInSystemCompletion(new TxnsInSystemCompletionListener() {
         public void onCompletion() {
-          long startActiveDGCDelay = TCPropertiesImpl.getProperties()
-              .getLong(TCPropertiesConsts.L2_OBJECTMANAGER_DGC_START_ACTIVE_DELAY);
-          logger.info("Performing a DGC to cleanup objects missed by inline-dgc in " + startActiveDGCDelay + "ms.");
-          garbageCollectionManager.scheduleGarbageCollection(GCType.FULL_GC, startActiveDGCDelay);
+          logger.info("Performing a DGC to cleanup objects missed by inline-dgc.");
+          garbageCollectionManager.scheduleGarbageCollection(GCType.FULL_GC);
         }
       });
     }
