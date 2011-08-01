@@ -43,6 +43,7 @@ import com.tc.object.tx.ServerTransactionID;
 import com.tc.object.tx.TransactionID;
 import com.tc.object.tx.TxnBatchID;
 import com.tc.object.tx.TxnType;
+import com.tc.objectserver.api.GarbageCollectionManager;
 import com.tc.objectserver.api.ObjectInstanceMonitor;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.api.ObjectRequestManager;
@@ -50,11 +51,13 @@ import com.tc.objectserver.api.ServerMapRequestManager;
 import com.tc.objectserver.api.ObjectManagerTest.TestDateDNA;
 import com.tc.objectserver.clustermetadata.ServerClusterMetaDataManager;
 import com.tc.objectserver.context.BroadcastChangeContext;
+import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.handshakemanager.ServerClientHandshakeManager;
 import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.l1.api.InvalidateObjectManager;
+import com.tc.objectserver.l1.api.ObjectReferenceAddListener;
 import com.tc.objectserver.locks.LockManager;
 import com.tc.objectserver.locks.NotifiedWaiters;
 import com.tc.objectserver.managedobject.ApplyTransactionInfo;
@@ -87,6 +90,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 import junit.framework.Assert;
 
@@ -309,6 +313,9 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       throw new ImplementMe();
     }
 
+    public GarbageCollectionManager getGarbageCollectionManager() {
+      throw new ImplementMe();
+    }
   }
 
   private static class TestStage implements Stage {
@@ -674,6 +681,16 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       throw new ImplementMe();
     }
 
+    public void registerObjectReferenceAddListener(ObjectReferenceAddListener listener) {
+      throw new ImplementMe();
+
+    }
+
+    public void unregisterObjectReferenceAddListener(ObjectReferenceAddListener listener) {
+      throw new ImplementMe();
+
+    }
+
   }
 
   private static class TestServerTransactionManager implements ServerTransactionManager {
@@ -715,8 +732,10 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       throw new ImplementMe();
     }
 
-    public void commit(final PersistenceTransactionProvider ptxp, final Collection objects, final Map newRoots,
-                       final Collection appliedServerTransactionIDs) {
+    public void commit(final PersistenceTransactionProvider ptxp, final Collection<ManagedObject> objects,
+                       final Map<String, ObjectID> newRoots,
+                       final Collection<ServerTransactionID> appliedServerTransactionIDs,
+                       final SortedSet<ObjectID> deletedObjects) {
       throw new ImplementMe();
     }
 

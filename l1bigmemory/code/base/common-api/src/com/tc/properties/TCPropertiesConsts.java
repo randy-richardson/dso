@@ -124,6 +124,7 @@ public interface TCPropertiesConsts {
    * dgc.young.enabled              - Enables/Disables the young gen collector
    * dgc.young.frequencyInMillis    - The time in millis between each young gen collection.
    *                                  (default : 1 min, not advisable to run more frequently)
+   * dgc.inline.enabled             - Enables/disable inline dgc of CDSMs.
    * l2.data.backup.throttle.timeInMillis - time to sleep between copying of each file from the db while taking backup
    * </code>
    ********************************************************************************************************************/
@@ -153,6 +154,7 @@ public interface TCPropertiesConsts {
   public static final String L2_OBJECTMANAGER_DGC_YOUNG_ENABLED                              = "l2.objectmanager.dgc.young.enabled";
   public static final String L2_OBJECTMANAGER_DGC_YOUNG_FREQUENCY                            = "l2.objectmanager.dgc.young.frequencyInMillis";
   public static final String L2_OBJECTMANAGER_DGC_ENTERPRISE_MARK_STAGE_INTERVAL             = "l2.objectmanager.dgc.enterpriseMarkStageInterval";
+  public static final String L2_OBJECTMANAGER_DGC_INLINE_ENABLED                             = "l2.objectmanager.dgc.inline.enabled";
   public static final String L2_DATA_BACKUP_THROTTLE_TIME                                    = "l2.data.backup.throttle.timeInMillis";
   public static final String L2_OBJECTMANAGER_LOADOBJECTID_MAPDB_LONGS_PERDISKENTRY          = "l2.objectmanager.loadObjectID.mapsdatabase.longsPerDiskEntry";
   public static final String L2_OBJECTMANAGER_LOADOBJECTID_MEASURE_PERF                      = "l2.objectmanager.loadObjectID.measure.performance";
@@ -531,6 +533,17 @@ public interface TCPropertiesConsts {
    ********************************************************************************************************************/
   public static final String L1_SERVERMAPMANAGER_REMOTE_MAX_REQUEST_SENT_IMMEDIATELY         = "l1.servermapmanager.remote.maxRequestSentImmediately";
   public static final String L1_SERVERMAPMANAGER_REMOTE_BATCH_LOOKUP_TIME_PERIOD             = "l1.servermapmanager.remote.batchLookupTimePeriod";
+
+  /*********************************************************************************************************************
+   * <code>
+   * Section : L2 ServerMap Properties
+   * Description : This section contains the defaults for the ServerMap for the L2
+   * 
+   * eviction.clientObjectReferences.refresh.interval
+   *              : ServerMap Eviction Client Object References refresh interval in milliseconds
+   * </code>
+   ********************************************************************************************************************/
+  public static final String L2_SERVERMAP_EVICTION_CLIENTOBJECT_REFERENCES_REFRESH_INTERVAL  = "l2.servermap.eviction.clientObjectReferences.refresh.interval";
 
   /*********************************************************************************************************************
    * <code>
@@ -914,6 +927,7 @@ public interface TCPropertiesConsts {
   public static final String SEARCH_USE_COMMIT_THREAD                                        = "search.use.commit.thread";
   public static final String SEARCH_PASSIVE_MAX_CHUNK                                        = "search.passive.max.chunk";
   public static final String SEARCH_PASSIVE_MAX_PENDING                                      = "search.passive.max.pending";
+  public static final String SEARCH_LUCENE_USE_RAM_DIRECTORY                                 = "search.lucene.use.ram.directory";
   public static final String SEARCH_LUCENE_MAX_BUFFER                                        = "search.lucene.max.buffer";
   public static final String SEARCH_LUCENE_MAX_THREAD_STATES                                 = "search.lucene.max.thread.states";
   public static final String SEARCH_LUCENE_MERGEPOLICY_CLASS                                 = "search.lucene.mergePolicyClass";

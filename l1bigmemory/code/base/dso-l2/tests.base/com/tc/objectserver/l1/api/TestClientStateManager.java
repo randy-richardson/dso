@@ -87,4 +87,15 @@ public class TestClientStateManager implements ClientStateManager {
   public Set<NodeID> getConnectedClientIDs() {
     throw new ImplementMe();
   }
+
+  public void registerObjectReferenceAddListener(ObjectReferenceAddListener listener) {
+    throw new ImplementMe();
+
+  }
+
+  public void unregisterObjectReferenceAddListener(ObjectReferenceAddListener listener) {
+    throw new ImplementMe();
+
+  }
+
 }
