@@ -25,7 +25,6 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 
 import java.util.HashMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -38,7 +37,8 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   private static final boolean         EVICTOR_LOGGING  = TCPropertiesImpl
                                                             .getProperties()
-                                                            .getBoolean(TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
+                                                            .getBoolean(
+                                                                        TCPropertiesConsts.EHCACHE_EVICTOR_LOGGING_ENABLED);
 
   private static final Object[]        NO_ARGS          = new Object[] {};
 
