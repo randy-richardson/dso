@@ -1,6 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -14,7 +13,7 @@
     <tc-maven-plugin.version>1.8.0-SNAPSHOT</tc-maven-plugin.version>
     <terracotta-session.version>1.2.0-SNAPSHOT</terracotta-session.version>
     <toolkit-api>1.4</toolkit-api>
-    <toolkit-runtime.version>4.0.0-SNAPSHOT</toolkit-runtime.version>
+    <toolkit-runtime.version>5.0.0-SNAPSHOT</toolkit-runtime.version>
   </properties>
   
   <dependencies>
