@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-parent</artifactId>
-    <version>3.6.0-SNAPSHOT</version>
+    <version>3.6.0</version>
     <relativePath>../terracotta-parent</relativePath>
   </parent>
 
@@ -19,11 +19,11 @@
   
   <properties>
     <toolkit.api>1.4</toolkit.api>
-    <toolkit.version>4.0.0-SNAPSHOT</toolkit.version>    
-    <ehcache.version>2.5.0-SNAPSHOT</ehcache.version>
-    <quartz.version>2.1.1-SNAPSHOT</quartz.version>
-    <terracotta-session.version>1.2.0-SNAPSHOT</terracotta-session.version>
-    <quartz-terracotta.version>2.2.0-SNAPSHOT</quartz-terracotta.version>
+    <toolkit.version>4.0.0</toolkit.version>    
+    <ehcache.version>2.5.0</ehcache.version>
+    <quartz.version>2.1.1</quartz.version>
+    <terracotta-session.version>1.2.0</terracotta-session.version>
+    <quartz-terracotta.version>2.2.0</quartz-terracotta.version>
     
     <skip.deploy>true</skip.deploy>
     <skip.testjar>true</skip.testjar>
