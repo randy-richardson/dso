@@ -12,6 +12,7 @@ import com.tc.aspectwerkz.reflect.MethodInfo;
 import com.tc.object.bytecode.ByteCodeUtil;
 import com.tc.object.bytecode.ClassAdapterFactory;
 import com.tc.object.bytecode.DistributedMethodCallAdapter;
+import com.tc.object.bytecode.LogicalMethodAdapter;
 import com.tc.object.bytecode.MethodAdapter;
 import com.tc.object.bytecode.MethodCreator;
 import com.tc.object.config.schema.IncludeOnLoad;
@@ -305,7 +306,7 @@ public class TransparencyClassSpecImpl implements TransparencyClassSpecInternal 
   }
 
   public void addAlwaysLogSpec(final String name) {
-    throw new AssertionError();
+    methodAdapters.put(name, new LogicalMethodAdapter(name, MethodSpec.ALWAYS_LOG));
   }
 
   public void addIfTrueLogSpec(final String name) {
