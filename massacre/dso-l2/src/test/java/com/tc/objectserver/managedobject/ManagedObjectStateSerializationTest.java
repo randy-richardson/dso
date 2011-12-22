@@ -21,6 +21,10 @@ import java.util.Map;
 
 public class ManagedObjectStateSerializationTest extends ManagedObjectStateSerializationTestBase {
 
+  static {
+    ManagedObjectStateFactory.enableLegacyTypes();
+  }
+
   public void testCheckIfMissingAnyManagedObjectType() throws Exception {
     final Field[] fields = ManagedObjectState.class.getDeclaredFields();
 
@@ -183,7 +187,7 @@ public class ManagedObjectStateSerializationTest extends ManagedObjectStateSeria
   }
 
   public void testLinkedBlockingQueue() throws Exception {
-    final String className = "java.util.concurrent.LinkedBlockingQueue";
+    final String className = "org.terracotta.collections.ConcurrentBlockingQueue";
     final String TAKE_LOCK_FIELD_NAME = "takeLock";
     final String PUT_LOCK_FIELD_NAME = "putLock";
     final String CAPACITY_FIELD_NAME = "capacity";
@@ -248,6 +252,40 @@ public class ManagedObjectStateSerializationTest extends ManagedObjectStateSeria
     final ManagedObjectState state = applyValidation(className, cursor);
 
     serializationValidation(state, cursor, ManagedObjectState.CONCURRENT_DISTRIBUTED_SERVER_MAP_TYPE);
+  }
+
+  public void testEnum() throws Exception {
+    final String className = "java.lang.Enum";
+    final State state = State.RUN;
+    final TestDNACursor cursor = new TestDNACursor();
+
+    cursor.addLiteralAction(state);
+    final ManagedObjectState managedObjectState = applyValidation(className, cursor);
+    serializationValidation(managedObjectState, cursor, ManagedObjectState.LITERAL_TYPE);
+  }
+
+  public interface EnumIntf {
+    public int getStateNum();
+
+    public void setStateNum(int stateNum);
+  }
+
+  public enum State implements EnumIntf {
+    START(0), RUN(1), STOP(2);
+
+    private int stateNum;
+
+    State(final int stateNum) {
+      this.stateNum = stateNum;
+    }
+
+    public int getStateNum() {
+      return this.stateNum;
+    }
+
+    public void setStateNum(final int stateNum) {
+      this.stateNum = stateNum;
+    }
   }
 
   public interface MyProxyInf1 {

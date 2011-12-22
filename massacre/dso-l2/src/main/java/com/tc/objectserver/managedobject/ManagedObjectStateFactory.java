@@ -42,7 +42,7 @@ public class ManagedObjectStateFactory {
   private final PersistentCollectionFactory         persistentCollectionFactory;
 
   static {
-    // XXX: remove this when possible!
+    // XXX: remove these when possible!
     classNameToStateMap.put("com.tctest.builtin.HashMap", Byte.valueOf(ManagedObjectState.MAP_TYPE));
     classNameToStateMap.put("com.tctest.builtin.ArrayList", Byte.valueOf(ManagedObjectState.LIST_TYPE));
 
@@ -91,6 +91,14 @@ public class ManagedObjectStateFactory {
   // This is provided only for testing
   public static synchronized void disableSingleton(final boolean b) {
     disableAssertions = b;
+  }
+
+  // for tests like ObjectMangerTest and ManagedObjectStateSerializationTest
+  public static void enableLegacyTypes() {
+    // XXX: remove when possible
+    classNameToStateMap.put("java.util.HashMap", Byte.valueOf(ManagedObjectState.MAP_TYPE));
+    classNameToStateMap.put("java.util.ArrayList", Byte.valueOf(ManagedObjectState.LIST_TYPE));
+    classNameToStateMap.put("java.util.HashSet", Byte.valueOf(ManagedObjectState.SET_TYPE));
   }
 
   // This is provided only for testing

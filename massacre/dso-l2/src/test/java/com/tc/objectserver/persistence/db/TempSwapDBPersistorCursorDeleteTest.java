@@ -26,6 +26,11 @@ import java.util.ArrayList;
 import java.util.Map;
 
 public class TempSwapDBPersistorCursorDeleteTest extends TCTestCase {
+
+  static {
+    ManagedObjectStateFactory.enableLegacyTypes();
+  }
+
   public void testBasic() throws Exception {
     TCLogger logger = TCLogging.getLogger(getClass());
     BerkeleyDBEnvironment dbEnv = newDBEnvironment(false);

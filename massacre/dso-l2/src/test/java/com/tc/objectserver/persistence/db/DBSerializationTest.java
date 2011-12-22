@@ -39,6 +39,11 @@ import java.util.Set;
  * XXX: This test needs to test more of the persistor interface.
  */
 public class DBSerializationTest extends TCTestCase {
+
+  static {
+    ManagedObjectStateFactory.enableLegacyTypes();
+  }
+
   private DBPersistorImpl                persistor;
   private PersistenceTransactionProvider ptp;
   private BerkeleyDBEnvironment          env;

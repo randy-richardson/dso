@@ -32,6 +32,10 @@ import java.util.TreeSet;
 
 public class DBCollectionsTest extends TCTestCase {
 
+  static {
+    ManagedObjectStateFactory.enableLegacyTypes();
+  }
+
   private DBPersistorImpl                persistor;
   private PersistenceTransactionProvider ptp;
   private BerkeleyDBEnvironment          env;

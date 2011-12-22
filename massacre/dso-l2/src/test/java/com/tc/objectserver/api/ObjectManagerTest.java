@@ -160,6 +160,7 @@ public class ObjectManagerTest extends TCTestCase {
     this.managed = new HashMap();
     this.config = new TestObjectManagerConfig();
     this.clientStateManager = new ClientStateManagerImpl(TCLogging.getLogger(ClientStateManager.class));
+    ManagedObjectStateFactory.enableLegacyTypes();
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(new NullManagedObjectChangeListenerProvider(), new InMemoryPersistor());
     this.newObjectCounter = new SampledCounterImpl(new SampledCounterConfig(1, 1, true, 0L));

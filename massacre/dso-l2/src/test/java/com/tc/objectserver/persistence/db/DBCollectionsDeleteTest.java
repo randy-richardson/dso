@@ -28,6 +28,10 @@ import java.util.TreeSet;
 
 public class DBCollectionsDeleteTest extends TCTestCase {
 
+  static {
+    ManagedObjectStateFactory.enableLegacyTypes();
+  }
+
   private DBPersistorImpl                persistor;
   private PersistenceTransactionProvider ptp;
   private DBEnvironment                  env;

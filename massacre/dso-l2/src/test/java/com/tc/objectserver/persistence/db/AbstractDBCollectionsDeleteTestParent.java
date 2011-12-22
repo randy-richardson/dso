@@ -25,6 +25,10 @@ import java.util.TreeSet;
 
 public abstract class AbstractDBCollectionsDeleteTestParent extends TCTestCase {
 
+  static {
+    ManagedObjectStateFactory.enableLegacyTypes();
+  }
+
   private DBPersistorImpl                persistor;
   private PersistenceTransactionProvider ptp;
   private DBEnvironment                  env;
