@@ -14,7 +14,7 @@ import java.util.Set;
 
 public class HashMap<K, V> implements Map<K, V> {
 
-  private final Map<K, V> data = new java.util.HashMap<K, V>();
+  private final Map<K, V> data = new java.util.concurrent.ConcurrentHashMap<K, V>();
 
   public int size() {
     return data.size();
