@@ -10,9 +10,9 @@ import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
+import com.tctest.builtin.HashMap;
 import com.tctest.runner.AbstractTransparentApp;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -56,7 +56,7 @@ public class ShareableJavaLangObjectTestApp extends AbstractTransparentApp {
 
     // synchronizing on the Object instance will create a transaction in which we can write to root in
     synchronized (object) {
-      root.put(getApplicationId(), null);
+      root.put(getApplicationId(), "");
     }
 
     // Also make sure a physical object with an Object reference works okay

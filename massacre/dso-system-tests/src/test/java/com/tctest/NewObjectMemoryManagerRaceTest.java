@@ -25,11 +25,11 @@ import com.tc.simulator.listener.ListenerProvider;
 import com.tc.text.Banner;
 import com.tc.util.Assert;
 import com.tc.util.concurrent.ThreadUtil;
+import com.tctest.builtin.ArrayList;
 
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -91,7 +91,7 @@ public class NewObjectMemoryManagerRaceTest extends ServerCrashingTestBase {
     private static int        putCount = 0;
 
     static Collection take() {
-      Collection rv = new ArrayList();
+      Collection rv = new java.util.ArrayList();
       synchronized (queue) {
         while (!queue.isEmpty()) {
           rv.add(queue.remove(0));
@@ -184,7 +184,7 @@ public class NewObjectMemoryManagerRaceTest extends ServerCrashingTestBase {
         FileUtils.forceMkdir(workingDir);
 
         // spawn the new node with very aggressive L1 cache settings
-        List jvmArgs = new ArrayList();
+        List jvmArgs = new java.util.ArrayList();
         jvmArgs.add("-Dcom.tc.l1.cachemanager.logging.enabled=true");
         jvmArgs.add("-Dcom.tc.l1.cachemanager.leastCount=1");
         jvmArgs.add("-Dcom.tc.l1.cachemanager.percentageToEvict=99");

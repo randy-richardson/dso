@@ -89,7 +89,7 @@ public class TransparencyTestApp extends AbstractTransparentApp {
     }
     TestObj ref = to.getObj();
     Assert.assertNotNull(ref);
-    Map values = new HashMap();
+    Map values = new java.util.HashMap();
     ((TransparentAccess) to).__tc_getallfields(values);
     Assert.assertTrue(values.containsKey(fieldName));
     Assert.assertEquals(ref, values.get(fieldName));
@@ -170,7 +170,7 @@ public class TransparencyTestApp extends AbstractTransparentApp {
       System.out.println("BEGIN ADD TO ROOT:");
       myRoot.put("testObjectFull", testObjectFull);
       System.out.println("END ADD TO ROOT:");
-      myRoot.put("InitializeEmpty", null);
+      myRoot.put("InitializeEmpty", "");
       myRoot.put("value", "2");
       return;
     }
@@ -190,7 +190,7 @@ public class TransparencyTestApp extends AbstractTransparentApp {
       System.out.println("putting stuff in the empty one");
       TestObj testObjectEmpty = (TestObj) myRoot.get("testObjectEmpty");
       initialize(testObjectEmpty);
-      myRoot.put("VerifyEmptyFull", null);
+      myRoot.put("VerifyEmptyFull", "");
       myRoot.remove("InitializeEmpty");
       myRoot.put("value", "3");
       return;
@@ -202,7 +202,7 @@ public class TransparencyTestApp extends AbstractTransparentApp {
       verifyFull(testObjectEmpty);
       initialize2(testObjectEmpty);
       myRoot.remove("VerifyEmptyFull");
-      myRoot.put("VerifyInitialize2", null);
+      myRoot.put("VerifyInitialize2", "");
       System.out.println("Verified Empty Now Full");
       myRoot.put("value", "4");
       return;

@@ -59,7 +59,7 @@ public class HashSet<E> implements Set<E> {
 
   @Override
   public boolean containsAll(Collection<?> c) {
-    throw new UnsupportedOperationException();
+    return map.keySet().containsAll(c);
   }
 
   @Override

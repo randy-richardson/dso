@@ -15,9 +15,9 @@ import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
 import com.tctest.builtin.CyclicBarrier;
+import com.tctest.builtin.HashMap;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class NullLiteralReferencesTest extends TransparentTestBase {

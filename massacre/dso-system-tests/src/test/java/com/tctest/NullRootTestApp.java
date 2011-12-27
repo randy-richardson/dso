@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tctest;
 
@@ -8,14 +9,14 @@ import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
+import com.tctest.builtin.HashMap;
 import com.tctest.runner.AbstractTransparentApp;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class NullRootTestApp extends AbstractTransparentApp {
 
-  private Map root = null;
+  private Map        root       = null;
   private static Map staticRoot = null;
 
   public NullRootTestApp(String appId, ApplicationConfig cfg, ListenerProvider listenerProvider) {

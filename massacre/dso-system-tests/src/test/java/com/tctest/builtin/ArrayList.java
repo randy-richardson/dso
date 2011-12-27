@@ -36,7 +36,25 @@ public class ArrayList<E> implements List<E> {
   }
 
   public Iterator<E> iterator() {
-    return data.iterator();
+    final Iterator<E> iter = data.iterator();
+    return new Iterator<E>() {
+
+      @Override
+      public boolean hasNext() {
+        return iter.hasNext();
+      }
+
+      @Override
+      public E next() {
+        return iter.next();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+    };
   }
 
   public Object[] toArray() {
@@ -124,11 +142,59 @@ public class ArrayList<E> implements List<E> {
   }
 
   public ListIterator<E> listIterator() {
-    throw new UnsupportedOperationException();
+    return listIterator(0);
   }
 
   public ListIterator<E> listIterator(int index) {
-    throw new UnsupportedOperationException();
+    final ListIterator<E> iter = data.listIterator(0);
+
+    return new ListIterator<E>() {
+
+      @Override
+      public boolean hasNext() {
+        return iter.hasNext();
+      }
+
+      @Override
+      public E next() {
+        return iter.next();
+      }
+
+      @Override
+      public boolean hasPrevious() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public E previous() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int nextIndex() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int previousIndex() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void set(E e) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(E e) {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 
   public List<E> subList(int fromIndex, int toIndex) {

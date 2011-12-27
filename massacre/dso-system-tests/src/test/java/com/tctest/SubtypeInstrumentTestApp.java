@@ -9,10 +9,10 @@ import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
+import com.tctest.builtin.ArrayList;
 import com.tctest.builtin.CyclicBarrier;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SubtypeInstrumentTestApp extends AbstractErrorCatchingTransparentApp {

@@ -4,18 +4,17 @@
  */
 package com.tctest;
 
-import EDU.oswego.cs.dl.util.concurrent.SynchronizedRef;
-
 import com.tc.object.config.ConfigVisitor;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
+import com.tctest.builtin.AtomicReference;
 import com.tctest.builtin.CyclicBarrier;
+import com.tctest.builtin.HashMap;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -102,7 +101,7 @@ public class NewObjectCreationRaceTest extends TransparentTestBase {
     }
 
     private void runCreateNode() throws Throwable {
-      final SynchronizedRef error = new SynchronizedRef(null);
+      final AtomicReference<Throwable> error = new AtomicReference(null);
 
       // create root in this node only
       root = new HashMap();
@@ -167,8 +166,8 @@ public class NewObjectCreationRaceTest extends TransparentTestBase {
 
     }
 
-    private void checkError(SynchronizedRef error) throws Throwable {
-      Throwable t = (Throwable) error.get();
+    private void checkError(AtomicReference<Throwable> error) throws Throwable {
+      Throwable t = error.get();
       if (t != null) { throw t; }
     }
 

@@ -16,12 +16,14 @@ import com.tctest.builtin.CyclicBarrier;
 import com.tctest.builtin.HashMap;
 import com.tctest.runner.AbstractTransparentApp;
 
-public class HashMapBatchTxnTestApp extends AbstractTransparentApp {
-  int                                     BATCHSIZE    = (Vm.isIBM()) ? 400 : 1000;
-  int                                     BATCHES      = 80;
+import java.util.Map;
 
-  private final CyclicBarrier             barrier;
-  private final HashMap<Integer, HashMap> hashmap_root = new HashMap<Integer, HashMap>();
+public class HashMapBatchTxnTestApp extends AbstractTransparentApp {
+  int                             BATCHSIZE    = (Vm.isIBM()) ? 400 : 1000;
+  int                             BATCHES      = 80;
+
+  private final CyclicBarrier     barrier;
+  private final Map<Integer, Map> hashmap_root = new HashMap<Integer, Map>();
 
   public HashMapBatchTxnTestApp(String appId, ApplicationConfig cfg, ListenerProvider listenerProvider) {
     super(appId, cfg, listenerProvider);
@@ -58,7 +60,7 @@ public class HashMapBatchTxnTestApp extends AbstractTransparentApp {
           System.out.println("XXX Batching(client=0) " + batch);
           int id = BATCHSIZE * batch;
           for (int i = 0; i < BATCHSIZE; ++i) {
-            HashMap<Integer, Integer> submap = generateNewHashMap(id, 10 + (id % 10));
+            Map<Integer, Integer> submap = generateNewHashMap(id, 10 + (id % 10));
             hashmap_root.put(Integer.valueOf(id), submap);
             ++id;
           }
@@ -69,7 +71,7 @@ public class HashMapBatchTxnTestApp extends AbstractTransparentApp {
           System.out.println("XXX Batching(client=1) " + (batch + 1));
           int id = BATCHSIZE * batch + BATCHSIZE;
           for (int i = 0; i < BATCHSIZE; ++i) {
-            HashMap<Integer, Integer> submap = generateNewHashMap(id, 10 + (id % 10));
+            Map<Integer, Integer> submap = generateNewHashMap(id, 10 + (id % 10));
             hashmap_root.put(Integer.valueOf(id), submap);
             ++id;
           }
@@ -86,7 +88,7 @@ public class HashMapBatchTxnTestApp extends AbstractTransparentApp {
       System.out.println("XXX verifying batch " + batch);
       synchronized (hashmap_root) {
         for (int i = 0; i < BATCHSIZE; ++i) {
-          HashMap<Integer, Integer> submap = hashmap_root.get(Integer.valueOf(batch * BATCHSIZE + i));
+          Map<Integer, Integer> submap = hashmap_root.get(Integer.valueOf(batch * BATCHSIZE + i));
           Assert.assertTrue("Sub-HashMap(" + (batch * BATCHSIZE + i) + ") size is " + submap.size() + " but expect "
                             + (10 + (i % 10)), submap.size() == (10 + (i % 10)));
         }
@@ -97,8 +99,8 @@ public class HashMapBatchTxnTestApp extends AbstractTransparentApp {
 
   }
 
-  HashMap generateNewHashMap(int startIndex, int size) {
-    HashMap<Integer, Integer> map = new HashMap<Integer, Integer>();
+  Map generateNewHashMap(int startIndex, int size) {
+    Map<Integer, Integer> map = new HashMap<Integer, Integer>();
 
     for (int i = startIndex; i < (startIndex + size); ++i) {
       map.put(Integer.valueOf(i), Integer.valueOf(i));

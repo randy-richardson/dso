@@ -12,13 +12,13 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
+import com.tctest.builtin.ArrayList;
+import com.tctest.builtin.ConcurrentHashMap;
+import com.tctest.builtin.CyclicBarrier;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CyclicBarrier;
 
 /**
  * See DEV-2912, CDV-1374
@@ -45,7 +45,7 @@ public class TxnFoldNewObjectNewTypeTest extends TransparentTestBase {
 
     private final CyclicBarrier              barrier;
     private final List<Bad>                  badList = new ArrayList<Bad>();
-    private static final Map<String, Object> root    = new ConcurrentHashMap<String, Object>(10, 0.75F, 1024);
+    private static final Map<String, Object> root    = new ConcurrentHashMap<String, Object>(1024);
 
     public App(String appId, ApplicationConfig cfg, ListenerProvider listenerProvider) {
       super(appId, cfg, listenerProvider);

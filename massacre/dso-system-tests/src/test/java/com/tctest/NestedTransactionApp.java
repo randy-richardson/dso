@@ -11,9 +11,9 @@ import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
 import com.tc.util.concurrent.ThreadUtil;
+import com.tctest.builtin.ArrayList;
 import com.tctest.runner.AbstractTransparentApp;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class NestedTransactionApp extends AbstractTransparentApp {

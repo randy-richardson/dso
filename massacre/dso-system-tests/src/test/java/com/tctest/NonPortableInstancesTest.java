@@ -19,14 +19,14 @@ import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
 import com.tc.util.Assert;
+import com.tctest.builtin.ArrayList;
+import com.tctest.builtin.HashMap;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -249,7 +249,7 @@ public class NonPortableInstancesTest extends TransparentTestBase {
 
   private static class LogAppender implements TCAppender {
 
-    private final List events = new ArrayList();
+    private final List events = new java.util.ArrayList();
 
     public void append(LogLevel level, Object message, Throwable throwable) {
       events.add(new Event(level, message, throwable));

@@ -11,12 +11,12 @@ import com.tc.object.config.TransparencyClassSpec;
 import com.tc.object.tx.UnlockedSharedObjectException;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
+import com.tctest.builtin.ArrayList;
 import com.tctest.runner.AbstractTransparentApp;
 import com.tctest.transparency.MatchingAutolockedSubclass;
 import com.tctest.transparency.MatchingSubclass1;
 import com.tctest.transparency.MatchingSubclass2;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class SubtypeMatchingTestApp extends AbstractTransparentApp {
 
-  private List list = new ArrayList();
+  private final List list = new ArrayList();
 
   public SubtypeMatchingTestApp(String appId, ApplicationConfig cfg, ListenerProvider listenerProvider) {
     super(appId, cfg, listenerProvider);
@@ -42,31 +42,31 @@ public class SubtypeMatchingTestApp extends AbstractTransparentApp {
       list.add(c1);
       list.add(c2);
     }
-    
+
     c1.setBoo1("boo1");
     c1.setBoo("boo1");
-    
+
     c2.setBoo("boo2");
 
     try {
       c2.setFoo("foo");
       throw new RuntimeException("Should not allow to change MatchingSubclass2.foo without lock");
     } catch (UnlockedSharedObjectException e) {
-      // 
+      //
     }
-    
+
     try {
       c1.setFoo("foo");
       throw new RuntimeException("Should not allow to change MatchingSubclass1.foo without lock");
     } catch (UnlockedSharedObjectException e) {
-      // 
+      //
     }
 
     try {
       c1.setFoo1("foo1");
       throw new RuntimeException("Should not allow to change MatchingClass.foo1 without lock");
     } catch (UnlockedSharedObjectException e) {
-      // 
+      //
     }
   }
 
@@ -80,12 +80,12 @@ public class SubtypeMatchingTestApp extends AbstractTransparentApp {
     MatchingAutolockedSubclass c2 = new MatchingAutolockedSubclass(list);
     c2.setMoo("moo2");
   }
-  
+
   public static void visitL1DSOConfig(ConfigVisitor visitor, DSOClientConfigHelper config) {
     String testClass = SubtypeMatchingTestApp.class.getName();
     TransparencyClassSpec spec = config.getOrCreateSpec(testClass);
     spec.addRoot("list", "list");
-    
+
     config.addWriteAutolock("* " + testClass + "*.*(..)");
 
     config.addIncludePattern("com.tctest.transparency.MarkerInterface+", true);
@@ -95,6 +95,5 @@ public class SubtypeMatchingTestApp extends AbstractTransparentApp {
     config.addAutolock("* com.tctest.transparency.MatchingClass+.__INIT__(..)", ConfigLockLevel.WRITE);
     // config.addAutolock("* " + MatchingAutolockedSubclass.class.getName() + ".*(..)", ConfigLockLevel.WRITE);
   }
-  
-}
 
+}

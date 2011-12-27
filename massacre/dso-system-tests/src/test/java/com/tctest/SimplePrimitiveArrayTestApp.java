@@ -10,10 +10,10 @@ import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
+import com.tctest.builtin.ArrayList;
 import com.tctest.builtin.CyclicBarrier;
 import com.tctest.runner.AbstractTransparentApp;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;

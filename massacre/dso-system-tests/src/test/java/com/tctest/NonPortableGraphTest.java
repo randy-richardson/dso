@@ -14,9 +14,9 @@ import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.TransparencyClassSpec;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
+import com.tctest.builtin.HashMap;
 import com.tctest.runner.AbstractErrorCatchingTransparentApp;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class NonPortableGraphTest extends TransparentTestBase {
@@ -144,12 +144,12 @@ public class NonPortableGraphTest extends TransparentTestBase {
     }
 
     private static final String log1 = "!! com.tctest.NonPortableGraphTest$NonPortableGraphTestApp$NonPortable (id 0)"
-                                       + "     Map map = (HashMap, id 1)" + "       [entry 0]"
+                                       + "     Map map = (com.tctest.builtin.HashMap, id 1)" + "       [entry 0]"
                                        + "         key = \"self\"" + "!!       value = (ref id 0)";
 
     private static final String log2 = "   com.tctest.NonPortableGraphTest$NonPortableGraphTestApp$Portable (id 0)"
                                        + "!!   Object obj = (com.tctest.NonPortableGraphTest$NonPortableGraphTestApp$NonPortable, id 1)"
-                                       + "       Map map = (HashMap, id 2)" + "         [entry 0]"
+                                       + "       Map map = (com.tctest.builtin.HashMap, id 2)" + "         [entry 0]"
                                        + "           key = \"self\"" + "!!         value = (ref id 1)";
   }
 }

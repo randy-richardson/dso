@@ -1,5 +1,7 @@
 package com.tctest.builtin;
 
+import com.tctest.BuiltinBarrier;
+
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 
@@ -19,7 +21,7 @@ import java.util.concurrent.TimeoutException;
  * <p>
  * Barriers support an optional Runnable command that is run once per barrier point.
  **/
-public class CyclicBarrier {
+public class CyclicBarrier implements BuiltinBarrier {
 
   private final Lock  lock            = new Lock();
 
