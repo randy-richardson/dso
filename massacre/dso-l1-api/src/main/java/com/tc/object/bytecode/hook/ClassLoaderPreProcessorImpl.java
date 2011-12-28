@@ -14,7 +14,6 @@ import com.tc.asm.MethodVisitor;
 import com.tc.asm.Opcodes;
 import com.tc.asm.Type;
 import com.tc.asm.commons.AdviceAdapter;
-import com.tc.object.bytecode.hook.impl.ClassProcessorHelper;
 import com.tc.util.runtime.Vm;
 
 import java.util.HashMap;
@@ -285,10 +284,6 @@ public class ClassLoaderPreProcessorImpl {
         super.visitLabel(l);
       }
     }
-  }
-
-  void food(Class c, ClassLoader cl) {
-    ClassProcessorHelper.defineClass0Post(c, cl);
   }
 
   /**
