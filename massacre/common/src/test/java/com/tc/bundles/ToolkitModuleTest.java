@@ -17,12 +17,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ToolkitModuleTest extends TCTestCase {
-  private final String apiVersion;
   private final String tcVersion;
 
   public ToolkitModuleTest() {
     ProductInfo info = ProductInfo.getInstance();
-    apiVersion = info.timApiVersion();
     tcVersion = info.version();
   }
 
@@ -34,7 +32,7 @@ public class ToolkitModuleTest extends TCTestCase {
     makeJar(tempDir, null, "tim-B", "1.0.0",
             "org.terracotta.toolkit.terracotta-toolkit-2.0;bundle-version:=[1.0.0,1.0.0]");
 
-    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion, apiVersion);
+    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion);
 
     Module A = Module.Factory.newInstance();
     A.setName("tim-A");
@@ -64,7 +62,7 @@ public class ToolkitModuleTest extends TCTestCase {
             "org.terracotta.toolkit.terracotta-toolkit-1.2;bundle-version:=[1.0.0,1.0.0]");
     makeJar(tempDir, "org.terracotta.toolkit", "terracotta-toolkit-1.1", "1.0.0", null);
 
-    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion, apiVersion/* , repos */);
+    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion /* , repos */);
 
     Module A = Module.Factory.newInstance();
     A.setName("tim-A");
@@ -99,7 +97,7 @@ public class ToolkitModuleTest extends TCTestCase {
     makeJar(tempDir, null, "tim-A", "1.0.0",
             "org.terracotta.toolkit.terracotta-toolkit-1.5;bundle-version:=[1.0.0,1.0.0]");
 
-    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion, apiVersion/* , repos */);
+    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion /* , repos */);
 
     Module tk = Module.Factory.newInstance();
     tk.setGroupId("org.terracotta.toolkit");
@@ -134,7 +132,7 @@ public class ToolkitModuleTest extends TCTestCase {
     makeJar(tempDir, null, "tim-B", "1.0.0",
             "org.terracotta.toolkit.terracotta-toolkit-1.40;bundle-version:=[1.0.0,1.0.0]");
 
-    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion, apiVersion);
+    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion);
 
     Module A = Module.Factory.newInstance();
     A.setName("tim-A");

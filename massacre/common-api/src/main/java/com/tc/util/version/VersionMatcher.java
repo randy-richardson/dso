@@ -13,18 +13,11 @@ public class VersionMatcher {
   public static final String ANY_VERSION = "*";
 
   private final String       tcVersion;
-  private final String       timApiVersion;
 
-  public VersionMatcher(String tcVersion, String timApiVersion) {
+  public VersionMatcher(String tcVersion) {
     if (tcVersion == null || tcVersion.equals(ANY_VERSION)) { throw new IllegalArgumentException("Invalid tcVersion: "
                                                                                                  + tcVersion); }
-
-    if (timApiVersion == null || timApiVersion.equals(ANY_VERSION)) { throw new IllegalArgumentException(
-                                                                                                         "Invalid apiVersion: "
-                                                                                                             + timApiVersion); }
-
     this.tcVersion = tcVersion;
-    this.timApiVersion = timApiVersion;
   }
 
   /**
@@ -35,8 +28,8 @@ public class VersionMatcher {
    * @param moduleTimApiVersion is expected to be: * or exact like 1.0.0 or (most likely) a range [1.0.0,1.1.0)
    * @return true if module is suitable for this installation
    */
-  public boolean matches(String moduleTcVersion, String moduleTimApiVersion) {
-    return tcMatches(moduleTcVersion) && apiMatches(moduleTimApiVersion);
+  public boolean matches(String moduleTcVersion) {
+    return tcMatches(moduleTcVersion);
   }
 
   private boolean tcMatches(String moduleTcVersion) {
@@ -44,11 +37,4 @@ public class VersionMatcher {
            || tcVersion.equals(moduleTcVersion);
   }
 
-  private boolean apiMatches(String moduleApiVersion) {
-    if (ANY_VERSION.equals(moduleApiVersion)) {
-      return true;
-    } else {
-      return new VersionRange(moduleApiVersion).contains(timApiVersion);
-    }
-  }
 }

@@ -39,9 +39,7 @@ import com.tc.object.logging.RuntimeLoggerImpl;
 import com.tc.object.tools.BootJar;
 import com.tc.object.tools.BootJarException;
 import com.tc.plugins.ModulesLoader;
-import com.tc.timapi.Version;
 import com.tc.util.Assert;
-import com.tc.util.ProductInfo;
 import com.tc.util.TCTimeoutException;
 import com.tc.util.Util;
 import com.terracottatech.config.ConfigurationModel;
@@ -204,12 +202,9 @@ public class DSOContextImpl implements DSOContext {
     this.instrumentationLogger = manager.getInstrumentationLogger();
     this.weavingStrategy = new DefaultWeavingStrategy(configHelper, instrumentationLogger);
 
-    validateTimApiVersion();
-
     try {
       osgiRuntime = ModulesLoader.initModules(configHelper, classProvider, manager.getTunneledDomainUpdater(), false,
                                               repos);
-      configHelper.validateSessionConfig();
       validateBootJar();
     } catch (Exception e) {
       consoleLogger.fatal(e.getMessage());
@@ -233,22 +228,6 @@ public class DSOContextImpl implements DSOContext {
   private void resolveClasses() {
     // This fixes a class circularity error in JavaClassInfoRepository
     JavaClassInfo.getClassInfo(getClass());
-  }
-
-  /**
-   * Verify that we're not using a SNAPSHOT tim-api with a non-SNAPSHOT core TC
-   */
-  private void validateTimApiVersion() {
-    Version timApiVersion = Version.getVersion();
-    ProductInfo info = ProductInfo.getInstance();
-
-    if (timApiVersion.isSnapshot()) {
-      if (!info.isDevMode() && !info.version().contains("SNAPSHOT")) {
-        //
-        throw new AssertionError("Snapshot version of the TIM API (" + timApiVersion.getFullVersionString()
-                                 + ") is not permitted with a non-SNAPSHOT core TC version (" + info.version() + ")");
-      }
-    }
   }
 
   private void validateBootJar() throws BootJarException {

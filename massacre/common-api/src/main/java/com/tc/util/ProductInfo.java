@@ -13,8 +13,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
-import com.tc.timapi.Version;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -75,7 +73,6 @@ public final class ProductInfo {
   private final String                      patchEERevision;
   private final String                      patchBranch;
 
-  private final String                      timApiVersion;
   private final String                      buildVersion;
   private String                            buildID;
   private String                            copyright;
@@ -106,7 +103,6 @@ public final class ProductInfo {
 
     // Get all release build properties
     this.buildVersion = getBuildProperty(properties, BUILD_DATA_VERSION_KEY, UNKNOWN_VALUE);
-    this.timApiVersion = Version.getVersion().getFullVersionString();
     this.edition = detectEdition();
     if (!isOpenSource() && !isEnterprise() && !isDevMode()) { throw new AssertionError("Can't recognize kit edition: "
                                                                                        + edition); }
@@ -251,10 +247,6 @@ public final class ProductInfo {
    */
   public String buildVersion() {
     return buildVersion;
-  }
-
-  public String timApiVersion() {
-    return timApiVersion;
   }
 
   public String kitID() {

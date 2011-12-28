@@ -271,7 +271,6 @@
                       </dependency>
                       <zipEntries>
                         <zipEntry>build-data.txt</zipEntry>
-                        <zipEntry>tim-get.properties</zipEntry>
                       </zipEntries>
                       <unpack>true</unpack>              
                     </resource>

@@ -82,7 +82,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -95,12 +94,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfigHelper, DSOClientConfigHelper {
 
-  private static final String                                CGLIB_PATTERN                      = "$$EnhancerByCGLIB$$";
-
   private static final TCLogger                              logger                             = CustomerLogging
                                                                                                     .getDSOGenericLogger();
-  private static final TCLogger                              consoleLogger                      = CustomerLogging
-                                                                                                    .getConsoleLogger();
+
   private static final InstrumentationDescriptor             DEFAULT_INSTRUMENTATION_DESCRIPTOR = new NullInstrumentationDescriptor();
 
   private final DSOClientConfigHelperLogger                  helperLogger;
@@ -122,9 +118,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
   private final ExpressionHelper                             expressionHelper;
   private final Map                                          adaptableCache                     = Collections
                                                                                                     .synchronizedMap(new HashMap());
-  private final Set<TimCapability>                           timCapabilities                    = Collections
-                                                                                                    .synchronizedSet(EnumSet
-                                                                                                        .noneOf(TimCapability.class));
 
   /**
    * A list of InstrumentationDescriptor representing include/exclude patterns
@@ -791,14 +784,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
       return cacheIsAdaptable(fullClassName, false);
     }
 
-    if (fullClassName.indexOf(CGLIB_PATTERN) >= 0) {
-      if (!isCapabilityEnabled(TimCapability.CGLIB)) {
-        logger.error("Refusing to instrument CGLIB generated proxy type " + fullClassName
-                     + " (CGLIB integration module not enabled)");
-        return cacheIsAdaptable(fullClassName, false);
-      }
-    }
-
     String outerClassname = outerClassnameWithoutInner(fullClassName);
     if (isLogical(outerClassname)) {
       // We make inner classes of logical classes not instrumented while logical
@@ -815,22 +800,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
 
     InstrumentationDescriptor desc = getInstrumentationDescriptorFor(classInfo);
     return cacheIsAdaptable(fullClassName, desc.isInclude());
-  }
-
-  public void validateSessionConfig() {
-    if (this.webApplications.size() > 0 && !isCapabilityEnabled(TimCapability.SESSIONS)) {
-      consoleLogger
-          .warn("One or more web applications are listed in the Terracotta configuration file, but no container TIMs have been loaded.\n"
-                + "See http://www.terracotta.org/tim-warning for more information. ");
-    }
-  }
-
-  private boolean isCapabilityEnabled(final TimCapability cap) {
-    return timCapabilities.contains(cap);
-  }
-
-  public void enableCapability(final TimCapability cap) {
-    timCapabilities.add(cap);
   }
 
   private boolean isTCPatternMatchingHack(final ClassInfo classInfo) {

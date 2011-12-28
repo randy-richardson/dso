@@ -91,11 +91,6 @@
       <artifactId>terracotta-license</artifactId>
       <scope>compile</scope>
     </dependency>    
-    <dependency>
-      <groupId>org.terracotta.api</groupId>
-      <artifactId>tim-api</artifactId>
-      <scope>compile</scope>
-    </dependency>    
     
     <!-- tests dependencies -->
     <dependency>

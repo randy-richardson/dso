@@ -13,7 +13,6 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
-import org.terracotta.modules.configuration.TerracottaConfiguratorModule;
 
 import com.tc.bundles.EmbeddedOSGiEventHandler;
 import com.tc.bundles.EmbeddedOSGiRuntime;
@@ -38,7 +37,6 @@ import com.tc.object.loaders.Namespace;
 import com.tc.object.util.JarResourceLoader;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
-import com.tc.timapi.Version;
 import com.tc.util.Assert;
 import com.tc.util.StringUtil;
 import com.tc.util.UUID;
@@ -167,8 +165,7 @@ public class ModulesLoader {
       osgiRuntime.registerService(StandardDSOClientConfigHelper.class.getName(), configHelper, serviceProps);
     }
 
-    osgiRuntime.registerService(TCLogger.class.getName(), TCLogging.getLogger(TerracottaConfiguratorModule.class),
-                                new Hashtable());
+    osgiRuntime.registerService(TCLogger.class.getName(), TCLogging.getLogger(ModulesLoader.class), new Hashtable());
 
     osgiRuntime.registerService(TCProperties.class.getName(), TCPropertiesImpl.getProperties(), new Hashtable());
 
@@ -213,18 +210,6 @@ public class ModulesLoader {
             if (headers.get("Presentation-Factory") != null) {
               logger.info("Installing TIMByteProvider for bundle '" + bundle.getSymbolicName() + "'");
               installTIMByteProvider(bundle, bundleURL, configHelper.getUUID());
-            }
-
-            String timApiInJar = (String) headers.get("Terracotta-TIM-API");
-            if (timApiInJar != null) {
-              String actualTimApiVersion = Version.getVersion().getFullVersionString();
-              if (!timApiInJar.equals(actualTimApiVersion)) {
-                // XXX: Should there be a way to disable this check?
-                throw new BundleException(bundle.getSymbolicName() + " was intended for TIM API version " + timApiInJar
-                                          + ", but you seem to be running " + actualTimApiVersion);
-              }
-            } else {
-              logger.warn(bundle.getSymbolicName() + " does not declare a TIM API version requirement");
             }
 
             if (headers.get("Tunneled-MBean-Domains") != null) {

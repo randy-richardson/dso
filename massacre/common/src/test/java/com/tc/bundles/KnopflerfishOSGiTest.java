@@ -56,8 +56,7 @@ public class KnopflerfishOSGiTest extends TCTestCase {
       String name = jar.getName().replaceAll("-" + version + ".jar", "");
 
       String[] repos = { defaultRepo.getAbsolutePath() };
-      Resolver resolver = new Resolver(repos, ProductInfo.getInstance().version(), ProductInfo.getInstance()
-          .timApiVersion());
+      Resolver resolver = new Resolver(repos, ProductInfo.getInstance().version());
       Module module = Module.Factory.newInstance();
       module.setName(name);
       module.setVersion(version);

@@ -15,12 +15,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ConflictingModuleTest extends TCTestCase {
-  private final String apiVersion;
   private final String tcVersion;
 
   public ConflictingModuleTest() {
     ProductInfo info = ProductInfo.getInstance();
-    apiVersion = info.timApiVersion();
     tcVersion = info.version();
   }
 
@@ -36,7 +34,7 @@ public class ConflictingModuleTest extends TCTestCase {
     makeJar(tempDir, "tim-C", "1.0.0", null);
     makeJar(tempDir, "tim-C", "2.0.0", null);
 
-    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion, apiVersion);
+    Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion);
 
     Module A = Module.Factory.newInstance();
     A.setName("tim-A");

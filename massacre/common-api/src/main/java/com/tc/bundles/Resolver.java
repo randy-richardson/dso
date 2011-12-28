@@ -62,18 +62,17 @@ public class Resolver {
   private ToolkitVersion         maxToolkitVersion     = null;
   private final AtomicBoolean    toolkitVersionFrozen  = new AtomicBoolean();
 
-  public Resolver(final String[] repositoryStrings, final String tcVersion, final String apiVersion)
+  public Resolver(final String[] repositoryStrings, final String tcVersion) throws MissingDefaultRepositoryException {
+    this(repositoryStrings, true, tcVersion);
+  }
+
+  public Resolver(final String[] repositoryStrings, final boolean injectDefault, final String tcVersion)
       throws MissingDefaultRepositoryException {
-    this(repositoryStrings, true, tcVersion, apiVersion);
+    this(repositoryStrings, injectDefault, tcVersion, Collections.EMPTY_LIST);
   }
 
   public Resolver(final String[] repositoryStrings, final boolean injectDefault, final String tcVersion,
-                  final String apiVersion) throws MissingDefaultRepositoryException {
-    this(repositoryStrings, injectDefault, tcVersion, apiVersion, Collections.EMPTY_LIST);
-  }
-
-  public Resolver(final String[] repositoryStrings, final boolean injectDefault, final String tcVersion,
-                  final String apiVersion, Collection<Repository> addlRepos) throws MissingDefaultRepositoryException {
+                  Collection<Repository> addlRepos) throws MissingDefaultRepositoryException {
     repositories.addAll(addlRepos);
     if (injectDefault) injectDefaultRepositories();
 
@@ -89,7 +88,7 @@ public class Resolver {
       throw new MissingDefaultRepositoryException(msg);
     }
 
-    versionMatcher = new VersionMatcher(tcVersion, apiVersion);
+    versionMatcher = new VersionMatcher(tcVersion);
   }
 
   public ToolkitVersion getMaxToolkitVersion() {
@@ -291,32 +290,21 @@ public class Resolver {
         if (symName.equals(manifest.getMainAttributes().getValue(BUNDLE_SYMBOLICNAME))) {
           String moduleTcVersion = manifest.getMainAttributes().getValue("Terracotta-RequireVersion");
 
-          String timApiVersion = manifest.getMainAttributes().getValue("Terracotta-TIM-API");
-
           String bundleVersion = manifest.getMainAttributes().getValue(BUNDLE_VERSION);
-
-          if (timApiVersion == null) {
-            if (moduleTcVersion != null) {
-              timApiVersion = VersionMatcher.ANY_VERSION;
-            } else {
-              // no TIM API or specific core version specified, ignore this jar
-              continue;
-            }
-          }
 
           if (moduleTcVersion == null) {
             moduleTcVersion = VersionMatcher.ANY_VERSION;
           }
 
-          if (versionMatcher.matches(moduleTcVersion, timApiVersion)) {
+          if (versionMatcher.matches(moduleTcVersion)) {
             // logger.info("found matching bundle, version = " + manifest.getMainAttributes().getValue(BUNDLE_VERSION));
             newestVersion = newerVersion(newestVersion, bundleVersion);
             logger.info("new version = " + newestVersion);
           } else {
             if (verbose) {
               logger.info("Skipping module " + symName + " version " + bundleVersion
-                          + " because its Terracotta-RequireVersion [" + moduleTcVersion + "] or Terracotta-TIM-API ["
-                          + timApiVersion + "] doesn't match current Terracotta version");
+                          + " because its Terracotta-RequireVersion [" + moduleTcVersion
+                          + " doesn't match current Terracotta version");
             }
           }
         }

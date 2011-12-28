@@ -33,7 +33,7 @@ import java.util.Set;
 /**
  * @author steve
  */
-public class TransparencyClassAdapter extends ClassAdapterBase implements TransparencyClassAdapterHack {
+public class TransparencyClassAdapter extends ClassAdapterBase {
   private static final TCLogger            logger             = TCLogging.getLogger(TransparencyClassAdapter.class);
   private static final boolean             useFastFinalFields = TCPropertiesImpl
                                                                   .getProperties()

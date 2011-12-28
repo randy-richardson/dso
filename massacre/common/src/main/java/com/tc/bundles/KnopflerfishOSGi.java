@@ -53,8 +53,7 @@ final class KnopflerfishOSGi extends AbstractEmbeddedOSGiRuntime {
     this.repositories = bundleRepositories;
 
     final ProductInfo info = ProductInfo.getInstance();
-    resolver = new Resolver(ResolverUtils.urlsToStrings(repositories), true, info.mavenArtifactsVersion(),
-                            info.timApiVersion(), addlRepos);
+    resolver = new Resolver(ResolverUtils.urlsToStrings(repositories), true, info.mavenArtifactsVersion(), addlRepos);
 
     System.setProperty("org.knopflerfish.osgi.registerserviceurlhandler", "false");
     framework = new Framework(null);

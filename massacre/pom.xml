@@ -39,7 +39,8 @@
     <module>dso-l2</module>
     <module>deploy</module>
     <module>simulator</module>
-    <module>tim-get-tool</module>
+    <module>thirdparty-api</module>
+    <module>dso-cluster-api</module>
     
     <module>legacy-test-tree</module>
     <module>dso-system-tests</module>
