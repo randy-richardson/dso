@@ -31,7 +31,7 @@ import java.util.Set;
 /**
  * Describe the Custom adaption of a class
  */
-public class TransparencyClassSpecImpl implements TransparencyClassSpecInternal {
+public class TransparencyClassSpecImpl implements TransparencyClassSpec {
 
   private static final String                     HONOR_TRANSIENT_KEY        = "honor-transient";
   private static final String                     HONOR_VOLATILE_KEY         = "honor-volatile";
