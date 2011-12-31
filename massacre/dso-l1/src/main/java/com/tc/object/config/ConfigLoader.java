@@ -11,7 +11,6 @@ import org.apache.xmlbeans.XmlOptions;
 
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.logging.TCLogger;
-import com.tc.object.bytecode.SessionConfiguration;
 import com.tc.object.config.schema.ExcludedInstrumentedClass;
 import com.tc.object.config.schema.IncludeOnLoad;
 import com.tc.object.config.schema.IncludedInstrumentedClass;
@@ -37,8 +36,6 @@ import com.terracottatech.config.OnLoad;
 import com.terracottatech.config.Root;
 import com.terracottatech.config.Roots;
 import com.terracottatech.config.TransientFields;
-import com.terracottatech.config.WebApplication;
-import com.terracottatech.config.WebApplications;
 
 import java.text.ParseException;
 import java.util.Arrays;
@@ -61,7 +58,6 @@ public class ConfigLoader {
     if (dsoApplication == null) return;
 
     addRoots(dsoApplication.getRoots());
-    addWebApplications(dsoApplication.getWebApplications());
     addAppGroups(dsoApplication.getAppGroups());
 
     loadLocks(dsoApplication.getLocks());
@@ -110,33 +106,6 @@ public class ConfigLoader {
       Root[] roots = rootsList.getRootArray();
       for (int i = 0; i < roots.length; ++i) {
         addRoot(roots[i]);
-      }
-    }
-  }
-
-  private void addWebApplication(final WebApplication webApp) {
-    int lockType = webApp.getSynchronousWrite() ? com.tc.object.locks.LockLevel.SYNCHRONOUS_WRITE.toInt()
-        : com.tc.object.locks.LockLevel.WRITE.toInt();
-
-    final boolean sessionLocking;
-
-    if (webApp.isSetSessionLocking()) {
-      // if explicitly set, then use the configured value
-      sessionLocking = webApp.getSessionLocking();
-    } else {
-      // otherwise serialization mode determines the locking
-      sessionLocking = !webApp.getSerialization();
-    }
-
-    config.addWebApplication(webApp.getStringValue(),
-                             new SessionConfiguration(lockType, sessionLocking, webApp.getSerialization()));
-  }
-
-  private void addWebApplications(final WebApplications webApplicationsList) {
-    if (webApplicationsList != null && webApplicationsList.getWebApplicationArray() != null) {
-      WebApplication[] webApplications = webApplicationsList.getWebApplicationArray();
-      for (WebApplication webApplication : webApplications) {
-        addWebApplication(webApplication);
       }
     }
   }

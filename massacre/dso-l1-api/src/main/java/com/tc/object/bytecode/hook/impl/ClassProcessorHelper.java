@@ -7,6 +7,7 @@ package com.tc.object.bytecode.hook.impl;
 import com.tc.net.NIOWorkarounds;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.ManagerUtil;
+import com.tc.object.bytecode.hook.ClassLoaderPreProcessorImpl;
 import com.tc.object.bytecode.hook.ClassPostProcessor;
 import com.tc.object.bytecode.hook.ClassPreProcessor;
 import com.tc.object.bytecode.hook.DSOContext;
@@ -34,9 +35,6 @@ import java.util.logging.LogManager;
  * Helper class called by the modified version of java.lang.ClassLoader
  */
 public class ClassProcessorHelper {
-
-  /** Name reserved for apps running as root web app in a container */
-  private static final String      ROOT_WEB_APP_NAME         = "ROOT";
 
   // Directory where Terracotta jars (and dependencies) can be found
   private static final String      TC_INSTALL_ROOT_SYSPROP   = "tc.install-root";
@@ -396,28 +394,6 @@ public class ClassProcessorHelper {
     } catch (Throwable t) {
       t.printStackTrace();
     }
-  }
-
-  /**
-   * Given a context path, trim and condition it to be usable by methods such as {@link #isDSOSessions(String)}
-   * 
-   * @param context a servlet context path, as from HttpServletContext#getPath(); null, "", "/", or "//" will be
-   *        interpreted as ROOT context.
-   * @return a non-null, non-empty string
-   */
-  public static String computeAppName(String context) {
-    // compute app name
-    // deal with possible app strings: null, "", "/", "/xyz", "xyz/", "/xyz/"
-    if (context == null) { return ROOT_WEB_APP_NAME; }
-    context = context.trim();
-    if (context.startsWith("/")) {
-      context = context.substring(1);
-    }
-    if (context.endsWith("/")) {
-      context = context.substring(0, context.length() - 2);
-    }
-    if (context.length() == 0) { return ROOT_WEB_APP_NAME; }
-    return context;
   }
 
   /**

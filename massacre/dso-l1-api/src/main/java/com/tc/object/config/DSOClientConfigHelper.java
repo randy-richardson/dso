@@ -17,7 +17,6 @@ import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L1ConfigurationSetupManager;
 import com.tc.object.Portability;
 import com.tc.object.bytecode.ClassAdapterFactory;
-import com.tc.object.bytecode.SessionConfiguration;
 import com.tc.object.bytecode.TransparencyClassAdapter;
 import com.tc.object.config.schema.DSOInstrumentationLoggingOptions;
 import com.tc.object.config.schema.DSORuntimeLoggingOptions;
@@ -38,7 +37,19 @@ import java.util.Map;
  * extends DSOApplicationConfig which is a much simpler interface suitable for manipulating the config from the
  * perspective of generating a configuration file.
  */
-public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanConfig {
+public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanConfig, ModuleConfiguration {
+  void addRoot(String rootName, String rootFieldName);
+
+  void addPermanentExcludePattern(String pattern);
+
+  void addNonportablePattern(String pattern);
+
+  void addClassResource(final String className, final URL resource, final boolean targetSystemLoaderOnly);
+
+  void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad, boolean honorVolatile);
+
+  URL getBundleURL(Bundle bundle);
+
   boolean hasBootJar();
 
   String[] processArguments();
@@ -75,18 +86,6 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanCon
 
   // String getChangeApplicatorClassNameFor(String className);
   Class getChangeApplicator(Class clazz);
-
-  boolean isPortableModuleClass(Class clazz);
-
-  void addModuleSpec(ModuleSpec moduleSpec);
-
-  void setMBeanSpecs(MBeanSpec[] mbeanSpecs);
-
-  MBeanSpec[] getMBeanSpecs();
-
-  void setSRASpecs(SRASpec[] sraSpecs);
-
-  SRASpec[] getSRASpecs();
 
   boolean addTunneledMBeanDomain(String tunneledMBeanDomain);
 
@@ -259,14 +258,11 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanCon
    */
   void addModule(String groupId, String artifactId, String version);
 
-  // HACK: is also in IStandardDSOClientConfigHelper
   /**
    * If an adapter with the same name was already present, this new one will not be added, and the operation will simply
    * return as a no-op.
    */
   void addCustomAdapter(String name, ClassAdapterFactory adapterFactory);
-
-  Class getTCPeerClass(Class clazz);
 
   ClassReplacementMapping getClassReplacementMapping();
 
@@ -292,12 +288,6 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanCon
   boolean addClassConfigBasedAdapters(ClassInfo classInfo);
 
   void recordBundleURLs(Map<Bundle, URL> bundleURLs);
-
-  URL getBundleURL(Bundle bundle);
-
-  SessionConfiguration getSessionConfiguration(String appName);
-
-  void addWebApplication(String pattern, SessionConfiguration config);
 
   L1ConfigurationSetupManager reloadServersConfiguration() throws ConfigurationSetupException;
 

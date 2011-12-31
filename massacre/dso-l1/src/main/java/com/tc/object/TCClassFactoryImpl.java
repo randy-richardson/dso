@@ -71,7 +71,7 @@ public class TCClassFactoryImpl implements TCClassFactory {
     TCClass rv;
     if (className.equals(TCClassFactory.CDSM_DSO_CLASSNAME)) {
       rv = new ServerMapTCClassImpl(this.manager, this.globalLocalCacheManager, this.remoteServerMapManager,
-                                    this.fieldFactory, this, objectManager, this.config.getTCPeerClass(clazz),
+                                    this.fieldFactory, this, objectManager, clazz,
                                     getLogicalSuperClassWithDefaultConstructor(clazz), loaderDesc,
                                     this.config.getLogicalExtendingClassName(className),
                                     this.config.isLogical(className), this.config.isCallConstructorOnLoad(classInfo),
@@ -83,7 +83,7 @@ public class TCClassFactoryImpl implements TCClassFactory {
                                     this.config.getPostCreateMethodIfDefined(className),
                                     this.config.getPreCreateMethodIfDefined(className));
     } else {
-      rv = new TCClassImpl(this.fieldFactory, this, objectManager, this.config.getTCPeerClass(clazz),
+      rv = new TCClassImpl(this.fieldFactory, this, objectManager, clazz,
                            getLogicalSuperClassWithDefaultConstructor(clazz), loaderDesc,
                            this.config.getLogicalExtendingClassName(className), this.config.isLogical(className),
                            this.config.isCallConstructorOnLoad(classInfo), this.config.hasOnLoadInjection(classInfo),

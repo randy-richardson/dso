@@ -134,9 +134,7 @@ public class NullManager implements Manager {
   }
 
   public String getClientID() {
-    // XXX: even though this should *probably* throw UnsupportedOperationException, because some innocent tests use
-    // ManagerUtil (e.g. ConfigPropertiesTest), it was decided to return "" from this method.
-    return "";
+    throw new UnsupportedOperationException();
   }
 
   public TCLogger getLogger(String loggerName) {
@@ -319,10 +317,6 @@ public class NullManager implements Manager {
 
   public String getUUID() {
     return null;
-  }
-
-  public SessionConfiguration getSessionConfiguration(String appName) {
-    throw new UnsupportedOperationException();
   }
 
   public void waitForAllCurrentTransactionsToComplete() {

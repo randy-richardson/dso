@@ -721,10 +721,6 @@ public class ManagerImpl implements ManagerInternal {
     this.statisticsAgentSubSystem.getStatisticsRetrievalRegistry().registerActionInstance(sra);
   }
 
-  public SessionConfiguration getSessionConfiguration(String appName) {
-    return config.getSessionConfiguration(appName);
-  }
-
   private static class FakeManageableObject implements Manageable {
 
     public boolean __tc_isManaged() {

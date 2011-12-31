@@ -94,7 +94,6 @@ import com.tc.object.bytecode.NullManager;
 import com.tc.object.bytecode.NullManagerInternal;
 import com.tc.object.bytecode.NullTCObject;
 import com.tc.object.bytecode.OverridesHashCode;
-import com.tc.object.bytecode.SessionConfiguration;
 import com.tc.object.bytecode.TCMap;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.bytecode.TransparentAccess;
@@ -110,6 +109,7 @@ import com.tc.object.cache.Cacheable;
 import com.tc.object.compression.CompressedData;
 import com.tc.object.compression.StringCompressionUtil;
 import com.tc.object.config.DSOClientConfigHelper;
+import com.tc.object.config.ModuleConfiguration;
 import com.tc.object.config.StandardDSOClientConfigHelperImpl;
 import com.tc.object.config.TransparencyClassSpec;
 import com.tc.object.dmi.DmiClassSpec;
@@ -155,7 +155,6 @@ import com.tc.object.tx.TransactionID;
 import com.tc.object.tx.TxnBatchID;
 import com.tc.object.tx.TxnType;
 import com.tc.object.tx.UnlockedSharedObjectException;
-import com.tc.object.util.OverrideCheck;
 import com.tc.object.util.ToggleableStrongReference;
 import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.plugins.ModulesLoader;
@@ -455,6 +454,7 @@ public class BootJarTool {
       loadTerracottaClass(TransparentAccess.class.getName());
       loadTerracottaClass(BytecodeProvider.class.getName());
 
+      loadTerracottaClass(ModuleConfiguration.class.getName());
       loadTerracottaClass(Manageable.class.getName());
       loadTerracottaClass(AAFairDistributionPolicyMarker.class.getName());
       loadTerracottaClass(Clearable.class.getName());
@@ -473,7 +473,6 @@ public class BootJarTool {
       loadTerracottaClass(NullTCLogger.class.getName());
       loadTerracottaClass(ManagerUtil.class.getName());
       loadTerracottaClass(ManagerUtilInternal.class.getName());
-      loadTerracottaClass(SessionConfiguration.class.getName());
       loadTerracottaClass(ManagerUtil.class.getName() + "$GlobalManagerHolder");
       loadTerracottaClass(TCObject.class.getName());
       loadTerracottaClassesReachableFromTCObject();
@@ -514,7 +513,6 @@ public class BootJarTool {
       loadTerracottaClass(Util.class.getName());
       loadTerracottaClass(NIOWorkarounds.class.getName());
       loadTerracottaClass(TCProperties.class.getName());
-      loadTerracottaClass(OverrideCheck.class.getName());
       loadTerracottaClass(StringCompressionUtil.class.getName());
       loadTerracottaClass(CompressedData.class.getName());
       loadTerracottaClass(TCByteArrayOutputStream.class.getName());
@@ -535,6 +533,7 @@ public class BootJarTool {
       loadTerracottaClass(com.tc.object.locks.LockID.LockIDType.class.getName());
       loadTerracottaClass(com.tc.object.locks.UnclusteredLockID.class.getName());
       loadTerracottaClass(com.tc.object.locks.LockLevel.class.getName());
+      loadTerracottaClass(com.tc.object.locks.LockLevel.class.getName() + "$1");
       loadTerracottaClass(com.tc.object.locks.TerracottaLocking.class.getName());
       loadTerracottaClass(com.tc.object.locks.TerracottaLockingInternal.class.getName());
       loadTerracottaClass(com.tc.io.TCSerializable.class.getName());

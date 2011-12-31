@@ -11,8 +11,6 @@ import org.apache.xmlbeans.XmlOptions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 
 import com.tc.bundles.EmbeddedOSGiEventHandler;
 import com.tc.bundles.EmbeddedOSGiRuntime;
@@ -26,11 +24,6 @@ import com.tc.management.TunneledDomainUpdater;
 import com.tc.management.beans.TIMByteProviderMBean;
 import com.tc.object.config.ConfigLoader;
 import com.tc.object.config.DSOClientConfigHelper;
-import com.tc.object.config.MBeanSpec;
-import com.tc.object.config.ModuleSpec;
-import com.tc.object.config.OsgiServiceSpec;
-import com.tc.object.config.SRASpec;
-import com.tc.object.config.StandardDSOClientConfigHelper;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.NamedClassLoader;
 import com.tc.object.loaders.Namespace;
@@ -57,7 +50,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -72,32 +64,13 @@ import javax.management.StandardMBean;
 
 public class ModulesLoader {
 
-  private static final Comparator SERVICE_COMPARATOR  = new Comparator() {
+  private static final TCLogger logger              = TCLogging.getLogger(ModulesLoader.class);
+  private static final TCLogger consoleLogger       = CustomerLogging.getConsoleLogger();
 
-                                                        public int compare(final Object arg0, final Object arg1) {
-                                                          ServiceReference s1 = (ServiceReference) arg0;
-                                                          ServiceReference s2 = (ServiceReference) arg1;
+  private static final Object   lock                = new Object();
+  private static final String   NEWLINE             = System.getProperty("line.separator", "\n");
 
-                                                          Integer r1 = (Integer) s1
-                                                              .getProperty(Constants.SERVICE_RANKING);
-                                                          Integer r2 = (Integer) s2
-                                                              .getProperty(Constants.SERVICE_RANKING);
-
-                                                          if (r1 == null) r1 = OsgiServiceSpec.NORMAL_RANK;
-                                                          if (r2 == null) r2 = OsgiServiceSpec.NORMAL_RANK;
-
-                                                          return r2.compareTo(r1);
-                                                        }
-
-                                                      };
-
-  private static final TCLogger   logger              = TCLogging.getLogger(ModulesLoader.class);
-  private static final TCLogger   consoleLogger       = CustomerLogging.getConsoleLogger();
-
-  private static final Object     lock                = new Object();
-  private static final String     NEWLINE             = System.getProperty("line.separator", "\n");
-
-  public static final String      TC_BOOTJAR_CREATION = "tc.bootjar.creation";
+  public static final String    TC_BOOTJAR_CREATION = "tc.bootjar.creation";
 
   private ModulesLoader() {
     // cannot be instantiated
@@ -157,13 +130,11 @@ public class ModulesLoader {
                           final ClassProvider classProvider, final TunneledDomainUpdater tunneledDomainUpdater,
                           final Module[] modules, final boolean forBootJar) throws Exception {
 
-    if (configHelper instanceof StandardDSOClientConfigHelper) {
-      final Dictionary serviceProps = new Hashtable();
-      serviceProps.put(Constants.SERVICE_VENDOR, "Terracotta, Inc.");
-      serviceProps.put(Constants.SERVICE_DESCRIPTION, "Main point of entry for programmatic access to"
-                                                      + " the Terracotta bytecode instrumentation");
-      osgiRuntime.registerService(StandardDSOClientConfigHelper.class.getName(), configHelper, serviceProps);
-    }
+    final Dictionary serviceProps = new Hashtable();
+    serviceProps.put(Constants.SERVICE_VENDOR, "Terracotta, Inc.");
+    serviceProps.put(Constants.SERVICE_DESCRIPTION, "Main point of entry for programmatic access to"
+                                                    + " the Terracotta bytecode instrumentation");
+    osgiRuntime.registerService(DSOClientConfigHelper.class.getName(), configHelper, serviceProps);
 
     osgiRuntime.registerService(TCLogger.class.getName(), TCLogging.getLogger(ModulesLoader.class), new Hashtable());
 
@@ -227,12 +198,6 @@ public class ModulesLoader {
     };
 
     osgiRuntime.startBundles(locations, handler);
-
-    if (!forBootJar) {
-      getModulesSpecs(osgiRuntime, configHelper);
-      getMBeanSpecs(osgiRuntime, configHelper);
-      getSRASpecs(osgiRuntime, configHelper);
-    }
   }
 
   private static void installTIMByteProvider(final Bundle bundle, final URL bundleURL, final UUID id) {
@@ -348,52 +313,6 @@ public class ModulesLoader {
       }
       return changed;
     }
-  }
-
-  private static void getModulesSpecs(final EmbeddedOSGiRuntime osgiRuntime, final DSOClientConfigHelper configHelper)
-      throws InvalidSyntaxException {
-    ServiceReference[] serviceReferences = osgiRuntime.getAllServiceReferences(ModuleSpec.class.getName(), null);
-    if (serviceReferences != null && serviceReferences.length > 0) {
-      Arrays.sort(serviceReferences, SERVICE_COMPARATOR);
-    }
-
-    if (serviceReferences == null) { return; }
-    for (ServiceReference serviceReference : serviceReferences) {
-      configHelper.addModuleSpec((ModuleSpec) osgiRuntime.getService(serviceReference));
-      osgiRuntime.ungetService(serviceReference);
-    }
-  }
-
-  private static void getMBeanSpecs(final EmbeddedOSGiRuntime osgiRuntime, final DSOClientConfigHelper configHelper)
-      throws InvalidSyntaxException {
-    ServiceReference[] serviceReferences = osgiRuntime.getAllServiceReferences(MBeanSpec.class.getName(), null);
-    if (serviceReferences != null && serviceReferences.length > 0) {
-      Arrays.sort(serviceReferences, SERVICE_COMPARATOR);
-    }
-
-    if (serviceReferences == null) { return; }
-    MBeanSpec[] mbeanSpecs = new MBeanSpec[serviceReferences.length];
-    for (int i = 0; i < serviceReferences.length; i++) {
-      mbeanSpecs[i] = (MBeanSpec) osgiRuntime.getService(serviceReferences[i]);
-      osgiRuntime.ungetService(serviceReferences[i]);
-    }
-    configHelper.setMBeanSpecs(mbeanSpecs);
-  }
-
-  private static void getSRASpecs(final EmbeddedOSGiRuntime osgiRuntime, final DSOClientConfigHelper configHelper)
-      throws InvalidSyntaxException {
-    ServiceReference[] serviceReferences = osgiRuntime.getAllServiceReferences(SRASpec.class.getName(), null);
-    if (serviceReferences != null && serviceReferences.length > 0) {
-      Arrays.sort(serviceReferences, SERVICE_COMPARATOR);
-    }
-
-    if (serviceReferences == null) { return; }
-    SRASpec[] sraSpecs = new SRASpec[serviceReferences.length];
-    for (int i = 0; i < serviceReferences.length; i++) {
-      sraSpecs[i] = (SRASpec) osgiRuntime.getService(serviceReferences[i]);
-      osgiRuntime.ungetService(serviceReferences[i]);
-    }
-    configHelper.setSRASpecs(sraSpecs);
   }
 
   /**

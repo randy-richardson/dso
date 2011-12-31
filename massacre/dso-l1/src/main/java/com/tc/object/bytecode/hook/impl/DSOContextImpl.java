@@ -29,7 +29,7 @@ import com.tc.object.bytecode.ManagerInternal;
 import com.tc.object.bytecode.hook.ClassLoaderPreProcessorImpl;
 import com.tc.object.bytecode.hook.DSOContext;
 import com.tc.object.config.DSOClientConfigHelper;
-import com.tc.object.config.StandardDSOClientConfigHelper;
+import com.tc.object.config.ModuleConfiguration;
 import com.tc.object.config.StandardDSOClientConfigHelperImpl;
 import com.tc.object.config.UnverifiedBootJarException;
 import com.tc.object.loaders.ClassProvider;
@@ -120,9 +120,8 @@ public class DSOContextImpl implements DSOContext {
   }
 
   public static DSOContext createStandaloneContext(String configSpec, ClassLoader loader,
-                                                   Map<String, URL> virtualTimJars, Collection<URL> additionalModules,
-                                                   URL bootJarURL, boolean expressRejoinClient)
-      throws ConfigurationSetupException {
+                                                   Map<String, URL> virtualTimJars, URL bootJarURL,
+                                                   boolean expressRejoinClient) throws ConfigurationSetupException {
     // XXX: refactor this method to not duplicate createContext() so much
 
     // load license via normal methods before attempt to load it from application resource
@@ -165,13 +164,6 @@ public class DSOContextImpl implements DSOContext {
     Collection<Repository> repos = new ArrayList<Repository>();
     repos.add(new VirtualTimRepository(virtualTimJars));
     DSOContext context = createContext(configHelper, manager, repos, expressRejoinClient);
-    if (additionalModules != null && !additionalModules.isEmpty()) {
-      try {
-        context.addModules(additionalModules.toArray(new URL[0]));
-      } catch (Exception e) {
-        throw new ConfigurationSetupException(e.getLocalizedMessage(), e);
-      }
-    }
     manager.init();
 
     return context;
@@ -214,14 +206,12 @@ public class DSOContextImpl implements DSOContext {
     }
 
     // do a pre-emptive class load since this path gets nested inside other classloads...
-    if (configHelper instanceof StandardDSOClientConfigHelper) {
-      try {
-        ((StandardDSOClientConfigHelper) configHelper).addClassResource("non.existent.Class",
-                                                                        new URL("file:///not/a/real/file"), false);
-      } catch (MalformedURLException e) {
-        e.printStackTrace();
-      }
+    try {
+      configHelper.addClassResource("non.existent.Class", new URL("file:///not/a/real/file"), false);
+    } catch (MalformedURLException e) {
+      e.printStackTrace();
     }
+
     getClassResource("non.existent.Class", getClass().getClassLoader(), true);
   }
 
@@ -246,6 +236,11 @@ public class DSOContextImpl implements DSOContext {
 
   public Manager getManager() {
     return this.manager;
+  }
+
+  @Override
+  public ModuleConfiguration getModuleConfigurtion() {
+    return configHelper;
   }
 
   /**
@@ -360,11 +355,6 @@ public class DSOContextImpl implements DSOContext {
   public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
                           ProtectionDomain protectionDomain, byte[] classfileBuffer) {
     return preProcess(className, classfileBuffer, 0, classfileBuffer.length, loader);
-  }
-
-  public void addModules(URL[] modules) throws Exception {
-    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(),
-                                         manager.getTunneledDomainUpdater(), false, modules);
   }
 
   public void shutdown() {

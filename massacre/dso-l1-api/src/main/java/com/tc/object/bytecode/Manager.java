@@ -352,13 +352,6 @@ public interface Manager extends TerracottaLocking {
   public void monitorExit(LockID lock, LockLevel level);
 
   /**
-   * Get the configuration for the given application name (ie. context path)
-   * 
-   * @return null if the given app is not configured for clustering
-   */
-  public SessionConfiguration getSessionConfiguration(String appName);
-
-  /**
    * Used by BulkLoad to wait for all current transactions completed
    */
   public void waitForAllCurrentTransactionsToComplete();

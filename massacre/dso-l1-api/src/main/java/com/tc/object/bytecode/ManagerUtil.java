@@ -1131,15 +1131,6 @@ public class ManagerUtil {
   }
 
   /**
-   * Get the configuration for the given application name (ie. context path)
-   * 
-   * @return null if the given app is not configured for clustering
-   */
-  public static SessionConfiguration getSessionConfiguration(String appName) {
-    return getManager().getSessionConfiguration(appName);
-  }
-
-  /**
    * Returns true if the field represented by the offset is a portable field, i.e., not static and not dso transient
    * 
    * @param pojo Object

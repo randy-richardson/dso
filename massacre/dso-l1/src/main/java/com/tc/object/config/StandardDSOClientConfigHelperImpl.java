@@ -9,7 +9,6 @@ import org.osgi.framework.Bundle;
 import org.terracotta.groupConfigForL1.ServerGroup;
 import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
 import org.terracotta.groupConfigForL1.ServerInfo;
-import org.terracotta.license.LicenseException;
 
 import com.tc.asm.ClassAdapter;
 import com.tc.asm.ClassVisitor;
@@ -29,7 +28,6 @@ import com.tc.injection.DsoClusterInjectionInstrumentation;
 import com.tc.injection.InjectionInstrumentation;
 import com.tc.injection.InjectionInstrumentationRegistry;
 import com.tc.injection.exceptions.UnsupportedInjectedDsoInstanceTypeException;
-import com.tc.license.LicenseManager;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.net.core.ConnectionInfo;
@@ -41,12 +39,11 @@ import com.tc.object.applicator.ListApplicator;
 import com.tc.object.bytecode.ByteCodeUtil;
 import com.tc.object.bytecode.ClassAdapterBase;
 import com.tc.object.bytecode.ClassAdapterFactory;
+import com.tc.object.bytecode.DelegateMethodAdapter;
 import com.tc.object.bytecode.OverridesHashCodeAdapter;
 import com.tc.object.bytecode.SafeSerialVersionUIDAdder;
-import com.tc.object.bytecode.SessionConfiguration;
 import com.tc.object.bytecode.TransparencyClassAdapter;
 import com.tc.object.bytecode.aspectwerkz.ExpressionHelper;
-import com.tc.object.bytecode.hook.impl.ClassProcessorHelper;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.object.config.schema.DSOApplicationConfig;
 import com.tc.object.config.schema.DSOInstrumentationLoggingOptions;
@@ -64,7 +61,6 @@ import com.tc.properties.ReconnectConfig;
 import com.tc.util.Assert;
 import com.tc.util.ClassUtils;
 import com.tc.util.ClassUtils.ClassSpec;
-import com.tc.util.ProductInfo;
 import com.tc.util.UUID;
 import com.tc.util.runtime.Vm;
 import com.terracottatech.config.DsoApplication;
@@ -87,12 +83,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfigHelper, DSOClientConfigHelper {
+public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper {
 
   private static final TCLogger                              logger                             = CustomerLogging
                                                                                                     .getDSOGenericLogger();
@@ -109,8 +104,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
   private final Set                                          transients                         = Collections
                                                                                                     .synchronizedSet(new HashSet());
   private final Map<String, String>                          injectedFields                     = new ConcurrentHashMap<String, String>();
-  private final Map<String, SessionConfiguration>            webApplications                    = Collections
-                                                                                                    .synchronizedMap(new HashMap());
   private final CompoundExpressionMatcher                    permanentExcludesMatcher;
   private final CompoundExpressionMatcher                    nonportablesMatcher;
   private final List                                         autoLockExcludes                   = new CopyOnWriteArrayList();
@@ -152,10 +145,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
   private final boolean                                      supportSharingThroughReflection;
   private final Portability                                  portability;
   private int                                                faultCount                         = -1;
-  private final Collection<ModuleSpec>                       moduleSpecs                        = Collections
-                                                                                                    .synchronizedList(new ArrayList<ModuleSpec>());
-  private MBeanSpec[]                                        mbeanSpecs                         = null;
-  private SRASpec[]                                          sraSpecs                           = null;
   private final Set<String>                                  tunneledMBeanDomains               = Collections
                                                                                                     .synchronizedSet(new HashSet<String>());
   private final ModulesContext                               modulesContext                     = new ModulesContext();
@@ -222,7 +211,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     ConfigLoader loader = new ConfigLoader(this, logger);
     loader.loadDsoConfig((DsoApplication) appConfig.getBean());
 
-    logger.debug("web-applications: " + this.webApplications);
     logger.debug("roots: " + this.roots);
     logger.debug("locks: " + this.locks);
     logger.debug("distributed-methods: " + this.distributedMethods);
@@ -903,16 +891,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     return getInstrumentationDescriptorFor(classInfo).getOnLoadMethodIfDefined();
   }
 
-  public Class getTCPeerClass(Class clazz) {
-    if (moduleSpecs != null) {
-      for (ModuleSpec moduleSpec : moduleSpecs) {
-        Class klass = moduleSpec.getPeerClass(clazz);
-        if (klass != null) { return klass; }
-      }
-    }
-    return clazz;
-  }
-
   public String getAppGroup(String loaderName, String appName) {
     // treat empty strings as null
     if (loaderName != null && loaderName.length() == 0) {
@@ -931,10 +909,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
                    + nclAppGroup);
     }
     return nclAppGroup;
-  }
-
-  private boolean matchesWildCard(final String regex, final String input) {
-    return input.matches(regex.replaceAll("\\*", "\\.\\*"));
   }
 
   public TransparencyClassAdapter createDsoClassAdapterFor(final ClassVisitor writer, final ClassInfo classInfo,
@@ -1026,16 +1000,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     return spec != null && spec.isLogical();
   }
 
-  // TODO: Need to optimize this by identifying the module to query instead of querying all the modules.
-  public boolean isPortableModuleClass(final Class clazz) {
-    if (moduleSpecs != null) {
-      for (ModuleSpec moduleSpec : moduleSpecs) {
-        if (moduleSpec.isPortableClass(clazz)) { return true; }
-      }
-    }
-    return false;
-  }
-
   public Class getChangeApplicator(final Class clazz) {
     ChangeApplicatorSpec applicatorSpec = null;
     TransparencyClassSpec spec = getSpec(clazz.getName());
@@ -1043,17 +1007,7 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
       applicatorSpec = spec.getChangeApplicatorSpec();
     }
 
-    if (applicatorSpec == null) {
-      if (moduleSpecs != null) {
-        for (ModuleSpec moduleSpec : moduleSpecs) {
-          if (moduleSpec.getChangeApplicatorSpec() != null) {
-            Class applicatorClass = moduleSpec.getChangeApplicatorSpec().getChangeApplicator(clazz);
-            if (applicatorClass != null) { return applicatorClass; }
-          }
-        }
-      }
-      return null;
-    }
+    if (applicatorSpec == null) { return null; }
     return applicatorSpec.getChangeApplicator(clazz);
   }
 
@@ -1063,32 +1017,7 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     if (LiteralValues.isLiteral(className)) { return true; }
     TransparencyClassSpec spec = getSpec(className);
     if (spec != null) { return spec.isUseNonDefaultConstructor(); }
-    if (moduleSpecs != null) {
-      for (ModuleSpec moduleSpec : moduleSpecs) {
-        if (moduleSpec.isUseNonDefaultConstructor(clazz)) { return true; }
-      }
-    }
     return false;
-  }
-
-  public void addModuleSpec(final ModuleSpec moduleSpec) {
-    this.moduleSpecs.add(moduleSpec);
-  }
-
-  public void setMBeanSpecs(final MBeanSpec[] mbeanSpecs) {
-    this.mbeanSpecs = mbeanSpecs;
-  }
-
-  public MBeanSpec[] getMBeanSpecs() {
-    return this.mbeanSpecs;
-  }
-
-  public void setSRASpecs(final SRASpec[] sraSpecs) {
-    this.sraSpecs = sraSpecs;
-  }
-
-  public SRASpec[] getSRASpecs() {
-    return this.sraSpecs;
   }
 
   public boolean addTunneledMBeanDomain(final String tunneledMBeanDomain) {
@@ -1357,39 +1286,6 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
     }
   }
 
-  public void addWebApplication(final String pattern, final SessionConfiguration config) {
-    this.webApplications.put(pattern, config);
-  }
-
-  public SessionConfiguration getSessionConfiguration(String name) {
-    if (ProductInfo.getInstance().isEnterprise()) {
-      try {
-        LicenseManager.verifySessionCapability();
-      } catch (LicenseException e) {
-        logger.error(e);
-        System.exit(1);
-      }
-    }
-
-    name = ClassProcessorHelper.computeAppName(name);
-
-    for (Entry<String, SessionConfiguration> entry : webApplications.entrySet()) {
-      String pattern = entry.getKey();
-      if (matchesWildCard(pattern, name)) {
-        SessionConfiguration config = entry.getValue();
-        logger.info("Clustered HTTP sessions IS enabled for [" + name + "]. matched [" + pattern + "] " + config);
-        return config;
-      }
-    }
-
-    // log this for custom mode only
-    if (hasBootJar) {
-      logger.info("Clustered HTTP sessions is NOT enabled for [" + name + "]");
-    }
-
-    return null;
-  }
-
   public void validateGroupInfo() throws ConfigurationSetupException {
     PreparedComponentsFromL2Connection connectionComponents = new PreparedComponentsFromL2Connection(configSetupManager);
     ServerGroups serverGroupsFromL2 = new ConfigInfoFromL2Impl(configSetupManager).getServerGroupsFromL2()
@@ -1535,6 +1431,11 @@ public class StandardDSOClientConfigHelperImpl implements StandardDSOClientConfi
       tunneledMBeanDomains.toArray(result);
       return result;
     }
+  }
+
+  @Override
+  public void addDelegateMethodAdapter(String type, String delegateType, String delegateField) {
+    addCustomAdapter(type, new DelegateMethodAdapter(delegateType, delegateField));
   }
 
   private static class Resource {

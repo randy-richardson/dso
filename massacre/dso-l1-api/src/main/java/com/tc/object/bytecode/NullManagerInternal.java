@@ -194,6 +194,10 @@ public class NullManagerInternal implements ManagerInternal {
     return NULL_MANAGER.generateLockIdentifier(obj, field);
   }
 
+  public LockID generateLockIdentifier(long lockId) {
+    return UnclusteredLockID.UNCLUSTERED_LOCK_ID;
+  }
+
   public boolean isLiteralInstance(Object obj) {
     return NULL_MANAGER.isLiteralInstance(obj);
   }
@@ -290,20 +294,12 @@ public class NullManagerInternal implements ManagerInternal {
     NULL_MANAGER.monitorExit(lock, level);
   }
 
-  public SessionConfiguration getSessionConfiguration(String appName) {
-    return NULL_MANAGER.getSessionConfiguration(appName);
-  }
-
   public void waitForAllCurrentTransactionsToComplete() {
     NULL_MANAGER.waitForAllCurrentTransactionsToComplete();
   }
 
   public void registerBeforeShutdownHook(Runnable beforeShutdownHook) {
     NULL_MANAGER.registerBeforeShutdownHook(beforeShutdownHook);
-  }
-
-  public LockID generateLockIdentifier(long lockId) {
-    return UnclusteredLockID.UNCLUSTERED_LOCK_ID;
   }
 
   public MetaDataDescriptor createMetaDataDescriptor(String category) {
