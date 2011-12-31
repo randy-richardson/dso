@@ -17,15 +17,15 @@ public class VersionMatcher {
   public VersionMatcher(String tcVersion) {
     if (tcVersion == null || tcVersion.equals(ANY_VERSION)) { throw new IllegalArgumentException("Invalid tcVersion: "
                                                                                                  + tcVersion); }
+
     this.tcVersion = tcVersion;
   }
 
   /**
-   * Determine whether a module's tc and api versions mean that it matches with the current Terracotta installation's tc
-   * and api versions.
+   * Determine whether a module's tc version matches with the current Terracotta installation's tc
+   * version.
    * 
    * @param moduleTcVersion is expected to be: * or exact like 3.0.0
-   * @param moduleTimApiVersion is expected to be: * or exact like 1.0.0 or (most likely) a range [1.0.0,1.1.0)
    * @return true if module is suitable for this installation
    */
   public boolean matches(String moduleTcVersion) {
