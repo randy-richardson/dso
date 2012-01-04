@@ -5,24 +5,21 @@
 package com.tc.plugins;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.xmlbeans.XmlError;
-import org.apache.xmlbeans.XmlException;
-import org.apache.xmlbeans.XmlOptions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
 import com.tc.bundles.EmbeddedOSGiEventHandler;
 import com.tc.bundles.EmbeddedOSGiRuntime;
+import com.tc.bundles.Module;
+import com.tc.bundles.Modules;
 import com.tc.bundles.Repository;
 import com.tc.bundles.exception.BundleExceptionSummary;
-import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.logging.CustomerLogging;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.TunneledDomainUpdater;
 import com.tc.management.beans.TIMByteProviderMBean;
-import com.tc.object.config.ConfigLoader;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.NamedClassLoader;
@@ -35,19 +32,13 @@ import com.tc.util.StringUtil;
 import com.tc.util.UUID;
 import com.tc.util.VendorVmSignature;
 import com.tc.util.VendorVmSignatureException;
-import com.terracottatech.config.DsoApplication;
-import com.terracottatech.config.Module;
-import com.terracottatech.config.Modules;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -101,8 +92,7 @@ public class ModulesLoader {
 
       try {
         osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules, addlRepos);
-        initModules(osgiRuntime, configHelper, classProvider, tunneledDomainUpdater, modules.getModuleArray(),
-                    forBootJar);
+        initModules(osgiRuntime, configHelper, classProvider, tunneledDomainUpdater, modules.getModules(), forBootJar);
       } catch (BundleException e) {
         if (e instanceof BundleExceptionSummary) {
           String msg = ((BundleExceptionSummary) e).getSummary();
@@ -128,7 +118,7 @@ public class ModulesLoader {
 
   static void initModules(final EmbeddedOSGiRuntime osgiRuntime, final DSOClientConfigHelper configHelper,
                           final ClassProvider classProvider, final TunneledDomainUpdater tunneledDomainUpdater,
-                          final Module[] modules, final boolean forBootJar) throws Exception {
+                          final List<Module> modules, final boolean forBootJar) throws Exception {
 
     final Dictionary serviceProps = new Hashtable();
     serviceProps.put(Constants.SERVICE_VENDOR, "Terracotta, Inc.");
@@ -142,7 +132,7 @@ public class ModulesLoader {
 
     final List moduleList = new ArrayList();
     moduleList.addAll(getAdditionalModules());
-    moduleList.addAll(Arrays.asList(modules));
+    moduleList.addAll(modules);
 
     final Module[] allModules = (Module[]) moduleList.toArray(new Module[moduleList.size()]);
     final URL[] locations = osgiRuntime.resolve(allModules);
@@ -262,8 +252,8 @@ public class ModulesLoader {
         final String componentVersion = matcher.group(2);
         final String moduleVersion = matcher.group(3).replaceFirst("\\.$", "");
 
-        final Module module = Module.Factory.newInstance();
-        String groupId = module.getGroupId(); // rely on the constant defined in the schema for the default groupId
+        final Module module = new Module();
+        String groupId = Module.DEFAULT_GROUPID;
         final int n = component.lastIndexOf('.');
         if (n > 0) {
           groupId = component.substring(0, n);
@@ -271,7 +261,7 @@ public class ModulesLoader {
           module.setGroupId(groupId);
         }
 
-        module.setName(component + "-" + componentVersion);
+        module.setArtifactId(component + "-" + componentVersion);
         module.setVersion(moduleVersion);
         modules.add(module);
       }
@@ -363,13 +353,6 @@ public class ModulesLoader {
 
       // otherwise, merge it with the current configuration
       try {
-        final DsoApplication application = DsoApplication.Factory.parse(is);
-        if (application != null) {
-          final ConfigLoader loader = new ConfigLoader(configHelper, logger);
-          logConfig(application, bundle, configPath);
-          validateBundleFragment(application);
-          loader.loadDsoConfig(application);
-        }
         is.close();
       } catch (IOException ioe) {
         String msg = "Error reading configuration from bundle: " + bundle.getSymbolicName() + " located at "
@@ -377,63 +360,9 @@ public class ModulesLoader {
         consoleLogger.warn(msg, ioe);
         logger.warn(msg, ioe);
         throw new BundleException(msg, ioe);
-      } catch (XmlException xmle) {
-        String msg = "Error parsing configuration from bundle: " + bundle.getSymbolicName() + " located at "
-                     + bundle.getLocation();
-        consoleLogger.warn(msg, xmle);
-        logger.warn(msg, xmle);
-        throw new BundleException(msg, xmle);
-      } catch (ConfigurationSetupException cse) {
-        String msg = "Invalid configuration in bundle: " + bundle.getSymbolicName() + " located at "
-                     + bundle.getLocation() + ": " + cse.getMessage();
-        consoleLogger.warn(msg, cse);
-        logger.warn(msg, cse);
-        throw new BundleException(msg, cse);
       } finally {
         IOUtils.closeQuietly(is);
       }
-    }
-  }
-
-  /**
-   * DEV-1238 and DEV-2205
-   * 
-   * @author hhuynh
-   */
-  private static void validateBundleFragment(final DsoApplication application) throws XmlException {
-    // Create an XmlOptions instance and set the error listener.
-    XmlOptions validateOptions = new XmlOptions();
-    ArrayList errorList = new ArrayList();
-    validateOptions.setErrorListener(errorList);
-
-    // Validate the XML.
-    boolean isValid = application.validate(validateOptions);
-
-    // If the XML isn't valid, loop through the listener's contents,
-    // printing contained messages.
-    if (!isValid) {
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < errorList.size(); i++) {
-        XmlError error = (XmlError) errorList.get(i);
-        sb.append(NEWLINE);
-        sb.append("Parse error: " + error.getMessage());
-      }
-      sb.append(NEWLINE);
-      throw new XmlException(sb.toString());
-    }
-
-  }
-
-  private static void logConfig(final DsoApplication application, final Bundle bundle, final String configPath) {
-    ByteArrayOutputStream bas = new ByteArrayOutputStream();
-    BufferedOutputStream buf = new BufferedOutputStream(bas);
-    try {
-      application.save(buf);
-      buf.close();
-      logger.info("Config loaded from module: " + bundle.getSymbolicName() + " (" + configPath + ")" + NEWLINE
-                  + bas.toString());
-    } catch (IOException e) {
-      logger.warn("Unable to generate a log entry to for the module's config info.");
     }
   }
 }

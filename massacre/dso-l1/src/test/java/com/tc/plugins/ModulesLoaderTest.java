@@ -7,12 +7,12 @@ package com.tc.plugins;
 import org.osgi.framework.BundleException;
 
 import com.tc.bundles.EmbeddedOSGiRuntime;
+import com.tc.bundles.Modules;
 import com.tc.object.BaseDSOTestCase;
 import com.tc.object.bytecode.MockClassProvider;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.util.Assert;
-import com.terracottatech.config.Modules;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,10 +22,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.jar.Attributes;
+import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import java.util.jar.Attributes.Name;
 
 public class ModulesLoaderTest extends BaseDSOTestCase {
 
@@ -61,7 +61,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
     try {
       Modules modules = configHelper.getModulesForInitialization();
       EmbeddedOSGiRuntime osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
       Assert.fail("Should get exception on missing bundle");
 
     } catch (BundleException e) {
@@ -101,7 +101,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
       try {
         Modules modules = configHelper.getModulesForInitialization();
         osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
         Assert.fail("Should get exception on invalid bundle");
 
       } catch (BundleException e) {
@@ -175,7 +175,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
       configHelper.addRepository(repo);
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
     } finally {
       shutdownAndCleanUpJars(osgiRuntime, null);
     }
@@ -207,7 +207,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
       try {
         Modules modules = configHelper.getModulesForInitialization();
         osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
         Assert.fail("Should get exception on invalid bundle");
 
       } catch (BundleException e) {
@@ -251,7 +251,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
 
     } finally {
       shutdownAndCleanUpJars(osgiRuntime, new File[] { generatedJar1, generatedJar2 });
@@ -282,7 +282,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
       try {
         Modules modules = configHelper.getModulesForInitialization();
         osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
         Assert.fail("Should get exception on invalid config");
       } catch (BundleException e) {
         checkErrorMessageContainsText(e, badGroupId);
@@ -325,7 +325,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
       try {
         Modules modules = configHelper.getModulesForInitialization();
         osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
         Assert.fail("Should get exception on invalid config");
       } catch (BundleException e) {
         checkErrorMessageContainsText(e.getCause(),
@@ -360,7 +360,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
 
       // should find and load the module without error
 
@@ -405,7 +405,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModuleArray(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
 
     } finally {
       shutdownAndCleanUpJars(osgiRuntime, new File[] { generatedJar1 });
@@ -456,8 +456,8 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
     }
 
     if (jars != null) {
-      for (int i = 0; i < jars.length; i++) {
-        jars[i].delete();
+      for (File jar : jars) {
+        jar.delete();
       }
     }
   }

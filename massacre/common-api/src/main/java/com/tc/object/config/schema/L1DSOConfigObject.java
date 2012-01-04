@@ -18,7 +18,6 @@ import com.terracottatech.config.Client;
 import com.terracottatech.config.DsoClientData;
 import com.terracottatech.config.DsoClientDebugging;
 import com.terracottatech.config.InstrumentationLogging;
-import com.terracottatech.config.Modules;
 import com.terracottatech.config.RuntimeLogging;
 import com.terracottatech.config.RuntimeOutputOptions;
 import com.terracottatech.config.TcConfigDocument.TcConfig;
@@ -71,7 +70,6 @@ public class L1DSOConfigObject extends BaseConfigObject implements L1DSOConfig {
       client = config.getClients();
     }
     initializeLogsDirectory(client, defaultValueProvider);
-    initializeModules(client, defaultValueProvider);
     initiailizeDsoClient(client, defaultValueProvider);
   }
 
@@ -86,16 +84,6 @@ public class L1DSOConfigObject extends BaseConfigObject implements L1DSOConfig {
     } else {
       Assert.assertNotNull(client.getLogs());
       client.setLogs(ParameterSubstituter.substitute(client.getLogs()));
-    }
-  }
-
-  private static void initializeModules(Client client, DefaultValueProvider defaultValueProvider) {
-    if (client != null && client.isSetModules()) {
-      Modules modules = client.getModules();
-      for (int i = 0; i < modules.sizeOfRepositoryArray(); i++) {
-        String location = modules.getRepositoryArray(i);
-        modules.setRepositoryArray(i, ParameterSubstituter.substitute(location));
-      }
     }
   }
 

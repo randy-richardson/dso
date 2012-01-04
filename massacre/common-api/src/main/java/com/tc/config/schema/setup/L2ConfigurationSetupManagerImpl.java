@@ -40,7 +40,6 @@ import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.server.ServerConnectionValidator;
 import com.tc.util.Assert;
-import com.terracottatech.config.Application;
 import com.terracottatech.config.Client;
 import com.terracottatech.config.MirrorGroups;
 import com.terracottatech.config.PersistenceMode;
@@ -678,14 +677,11 @@ public class L2ConfigurationSetupManagerImpl extends BaseConfigurationSetupManag
     System system = (System) this.systemBeanRepository().bean();
     Client client = (Client) this.clientBeanRepository().bean();
     Servers servers = (Servers) this.serversBeanRepository().bean();
-    Application application = (Application) this.applicationsRepository()
-        .repositoryFor(ConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME).bean();
 
     if (system != null) config.setSystem(system);
     if (client != null) config.setClients(client);
     if (servers != null) config.setServers(servers);
     if (tcProperties != null) config.setTcProperties(tcProperties);
-    if (application != null) config.setApplication(application);
 
     StringWriter sw = new StringWriter();
     XmlOptions options = new XmlOptions().setSavePrettyPrint().setSavePrettyPrintIndent(4);

@@ -6,8 +6,6 @@ package com.tc.bundles;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import com.terracottatech.config.Module;
-
 public class ToolkitVersion {
 
   private final int     major;
@@ -63,9 +61,9 @@ public class ToolkitVersion {
   }
 
   public Module asModule() {
-    Module module = Module.Factory.newInstance();
+    Module module = new Module();
     module.setGroupId(ToolkitConstants.GROUP_ID);
-    module.setName(ToolkitConstants.ARTIFACT_ID_PREFIX + major + "." + minor + (isEE() ? "-ee" : ""));
+    module.setArtifactId(ToolkitConstants.ARTIFACT_ID_PREFIX + major + "." + minor + (isEE() ? "-ee" : ""));
     module.setVersion(null);
     return module;
   }

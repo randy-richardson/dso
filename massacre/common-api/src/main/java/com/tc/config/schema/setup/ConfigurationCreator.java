@@ -4,7 +4,6 @@
  */
 package com.tc.config.schema.setup;
 
-import com.tc.config.schema.repository.ApplicationsRepository;
 import com.tc.config.schema.repository.MutableBeanRepository;
 
 import java.io.File;
@@ -20,8 +19,7 @@ public interface ConfigurationCreator {
   void createConfigurationIntoRepositories(MutableBeanRepository l1BeanRepository,
                                            MutableBeanRepository l2sBeanRepository,
                                            MutableBeanRepository systemBeanRepository,
-                                           MutableBeanRepository tcPropertiesRepository,
-                                           ApplicationsRepository applicationsRepository, boolean isClient)
+                                           MutableBeanRepository tcPropertiesRepository, boolean isClient)
       throws ConfigurationSetupException;
 
   /**

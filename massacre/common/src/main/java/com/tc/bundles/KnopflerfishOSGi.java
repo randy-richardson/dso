@@ -18,7 +18,6 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.tc.util.ProductInfo;
-import com.terracottatech.config.Module;
 
 import java.net.URL;
 import java.util.ArrayList;

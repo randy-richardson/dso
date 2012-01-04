@@ -4,8 +4,6 @@
  */
 package com.tc.config.schema;
 
-import com.terracottatech.config.Modules;
-
 import java.io.File;
 
 /**
@@ -14,7 +12,4 @@ import java.io.File;
 public interface CommonL1Config extends Config {
 
   File logsPath();
-
-  Modules modules();
-
 }

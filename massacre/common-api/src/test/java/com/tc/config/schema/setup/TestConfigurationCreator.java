@@ -5,7 +5,6 @@
 package com.tc.config.schema.setup;
 
 import com.tc.config.schema.beanfactory.ConfigBeanFactory;
-import com.tc.config.schema.repository.ApplicationsRepository;
 import com.tc.config.schema.repository.MutableBeanRepository;
 import com.tc.config.schema.setup.sources.ConfigurationSource;
 import com.tc.logging.TCLogging;
@@ -34,11 +33,10 @@ public class TestConfigurationCreator extends StandardXMLFileConfigurationCreato
   public void createConfigurationIntoRepositories(MutableBeanRepository l1BeanRepository,
                                                   MutableBeanRepository l2sBeanRepository,
                                                   MutableBeanRepository systemBeanRepository,
-                                                  MutableBeanRepository tcPropertiesRepository,
-                                                  ApplicationsRepository applicationsRepository, boolean isClient)
+                                                  MutableBeanRepository tcPropertiesRepository, boolean isClient)
       throws ConfigurationSetupException {
     loadConfigAndSetIntoRepositories(l1BeanRepository, l2sBeanRepository, systemBeanRepository, tcPropertiesRepository,
-                                     applicationsRepository, isClient);
+                                     isClient);
   }
 
   @Override

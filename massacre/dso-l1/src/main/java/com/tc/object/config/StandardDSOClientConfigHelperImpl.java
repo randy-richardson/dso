@@ -19,10 +19,11 @@ import com.tc.aspectwerkz.reflect.ClassInfo;
 import com.tc.aspectwerkz.reflect.FieldInfo;
 import com.tc.aspectwerkz.reflect.MemberInfo;
 import com.tc.backport175.bytecode.AnnotationElement.Annotation;
+import com.tc.bundles.Module;
+import com.tc.bundles.Modules;
 import com.tc.config.schema.CommonL1Config;
 import com.tc.config.schema.builder.DSOApplicationConfigBuilder;
 import com.tc.config.schema.setup.ConfigurationSetupException;
-import com.tc.config.schema.setup.ConfigurationSetupManagerFactory;
 import com.tc.config.schema.setup.L1ConfigurationSetupManager;
 import com.tc.injection.DsoClusterInjectionInstrumentation;
 import com.tc.injection.InjectionInstrumentation;
@@ -47,7 +48,6 @@ import com.tc.object.bytecode.SafeSerialVersionUIDAdder;
 import com.tc.object.bytecode.TransparencyClassAdapter;
 import com.tc.object.bytecode.aspectwerkz.ExpressionHelper;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
-import com.tc.object.config.schema.DSOApplicationConfig;
 import com.tc.object.config.schema.DSOInstrumentationLoggingOptions;
 import com.tc.object.config.schema.DSORuntimeLoggingOptions;
 import com.tc.object.config.schema.DSORuntimeOutputOptions;
@@ -65,10 +65,7 @@ import com.tc.util.ClassUtils;
 import com.tc.util.ClassUtils.ClassSpec;
 import com.tc.util.UUID;
 import com.tc.util.runtime.Vm;
-import com.terracottatech.config.DsoApplication;
 import com.terracottatech.config.L1ReconnectPropertiesDocument;
-import com.terracottatech.config.Module;
-import com.terracottatech.config.Modules;
 
 import java.io.File;
 import java.io.IOException;
@@ -144,7 +141,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   private final ClassReplacementMapping                      classReplacements                  = new ClassReplacementMappingImpl();
   private final Map<String, Resource>                        classResources                     = new ConcurrentHashMap<String, Resource>();
   private final Map                                          aspectModules                      = new ConcurrentHashMap();
-  private final boolean                                      supportSharingThroughReflection;
   private final Portability                                  portability;
   private int                                                faultCount                         = -1;
   private final Set<String>                                  tunneledMBeanDomains               = Collections
@@ -178,8 +174,7 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     helperLogger = new DSOClientConfigHelperLogger(logger);
     // this.classInfoFactory = new ClassInfoFactory();
     this.expressionHelper = new ExpressionHelper();
-    modulesContext.setModules(configSetupManager.commonL1Config().modules() != null ? configSetupManager
-        .commonL1Config().modules() : Modules.Factory.newInstance());
+    modulesContext.setModules(new Modules());
 
     permanentExcludesMatcher = new CompoundExpressionMatcher();
 
@@ -199,19 +194,12 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
 
     nonportablesMatcher = new CompoundExpressionMatcher();
 
-    DSOApplicationConfig appConfig = configSetupManager
-        .dsoApplicationConfigFor(ConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME);
-
-    supportSharingThroughReflection = appConfig.supportSharingThroughReflection();
     try {
       doPreInstrumentedAutoconfig();
       doAutoconfig();
     } catch (Exception e) {
       throw new ConfigurationSetupException(e.getLocalizedMessage(), e);
     }
-
-    ConfigLoader loader = new ConfigLoader(this, logger);
-    loader.loadDsoConfig((DsoApplication) appConfig.getBean());
 
     logger.debug("roots: " + this.roots);
     logger.debug("locks: " + this.locks);
@@ -220,10 +208,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
 
   public String rawConfigText() {
     return configSetupManager.rawConfigText();
-  }
-
-  public boolean reflectionEnabled() {
-    return this.supportSharingThroughReflection;
   }
 
   public Portability getPortability() {
@@ -1249,16 +1233,15 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   }
 
   public void addModule(final String artifactId, final String version) {
-    Module newModule = modulesContext.modules.addNewModule();
-    newModule.setName(artifactId);
+    Module newModule = new Module();
+    newModule.setArtifactId(artifactId);
     newModule.setVersion(version);
+    modulesContext.modules.addModule(newModule);
   }
 
   public void addModule(final String groupId, final String artifactId, final String version) {
-    Module newModule = modulesContext.modules.addNewModule();
-    newModule.setGroupId(groupId);
-    newModule.setName(artifactId);
-    newModule.setVersion(version);
+    Module newModule = new Module(groupId, artifactId, version);
+    modulesContext.modules.addModule(newModule);
   }
 
   public Modules getModulesForInitialization() {
@@ -1288,7 +1271,7 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
       } else {
         // this could happen only in test
         if (modulesInitialized) {
-          return Modules.Factory.newInstance();
+          return new Modules();
         } else {
           modulesInitialized = true;
           return this.modules;

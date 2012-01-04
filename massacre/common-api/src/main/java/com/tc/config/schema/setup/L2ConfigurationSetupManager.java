@@ -10,7 +10,6 @@ import com.tc.config.schema.CommonL2Config;
 import com.tc.config.schema.HaConfigSchema;
 import com.tc.config.schema.SystemConfig;
 import com.tc.config.schema.UpdateCheckConfig;
-import com.tc.object.config.schema.DSOApplicationConfig;
 import com.tc.object.config.schema.L2DSOConfig;
 import com.tc.operatorevent.TerracottaOperatorEventLogger;
 import com.tc.server.ServerConnectionValidator;
@@ -38,8 +37,6 @@ public interface L2ConfigurationSetupManager {
   ActiveServerGroupConfig getActiveServerGroupForThisL2();
 
   String[] applicationNames();
-
-  DSOApplicationConfig dsoApplicationConfigFor(String applicationName);
 
   String describeSources();
 

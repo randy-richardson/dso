@@ -4,26 +4,16 @@
  */
 package com.tc.config.schema.setup;
 
-import org.apache.xmlbeans.XmlObject;
-
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.context.ConfigContext;
 import com.tc.config.schema.context.StandardConfigContext;
 import com.tc.config.schema.defaults.DefaultValueProvider;
-import com.tc.config.schema.repository.ApplicationsRepository;
 import com.tc.config.schema.repository.BeanRepository;
-import com.tc.config.schema.repository.ChildBeanFetcher;
-import com.tc.config.schema.repository.ChildBeanRepository;
 import com.tc.config.schema.repository.MutableBeanRepository;
-import com.tc.config.schema.repository.StandardApplicationsRepository;
 import com.tc.config.schema.repository.StandardBeanRepository;
 import com.tc.config.schema.utils.XmlObjectComparator;
-import com.tc.object.config.schema.DSOApplicationConfig;
-import com.tc.object.config.schema.DSOApplicationConfigObject;
 import com.tc.util.Assert;
-import com.terracottatech.config.Application;
 import com.terracottatech.config.Client;
-import com.terracottatech.config.DsoApplication;
 import com.terracottatech.config.Servers;
 import com.terracottatech.config.System;
 import com.terracottatech.config.TcProperties;
@@ -44,7 +34,6 @@ public class BaseConfigurationSetupManager {
   private final MutableBeanRepository             serversBeanRepository;
   private final MutableBeanRepository             systemBeanRepository;
   private final MutableBeanRepository             tcPropertiesRepository;
-  private final ApplicationsRepository            applicationsRepository;
 
   protected final DefaultValueProvider            defaultValueProvider;
   private final XmlObjectComparator               xmlObjectComparator;
@@ -76,7 +65,6 @@ public class BaseConfigurationSetupManager {
     this.clientBeanRepository = new StandardBeanRepository(Client.class);
     this.serversBeanRepository = new StandardBeanRepository(Servers.class);
     this.tcPropertiesRepository = new StandardBeanRepository(TcProperties.class);
-    this.applicationsRepository = new StandardApplicationsRepository();
 
     this.defaultValueProvider = defaultValueProvider;
     this.xmlObjectComparator = xmlObjectComparator;
@@ -106,10 +94,6 @@ public class BaseConfigurationSetupManager {
     return this.tcPropertiesRepository;
   }
 
-  protected final ApplicationsRepository applicationsRepository() {
-    return this.applicationsRepository;
-  }
-
   protected final XmlObjectComparator xmlObjectComparator() {
     return this.xmlObjectComparator;
   }
@@ -121,7 +105,7 @@ public class BaseConfigurationSetupManager {
   protected final void runConfigurationCreator(boolean isClient) throws ConfigurationSetupException {
     this.configurationCreator.createConfigurationIntoRepositories(clientBeanRepository, serversBeanRepository,
                                                                   systemBeanRepository, tcPropertiesRepository,
-                                                                  applicationsRepository, isClient);
+                                                                  isClient);
   }
 
   public String[] applicationNames() {
@@ -136,31 +120,6 @@ public class BaseConfigurationSetupManager {
   public final ConfigContext createContext(BeanRepository beanRepository, File configFilePath) {
     Assert.assertNotNull(beanRepository);
     return new StandardConfigContext(beanRepository, this.defaultValueProvider, this.illegalConfigurationChangeHandler);
-  }
-
-  public synchronized DSOApplicationConfig dsoApplicationConfigFor(String applicationName) {
-    // When we support multiple applications, just take this assertion out.
-    Assert.eval(applicationName.equals(ConfigurationSetupManagerFactory.DEFAULT_APPLICATION_NAME));
-
-    DSOApplicationConfig out = (DSOApplicationConfig) this.dsoApplicationConfigs.get(applicationName);
-    if (out == null) {
-      out = createNewDSOApplicationConfig(applicationName);
-      this.dsoApplicationConfigs.put(applicationName, out);
-    }
-
-    return out;
-  }
-
-  protected DSOApplicationConfig createNewDSOApplicationConfig(String applicationName) {
-    return new DSOApplicationConfigObject(
-                                          createContext(new ChildBeanRepository(this.applicationsRepository
-                                                            .repositoryFor(applicationName), DsoApplication.class,
-                                                                                new ChildBeanFetcher() {
-                                                                                  public XmlObject getChild(XmlObject parent) {
-                                                                                    return ((Application) parent)
-                                                                                        .getDso();
-                                                                                  }
-                                                                                }), null));
   }
 
 }

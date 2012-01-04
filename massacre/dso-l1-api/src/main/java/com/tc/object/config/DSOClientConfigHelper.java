@@ -12,6 +12,7 @@ import com.tc.asm.ClassWriter;
 import com.tc.aspectwerkz.reflect.ClassInfo;
 import com.tc.aspectwerkz.reflect.FieldInfo;
 import com.tc.aspectwerkz.reflect.MemberInfo;
+import com.tc.bundles.Modules;
 import com.tc.config.schema.CommonL1Config;
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L1ConfigurationSetupManager;
@@ -24,7 +25,6 @@ import com.tc.object.config.schema.DSORuntimeOutputOptions;
 import com.tc.object.config.schema.InstrumentedClass;
 import com.tc.object.logging.InstrumentationLogger;
 import com.tc.properties.ReconnectConfig;
-import com.terracottatech.config.Modules;
 
 import java.io.File;
 import java.net.URL;
@@ -271,8 +271,6 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanCon
   boolean hasCustomAdapters(ClassInfo classInfo);
 
   Collection<ClassAdapterFactory> getCustomAdapters(ClassInfo classInfo);
-
-  boolean reflectionEnabled();
 
   public ReconnectConfig getL1ReconnectProperties() throws ConfigurationSetupException;
 

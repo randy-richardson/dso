@@ -19,7 +19,6 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.tc.util.version.VersionMatcher;
-import com.terracottatech.config.Module;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -107,7 +106,7 @@ public class Resolver {
       URL toolkitURL = null;
 
       for (int i = 0; i < TOOLKIT_SEARCH_RANGE; i++) {
-        String resolvedVersion = findNewestVersion(toolkitModule.getGroupId(), toolkitModule.getName(), true);
+        String resolvedVersion = findNewestVersion(toolkitModule.getGroupId(), toolkitModule.getArtifactId(), true);
         if (resolvedVersion != null) {
           toolkitModule.setVersion(resolvedVersion);
           toolkitURL = resolve(toolkitModule);
@@ -219,7 +218,7 @@ public class Resolver {
   }
 
   public final URL resolve(Module module) throws BundleException {
-    final String name = module.getName();
+    final String name = module.getArtifactId();
     String version = module.getVersion();
     final String groupId = module.getGroupId();
 
@@ -264,7 +263,7 @@ public class Resolver {
 
     logger.info("Resolved TIM " + groupId + ":" + name + ":" + version + " from " + location);
     DependencyStack dependencyStack = new DependencyStack();
-    dependencyStack.push(module.getGroupId(), module.getName(), module.getVersion());
+    dependencyStack.push(module.getGroupId(), module.getArtifactId(), module.getVersion());
     resolveDependencies(location, dependencyStack);
     return location;
   }

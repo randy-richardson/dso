@@ -96,7 +96,6 @@ public class TestConfigObject {
   private static final String     EMMA_LIB                         = DYNAMIC_PROPERTIES_PREFIX + "emma.lib";
   private static final String     JAVA_HOME_15                     = DYNAMIC_PROPERTIES_PREFIX + "JAVA_HOME_15";
   private static final String     JAVA_HOME_16                     = DYNAMIC_PROPERTIES_PREFIX + "JAVA_HOME_16";
-  private static final String     APP_SERVER_TEST_MODE             = DYNAMIC_PROPERTIES_PREFIX + "appserver.test.mode";
 
   private static TestConfigObject INSTANCE;
 
@@ -163,8 +162,9 @@ public class TestConfigObject {
     if (properties.containsKey(APP_SERVER_SPECIFICATION)) { return AppServerInfo.parse(properties
         .getProperty(APP_SERVER_SPECIFICATION)); }
 
-    return new AppServerInfo(properties.getProperty(APP_SERVER_FACTORY_NAME, "unknown"), properties
-        .getProperty(APP_SERVER_MAJOR_VERSION, "unknown"), properties.getProperty(APP_SERVER_MINOR_VERSION, "unknown"));
+    return new AppServerInfo(properties.getProperty(APP_SERVER_FACTORY_NAME, "unknown"),
+                             properties.getProperty(APP_SERVER_MAJOR_VERSION, "unknown"),
+                             properties.getProperty(APP_SERVER_MINOR_VERSION, "unknown"));
   }
 
   public static synchronized TestConfigObject getInstance() {
@@ -438,9 +438,4 @@ public class TestConfigObject {
   public void setSpringTest(boolean springTest) {
     this.springTest = springTest;
   }
-  
-  public boolean isExpressModeForAppserver() {
-    return "express".equals(properties.getProperty(APP_SERVER_TEST_MODE, "custom"));
-  }
-  
 }

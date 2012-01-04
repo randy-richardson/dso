@@ -7,7 +7,6 @@ package com.tc.bundles;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
 import com.tc.util.ProductInfo;
-import com.terracottatech.config.Module;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,12 +33,12 @@ public class ToolkitModuleTest extends TCTestCase {
 
     Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion);
 
-    Module A = Module.Factory.newInstance();
-    A.setName("tim-A");
+    Module A = new Module();
+    A.setArtifactId("tim-A");
     A.setVersion("1.0.0");
 
-    Module B = Module.Factory.newInstance();
-    B.setName("tim-B");
+    Module B = new Module();
+    B.setArtifactId("tim-B");
     B.setVersion("1.0.0");
 
     resolver.resolve(A);
@@ -64,8 +63,8 @@ public class ToolkitModuleTest extends TCTestCase {
 
     Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion /* , repos */);
 
-    Module A = Module.Factory.newInstance();
-    A.setName("tim-A");
+    Module A = new Module();
+    A.setArtifactId("tim-A");
     A.setVersion("1.0.0");
 
     resolver.resolve(A);
@@ -78,8 +77,8 @@ public class ToolkitModuleTest extends TCTestCase {
     assertEquals(1, tookitVersion.getMajor());
     assertEquals(1, tookitVersion.getMinor());
 
-    Module B = Module.Factory.newInstance();
-    B.setName("tim-B");
+    Module B = new Module();
+    B.setArtifactId("tim-B");
     B.setVersion("1.0.0");
     try {
       resolver.resolve(B);
@@ -99,9 +98,9 @@ public class ToolkitModuleTest extends TCTestCase {
 
     Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion /* , repos */);
 
-    Module tk = Module.Factory.newInstance();
+    Module tk = new Module();
     tk.setGroupId("org.terracotta.toolkit");
-    tk.setName("terracotta-toolkit-1.1");
+    tk.setArtifactId("terracotta-toolkit-1.1");
     tk.setVersion("1.0.0");
 
     resolver.resolve(tk);
@@ -112,8 +111,8 @@ public class ToolkitModuleTest extends TCTestCase {
     assertEquals(1, tookitVersion.getMajor());
     assertEquals(1, tookitVersion.getMinor());
 
-    Module A = Module.Factory.newInstance();
-    A.setName("tim-A");
+    Module A = new Module();
+    A.setArtifactId("tim-A");
     A.setVersion("1.0.0");
     try {
       resolver.resolve(A);
@@ -134,12 +133,12 @@ public class ToolkitModuleTest extends TCTestCase {
 
     Resolver resolver = new Resolver(new String[] { tempDir.getAbsolutePath() }, false, tcVersion);
 
-    Module A = Module.Factory.newInstance();
-    A.setName("tim-A");
+    Module A = new Module();
+    A.setArtifactId("tim-A");
     A.setVersion("1.0.0");
 
-    Module B = Module.Factory.newInstance();
-    B.setName("tim-B");
+    Module B = new Module();
+    B.setArtifactId("tim-B");
     B.setVersion("1.0.0");
 
     resolver.resolve(A);
