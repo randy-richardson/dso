@@ -36,10 +36,12 @@ import com.tc.object.Portability;
 import com.tc.object.PortabilityImpl;
 import com.tc.object.applicator.HashMapApplicator;
 import com.tc.object.applicator.ListApplicator;
+import com.tc.object.bytecode.AddInterfacesAdapter;
 import com.tc.object.bytecode.ByteCodeUtil;
 import com.tc.object.bytecode.ClassAdapterBase;
 import com.tc.object.bytecode.ClassAdapterFactory;
 import com.tc.object.bytecode.DelegateMethodAdapter;
+import com.tc.object.bytecode.NotClearable;
 import com.tc.object.bytecode.OverridesHashCodeAdapter;
 import com.tc.object.bytecode.SafeSerialVersionUIDAdder;
 import com.tc.object.bytecode.TransparencyClassAdapter;
@@ -275,6 +277,10 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     addInstrumentationDescriptor(new IncludedInstrumentedClass(expression, honorTransient, honorVolatile, onLoad));
 
     clearAdaptableCache();
+  }
+
+  public void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad) {
+    addIncludePattern(expression, honorTransient, methodToCallOnLoad, false);
   }
 
   public void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad,
@@ -1137,6 +1143,11 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     this.distributedMethods.add(dms);
   }
 
+  @Override
+  public void addDistributedMethod(String expression) {
+    addDistributedMethodCall(new DistributedMethodSpec(expression, false));
+  }
+
   public DistributedMethodSpec getDmiSpec(final MemberInfo memberInfo) {
     if (Modifier.isStatic(memberInfo.getModifiers()) || "<init>".equals(memberInfo.getName())
         || "<clinit>".equals(memberInfo.getName())) { return null; }
@@ -1436,6 +1447,12 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   @Override
   public void addDelegateMethodAdapter(String type, String delegateType, String delegateField) {
     addCustomAdapter(type, new DelegateMethodAdapter(delegateType, delegateField));
+  }
+
+  @Override
+  public void addNotClearableAdapter(String type) {
+    String iface = NotClearable.class.getName().replace('.', '/');
+    addCustomAdapter(type, new AddInterfacesAdapter(new String[] { iface }));
   }
 
   private static class Resource {
