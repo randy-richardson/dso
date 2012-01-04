@@ -59,7 +59,6 @@ public class ModulesLoader {
   private static final TCLogger consoleLogger       = CustomerLogging.getConsoleLogger();
 
   private static final Object   lock                = new Object();
-  private static final String   NEWLINE             = System.getProperty("line.separator", "\n");
 
   public static final String    TC_BOOTJAR_CREATION = "tc.bootjar.creation";
 
