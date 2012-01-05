@@ -22,16 +22,20 @@ public class ServerCrashAndRestartL1ReconnectTest extends ServerCrashingTestBase
 
   public ServerCrashAndRestartL1ReconnectTest() {
     super(NODE_COUNT);
+    timebombTestForRewrite();
   }
 
+  @Override
   protected boolean enableL1Reconnect() {
     return true;
   }
 
+  @Override
   protected Class getApplicationClass() {
     return ServerCrashAndRestartTestApp.class;
   }
 
+  @Override
   protected void createConfig(TerracottaConfigBuilder cb) {
     // persistent mode
     cb.getServers().getL2s()[0].setPersistenceMode(L2ConfigBuilder.PERSISTENCE_MODE_PERMANENT_STORE);

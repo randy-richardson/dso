@@ -36,6 +36,10 @@ public class LockInfoThreadDumpTest extends TransparentTestBase {
   private int              adminPort;
   private File             configFile;
 
+  public LockInfoThreadDumpTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   public void doSetUp(TransparentTestIface t) throws Exception {
     t.getTransparentAppConfig().setClientCount(NODE_COUNT);
@@ -57,9 +61,9 @@ public class LockInfoThreadDumpTest extends TransparentTestBase {
     configFile = getTempFile("tc-config.xml");
     writeConfigFile();
     TestConfigurationSetupManagerFactory factory = new TestConfigurationSetupManagerFactory(
-                                                                                                  TestConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
-                                                                                                  null,
-                                                                                                  new FatalIllegalConfigurationChangeHandler());
+                                                                                            TestConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
+                                                                                            null,
+                                                                                            new FatalIllegalConfigurationChangeHandler());
 
     L1ConfigurationSetupManager manager = factory.getL1TVSConfigurationSetupManager();
     setUpControlledServer(factory, new StandardDSOClientConfigHelperImpl(manager), port, adminPort, groupPort,

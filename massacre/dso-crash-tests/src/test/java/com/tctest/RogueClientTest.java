@@ -40,6 +40,10 @@ public class RogueClientTest extends TransparentTestBase {
   private File             configFile;
   private int              adminPort;
 
+  public RogueClientTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   public void doSetUp(TransparentTestIface t) throws Exception {
     t.getTransparentAppConfig().setClientCount(NODE_COUNT);
@@ -65,9 +69,9 @@ public class RogueClientTest extends TransparentTestBase {
     configFile = getTempFile("tc-config.xml");
     writeConfigFile();
     TestConfigurationSetupManagerFactory factory = new TestConfigurationSetupManagerFactory(
-                                                                                                  TestConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
-                                                                                                  null,
-                                                                                                  new FatalIllegalConfigurationChangeHandler());
+                                                                                            TestConfigurationSetupManagerFactory.MODE_CENTRALIZED_CONFIG,
+                                                                                            null,
+                                                                                            new FatalIllegalConfigurationChangeHandler());
 
     L1ConfigurationSetupManager manager = factory.getL1TVSConfigurationSetupManager();
     setUpControlledServer(factory, new StandardDSOClientConfigHelperImpl(manager), port, adminPort, groupPort,
@@ -109,9 +113,9 @@ public class RogueClientTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented5 = new InstrumentedClassConfigBuilderImpl();
     instrumented5.setClassExpression(CyclicBarrier.class.getName() + "*");
 
-    out.getApplication().getDSO()
-        .setInstrumentedClasses(
-                                new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2, instrumented3,
+    out.getApplication()
+        .getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2, instrumented3,
                                     instrumented4, instrumented5 });
 
     LockConfigBuilder lock1 = new LockConfigBuilderImpl(LockConfigBuilder.TAG_AUTO_LOCK);
@@ -144,9 +148,8 @@ public class RogueClientTest extends TransparentTestBase {
                                                                    "finished");
     RootConfigBuilder lbq = new RootConfigBuilderImpl(RogueClientTestApp.class, "lbqueue", "lbqueue");
     RootConfigBuilder nodeId = new RootConfigBuilderImpl(RogueClientTestApp.class, "nodeId", "nodeId");
-    out.getApplication().getDSO().setRoots(
-                                           new RootConfigBuilder[] { barrier, finished, l1ClientBarrier,
-                                               l1Clientfinished, lbq, nodeId });
+    out.getApplication().getDSO()
+        .setRoots(new RootConfigBuilder[] { barrier, finished, l1ClientBarrier, l1Clientfinished, lbq, nodeId });
 
     return out;
   }

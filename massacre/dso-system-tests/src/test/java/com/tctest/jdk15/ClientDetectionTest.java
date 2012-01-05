@@ -30,7 +30,7 @@ public class ClientDetectionTest extends TransparentTestBase {
   private int              adminPort;
 
   public ClientDetectionTest() {
-    // disableAllUntil("2007-09-01");
+    timebombTestForRewrite();
   }
 
   @Override
@@ -89,9 +89,8 @@ public class ClientDetectionTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented2 = new InstrumentedClassConfigBuilderImpl();
     instrumented2.setClassExpression(testClassSuperName + "*");
 
-    out.getApplication().getDSO().setInstrumentedClasses(
-                                                         new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                             instrumented2 });
+    out.getApplication().getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2 });
 
     RootConfigBuilder testApp_barrier4 = new RootConfigBuilderImpl(ClientDetectionTestApp.class, "barrier4", "barrier4");
 

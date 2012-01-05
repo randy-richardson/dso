@@ -30,6 +30,7 @@ public class RecalledLockNeverRecalledTest extends ServerCrashingTestBase {
 
   public RecalledLockNeverRecalledTest() {
     super(NODE_COUNT);
+    timebombTestForRewrite();
   }
 
   @Override

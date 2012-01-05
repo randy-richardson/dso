@@ -31,6 +31,10 @@ public class L1ReconnectDisabledTest extends TransparentTestBase {
   private int              jmxPort;
   private int              groupPort;
 
+  public L1ReconnectDisabledTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   protected Class getApplicationClass() {
     return L1ReconnectDisabledTestApp.class;

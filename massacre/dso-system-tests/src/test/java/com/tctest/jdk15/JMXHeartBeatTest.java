@@ -28,7 +28,7 @@ public class JMXHeartBeatTest extends TransparentTestBase {
   private int              adminPort;
 
   public JMXHeartBeatTest() {
-    // this.disableAllUntil("2007-06-25");
+    timebombTestForRewrite();
   }
 
   @Override
@@ -87,9 +87,8 @@ public class JMXHeartBeatTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented2 = new InstrumentedClassConfigBuilderImpl();
     instrumented2.setClassExpression(testClassSuperName + "*");
 
-    out.getApplication().getDSO().setInstrumentedClasses(
-                                                         new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                             instrumented2 });
+    out.getApplication().getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2 });
 
     return out;
   }

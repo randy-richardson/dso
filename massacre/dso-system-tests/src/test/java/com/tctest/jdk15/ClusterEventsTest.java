@@ -34,6 +34,10 @@ public class ClusterEventsTest extends TransparentTestBase {
   private File configFile;
   private int  adminPort;
 
+  public ClusterEventsTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   protected Class getApplicationClass() {
     return ClusterEventsTestApp.class;
@@ -95,9 +99,10 @@ public class ClusterEventsTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented4 = new InstrumentedClassConfigBuilderImpl();
     instrumented4.setClassExpression(testStateClass);
 
-    out.getApplication().getDSO().setInstrumentedClasses(
-                                                         new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                             instrumented2, instrumented3, instrumented4 });
+    out.getApplication()
+        .getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2, instrumented3,
+                                    instrumented4 });
 
     RootConfigBuilder root = new RootConfigBuilderImpl();
     root.setFieldName(testStateClass + ".listeners");

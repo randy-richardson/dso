@@ -19,6 +19,7 @@ public class MutateDGCValidateTest extends ServerCrashingTestBase {
 
   public MutateDGCValidateTest() {
     super(NODE_COUNT);
+    timebombTestForRewrite();
   }
 
   @Override
@@ -26,9 +27,10 @@ public class MutateDGCValidateTest extends ServerCrashingTestBase {
     return MutateDGCValidateTestApp.class;
   }
 
+  @Override
   protected void createConfig(TerracottaConfigBuilder out) {
     out.getServers().getL2s()[0].setPersistenceMode(L2ConfigBuilder.PERSISTENCE_MODE_PERMANENT_STORE);
-    
+
     String testClassName = MutateDGCValidateTestApp.class.getName();
     String clientClassName = WorkOnList.class.getName();
 
@@ -45,8 +47,8 @@ public class MutateDGCValidateTest extends ServerCrashingTestBase {
     RootConfigBuilder root = new RootConfigBuilderImpl();
     root.setFieldName(testClassName + ".rootList");
     root.setRootName("rootList");
-    
-    out.getApplication().getDSO().setRoots(new RootConfigBuilder[] { root});
+
+    out.getApplication().getDSO().setRoots(new RootConfigBuilder[] { root });
 
     InstrumentedClassConfigBuilder instrumented1 = new InstrumentedClassConfigBuilderImpl();
     instrumented1.setClassExpression(testClassName + "*");
@@ -54,8 +56,7 @@ public class MutateDGCValidateTest extends ServerCrashingTestBase {
     InstrumentedClassConfigBuilder instrumented2 = new InstrumentedClassConfigBuilderImpl();
     instrumented2.setClassExpression(clientClassName + "*");
 
-    out.getApplication().getDSO().setInstrumentedClasses(
-                                                        new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                            instrumented2 });
+    out.getApplication().getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2 });
   }
 }

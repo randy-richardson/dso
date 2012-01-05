@@ -18,12 +18,12 @@ import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
 import com.tctest.ClusterMetaDataPrefetchTestApp;
-import com.tctest.TransparentTestBase;
-import com.tctest.TransparentTestIface;
 import com.tctest.ClusterMetaDataTestApp.AbstractMojo;
 import com.tctest.ClusterMetaDataTestApp.MyMojo;
 import com.tctest.ClusterMetaDataTestApp.SomePojo;
 import com.tctest.ClusterMetaDataTestApp.YourMojo;
+import com.tctest.TransparentTestBase;
+import com.tctest.TransparentTestIface;
 import com.tctest.runner.AbstractTransparentApp;
 import com.tctest.runner.TransparentAppConfig;
 
@@ -35,6 +35,10 @@ public class ClusterMetaDataPrefetchTest extends TransparentTestBase {
   private int  port;
   private File configFile;
   private int  adminPort;
+
+  public ClusterMetaDataPrefetchTest() {
+    timebombTestForRewrite();
+  }
 
   @Override
   public void doSetUp(final TransparentTestIface t) throws Exception {
@@ -105,10 +109,10 @@ public class ClusterMetaDataPrefetchTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented6 = new InstrumentedClassConfigBuilderImpl();
     instrumented6.setClassExpression(MyMojo.class.getName() + "*");
 
-    out.getApplication().getDSO().setInstrumentedClasses(
-                                                         new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                             instrumented2, instrumented3, instrumented4,
-                                                             instrumented5, instrumented6 });
+    out.getApplication()
+        .getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2, instrumented3,
+                                    instrumented4, instrumented5, instrumented6 });
 
     RootConfigBuilder map = new RootConfigBuilderImpl(ClusterMetaDataPrefetchTestApp.L1Client.class, "map", "map");
     out.getApplication().getDSO().setRoots(new RootConfigBuilder[] { map });

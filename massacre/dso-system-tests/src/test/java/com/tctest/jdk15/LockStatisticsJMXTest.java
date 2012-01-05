@@ -30,6 +30,10 @@ public class LockStatisticsJMXTest extends TransparentTestBase {
   private File             configFile;
   private int              adminPort;
 
+  public LockStatisticsJMXTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   public void doSetUp(TransparentTestIface t) throws Exception {
     t.getTransparentAppConfig().setClientCount(NODE_COUNT);
@@ -87,9 +91,8 @@ public class LockStatisticsJMXTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented2 = new InstrumentedClassConfigBuilderImpl();
     instrumented2.setClassExpression(testClassSuperName + "*");
 
-    out.getApplication().getDSO().setInstrumentedClasses(
-                                                         new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                             instrumented2 });
+    out.getApplication().getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2 });
 
     return out;
   }

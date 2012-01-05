@@ -22,17 +22,20 @@ public class ClientTerminatingTest extends ServerCrashingTestBase {
 
   public ClientTerminatingTest() {
     super(NODE_COUNT);
+    timebombTestForRewrite();
   }
 
   protected void setSynchronousWrite() {
     isSynchronousWrite = true;
   }
 
+  @Override
   protected Class getApplicationClass() {
     ClientTerminatingTestApp.setSynchronousWrite(isSynchronousWrite);
     return ClientTerminatingTestApp.class;
   }
 
+  @Override
   protected void createConfig(TerracottaConfigBuilder cb) {
     String testClassName = ClientTerminatingTestApp.class.getName();
     String clientClassName = Client.class.getName();
@@ -61,9 +64,8 @@ public class ClientTerminatingTest extends ServerCrashingTestBase {
     InstrumentedClassConfigBuilder instrumented2 = new InstrumentedClassConfigBuilderImpl();
     instrumented2.setClassExpression(clientClassName + "*");
 
-    cb.getApplication().getDSO().setInstrumentedClasses(
-                                                        new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                            instrumented2 });
+    cb.getApplication().getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2 });
   }
 
   private void setLockLevel(LockConfigBuilder lock) {

@@ -41,6 +41,7 @@ public class NewObjectMemoryManagerRaceTest extends ServerCrashingTestBase {
 
   public NewObjectMemoryManagerRaceTest() {
     super(1); // only need 1 node
+    timebombTestForRewrite();
   }
 
   @Override

@@ -38,6 +38,10 @@ public class TcPropertiesOverWriteTest extends TransparentTestBase {
   public static String     L1_TRANSACTIONMANAGER_MAXPENDING_BATCHES_VALUE = "5678";
   public static String     L1_CACHEMANAGER_LEASTCOUNT_VALUE               = "15";
 
+  public TcPropertiesOverWriteTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   protected Class getApplicationClass() {
     return TcPropertiesOverWriteTestApp.class;
@@ -99,8 +103,8 @@ public class TcPropertiesOverWriteTest extends TransparentTestBase {
     TcPropertyBuilder[] tcPropertyBuilder = new TcPropertyBuilder[NUMBER_OF_TC_PROPERTIES];
 
     for (int i = 0; i < NUMBER_OF_TC_PROPERTIES; i++) {
-      tcPropertyBuilder[i] = new TcPropertyBuilder(propertiesToTest[i].getPropertyName(), propertiesToTest[i]
-          .getPropertyValue());
+      tcPropertyBuilder[i] = new TcPropertyBuilder(propertiesToTest[i].getPropertyName(),
+                                                   propertiesToTest[i].getPropertyValue());
     }
 
     TcPropertiesBuilder tcPropertiesBuilder = new TcPropertiesBuilder();
@@ -121,9 +125,8 @@ public class TcPropertiesOverWriteTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented2 = new InstrumentedClassConfigBuilderImpl();
     instrumented2.setClassExpression(testClassAppName + "*");
 
-    tcConfigBuilder.getApplication().getDSO().setInstrumentedClasses(
-                                                                     new InstrumentedClassConfigBuilder[] {
-                                                                         instrumented1, instrumented2 });
+    tcConfigBuilder.getApplication().getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2 });
 
     RootConfigBuilder obj = new RootConfigBuilderImpl(TcPropertiesOverWriteTestApp.class, "obj", "obj");
     tcConfigBuilder.getApplication().getDSO().setRoots(new RootConfigBuilder[] { obj });

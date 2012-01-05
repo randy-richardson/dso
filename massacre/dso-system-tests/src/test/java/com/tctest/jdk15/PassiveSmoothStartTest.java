@@ -47,6 +47,10 @@ public class PassiveSmoothStartTest extends TransparentTestBase {
   private File[]           configFiles;
   String[]                 serverDataPath  = new String[SERVERS];
 
+  public PassiveSmoothStartTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   protected Class getApplicationClass() {
     return PassiveSmoothStartTestApp.class;
@@ -64,9 +68,9 @@ public class PassiveSmoothStartTest extends TransparentTestBase {
     }
 
     TestConfigurationSetupManagerFactory factory = new TestConfigurationSetupManagerFactory(
-                                                                                                  TestConfigurationSetupManagerFactory.MODE_DISTRIBUTED_CONFIG,
-                                                                                                  null,
-                                                                                                  new FatalIllegalConfigurationChangeHandler());
+                                                                                            TestConfigurationSetupManagerFactory.MODE_DISTRIBUTED_CONFIG,
+                                                                                            null,
+                                                                                            new FatalIllegalConfigurationChangeHandler());
     // to be used by in-process clients
     setConfigFactory(factory);
     L1ConfigurationSetupManager manager = factory.getL1TVSConfigurationSetupManager();

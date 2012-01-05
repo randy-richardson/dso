@@ -44,6 +44,7 @@ public class BroadcastDisconnectingClientTest extends ServerCrashingTestBase {
 
   public BroadcastDisconnectingClientTest() {
     super(INTERNAL_CLIENT_COUNT, new String[] { "-Xmx512m", "-Xms512m" });
+    timebombTestForRewrite();
   }
 
   @Override

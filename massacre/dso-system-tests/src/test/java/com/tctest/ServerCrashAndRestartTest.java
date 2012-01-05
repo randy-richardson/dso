@@ -22,12 +22,15 @@ public class ServerCrashAndRestartTest extends ServerCrashingTestBase {
 
   public ServerCrashAndRestartTest() {
     super(NODE_COUNT);
+    timebombTestForRewrite();
   }
 
+  @Override
   protected Class getApplicationClass() {
     return ServerCrashAndRestartTestApp.class;
   }
 
+  @Override
   protected void createConfig(TerracottaConfigBuilder cb) {
     // persistent mode
     cb.getServers().getL2s()[0].setPersistenceMode(L2ConfigBuilder.PERSISTENCE_MODE_PERMANENT_STORE);
@@ -47,7 +50,7 @@ public class ServerCrashAndRestartTest extends ServerCrashingTestBase {
         new InstrumentedClassConfigBuilderImpl(getApplicationClass()) };
 
     cb.getApplication().getDSO().setInstrumentedClasses(instrClasses);
-    
+
     // roots
     RootConfigBuilder[] roots = new RootConfigBuilder[] { new RootConfigBuilderImpl(getApplicationClass(), "barrier") };
     cb.getApplication().getDSO().setRoots(roots);

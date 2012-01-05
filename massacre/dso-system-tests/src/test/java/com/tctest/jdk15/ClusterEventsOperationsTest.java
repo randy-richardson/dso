@@ -30,6 +30,10 @@ public class ClusterEventsOperationsTest extends TransparentTestBase {
   private File             configFile;
   private int              adminPort;
 
+  public ClusterEventsOperationsTest() {
+    timebombTestForRewrite();
+  }
+
   @Override
   public void doSetUp(final TransparentTestIface t) throws Exception {
     t.getTransparentAppConfig().setClientCount(NODE_COUNT);
@@ -89,9 +93,8 @@ public class ClusterEventsOperationsTest extends TransparentTestBase {
     InstrumentedClassConfigBuilder instrumented3 = new InstrumentedClassConfigBuilderImpl();
     instrumented3.setClassExpression(testEventsListenerClass);
 
-    out.getApplication().getDSO().setInstrumentedClasses(
-                                                         new InstrumentedClassConfigBuilder[] { instrumented1,
-                                                             instrumented2, instrumented3 });
+    out.getApplication().getDSO()
+        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2, instrumented3 });
 
     return out;
   }
