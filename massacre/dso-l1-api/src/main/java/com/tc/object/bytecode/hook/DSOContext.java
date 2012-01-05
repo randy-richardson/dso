@@ -4,11 +4,13 @@
  */
 package com.tc.object.bytecode.hook;
 
+import com.tc.bundles.Module;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.config.ModuleConfiguration;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.net.URL;
+import java.util.Collection;
 
 /**
  * The idea behind DSOContext is to encapsulate a DSO "world" in a client VM. But this idea has not been fully realized.
@@ -36,4 +38,6 @@ public interface DSOContext extends ClassProcessor, ClassFileTransformer {
   public URL getClassResource(String className, ClassLoader loader, boolean hideSystemResources);
 
   public ModuleConfiguration getModuleConfigurtion();
+
+  public void addModules(Collection<Module> modules) throws Exception;
 }
