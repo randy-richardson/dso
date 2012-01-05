@@ -4,7 +4,6 @@
  */
 package com.tc.object.bytecode.hook;
 
-import com.tc.bundles.Module;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.config.ModuleConfiguration;
 
@@ -39,5 +38,5 @@ public interface DSOContext extends ClassProcessor, ClassFileTransformer {
 
   public ModuleConfiguration getModuleConfigurtion();
 
-  public void addModules(Collection<Module> modules) throws Exception;
+  public void installBundles(Collection<URL> bundleURLs) throws Exception;
 }

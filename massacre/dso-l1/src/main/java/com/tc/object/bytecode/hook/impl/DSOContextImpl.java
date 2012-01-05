@@ -12,7 +12,6 @@ import com.tc.aspectwerkz.reflect.impl.java.JavaClassInfo;
 import com.tc.aspectwerkz.transform.InstrumentationContext;
 import com.tc.aspectwerkz.transform.WeavingStrategy;
 import com.tc.bundles.EmbeddedOSGiRuntime;
-import com.tc.bundles.Module;
 import com.tc.bundles.Repository;
 import com.tc.bundles.VirtualTimRepository;
 import com.tc.config.schema.L2ConfigForL1.L2Data;
@@ -121,8 +120,7 @@ public class DSOContextImpl implements DSOContext {
   }
 
   public static DSOContext createStandaloneContext(String configSpec, ClassLoader loader,
-                                                   Map<String, URL> virtualTimJars,
-                                                   Collection<Module> additionalModules, URL bootJarURL,
+                                                   Map<String, URL> virtualTimJars, URL bootJarURL,
                                                    boolean expressRejoinClient) throws ConfigurationSetupException {
     // XXX: refactor this method to not duplicate createContext() so much
 
@@ -166,16 +164,20 @@ public class DSOContextImpl implements DSOContext {
     Collection<Repository> repos = new ArrayList<Repository>();
     repos.add(new VirtualTimRepository(virtualTimJars));
     DSOContext context = createContext(configHelper, manager, repos, expressRejoinClient);
-    if (additionalModules != null && !additionalModules.isEmpty()) {
-      try {
-        context.addModules(additionalModules);
-      } catch (Exception e) {
-        throw new ConfigurationSetupException(e.getLocalizedMessage(), e);
-      }
+    try {
+      context.installBundles(virtualTimJars.values());
+    } catch (Exception e) {
+      throw new ConfigurationSetupException(e.getLocalizedMessage(), e);
     }
     manager.init();
 
     return context;
+  }
+
+  public void installBundles(Collection<URL> bundleURLs) throws Exception {
+    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(),
+                                         manager.getTunneledDomainUpdater(), false, bundleURLs.toArray(new URL[] {}));
+
   }
 
   /**
@@ -364,12 +366,6 @@ public class DSOContextImpl implements DSOContext {
   public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
                           ProtectionDomain protectionDomain, byte[] classfileBuffer) {
     return preProcess(className, classfileBuffer, 0, classfileBuffer.length, loader);
-  }
-
-  public void addModules(Collection<Module> modules) throws Exception {
-    URL[] moduleUrls = osgiRuntime.resolve(modules.toArray(new Module[0]));
-    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(),
-                                         manager.getTunneledDomainUpdater(), false, moduleUrls);
   }
 
   public void shutdown() {
