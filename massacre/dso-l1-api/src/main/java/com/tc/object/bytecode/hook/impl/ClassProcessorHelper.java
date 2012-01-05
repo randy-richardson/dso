@@ -233,6 +233,7 @@ public class ClassProcessorHelper {
 
     File tcHomeDir = getTCInstallDir(true);
     if (tcHomeDir == null) {
+      @SuppressWarnings("restriction")
       ClassLoader classPathLoader = sun.misc.Launcher.getLauncher().getClassLoader();
       URL[] systemURLS = ((URLClassLoader) classPathLoader).getURLs();
       return systemURLS.clone();
