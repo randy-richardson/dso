@@ -120,7 +120,7 @@ public class TCObjectInputOutputStreamTest extends TCTestCase {
     l.add(new Boolean(true));
     l.add(this.getClass());
     l.add(new UTF8ByteDataHolder("Hello back"));
-    l.add(new ClassInstance(new UTF8ByteDataHolder(this.getClass().getName()), new UTF8ByteDataHolder("saroloader")));
+    l.add(new ClassInstance(new UTF8ByteDataHolder(this.getClass().getName())));
     // Object o[] = new Object[] { new ObjectID(88), new ObjectID(77), new Integer(66), new Long(55) };
     // l.add(o);
     return l;
