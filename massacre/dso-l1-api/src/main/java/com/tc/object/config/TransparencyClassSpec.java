@@ -328,97 +328,6 @@ public interface TransparencyClassSpec {
   public void addAlwaysLogSpec(String name);
 
   /**
-   * Add logical method adapter to log if method returns true
-   * 
-   * @param name Method signature
-   */
-  public void addIfTrueLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Set.iterator() impls
-   * 
-   * @param name Method signature
-   */
-  public void addSetIteratorWrapperSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Set.subSet() on impls
-   * 
-   * @param name Method signature
-   */
-  public void addViewSetWrapperSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Map.entrySet() on Map impls
-   * 
-   * @param name Method signature
-   */
-  public void addEntrySetWrapperSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Map.keySet() on Map impls
-   * 
-   * @param name Method signature
-   */
-  public void addKeySetWrapperSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Map.values() on Map impls
-   * 
-   * @param name Method signature
-   */
-  public void addValuesWrapperSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Map.put() on Map impls
-   * 
-   * @param name Method signature
-   */
-  public void addHashMapPutLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Hashtable.put()
-   * 
-   * @param name Method signature
-   */
-  public void addHashtablePutLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to THashMap.put()
-   * 
-   * @param name Method signature
-   */
-  public void addTHashMapPutLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to TObjectHash.removeAt()
-   * 
-   * @param name Method signature
-   */
-  public void addTObjectHashRemoveAtLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Hashtable.clear()
-   * 
-   * @param name Method signature
-   */
-  public void addHashtableClearLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Hashtable.remove()
-   * 
-   * @param name Method signature
-   */
-  public void addHashtableRemoveLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to HashMap.remove()
-   * 
-   * @param name Method signature
-   */
-  public void addHashMapRemoveLogSpec(String name);
-
-  /**
    * Add logical method adapter to log calls to System.arraycopy()
    * 
    * @param name Method signature
@@ -431,20 +340,6 @@ public interface TransparencyClassSpec {
    * @param name Method signature
    */
   public void disableWaitNotifyCodeSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Date.setTime()
-   * 
-   * @param name Method signature
-   */
-  public void addDateMethodLogSpec(String name);
-
-  /**
-   * Add logical method adapter to log calls to Date.setTime() in subclasses
-   * 
-   * @param name Method signature
-   */
-  public void addDateMethodLogSpec(String name, int methodSpec);
 
   /**
    * Add method code specification
@@ -600,16 +495,6 @@ public interface TransparencyClassSpec {
    * @return Action code ADAPTABLE, etc
    */
   public byte getInstrumentationAction();
-
-  /**
-   * @return True if should honor JDK sub versions
-   */
-  public boolean isHonorJDKSubVersionSpecific();
-
-  /**
-   * @param honorJDKSubVersionSpecific True to honor
-   */
-  public void setHonorJDKSubVersionSpecific(boolean honorJDKSubVersionSpecific);
 
   /**
    * Get method to call prior to create

@@ -783,8 +783,6 @@ public class BootJarTool {
 
       final Class topClass = getBootstrapClass(spec.getClassName());
       if (topClass == null) {
-        if (tcSpecs && !spec.isHonorJDKSubVersionSpecific()) { throw new AssertionError("Class not found: "
-                                                                                        + spec.getClassName()); }
         if (!tcSpecs) {
           this.nonExistingClasses.add(spec.getClassName());
         }

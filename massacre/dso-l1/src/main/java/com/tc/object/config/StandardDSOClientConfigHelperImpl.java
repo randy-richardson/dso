@@ -1069,7 +1069,7 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
         if (!classSpec.isForeign() && (userDefinedBootSpecs.get(cname) != null)) continue;
         if (classSpec.isPreInstrumented()) {
           preInstrumentedCount++;
-          if (!(preinstClasses.contains(classSpec.getClassName()) || classSpec.isHonorJDKSubVersionSpecific())) {
+          if (!(preinstClasses.contains(classSpec.getClassName()))) {
             missingClasses.add(classSpec.getClassName());
           }
         }
