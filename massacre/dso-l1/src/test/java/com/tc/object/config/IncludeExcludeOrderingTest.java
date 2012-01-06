@@ -68,15 +68,4 @@ public class IncludeExcludeOrderingTest extends BaseDSOTestCase {
     ClassInfo classInfoY = AsmClassInfo.getClassInfo("ZY", getClass().getClassLoader());
     assertFalse(config.shouldBeAdapted(classInfoY));
   }
-
-  /**
-   * Load a config file in the same way that normal instrumention is done.
-   * 
-   * @see com.tc.ModulesLoader#loadConfiguration()
-   */
-  private DSOClientConfigHelper loadConfigFile(String fileName) throws ConfigurationSetupException {
-    DSOClientConfigHelper config = createClientConfigHelper();
-    return config;
-  }
-
 }
