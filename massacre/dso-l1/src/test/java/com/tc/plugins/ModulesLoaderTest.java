@@ -251,12 +251,17 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
     // create a couples of .svn dirs
     File dotSvnDir = new File(repo, ".svn");
+    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/.svn");
+    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/teracotta/.svn");
+    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/terracotta/modules/.svn");
+    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/terracotta/modules/somemodule/.svn");
+    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/terracotta/modules/somemodule/1.0.0/.svn");
-    ensureDir(dotSvnDir);
+    Assert.assertTrue(dotSvnDir.mkdirs());
 
     File generatedJar1 = createBundle(repo, groupId, artifactId, version, symbolicName, version, null);
 
