@@ -18,8 +18,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.Currency;
-import java.util.Locale;
 
 import junit.framework.TestCase;
 
@@ -55,11 +53,7 @@ public class LockIdSerializerTest extends TestCase {
     literalLockTest(Boolean.valueOf(true));
     literalLockTest(Short.valueOf((short) 42));
 
-    literalLockTest(Currency.getInstance(Locale.UK));
-
     literalLockTest(MyEnum.A);
-
-    literalLockTest(MyEnum.class.getClassLoader());
 
     try {
       literalLockTest("bad string!");
@@ -81,8 +75,6 @@ public class LockIdSerializerTest extends TestCase {
     } catch (AssertionError e) {
       // expected
     }
-
-    unclusteredLockTest(new ClassLoader() { /**/});
   }
 
   public void literalLockTest(Object literal) {
