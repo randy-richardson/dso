@@ -16,7 +16,7 @@ public class IncludeExcludeOrderingTest extends BaseDSOTestCase {
    * exclude will win, and similarly a specific exclude will win after a general include.
    */
   public void testMoreSpecificOrdering() throws ConfigurationSetupException {
-    DSOClientConfigHelper config = loadConfigFile("tc-config-includeexclude.xml");
+    DSOClientConfigHelper config = createClientConfigHelper();
 
     config.addIncludePattern("p.*");
     config.addExcludePattern("p.q.*");
@@ -47,7 +47,7 @@ public class IncludeExcludeOrderingTest extends BaseDSOTestCase {
    * content in a tc-config.xml is not very useful, and indeed at some point we might want to issue warnings.
    */
   public void testMoreGeneralOrdering() throws ConfigurationSetupException {
-    DSOClientConfigHelper config = loadConfigFile("tc-config-includeexclude2.xml");
+    DSOClientConfigHelper config = createClientConfigHelper();
 
     config.addIncludePattern("A*");
     config.addExcludePattern("ABC");
