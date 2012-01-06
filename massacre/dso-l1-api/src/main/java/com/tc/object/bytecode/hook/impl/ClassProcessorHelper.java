@@ -48,10 +48,6 @@ public class ClassProcessorHelper {
 
   private static final String      TC_DSO_GLOBALMODE_SYSPROP = "tc.dso.globalmode";
 
-  // Used for converting resource names into class names
-  private static final String      CLASS_SUFFIX              = ".class";
-  private static final int         CLASS_SUFFIX_LENGTH       = CLASS_SUFFIX.length();
-
   private static final boolean     GLOBAL_MODE_DEFAULT       = true;
 
   public static final boolean      USE_GLOBAL_CONTEXT;
@@ -110,84 +106,6 @@ public class ClassProcessorHelper {
 
   private static URLClassLoader createTCLoader() throws Exception {
     return new URLClassLoader(buildTerracottaClassPath(), null);
-  }
-
-  /**
-   * Get resource URL
-   * 
-   * @param name Resource name
-   * @param cl Loading classloader
-   * @return URL to load resource from
-   */
-  public static URL getTCResource(String name, ClassLoader cl) {
-    String className = null;
-    if (name.endsWith(CLASS_SUFFIX)) {
-      className = name.substring(0, name.length() - CLASS_SUFFIX_LENGTH).replace('/', '.');
-    }
-
-    URL resource = getClassResource(className, cl, false);
-    return resource;
-  }
-
-  /**
-   * Get the exported class if defined. This method is called from java.lang.ClassLoader.loadClassInternal()
-   * 
-   * @param name Class name
-   * @param cl Classloader
-   * @return Class bytes
-   * @throws ClassNotFoundException If class not found
-   */
-  public static byte[] loadClassInternalHook(String name, ClassLoader cl) throws ClassNotFoundException {
-    URL resource = getClassResource(name, cl, true);
-
-    if (null == resource) { return null; }
-
-    return getResourceBytes(resource);
-  }
-
-  public static byte[] systemLoaderFindClassHook(String name, ClassLoader loader) throws ClassNotFoundException {
-    URL resource = getClassResource(name, loader, false);
-    if (resource == null) { return null; }
-    return getResourceBytes(resource);
-  }
-
-  private static byte[] getResourceBytes(URL url) throws ClassNotFoundException {
-    InputStream is = null;
-    try {
-      is = url.openStream();
-      byte[] b = new byte[is.available()];
-      int len = 0;
-      int n;
-      while ((n = is.read(b, len, b.length - len)) > 0) {
-        len += n;
-        if (len < b.length) {
-          byte[] c = new byte[b.length + 1000];
-          System.arraycopy(b, 0, c, 0, len);
-          b = c;
-        }
-      }
-      if (len == b.length) { return b; }
-      byte[] c = new byte[len];
-      System.arraycopy(b, 0, c, 0, len);
-      return c;
-    } catch (Exception e) {
-      throw new ClassNotFoundException("Unable to load " + url.toString() + "; " + e.toString(), e);
-    } finally {
-      try {
-        is.close();
-      } catch (Exception ex) {
-        // ignore
-      }
-    }
-  }
-
-  private static URL getClassResource(String name, ClassLoader cl, boolean hideSystemResources) {
-    if (name != null) {
-      DSOContext context = getContext(cl);
-      if (context != null) { return context.getClassResource(name, cl, hideSystemResources); }
-    }
-
-    return null;
   }
 
   private static void handleError(Throwable t) {

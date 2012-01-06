@@ -26,16 +26,6 @@ public interface DSOContext extends ClassProcessor, ClassFileTransformer {
 
   public void shutdown();
 
-  /**
-   * Get url to class file
-   * 
-   * @param className Class name
-   * @param loader the calling classloader
-   * @param hideSystemResources true if resources destined only for the system class loader should be hidden
-   * @return URL to class itself
-   */
-  public URL getClassResource(String className, ClassLoader loader, boolean hideSystemResources);
-
   public ModuleConfiguration getModuleConfigurtion();
 
   public void installBundles(Collection<URL> bundleURLs) throws Exception;

@@ -215,15 +215,6 @@ public class DSOContextImpl implements DSOContext {
       System.exit(1);
       throw new AssertionError("Will not run");
     }
-
-    // do a pre-emptive class load since this path gets nested inside other classloads...
-    try {
-      configHelper.addClassResource("non.existent.Class", new URL("file:///not/a/real/file"), false);
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-    }
-
-    getClassResource("non.existent.Class", getClass().getClassLoader(), true);
   }
 
   private void resolveClasses() {
@@ -357,10 +348,6 @@ public class DSOContextImpl implements DSOContext {
     throw new TCTimeoutException("We tried for " + (int) ((System.currentTimeMillis() - startTime) / 1000)
                                  + " seconds, but couldn't fetch system configuration mode from the L2 " + "at '"
                                  + theURL + "'. Is the L2 running?");
-  }
-
-  public URL getClassResource(String className, ClassLoader loader, boolean hideSystemResources) {
-    return configHelper.getClassResource(className, loader, hideSystemResources);
   }
 
   public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,

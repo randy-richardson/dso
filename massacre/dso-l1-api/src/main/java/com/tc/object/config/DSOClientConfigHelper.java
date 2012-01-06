@@ -44,8 +44,6 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanCon
 
   void addNonportablePattern(String pattern);
 
-  void addClassResource(final String className, final URL resource, final boolean targetSystemLoaderOnly);
-
   void addIncludePattern(String expression, boolean honorTransient, String methodToCallOnLoad, boolean honorVolatile);
 
   URL getBundleURL(Bundle bundle);
@@ -263,10 +261,6 @@ public interface DSOClientConfigHelper extends DSOApplicationConfig, DSOMBeanCon
    * return as a no-op.
    */
   void addCustomAdapter(String name, ClassAdapterFactory adapterFactory);
-
-  ClassReplacementMapping getClassReplacementMapping();
-
-  URL getClassResource(String className, ClassLoader loader, boolean hideSystemResources);
 
   boolean hasCustomAdapters(ClassInfo classInfo);
 

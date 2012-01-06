@@ -4,7 +4,6 @@
  */
 package com.tc.object.config;
 
-import org.knopflerfish.framework.BundleClassLoader;
 import org.osgi.framework.Bundle;
 import org.terracotta.groupConfigForL1.ServerGroup;
 import org.terracotta.groupConfigForL1.ServerGroupsDocument.ServerGroups;
@@ -138,8 +137,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   // ====================================================================================================================
 
   private final Map<String, Collection<ClassAdapterFactory>> customAdapters                     = new HashMap<String, Collection<ClassAdapterFactory>>();
-  private final ClassReplacementMapping                      classReplacements                  = new ClassReplacementMappingImpl();
-  private final Map<String, Resource>                        classResources                     = new ConcurrentHashMap<String, Resource>();
   private final Map                                          aspectModules                      = new ConcurrentHashMap();
   private final Portability                                  portability;
   private int                                                faultCount                         = -1;
@@ -440,50 +437,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     } else {
       return spec.getAfterDSOClassAdapters();
     }
-  }
-
-  public void addClassReplacement(final String originalClassName, final String replacementClassName,
-                                  final URL replacementResource, final ClassReplacementTest test) {
-    this.classReplacements.addMapping(originalClassName, replacementClassName, replacementResource, test);
-  }
-
-  public void addClassReplacement(final String originalClassName, final String replacementClassName,
-                                  final URL replacementResource) {
-    addClassReplacement(originalClassName, replacementClassName, replacementResource, null);
-  }
-
-  public ClassReplacementMapping getClassReplacementMapping() {
-    return classReplacements;
-  }
-
-  public void addClassResource(final String className, final URL resource, final boolean targetSystemLoaderOnly) {
-    Resource prev = this.classResources.put(className, new Resource(resource, targetSystemLoaderOnly));
-    // CDV-1053: don't call URL.equals() which can block
-    if ((prev != null) && (!prev.getResource().toString().equals(resource.toString()))) {
-      // we want to know if modules more than one module is trying to export the same class
-      throw new AssertionError("Attempting to replace mapping for " + className + ", from " + prev + " to " + resource);
-    }
-  }
-
-  public URL getClassResource(final String className, final ClassLoader loader,
-                              final boolean hideSystemLoaderOnlyResources) {
-    // don't allow export to a TIM loader. Use Import-Package instead
-    if (loader instanceof BundleClassLoader) return null;
-
-    Resource res = this.classResources.get(className);
-    if (res == null) return null;
-
-    if (!res.isTargetSystemLoaderOnly()) {
-      return res.getResource();
-    } else {
-      if (!hideSystemLoaderOnlyResources) {
-        if (ClassLoader.getSystemClassLoader() == loader) { return res.getResource(); }
-        if (System.getProperty("java.system.class.loader") != null
-            && ClassLoader.getSystemClassLoader().getParent() == loader) { return res.getResource(); }
-      }
-    }
-
-    return null;
   }
 
   private void markAllSpecsPreInstrumented() {
@@ -1436,30 +1389,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   public void addNotClearableAdapter(String type) {
     String iface = NotClearable.class.getName().replace('.', '/');
     addCustomAdapter(type, new AddInterfacesAdapter(new String[] { iface }));
-  }
-
-  private static class Resource {
-
-    private final URL     resource;
-    private final boolean targetSystemLoaderOnly;
-
-    Resource(final URL resource, final boolean targetSystemLoaderOnly) {
-      this.resource = resource;
-      this.targetSystemLoaderOnly = targetSystemLoaderOnly;
-    }
-
-    URL getResource() {
-      return resource;
-    }
-
-    boolean isTargetSystemLoaderOnly() {
-      return targetSystemLoaderOnly;
-    }
-
-    @Override
-    public String toString() {
-      return resource.toExternalForm();
-    }
   }
 
   public L1ConfigurationSetupManager reloadServersConfiguration() throws ConfigurationSetupException {
