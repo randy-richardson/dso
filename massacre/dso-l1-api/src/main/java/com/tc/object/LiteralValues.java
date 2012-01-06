@@ -20,12 +20,13 @@ import java.util.Map;
  * Responsible for handling literal values
  */
 public enum LiteralValues {
-  
+
   /*********************************************************************************************************************
-   * NOTE:: READ THIS IF YOU ARE ADDING NEW TYPES TO THIS FILE. XXX:: If you are adding more types, please see DNAEncoding. 
+   * NOTE:: READ THIS IF YOU ARE ADDING NEW TYPES TO THIS FILE. XXX:: If you are adding more types, please see
+   * DNAEncoding.
    * You need to be adding New code in this class to properly handle encode/decode of the new type
    ********************************************************************************************************************/
-  
+
   INTEGER() {
 
     @Override
@@ -62,8 +63,7 @@ public enum LiteralValues {
     public String getOutputMethodName() {
       return "writeInt";
     }
-    
-    
+
   },
   LONG() {
 
@@ -101,8 +101,7 @@ public enum LiteralValues {
     public String getOutputMethodName() {
       return "writeLong";
     }
-    
-    
+
   },
   CHARACTER() {
 
@@ -140,8 +139,7 @@ public enum LiteralValues {
     public String getOutputMethodName() {
       return "writeChar";
     }
-    
-    
+
   },
   FLOAT() {
 
@@ -327,49 +325,41 @@ public enum LiteralValues {
     public String getOutputMethodName() {
       return "writeShort";
     }
-    
-  }, 
-  STRING(), 
-  ARRAY() {
+
+  },
+  STRING(), ARRAY() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
       throw new UnsupportedOperationException("Cannot calculate hashCode for " + this.name());
     }
-    
-  }, 
+
+  },
   OBJECT() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
       throw new UnsupportedOperationException("Cannot calculate hashCode for " + this.name());
     }
-    
-  }, 
-  OBJECT_ID(), 
-  STRING_BYTES(), 
-  JAVA_LANG_CLASS() {
+
+  },
+  OBJECT_ID(), STRING_BYTES(), JAVA_LANG_CLASS() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
       return ((Class) value).getCanonicalName().hashCode();
     }
-     
+
   },
-  JAVA_LANG_CLASS_HOLDER(), 
-  STACK_TRACE_ELEMENT(), 
-  BIG_INTEGER(), 
-  BIG_DECIMAL(), 
-  JAVA_LANG_CLASSLOADER() {
+  JAVA_LANG_CLASS_HOLDER(), BIG_INTEGER(), BIG_DECIMAL(), JAVA_LANG_CLASSLOADER() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
       return ((NamedClassLoader) value).__tc_getClassLoaderName().hashCode();
     }
-    
-  }, 
-  JAVA_LANG_CLASSLOADER_HOLDER(), 
-  ENUM() {
+
+  },
+  JAVA_LANG_CLASSLOADER_HOLDER(), ENUM() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
@@ -379,55 +369,54 @@ public enum LiteralValues {
       hash = (31 * hash) + e.getDeclaringClass().getCanonicalName().hashCode();
       return hash;
     }
-    
-  }, 
-  ENUM_HOLDER(), 
-  CURRENCY() {
+
+  },
+  ENUM_HOLDER(), CURRENCY() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
       return ((Currency) value).getCurrencyCode().hashCode();
     }
-    
-  }, 
+
+  },
   STRING_BYTES_COMPRESSED();
-  
+
   public String getInputMethodName() {
     return "readObject";
   }
-  
+
   public String getInputMethodDescriptor() {
     return "()Ljava/lang/Object;";
   }
-  
+
   public String getOutputMethodName() {
     return "writeObject";
   }
-  
+
   public String getOutputMethodDescriptor() {
     return "(Ljava/lang/Object;)V";
   }
-  
+
   public String getTypeDesc() {
     return "Ljava/lang/Object;";
   }
-  
+
   // overridden by primitive types
   public String getClassNameSlashForPrimitives() {
-    return "java/lang/Object"; 
+    return "java/lang/Object";
   }
-  
+
   // overridden by primitive types
   public String getMethodNameForPrimitives() {
-    throw new AssertionError("Only Primitive types allowed. Invalid type: "
-                             + this.toString());
+    throw new AssertionError("Only Primitive types allowed. Invalid type: " + this.toString());
   }
-  
+
   /**
-   * Calculate a stable hash code for the object.  Many literals (like Integer) have stable
+   * Calculate a stable hash code for the object. Many literals (like Integer) have stable
    * hash codes already, but some (like Class) do not.
+   * 
    * @param value must refer to an object for which {@link #isLiteralInstance()} returns true.
-   * This implies that value must be non-null.
+   *        This implies that value must be non-null.
    */
   public int calculateDsoHashCodeForLiteral(Object value) {
     // Use caution when implementing DSO hash codes. This hash must be compatible with
@@ -435,16 +424,15 @@ public enum LiteralValues {
     // object does not already override hashCode (and thus does not override equals).
     // Most commonly this will apply to objects like Class and Enum, where the VM strictly
     // enforces identity equality and therefore uses System.identityHashCode.
-    if (!isLiteralInstance(value)) { 
-      throw new UnsupportedOperationException("Cannot calculate hashCode for non-literals"); 
-    }
+    if (!isLiteralInstance(value)) { throw new UnsupportedOperationException(
+                                                                             "Cannot calculate hashCode for non-literals"); }
     return value.hashCode();
   }
-  
-  public final static String ENUM_CLASS_DOTS              = "java.lang.Enum";
-  
+
+  public final static String                      ENUM_CLASS_DOTS = "java.lang.Enum";
+
   private static final Map<String, LiteralValues> literalsMap;
-  
+
   static {
     Map<String, LiteralValues> tmp = new HashMap<String, LiteralValues>();
 
@@ -478,7 +466,6 @@ public enum LiteralValues {
     addMapping(tmp, "com.tc.object.dna.impl.ClassInstance", JAVA_LANG_CLASS_HOLDER);
 
     addMapping(tmp, ObjectID.class.getName(), OBJECT_ID);
-    addMapping(tmp, StackTraceElement.class.getName(), STACK_TRACE_ELEMENT);
 
     addMapping(tmp, "com.tc.object.dna.impl.ClassLoaderInstance", JAVA_LANG_CLASSLOADER_HOLDER);
 
@@ -555,10 +542,11 @@ public enum LiteralValues {
   }
 
   /**
-   * Calculate a stable hash code for the object.  Many literals (like Integer) have stable
+   * Calculate a stable hash code for the object. Many literals (like Integer) have stable
    * hash codes already, but some (like Class) do not.
+   * 
    * @param value must refer to an object for which {@link #isLiteralInstance()} returns true.
-   * This implies that value must be non-null.
+   *        This implies that value must be non-null.
    */
   public static int calculateDsoHashCode(Object value) {
     final LiteralValues type = valueFor(value);

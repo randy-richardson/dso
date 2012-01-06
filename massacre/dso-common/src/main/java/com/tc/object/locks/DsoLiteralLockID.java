@@ -72,8 +72,6 @@ public class DsoLiteralLockID implements LockID {
         return this;
       case STRING:
         throw new AssertionError("String literal types should be handled by StringLockID");
-      case STACK_TRACE_ELEMENT:
-        throw new AssertionError();
       case JAVA_LANG_CLASSLOADER_HOLDER:
         literal = new ClassLoaderInstance(new UTF8ByteDataHolder(serialInput.readString()));
         return this;
@@ -135,11 +133,8 @@ public class DsoLiteralLockID implements LockID {
       case SHORT:
         serialOutput.writeShort(((Short) literal).shortValue());
         break;
-
       case STRING:
         throw new AssertionError("String literal types should be handled by StringLockID");
-      case STACK_TRACE_ELEMENT:
-        throw new AssertionError();
       case JAVA_LANG_CLASSLOADER_HOLDER:
         ClassLoaderInstance classLoaderInstance = (ClassLoaderInstance) literal;
         serialOutput.writeString(classLoaderInstance.getLoaderDef().asString());
