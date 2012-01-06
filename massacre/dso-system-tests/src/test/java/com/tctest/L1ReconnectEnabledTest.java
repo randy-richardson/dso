@@ -7,8 +7,6 @@ package com.tctest;
 import org.apache.commons.io.IOUtils;
 import org.apache.tools.ant.filters.StringInputStream;
 
-import com.tc.config.schema.builder.InstrumentedClassConfigBuilder;
-import com.tc.config.schema.test.InstrumentedClassConfigBuilderImpl;
 import com.tc.config.schema.test.L2ConfigBuilder;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
 import com.tc.properties.TCProperties;
@@ -16,7 +14,6 @@ import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
-import com.tctest.runner.AbstractTransparentApp;
 import com.tctest.runner.TransparentAppConfig;
 
 import java.io.File;
@@ -88,24 +85,12 @@ public class L1ReconnectEnabledTest extends TransparentTestBase {
   }
 
   public static TerracottaConfigBuilder createConfig(int port, int adminPort, int groupPort) {
-    String testClassName = L1ReconnectEnabledTestApp.class.getName();
-    String testClassSuperName = AbstractTransparentApp.class.getName();
-
     TerracottaConfigBuilder out = new TerracottaConfigBuilder();
 
     out.getServers().getL2s()[0].setDSOPort(port);
     out.getServers().getL2s()[0].setJMXPort(adminPort);
     out.getServers().getL2s()[0].setL2GroupPort(groupPort);
     out.getServers().getL2s()[0].setPersistenceMode(L2ConfigBuilder.PERSISTENCE_MODE_PERMANENT_STORE);
-
-    InstrumentedClassConfigBuilder instrumented1 = new InstrumentedClassConfigBuilderImpl();
-    instrumented1.setClassExpression(testClassName + "*");
-
-    InstrumentedClassConfigBuilder instrumented2 = new InstrumentedClassConfigBuilderImpl();
-    instrumented2.setClassExpression(testClassSuperName + "*");
-
-    out.getApplication().getDSO()
-        .setInstrumentedClasses(new InstrumentedClassConfigBuilder[] { instrumented1, instrumented2 });
 
     return out;
   }
