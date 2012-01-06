@@ -4,7 +4,6 @@
  */
 package com.tc.plugins;
 
-import org.apache.commons.io.IOUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -22,17 +21,12 @@ import com.tc.management.TunneledDomainUpdater;
 import com.tc.management.beans.TIMByteProviderMBean;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.util.JarResourceLoader;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.Assert;
 import com.tc.util.StringUtil;
 import com.tc.util.UUID;
-import com.tc.util.VendorVmSignature;
-import com.tc.util.VendorVmSignatureException;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.util.ArrayList;
@@ -153,7 +147,7 @@ public class ModulesLoader {
     configHelper.recordBundleURLs(bundleURLs);
 
     EmbeddedOSGiEventHandler handler = new EmbeddedOSGiEventHandler() {
-      public void callback(final Object payload) throws BundleException {
+      public void callback(final Object payload) {
         Assert.assertTrue(payload instanceof Bundle);
         Bundle bundle = (Bundle) payload;
         URL bundleURL = bundleURLs.get(bundle);
@@ -176,7 +170,6 @@ public class ModulesLoader {
             }
           }
           printModuleBuildInfo(bundle);
-          loadConfiguration(configHelper, bundle, bundleURL);
         }
       }
     };
@@ -277,64 +270,4 @@ public class ModulesLoader {
     }
   }
 
-  /**
-   * Extract the list of xml-fragment files that a config bundle should use for instrumentation.
-   */
-  public static String[] getConfigPath(final Bundle bundle) throws BundleException {
-    final VendorVmSignature vmsig;
-    try {
-      vmsig = new VendorVmSignature();
-    } catch (VendorVmSignatureException e) {
-      throw new BundleException(e.getMessage());
-    }
-    final String TERRACOTTA_CONFIGURATION = "Terracotta-Configuration";
-    final String TERRACOTTA_CONFIGURATION_FOR_VM = TERRACOTTA_CONFIGURATION + VendorVmSignature.SIGNATURE_SEPARATOR
-                                                   + vmsig.getSignature();
-
-    String path = (String) bundle.getHeaders().get(TERRACOTTA_CONFIGURATION_FOR_VM);
-    if (path == null) {
-      path = (String) bundle.getHeaders().get(TERRACOTTA_CONFIGURATION);
-      if (path == null) path = "terracotta.xml";
-    }
-
-    final String EXTENSION = ".xml";
-    final String[] paths = path.split(",");
-    for (int i = 0; i < paths.length; i++) {
-      paths[i] = paths[i].trim();
-      if (!paths[i].endsWith(EXTENSION)) paths[i] = paths[i].concat(EXTENSION);
-    }
-
-    return paths;
-  }
-
-  private static void loadConfiguration(final DSOClientConfigHelper configHelper, Bundle bundle, final URL url)
-      throws BundleException {
-    // attempt to load all of the config fragments found in the config-bundle
-    final String[] paths = getConfigPath(bundle);
-    for (final String configPath : paths) {
-      final InputStream is;
-      try {
-        is = JarResourceLoader.getJarResource(url, configPath);
-      } catch (IOException ioe) {
-        throw new BundleException("Unable to extract " + configPath + " from URL: " + url, ioe);
-      }
-
-      if (is == null) {
-        continue;
-      }
-
-      // otherwise, merge it with the current configuration
-      try {
-        is.close();
-      } catch (IOException ioe) {
-        String msg = "Error reading configuration from bundle: " + bundle.getSymbolicName() + " located at "
-                     + bundle.getLocation();
-        consoleLogger.warn(msg, ioe);
-        logger.warn(msg, ioe);
-        throw new BundleException(msg, ioe);
-      } finally {
-        IOUtils.closeQuietly(is);
-      }
-    }
-  }
 }
