@@ -4,6 +4,7 @@
  */
 package com.tc.plugins;
 
+import org.apache.commons.io.FileUtils;
 import org.osgi.framework.BundleException;
 
 import com.tc.bundles.EmbeddedOSGiRuntime;
@@ -246,21 +247,16 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
     // Create bundle jar based on these attributes
     File repo = new File(getTempDirectory(), "repowithdots");
-    repo.mkdir();
+    ensureDir(repo);
 
     // create a couples of .svn dirs
     File dotSvnDir = new File(repo, ".svn");
-    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/.svn");
-    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/teracotta/.svn");
-    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/terracotta/modules/.svn");
-    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/terracotta/modules/somemodule/.svn");
-    Assert.assertTrue(dotSvnDir.mkdirs());
     dotSvnDir = new File(repo, "org/terracotta/modules/somemodule/1.0.0/.svn");
-    Assert.assertTrue(dotSvnDir.mkdirs());
+    ensureDir(dotSvnDir);
 
     File generatedJar1 = createBundle(repo, groupId, artifactId, version, symbolicName, version, null);
 
@@ -279,6 +275,12 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
     } finally {
       shutdownAndCleanUpJars(osgiRuntime, new File[] { generatedJar1 });
     }
+  }
+
+  private void ensureDir(File dir) throws IOException {
+    if (dir.exists()) FileUtils.deleteDirectory(dir);
+    dir.mkdirs();
+    Assert.assertTrue(dir.isDirectory());
   }
 
   private void shutdownAndCleanUpJars(EmbeddedOSGiRuntime osgiRuntime, File[] jars) {
