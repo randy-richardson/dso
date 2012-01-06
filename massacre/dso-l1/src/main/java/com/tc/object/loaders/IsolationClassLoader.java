@@ -36,7 +36,7 @@ import java.util.concurrent.CountDownLatch;
  * DSO Class loader for internal testing. The main purpose of this loader is to force test classes to be be defined
  * specifically in this loader (and consequently within an isolated DSO context)
  */
-public class IsolationClassLoader extends URLClassLoader implements NamedClassLoader {
+public class IsolationClassLoader extends URLClassLoader {
   private static final ClassLoader    SYSTEM_LOADER = ClassLoader.getSystemClassLoader();
 
   private final ManagerInternal       manager;
@@ -86,10 +86,8 @@ public class IsolationClassLoader extends URLClassLoader implements NamedClassLo
                                         RemoteSearchRequestManager searchRequestManager,
                                         DSOClientConfigHelper theConfig,
                                         PreparedComponentsFromL2Connection connectionComponents) {
-    ManagerInternal rv = new ManagerImpl(startClient, objectManager, txManager, lockManager, searchRequestManager,
-                                         theConfig, connectionComponents, false, null, null, false);
-    rv.registerNamedLoader(this, null);
-    return rv;
+    return new ManagerImpl(startClient, objectManager, txManager, lockManager, searchRequestManager, theConfig,
+                           connectionComponents, false, null, this, false);
   }
 
   public void stop() {

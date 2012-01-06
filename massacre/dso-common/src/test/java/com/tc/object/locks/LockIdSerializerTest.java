@@ -13,7 +13,6 @@ import com.tc.object.bytecode.Manageable;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.LoaderDescription;
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.util.Assert;
 
 import java.io.IOException;
@@ -156,10 +155,6 @@ public class LockIdSerializerTest extends TestCase {
       } else {
         return null;
       }
-    }
-
-    public void registerNamedLoader(NamedClassLoader loader, String appGroup) {
-      throw new AssertionError();
     }
 
     /*

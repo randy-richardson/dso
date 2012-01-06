@@ -6,7 +6,6 @@ package com.tc.object.dna.impl;
 
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.LoaderDescription;
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.util.Assert;
 
 public class SerializerDNAEncodingImpl extends BaseDNAEncodingImpl {
@@ -59,10 +58,6 @@ public class SerializerDNAEncodingImpl extends BaseDNAEncodingImpl {
 
     public LoaderDescription getLoaderDescriptionFor(final ClassLoader loader) {
       return LOADER_DESC;
-    }
-
-    public void registerNamedLoader(final NamedClassLoader loader, final String appGroup) {
-      // do nothing
     }
   }
 }

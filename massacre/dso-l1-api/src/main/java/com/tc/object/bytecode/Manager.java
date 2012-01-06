@@ -11,7 +11,6 @@ import com.tc.management.TunneledDomainUpdater;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObjectExternal;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
 import com.tc.object.locks.TerracottaLocking;
@@ -295,14 +294,6 @@ public interface Manager extends TerracottaLocking {
    * override hashCode()
    */
   public boolean overridesHashCode(Object obj);
-
-  /**
-   * Register a named classloader with Terracotta.
-   * 
-   * @param webAppName corresponds to the name of a web-application in the TC config, or null if the classloader being
-   *        registered is not associated with a web application.
-   */
-  public void registerNamedLoader(NamedClassLoader loader, String webAppName);
 
   /**
    * Get the ClassProvider associated with this Manager

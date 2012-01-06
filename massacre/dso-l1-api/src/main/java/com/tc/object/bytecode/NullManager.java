@@ -11,7 +11,6 @@ import com.tc.management.TunneledDomainUpdater;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObjectExternal;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
 import com.tc.object.locks.Notify;
@@ -178,10 +177,6 @@ public class NullManager implements Manager {
   }
 
   public boolean overridesHashCode(Object obj) {
-    throw new UnsupportedOperationException();
-  }
-
-  public void registerNamedLoader(NamedClassLoader loader, String webAppName) {
     throw new UnsupportedOperationException();
   }
 

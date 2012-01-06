@@ -6,7 +6,6 @@ import com.tc.management.TunneledDomainUpdater;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObjectExternal;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
 import com.tc.object.locks.Notify;
@@ -256,10 +255,6 @@ public class NullManagerInternal implements ManagerInternal {
 
   public boolean overridesHashCode(Object obj) {
     return NULL_MANAGER.overridesHashCode(obj);
-  }
-
-  public void registerNamedLoader(NamedClassLoader loader, String webAppName) {
-    NULL_MANAGER.registerNamedLoader(loader, webAppName);
   }
 
   public ClassProvider getClassProvider() {

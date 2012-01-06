@@ -6,7 +6,6 @@ package com.tc.object.dna.impl;
 
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.LoaderDescription;
-import com.tc.object.loaders.NamedClassLoader;
 
 public class StorageDNAEncodingImpl extends BaseDNAEncodingImpl {
 
@@ -49,9 +48,6 @@ public class StorageDNAEncodingImpl extends BaseDNAEncodingImpl {
       throw new ClassNotFoundException();
     }
 
-    public void registerNamedLoader(final NamedClassLoader loader, final String appGroup) {
-      throw new AssertionError();
-    }
   }
 
 }

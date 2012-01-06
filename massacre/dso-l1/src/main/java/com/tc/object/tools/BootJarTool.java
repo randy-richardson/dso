@@ -127,8 +127,6 @@ import com.tc.object.field.TCField;
 import com.tc.object.loaders.BytecodeProvider;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.LoaderDescription;
-import com.tc.object.loaders.NamedClassLoader;
-import com.tc.object.loaders.NamedLoaderAdapter;
 import com.tc.object.loaders.Namespace;
 import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.Notify;
@@ -450,7 +448,6 @@ public class BootJarTool {
       loadTerracottaClass(TerracottaOperatorEvent.EventType.class.getName());
       loadTerracottaClass(TerracottaOperatorEvent.EventSubsystem.class.getName());
 
-      loadTerracottaClass(NamedClassLoader.class.getName());
       loadTerracottaClass(TransparentAccess.class.getName());
       loadTerracottaClass(BytecodeProvider.class.getName());
 
@@ -473,7 +470,6 @@ public class BootJarTool {
       loadTerracottaClass(NullTCLogger.class.getName());
       loadTerracottaClass(ManagerUtil.class.getName());
       loadTerracottaClass(ManagerUtilInternal.class.getName());
-      loadTerracottaClass(ManagerUtil.class.getName() + "$GlobalManagerHolder");
       loadTerracottaClass(TCObject.class.getName());
       loadTerracottaClassesReachableFromTCObject();
       loadTerracottaClassesForTCObjectSelf();
@@ -993,12 +989,7 @@ public class BootJarTool {
     final ClassLoaderPreProcessorImpl adapter = new ClassLoaderPreProcessorImpl();
     final byte[] patched = adapter.preProcess(getSystemBytes("java.lang.ClassLoader"));
 
-    final ClassReader cr = new ClassReader(patched);
-    final ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-    final ClassVisitor cv = new NamedLoaderAdapter().create(cw, null);
-    cr.accept(cv, ClassReader.SKIP_FRAMES);
-
-    loadClassIntoJar("java.lang.ClassLoader", cw.toByteArray(), false);
+    loadClassIntoJar("java.lang.ClassLoader", patched, false);
   }
 
   protected final byte[] doDSOTransform(final String name, final byte[] data) {

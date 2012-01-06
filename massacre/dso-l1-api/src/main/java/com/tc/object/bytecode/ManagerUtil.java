@@ -12,7 +12,6 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCObjectExternal;
 import com.tc.object.bytecode.hook.impl.ArrayManager;
 import com.tc.object.bytecode.hook.impl.ClassProcessorHelper;
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
 import com.tc.properties.TCProperties;
@@ -48,7 +47,6 @@ public class ManagerUtil {
   }
 
   public static void enableSingleton(final Manager singleton) {
-    if (ClassProcessorHelper.USE_GLOBAL_CONTEXT) { throw new AssertionError("global mode"); }
     if (singleton == null) { throw new NullPointerException("null singleton"); }
 
     synchronized (ManagerUtil.class) {
@@ -65,7 +63,6 @@ public class ManagerUtil {
   }
 
   public static void clearSingleton() {
-    if (ClassProcessorHelper.USE_GLOBAL_CONTEXT) { throw new AssertionError("global mode"); }
     SINGLETON = null;
   }
 
@@ -85,17 +82,14 @@ public class ManagerUtil {
 
   public static Manager getManager() {
     if (!ENABLED) { return NULL_MANAGER; }
-    if (ClassProcessorHelper.USE_GLOBAL_CONTEXT) {
-      return GlobalManagerHolder.instance;
-    } else {
-      Manager rv = SINGLETON;
-      if (rv != null) return rv;
 
-      ClassLoader loader = Thread.currentThread().getContextClassLoader();
-      rv = ClassProcessorHelper.getManager(loader);
-      if (rv == null) { return NULL_MANAGER; }
-      return rv;
-    }
+    Manager rv = SINGLETON;
+    if (rv != null) return rv;
+
+    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    rv = ClassProcessorHelper.getManager(loader);
+    if (rv == null) { return NULL_MANAGER; }
+    return rv;
   }
 
   /**
@@ -733,13 +727,6 @@ public class ManagerUtil {
     // not for public instantiation
   }
 
-  private static class GlobalManagerHolder {
-    static final Manager instance;
-    static {
-      instance = ClassProcessorHelper.getGlobalManager();
-    }
-  }
-
   /**
    * For java.lang.reflect.Array.get()
    * 
@@ -1145,14 +1132,6 @@ public class ManagerUtil {
     // NOTE: The absence of the OverridesHashCode interface should not be relied upon
     if (obj instanceof OverridesHashCode) { return true; }
     return getManager().overridesHashCode(obj);
-  }
-
-  /**
-   * @param webAppName if this is a web application loader, the name of the associated web app as it would be declared
-   *        in a web-application element in the Terracotta config; or null, if this is not a web application loader.
-   */
-  public static void registerNamedLoader(final NamedClassLoader loader, final String webAppName) {
-    getManager().registerNamedLoader(loader, webAppName);
   }
 
   //

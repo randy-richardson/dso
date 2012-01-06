@@ -36,8 +36,7 @@ import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.event.DmiManager;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.NamedClassLoader;
-import com.tc.object.loaders.StandardClassProvider;
+import com.tc.object.loaders.SingleLoaderClassProvider;
 import com.tc.object.locks.ClientLockManager;
 import com.tc.object.locks.DsoLockID;
 import com.tc.object.locks.LockID;
@@ -138,8 +137,8 @@ public class ManagerImpl implements ManagerInternal {
                      final ClientTransactionManager txManager, final ClientLockManager lockManager,
                      final RemoteSearchRequestManager searchRequestManager, final DSOClientConfigHelper config,
                      final PreparedComponentsFromL2Connection connectionComponents,
-                     final boolean shutdownActionRequired, final RuntimeLogger runtimeLogger,
-                     final ClassProvider classProvider, final boolean isExpressRejoinMode) {
+                     final boolean shutdownActionRequired, final RuntimeLogger runtimeLogger, final ClassLoader loader,
+                     final boolean isExpressRejoinMode) {
     this.objectManager = objectManager;
     this.portability = config.getPortability();
     this.txManager = txManager;
@@ -159,7 +158,7 @@ public class ManagerImpl implements ManagerInternal {
       this.shutdownAction = null;
     }
     this.runtimeLogger = runtimeLogger == null ? new RuntimeLoggerImpl(config) : runtimeLogger;
-    this.classProvider = classProvider == null ? new StandardClassProvider(this.runtimeLogger) : classProvider;
+    this.classProvider = new SingleLoaderClassProvider(loader == null ? getClass().getClassLoader() : loader);
 
     this.lockIdFactory = new LockIdFactory(this);
     this.clientMode = isExpressRejoinMode ? ClientMode.EXPRESS_REJOIN_MODE : ClientMode.DSO_MODE;
@@ -689,12 +688,6 @@ public class ManagerImpl implements ManagerInternal {
 
   public boolean overridesHashCode(final Object obj) {
     return this.portability.overridesHashCode(obj);
-  }
-
-  public void registerNamedLoader(final NamedClassLoader loader, final String webAppName) {
-    final String loaderName = loader.__tc_getClassLoaderName();
-    final String appGroup = this.config.getAppGroup(loaderName, webAppName);
-    this.classProvider.registerNamedLoader(loader, appGroup);
   }
 
   public ClassProvider getClassProvider() {

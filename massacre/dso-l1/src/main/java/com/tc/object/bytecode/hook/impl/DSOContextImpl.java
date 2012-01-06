@@ -33,7 +33,6 @@ import com.tc.object.config.ModuleConfiguration;
 import com.tc.object.config.StandardDSOClientConfigHelperImpl;
 import com.tc.object.config.UnverifiedBootJarException;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.SingleLoaderClassProvider;
 import com.tc.object.logging.InstrumentationLogger;
 import com.tc.object.logging.RuntimeLoggerImpl;
 import com.tc.object.tools.BootJar;
@@ -59,42 +58,29 @@ import java.util.Map;
 
 public class DSOContextImpl implements DSOContext {
 
-  private static final TCLogger                     logger                 = TCLogging.getLogger(DSOContextImpl.class);
-  private static final TCLogger                     consoleLogger          = CustomerLogging.getConsoleLogger();
+  private static final TCLogger       logger                 = TCLogging.getLogger(DSOContextImpl.class);
+  private static final TCLogger       consoleLogger          = CustomerLogging.getConsoleLogger();
 
-  private static DSOClientConfigHelper              staticConfigHelper;
-  private static PreparedComponentsFromL2Connection preparedComponentsFromL2Connection;
+  private final DSOClientConfigHelper configHelper;
+  private final Manager               manager;
+  private final InstrumentationLogger instrumentationLogger;
+  private final WeavingStrategy       weavingStrategy;
 
-  private final DSOClientConfigHelper               configHelper;
-  private final Manager                             manager;
-  private final InstrumentationLogger               instrumentationLogger;
-  private final WeavingStrategy                     weavingStrategy;
-
-  private final static String                       UNVERIFIED_BOOTJAR_MSG = "\n********************************************************************************\n"
-                                                                             + "There is a mismatch between the expected Terracotta boot JAR file and the\n"
-                                                                             + "existing Terracotta boot JAR file. Recreate the boot JAR file using the\n"
-                                                                             + "following command from the Terracotta home directory:\n"
-                                                                             + "\n"
-                                                                             + "platform/bin/make-boot-jar.sh -f <path/to/Terracotta/configuration/file>\n"
-                                                                             + "\n"
-                                                                             + "or\n"
-                                                                             + "\n"
-                                                                             + "platform/bin\\make-boot-jar.bat -f <path\\to\\Terracotta\\configuration\\file>\n"
-                                                                             + "\n"
-                                                                             + "Enter the make-boot-jar command with the -h switch for help.\n"
-                                                                             + "********************************************************************************\n";
-  private final EmbeddedOSGiRuntime                 osgiRuntime;
-  private final boolean                             expressRejoinClient;
-
-  /**
-   * Creates a "global" DSO Context. This context is appropriate only when there is only one DSO Context that applies to
-   * the entire VM
-   */
-  public static DSOContext createGlobalContext() throws ConfigurationSetupException {
-    DSOClientConfigHelper configHelper = getGlobalConfigHelper();
-    Manager manager = new ManagerImpl(configHelper, preparedComponentsFromL2Connection);
-    return new DSOContextImpl(configHelper, manager.getClassProvider(), manager, Collections.EMPTY_LIST, false);
-  }
+  private final static String         UNVERIFIED_BOOTJAR_MSG = "\n********************************************************************************\n"
+                                                               + "There is a mismatch between the expected Terracotta boot JAR file and the\n"
+                                                               + "existing Terracotta boot JAR file. Recreate the boot JAR file using the\n"
+                                                               + "following command from the Terracotta home directory:\n"
+                                                               + "\n"
+                                                               + "platform/bin/make-boot-jar.sh -f <path/to/Terracotta/configuration/file>\n"
+                                                               + "\n"
+                                                               + "or\n"
+                                                               + "\n"
+                                                               + "platform/bin\\make-boot-jar.bat -f <path\\to\\Terracotta\\configuration\\file>\n"
+                                                               + "\n"
+                                                               + "Enter the make-boot-jar command with the -h switch for help.\n"
+                                                               + "********************************************************************************\n";
+  private final EmbeddedOSGiRuntime   osgiRuntime;
+  private final boolean               expressRejoinClient;
 
   public static DSOContext createContext(String configSpec) throws ConfigurationSetupException {
     StandardConfigurationSetupManagerFactory factory = new StandardConfigurationSetupManagerFactory(
@@ -155,11 +141,9 @@ public class DSOContextImpl implements DSOContext {
 
     DSOClientConfigHelper configHelper = new StandardDSOClientConfigHelperImpl(config, HAS_BOOT_JAR);
     RuntimeLoggerImpl runtimeLogger = new RuntimeLoggerImpl(configHelper);
-    // XXX: what should the appGroup and loaderDesc be? In theory we might want "regular" clients to access this shared
-    // state too
-    ClassProvider classProvider = new SingleLoaderClassProvider(null, "standalone", loader);
+
     Manager manager = new ManagerImpl(true, null, null, null, null, configHelper, l2Connection, true, runtimeLogger,
-                                      classProvider, expressRejoinClient);
+                                      loader, expressRejoinClient);
 
     Collection<Repository> repos = new ArrayList<Repository>();
     repos.add(new VirtualTimRepository(virtualTimJars));
@@ -260,28 +244,6 @@ public class DSOContextImpl implements DSOContext {
 
   public void postProcess(Class clazz, ClassLoader caller) {
     // NOP
-  }
-
-  private synchronized static DSOClientConfigHelper getGlobalConfigHelper() throws ConfigurationSetupException {
-    if (staticConfigHelper == null) {
-      StandardConfigurationSetupManagerFactory factory = new StandardConfigurationSetupManagerFactory(
-                                                                                                      StandardConfigurationSetupManagerFactory.ConfigMode.CUSTOM_L1,
-                                                                                                      new FatalIllegalConfigurationChangeHandler());
-
-      logger.debug("Created StandardTVSConfigurationSetupManagerFactory.");
-      L1ConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager();
-      config.setupLogging();
-      logger.debug("Created L1TVSConfigurationSetupManager.");
-
-      try {
-        preparedComponentsFromL2Connection = validateMakeL2Connection(config);
-      } catch (Exception e) {
-        throw new ConfigurationSetupException(e.getLocalizedMessage(), e);
-      }
-      staticConfigHelper = new StandardDSOClientConfigHelperImpl(config);
-    }
-
-    return staticConfigHelper;
   }
 
   private static PreparedComponentsFromL2Connection validateMakeL2Connection(L1ConfigurationSetupManager config)

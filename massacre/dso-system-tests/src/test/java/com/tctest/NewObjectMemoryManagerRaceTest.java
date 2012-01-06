@@ -13,12 +13,9 @@ import com.tc.config.schema.test.InstrumentedClassConfigBuilderImpl;
 import com.tc.config.schema.test.LockConfigBuilderImpl;
 import com.tc.config.schema.test.RootConfigBuilderImpl;
 import com.tc.config.schema.test.TerracottaConfigBuilder;
-import com.tc.object.bytecode.hook.impl.ClassProcessorHelper;
 import com.tc.object.config.ConfigVisitor;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.TransparencyClassSpec;
-import com.tc.object.loaders.IsolationClassLoader;
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.objectserver.control.ExtraL1ProcessControl;
 import com.tc.simulator.app.ApplicationConfig;
 import com.tc.simulator.listener.ListenerProvider;
@@ -88,8 +85,8 @@ public class NewObjectMemoryManagerRaceTest extends ServerCrashingTestBase {
     private static final List queue    = new ArrayList();
     private static boolean    end      = false;
 
-    private static final int        BATCH    = 3000;
-    private static int              putCount = 0;
+    private static final int  BATCH    = 3000;
+    private static int        putCount = 0;
 
     static Collection take() {
       Collection rv = new java.util.ArrayList();
@@ -317,12 +314,7 @@ public class NewObjectMemoryManagerRaceTest extends ServerCrashingTestBase {
   public static class External implements Runnable {
     public static void main(String[] args) throws Exception {
       try {
-        // Need to pretend like we are sharing classes from a loader named the same as
-        // the test framework's IsolationClassLaoder
         Loader loader = Loader.create();
-        ((NamedClassLoader) loader).__tc_setClassLoaderName(IsolationClassLoader.loaderName());
-        ClassProcessorHelper.registerGlobalLoader((NamedClassLoader) loader, null);
-
         Thread.currentThread().setContextClassLoader(loader);
         Runnable r = (Runnable) loader.loadClass(External.class.getName()).newInstance();
         r.run();

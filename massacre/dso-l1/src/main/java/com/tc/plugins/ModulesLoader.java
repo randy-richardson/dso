@@ -22,8 +22,6 @@ import com.tc.management.TunneledDomainUpdater;
 import com.tc.management.beans.TIMByteProviderMBean;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.NamedClassLoader;
-import com.tc.object.loaders.Namespace;
 import com.tc.object.util.JarResourceLoader;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesImpl;
@@ -36,7 +34,6 @@ import com.tc.util.VendorVmSignatureException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -164,8 +161,6 @@ public class ModulesLoader {
 
         if (bundle != null) {
           if (!forBootJar) {
-            registerClassLoader(configHelper, classProvider, bundle);
-
             Dictionary headers = bundle.getHeaders();
             if (headers.get("Presentation-Factory") != null) {
               logger.info("Installing TIMByteProvider for bundle '" + bundle.getSymbolicName() + "'");
@@ -267,28 +262,6 @@ public class ModulesLoader {
     }
 
     return modules;
-  }
-
-  private static void registerClassLoader(final DSOClientConfigHelper config, final ClassProvider classProvider,
-                                          final Bundle bundle) throws BundleException {
-    if (config.hasBootJar()) {
-      NamedClassLoader ncl = getClassLoader(bundle);
-      String loaderName = Namespace.createLoaderName(Namespace.MODULES_NAMESPACE, ncl.toString());
-      ncl.__tc_setClassLoaderName(loaderName);
-      String appGroup = config.getAppGroup(loaderName, null);
-      classProvider.registerNamedLoader(ncl, appGroup);
-    }
-  }
-
-  private static NamedClassLoader getClassLoader(final Bundle bundle) throws BundleException {
-    try {
-      Method m = bundle.getClass().getDeclaredMethod("getClassLoader", new Class[0]);
-      m.setAccessible(true);
-      ClassLoader classLoader = (ClassLoader) m.invoke(bundle, new Object[0]);
-      return (NamedClassLoader) classLoader;
-    } catch (Exception e) {
-      throw new BundleException("Unable to get classloader for bundle.", e);
-    }
   }
 
   private static boolean installTunneledMBeanDomains(final String tunneledMBeanDomains,

@@ -4,7 +4,6 @@
  */
 package com.tc.object;
 
-import com.tc.object.loaders.NamedClassLoader;
 import com.tc.util.Assert;
 import com.tc.util.ClassUtils;
 
@@ -348,15 +347,7 @@ public enum LiteralValues {
     }
 
   },
-  JAVA_LANG_CLASS_HOLDER(), JAVA_LANG_CLASSLOADER() {
-
-    @Override
-    public int calculateDsoHashCodeForLiteral(Object value) {
-      return ((NamedClassLoader) value).__tc_getClassLoaderName().hashCode();
-    }
-
-  },
-  JAVA_LANG_CLASSLOADER_HOLDER(), ENUM() {
+  JAVA_LANG_CLASS_HOLDER(), JAVA_LANG_CLASSLOADER(), JAVA_LANG_CLASSLOADER_HOLDER(), ENUM() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
