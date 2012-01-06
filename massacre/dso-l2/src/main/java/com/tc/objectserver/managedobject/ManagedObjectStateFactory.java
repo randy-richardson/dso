@@ -164,19 +164,11 @@ public class ManagedObjectStateFactory {
   }
 
   private long getClassID(final String className) {
-    return getStringIndex().getOrCreateIndexFor(Namespace.getClassNameAndLoaderSeparator() + className);
+    return getStringIndex().getOrCreateIndexFor(className);
   }
 
   public String getClassName(final long classID) {
-    String s = null;
-    try {
-      final String separator = Namespace.getClassNameAndLoaderSeparator();
-      s = getStringIndex().getStringFor(classID);
-      return s.substring(s.indexOf(separator) + separator.length());
-    } catch (final Exception ex) {
-      throw new AssertionError("loaderDesc://:ClassName string for classId  " + classID + " not in the right format : "
-                               + s);
-    }
+    return getStringIndex().getStringFor(classID);
   }
 
   private byte getStateObjectTypeFor(String className) {

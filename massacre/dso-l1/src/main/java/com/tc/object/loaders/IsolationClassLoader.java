@@ -160,18 +160,6 @@ public class IsolationClassLoader extends URLClassLoader {
     }
   }
 
-  public String __tc_getClassLoaderName() {
-    return loaderName();
-  }
-
-  public static String loaderName() {
-    return Namespace.getIsolationLoaderName();
-  }
-
-  public void __tc_setClassLoaderName(String name) {
-    throw new AssertionError();
-  }
-
   /**
    * a ClassNotFoundException or NoClassDefFoundError with errorMessage will to be thrown referencing class className
    */
