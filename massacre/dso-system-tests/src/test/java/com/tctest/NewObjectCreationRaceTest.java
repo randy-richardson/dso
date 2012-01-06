@@ -110,7 +110,7 @@ public class NewObjectCreationRaceTest extends TransparentTestBase {
       final Ref newRefToOtherNewObject = new Ref(new Object());
 
       synchronized (root) {
-        root.put("delta", null);
+        root.put("delta", "");
         root.put("new object", newObj);
         root.put("new ref to new obj", newRefToOtherNewObject);
 
