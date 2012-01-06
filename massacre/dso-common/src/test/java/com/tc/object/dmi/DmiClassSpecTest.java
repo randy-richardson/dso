@@ -16,13 +16,14 @@ public class DmiClassSpecTest extends TestCase {
   private DmiClassSpec dcsB1;
   private DmiClassSpec dcsB2;
 
+  @Override
   public final void setUp() {
     final String s1 = "s1";
     final String s2 = "s2";
-    dcsA1 = new DmiClassSpec(s1, s1);
-    dcsA2 = new DmiClassSpec(s1, s1);
-    dcsB1 = new DmiClassSpec(s1, s2);
-    dcsB2 = new DmiClassSpec(s2, s1);
+    dcsA1 = new DmiClassSpec(s1);
+    dcsA2 = new DmiClassSpec(s1);
+    dcsB1 = new DmiClassSpec(s2);
+    dcsB2 = new DmiClassSpec(s1);
   }
 
   public void testHashCode() {
@@ -37,7 +38,7 @@ public class DmiClassSpecTest extends TestCase {
     assertFalse(dcsA1.equals(dcsB1));
     assertFalse(dcsA1.equals(dcsB2));
   }
-  
+
   public void testInSet() {
     final Set set = new HashSet();
     set.add(dcsA1);

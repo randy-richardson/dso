@@ -55,8 +55,6 @@ public interface ManagedObjectState {
 
   public String getClassName();
 
-  public String getLoaderDescription();
-
   /**
    * This method returns whether this ManagedObjectState can have references or not. @ return true : The Managed object
    * represented by this state object will never have any reference to other objects. false : The Managed object

@@ -7,15 +7,12 @@ package com.tc.objectserver.managedobject;
 import com.tc.object.ObjectID;
 import com.tc.object.SerializationUtil;
 import com.tc.object.TestDNACursor;
-import com.tc.object.dna.impl.ClassLoaderInstance;
-import com.tc.object.dna.impl.UTF8ByteDataHolder;
 import com.tc.objectserver.core.api.ManagedObjectState;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -103,28 +100,6 @@ public class ManagedObjectStateSerializationTest extends ManagedObjectStateSeria
     final ManagedObjectState state = applyValidation(className, cursor);
 
     serializationValidation(state, cursor, ManagedObjectState.TDC_CUSTOM_LIFESPAN_SERIALIZED_ENTRY);
-  }
-
-  public void testProxy() throws Exception {
-    final String CLASSLOADER_FIELD_NAME = "java.lang.reflect.Proxy.loader";
-    final String INTERFACES_FIELD_NAME = "java.lang.reflect.Proxy.interfaces";
-    final String INVOCATION_HANDLER_FIELD_NAME = "java.lang.reflect.Proxy.h";
-
-    final MyInvocationHandler handler = new MyInvocationHandler();
-    final Proxy myProxy = (Proxy) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {
-        MyProxyInf1.class, MyProxyInf2.class }, handler);
-    final String className = myProxy.getClass().getName();
-
-    final TestDNACursor cursor = new TestDNACursor();
-
-    cursor.addPhysicalAction(CLASSLOADER_FIELD_NAME, new ClassLoaderInstance(new UTF8ByteDataHolder("loader desc")),
-                             true);
-    cursor.addPhysicalAction(INTERFACES_FIELD_NAME, myProxy.getClass().getInterfaces(), true);
-    cursor.addPhysicalAction(INVOCATION_HANDLER_FIELD_NAME, new ObjectID(2002), true);
-
-    final ManagedObjectState state = applyValidation(className, cursor);
-
-    serializationValidation(state, cursor, ManagedObjectState.PHYSICAL_TYPE);
   }
 
   public void testPhysical() throws Exception {

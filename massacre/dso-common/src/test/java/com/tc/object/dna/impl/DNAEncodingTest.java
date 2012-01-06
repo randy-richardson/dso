@@ -20,9 +20,9 @@ public class DNAEncodingTest extends TestCase {
   Random        rnd           = new Random();
   ClassProvider classProvider = new MockClassProvider();
 
-//  private DNAEncoding getStorageEncoder() {
-//    return new DNAEncodingImpl(DNAEncoding.STORAGE);
-//  }
+  // private DNAEncoding getStorageEncoder() {
+  // return new DNAEncodingImpl(DNAEncoding.STORAGE);
+  // }
 
   private DNAEncoding getSerializerEncoder() {
     return new SerializerDNAEncodingImpl();
@@ -35,8 +35,7 @@ public class DNAEncodingTest extends TestCase {
     encoding.encode(getClass(), output);
     Class c = Object.class;
     UTF8ByteDataHolder name = new UTF8ByteDataHolder(c.getName());
-    UTF8ByteDataHolder def = new UTF8ByteDataHolder(classProvider.getLoaderDescriptionFor(c).toDelimitedString());
-    ClassInstance ci = new ClassInstance(name, def);
+    ClassInstance ci = new ClassInstance(name);
     encoding.encode(ci, output);
 
     TCByteBuffer[] data = output.toArray();
@@ -49,7 +48,5 @@ public class DNAEncodingTest extends TestCase {
     assertEquals(ci, holder);
     assertEquals(0, input.available());
   }
-
-
 
 }

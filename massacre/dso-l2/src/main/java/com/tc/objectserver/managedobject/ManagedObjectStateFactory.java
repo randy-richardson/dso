@@ -125,15 +125,15 @@ public class ManagedObjectStateFactory {
   }
 
   public ManagedObjectState createState(final ObjectID oid, final ObjectID parentID, final String className,
-                                        final String loaderDesc, final DNACursor cursor) {
+                                        final DNACursor cursor) {
     final byte type = getStateObjectTypeFor(className);
 
     if (type == ManagedObjectState.LITERAL_TYPE) { return new LiteralTypesManagedObjectState(); }
 
-    final long classID = getClassID(className, loaderDesc);
+    final long classID = getClassID(className);
 
     if (type == ManagedObjectState.PHYSICAL_TYPE) { return this.physicalMOFactory.create(classID, oid, parentID,
-                                                                                         className, loaderDesc, cursor); }
+                                                                                         className, cursor); }
     switch (type) {
       case ManagedObjectState.ARRAY_TYPE:
         return new ArrayManagedObjectState(classID);
@@ -163,8 +163,8 @@ public class ManagedObjectStateFactory {
     throw new AssertionError("Type : " + type + " is unknown !");
   }
 
-  private long getClassID(final String className, final String loaderDesc) {
-    return getStringIndex().getOrCreateIndexFor(loaderDesc + Namespace.getClassNameAndLoaderSeparator() + className);
+  private long getClassID(final String className) {
+    return getStringIndex().getOrCreateIndexFor(Namespace.getClassNameAndLoaderSeparator() + className);
   }
 
   public String getClassName(final long classID) {
@@ -173,18 +173,6 @@ public class ManagedObjectStateFactory {
       final String separator = Namespace.getClassNameAndLoaderSeparator();
       s = getStringIndex().getStringFor(classID);
       return s.substring(s.indexOf(separator) + separator.length());
-    } catch (final Exception ex) {
-      throw new AssertionError("loaderDesc://:ClassName string for classId  " + classID + " not in the right format : "
-                               + s);
-    }
-  }
-
-  public String getLoaderDescription(final long classID) {
-    String s = null;
-    try {
-      final String separator = Namespace.getClassNameAndLoaderSeparator();
-      s = getStringIndex().getStringFor(classID);
-      return s.substring(0, s.indexOf(separator));
     } catch (final Exception ex) {
       throw new AssertionError("loaderDesc://:ClassName string for classId  " + classID + " not in the right format : "
                                + s);
@@ -252,11 +240,9 @@ public class ManagedObjectStateFactory {
   }
 
   public ManagedObjectState recreateState(final ObjectID id, final ObjectID pid, final String className,
-                                          final String loaderDesc, final DNACursor cursor,
-                                          final ManagedObjectState oldState) {
+                                          final DNACursor cursor, final ManagedObjectState oldState) {
     Assert.assertEquals(ManagedObjectState.PHYSICAL_TYPE, oldState.getType());
-    final long classID = getClassID(className, loaderDesc);
-    return this.physicalMOFactory.recreate(classID, pid, className, loaderDesc, cursor,
-                                           (PhysicalManagedObjectState) oldState);
+    final long classID = getClassID(className);
+    return this.physicalMOFactory.recreate(classID, pid, className, cursor, (PhysicalManagedObjectState) oldState);
   }
 }

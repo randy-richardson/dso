@@ -18,7 +18,6 @@ import com.tc.object.dna.impl.StorageDNAEncodingImpl;
 import com.tc.object.dna.impl.UTF8ByteCompressedDataHolder;
 import com.tc.object.dna.impl.UTF8ByteDataHolder;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.LoaderDescription;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -335,9 +334,7 @@ public class ApplicatorDNAEncodingTest extends TestCase {
     encoding.encode(getClass(), output);
     Class c = Object.class;
     final UTF8ByteDataHolder name = new UTF8ByteDataHolder(c.getName());
-    final UTF8ByteDataHolder def = new UTF8ByteDataHolder(this.classProvider.getLoaderDescriptionFor(c)
-        .toDelimitedString());
-    final ClassInstance ci = new ClassInstance(name, def);
+    final ClassInstance ci = new ClassInstance(name);
     encoding.encode(ci, output);
 
     final TCByteBuffer[] data = output.toArray();
@@ -346,12 +343,9 @@ public class ApplicatorDNAEncodingTest extends TestCase {
     TCByteBufferInputStream input = new TCByteBufferInputStream(data);
     ClassInstance holder = (ClassInstance) encoding.decode(input);
     assertEquals(getClass().getName(), holder.getName().asString());
-    assertEquals(this.classProvider.getLoaderDescriptionFor(getClass()),
-                 LoaderDescription.fromString(holder.getLoaderDef().asString()));
 
     holder = (ClassInstance) encoding.decode(input);
     assertEquals(name, holder.getName());
-    assertEquals(def, holder.getLoaderDef());
 
     assertEquals(0, input.available());
 

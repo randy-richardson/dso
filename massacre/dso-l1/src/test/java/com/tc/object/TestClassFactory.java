@@ -9,7 +9,6 @@ import com.tc.object.applicator.ChangeApplicator;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.field.TCField;
-import com.tc.object.loaders.LoaderDescription;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -122,10 +121,6 @@ public class TestClassFactory implements TCClassFactory {
 
     public void dehydrate(final TCObject tcObject, final DNAWriter writer, final Object pojo) {
       //
-    }
-
-    public LoaderDescription getDefiningLoaderDescription() {
-      return new LoaderDescription(null, "mock");
     }
 
     public TCObject createTCObject(final ObjectID id, final Object peer, final boolean isNew) {

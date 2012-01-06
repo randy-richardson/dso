@@ -10,36 +10,12 @@ package com.tc.object.loaders;
 public interface ClassProvider {
 
   /**
-   * Given a class name and a classloader description, load the class
+   * Given a class name, load the class
    * 
    * @param className Class name
-   * @param desc Classloader description
    * @return Class
    * @throws ClassNotFoundException If class not found through loader
    */
-  Class getClassFor(String className, LoaderDescription desc) throws ClassNotFoundException;
-
-  /**
-   * Convenience wrapper around {@link #getLoaderDescriptionFor(ClassLoader)}
-   * 
-   * @param clazz a Class loaded by a registered classloader
-   */
-  LoaderDescription getLoaderDescriptionFor(Class clazz);
-
-  /**
-   * Get classloader by name. App group substitution will not take place.
-   * 
-   * @return Classloader
-   * @throws IllegalArgumentException if the specified classloader has not been registered
-   */
-  ClassLoader getClassLoader(LoaderDescription desc);
-
-  /**
-   * Get name for classloader. The loader must already have been registered.
-   * 
-   * @param loader Loader
-   * @return the description, or null if the loader has not been registered.
-   */
-  LoaderDescription getLoaderDescriptionFor(ClassLoader loader);
+  Class getClassFor(String className) throws ClassNotFoundException;
 
 }

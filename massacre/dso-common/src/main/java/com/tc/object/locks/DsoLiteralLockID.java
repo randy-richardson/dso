@@ -8,10 +8,8 @@ import com.tc.io.TCByteBufferOutput;
 import com.tc.object.LiteralValues;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.dna.impl.ClassInstance;
-import com.tc.object.dna.impl.ClassLoaderInstance;
 import com.tc.object.dna.impl.EnumInstance;
 import com.tc.object.dna.impl.UTF8ByteDataHolder;
-import com.tc.object.loaders.LoaderDescription;
 
 import java.io.IOException;
 
@@ -71,14 +69,9 @@ public class DsoLiteralLockID implements LockID {
         return this;
       case STRING:
         throw new AssertionError("String literal types should be handled by StringLockID");
-      case JAVA_LANG_CLASSLOADER_HOLDER:
-        literal = new ClassLoaderInstance(new UTF8ByteDataHolder(serialInput.readString()));
-        return this;
       case ENUM_HOLDER:
-        String loaderDefinition = serialInput.readString();
         String className = serialInput.readString();
-        ClassInstance classInstance = new ClassInstance(new UTF8ByteDataHolder(className),
-                                                        new UTF8ByteDataHolder(loaderDefinition));
+        ClassInstance classInstance = new ClassInstance(new UTF8ByteDataHolder(className));
         String enumName = serialInput.readString();
         literal = new EnumInstance(classInstance, new UTF8ByteDataHolder(enumName));
         return this;
@@ -90,7 +83,6 @@ public class DsoLiteralLockID implements LockID {
       case OBJECT_ID:
       case JAVA_LANG_CLASS:
       case ARRAY:
-      case JAVA_LANG_CLASSLOADER:
       case ENUM:
         throw new AssertionError("Illegal type found in serialized DsoLiteralLockID stream " + type);
     }
@@ -127,13 +119,8 @@ public class DsoLiteralLockID implements LockID {
         break;
       case STRING:
         throw new AssertionError("String literal types should be handled by StringLockID");
-      case JAVA_LANG_CLASSLOADER_HOLDER:
-        ClassLoaderInstance classLoaderInstance = (ClassLoaderInstance) literal;
-        serialOutput.writeString(classLoaderInstance.getLoaderDef().asString());
-        break;
       case ENUM_HOLDER:
         EnumInstance enumInstance = (EnumInstance) literal;
-        serialOutput.writeString(enumInstance.getClassInstance().getLoaderDef().asString());
         serialOutput.writeString(enumInstance.getClassInstance().getName().asString());
         serialOutput.writeString(((UTF8ByteDataHolder) enumInstance.getEnumName()).asString());
         break;
@@ -146,7 +133,6 @@ public class DsoLiteralLockID implements LockID {
       case JAVA_LANG_CLASS:
       case ARRAY:
       case ENUM:
-      case JAVA_LANG_CLASSLOADER:
         throw new AssertionError("Illegal type passed to DsoLiteralLockID constructor " + type);
     }
   }
@@ -176,34 +162,11 @@ public class DsoLiteralLockID implements LockID {
     switch (type) {
       case ENUM:
         Class clazz = literal.getClass();
-        LoaderDescription classLoader = getLoaderDescription(mgr, clazz.getClassLoader());
-        if (classLoader == null) {
-          throw new IllegalArgumentException();
-        } else {
-          String loaderDefinition = classLoader.toDelimitedString();
-          ClassInstance classInstance = new ClassInstance(new UTF8ByteDataHolder(clazz.getName()),
-                                                          new UTF8ByteDataHolder(loaderDefinition));
-          return new EnumInstance(classInstance, new UTF8ByteDataHolder(((Enum) literal).name()));
-        }
-      case JAVA_LANG_CLASSLOADER:
-        LoaderDescription loaderDesc = getLoaderDescription(mgr, (ClassLoader) literal);
-        if (loaderDesc == null) {
-          throw new IllegalArgumentException();
-        } else {
-          String definition = loaderDesc.toDelimitedString();
-          return new ClassLoaderInstance(new UTF8ByteDataHolder(definition));
-        }
+        ClassInstance classInstance = new ClassInstance(new UTF8ByteDataHolder(clazz.getName()));
+        return new EnumInstance(classInstance, new UTF8ByteDataHolder(((Enum) literal).name()));
       default:
         return literal;
     }
   }
 
-  private static LoaderDescription getLoaderDescription(Manager mgr, ClassLoader loader)
-      throws IllegalArgumentException {
-    try {
-      return mgr.getClassProvider().getLoaderDescriptionFor(loader);
-    } catch (RuntimeException e) {
-      throw new IllegalArgumentException(e);
-    }
-  }
 }

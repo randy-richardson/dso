@@ -97,15 +97,6 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
     this.classProvider = classProvider;
   }
 
-  public void encodeClassLoader(final ClassLoader value, final TCDataOutput output) {
-    encodeClassLoader(value, output, NULL_SERIALIZER);
-  }
-
-  public void encodeClassLoader(final ClassLoader value, final TCDataOutput output, ObjectStringSerializer serializer) {
-    output.writeByte(TYPE_ID_JAVA_LANG_CLASSLOADER);
-    writeString(this.classProvider.getLoaderDescriptionFor(value).toDelimitedString(), output, serializer);
-  }
-
   public void encode(Object value, final TCDataOutput output) {
     encode(value, output, NULL_SERIALIZER);
   }
@@ -124,25 +115,16 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
         output.writeByte(TYPE_ID_ENUM);
         final Class enumClass = ((Enum) value).getDeclaringClass();
         writeString(enumClass.getName(), output, serializer);
-        writeString(this.classProvider.getLoaderDescriptionFor(enumClass).toDelimitedString(), output, serializer);
         writeString(((Enum) value).name(), output, serializer);
         break;
       case ENUM_HOLDER:
         output.writeByte(TYPE_ID_ENUM_HOLDER);
         writeEnumInstance((EnumInstance) value, output, serializer);
         break;
-      case JAVA_LANG_CLASSLOADER:
-        encodeClassLoader((ClassLoader) value, output);
-        break;
-      case JAVA_LANG_CLASSLOADER_HOLDER:
-        output.writeByte(TYPE_ID_JAVA_LANG_CLASSLOADER_HOLDER);
-        writeClassLoaderInstance((ClassLoaderInstance) value, output, serializer);
-        break;
       case JAVA_LANG_CLASS:
         output.writeByte(TYPE_ID_JAVA_LANG_CLASS);
         final Class c = (Class) value;
         writeString(c.getName(), output, serializer);
-        writeString(this.classProvider.getLoaderDescriptionFor(c).toDelimitedString(), output, serializer);
         break;
       case JAVA_LANG_CLASS_HOLDER:
         output.writeByte(TYPE_ID_JAVA_LANG_CLASS_HOLDER);
@@ -223,19 +205,12 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
 
   private void writeEnumInstance(final EnumInstance value, final TCDataOutput output, ObjectStringSerializer serializer) {
     writeStringBytes(value.getClassInstance().getName().getBytes(), output, serializer);
-    writeStringBytes(value.getClassInstance().getLoaderDef().getBytes(), output, serializer);
     writeStringBytes(((UTF8ByteDataHolder) value.getEnumName()).getBytes(), output, serializer);
-  }
-
-  private void writeClassLoaderInstance(final ClassLoaderInstance value, final TCDataOutput output,
-                                        ObjectStringSerializer serializer) {
-    writeStringBytes(value.getLoaderDef().getBytes(), output, serializer);
   }
 
   private void writeClassInstance(final ClassInstance value, final TCDataOutput output,
                                   ObjectStringSerializer serializer) {
     writeStringBytes(value.getName().getBytes(), output, serializer);
-    writeStringBytes(value.getLoaderDef().getBytes(), output, serializer);
   }
 
   private void writeString(final String string, final TCDataOutput output, final ObjectStringSerializer serializer) {
@@ -311,10 +286,6 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
         return readEnum(input, type, serializer);
       case TYPE_ID_ENUM_HOLDER:
         return readEnum(input, type, serializer);
-      case TYPE_ID_JAVA_LANG_CLASSLOADER:
-        return readClassLoader(input, type, serializer);
-      case TYPE_ID_JAVA_LANG_CLASSLOADER_HOLDER:
-        return readClassLoader(input, type, serializer);
       case TYPE_ID_JAVA_LANG_CLASS:
         return readClass(input, type, serializer);
       case TYPE_ID_JAVA_LANG_CLASS_HOLDER:
@@ -614,15 +585,14 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
   private Object readEnum(final TCDataInput input, final byte type, ObjectStringSerializer serializer)
       throws IOException, ClassNotFoundException {
     final UTF8ByteDataHolder name = new UTF8ByteDataHolder(readStringBytes(input, serializer));
-    final UTF8ByteDataHolder def = new UTF8ByteDataHolder(readStringBytes(input, serializer));
     final byte[] data = readStringBytes(input, serializer);
 
     if (useStringEnumRead(type)) {
-      final Class enumType = new ClassInstance(name, def).asClass(this.classProvider);
+      final Class enumType = new ClassInstance(name).asClass(this.classProvider);
       final String enumName = new String(data, "UTF-8");
       return Enum.valueOf(enumType, enumName);
     } else {
-      final ClassInstance clazzInstance = new ClassInstance(name, def);
+      final ClassInstance clazzInstance = new ClassInstance(name);
       final UTF8ByteDataHolder enumName = new UTF8ByteDataHolder(data);
       return new EnumInstance(clazzInstance, enumName);
     }
@@ -630,28 +600,16 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
 
   protected abstract boolean useStringEnumRead(byte type);
 
-  private Object readClassLoader(final TCDataInput input, final byte type, ObjectStringSerializer serializer)
-      throws IOException {
-    final UTF8ByteDataHolder def = new UTF8ByteDataHolder(readStringBytes(input, serializer));
-
-    if (useClassProvider(type, TYPE_ID_JAVA_LANG_CLASSLOADER)) {
-      return new ClassLoaderInstance(def).asClassLoader(this.classProvider);
-    } else {
-      return new ClassLoaderInstance(def);
-    }
-  }
-
   protected abstract boolean useClassProvider(byte type, byte typeToCheck);
 
   private Object readClass(final TCDataInput input, final byte type, ObjectStringSerializer serializer)
       throws IOException, ClassNotFoundException {
     final UTF8ByteDataHolder name = new UTF8ByteDataHolder(readStringBytes(input, serializer));
-    final UTF8ByteDataHolder def = new UTF8ByteDataHolder(readStringBytes(input, serializer));
 
     if (useClassProvider(type, TYPE_ID_JAVA_LANG_CLASS)) {
-      return new ClassInstance(name, def).asClass(this.classProvider);
+      return new ClassInstance(name).asClass(this.classProvider);
     } else {
-      return new ClassInstance(name, def);
+      return new ClassInstance(name);
     }
   }
 

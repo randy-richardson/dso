@@ -12,7 +12,6 @@ import com.tc.object.ObjectID;
 import com.tc.object.bytecode.Manageable;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.LoaderDescription;
 import com.tc.util.Assert;
 
 import java.io.IOException;
@@ -133,28 +132,10 @@ public class LockIdSerializerTest extends TestCase {
 
   static class DumbClassProvider implements ClassProvider, InvocationHandler {
 
-    static LoaderDescription LOADER_DESC  = new LoaderDescription("Arthur", "Dent");
-    static ClassLoader       CLASS_LOADER = LockIDSerializer.class.getClassLoader();
+    static ClassLoader CLASS_LOADER = LockIDSerializer.class.getClassLoader();
 
-    public Class getClassFor(String className, LoaderDescription desc) {
+    public Class getClassFor(String className) {
       throw new AssertionError();
-    }
-
-    public ClassLoader getClassLoader(LoaderDescription desc) {
-      Assert.assertEquals(LOADER_DESC, desc);
-      return LockIDSerializer.class.getClassLoader();
-    }
-
-    public LoaderDescription getLoaderDescriptionFor(Class clazz) {
-      return getLoaderDescriptionFor(clazz.getClassLoader());
-    }
-
-    public LoaderDescription getLoaderDescriptionFor(ClassLoader loader) {
-      if (CLASS_LOADER.equals(loader)) {
-        return LOADER_DESC;
-      } else {
-        return null;
-      }
     }
 
     /*

@@ -126,7 +126,6 @@ import com.tc.object.dna.impl.ProxyInstance;
 import com.tc.object.field.TCField;
 import com.tc.object.loaders.BytecodeProvider;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.LoaderDescription;
 import com.tc.object.loaders.Namespace;
 import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.Notify;
@@ -614,7 +613,6 @@ public class BootJarTool {
     loadTerracottaClass(DmiDescriptor.class.getName());
     loadTerracottaClass(EventContext.class.getName());
     loadTerracottaClass(GroupID.class.getName());
-    loadTerracottaClass(LoaderDescription.class.getName());
     // loadTerracottaClass(LockID.class.getName());
     // loadTerracottaClass(LockIDType.class.getName());
     // loadTerracottaClass(LockLevel.class.getName());

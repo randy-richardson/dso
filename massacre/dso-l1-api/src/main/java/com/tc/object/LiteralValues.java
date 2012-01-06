@@ -347,7 +347,7 @@ public enum LiteralValues {
     }
 
   },
-  JAVA_LANG_CLASS_HOLDER(), JAVA_LANG_CLASSLOADER(), JAVA_LANG_CLASSLOADER_HOLDER(), ENUM() {
+  JAVA_LANG_CLASS_HOLDER(), ENUM() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
@@ -444,8 +444,6 @@ public enum LiteralValues {
 
     addMapping(tmp, ObjectID.class.getName(), OBJECT_ID);
 
-    addMapping(tmp, "com.tc.object.dna.impl.ClassLoaderInstance", JAVA_LANG_CLASSLOADER_HOLDER);
-
     addMapping(tmp, ENUM_CLASS_DOTS, ENUM);
 
     addMapping(tmp, "com.tc.object.dna.impl.EnumInstance", ENUM_HOLDER);
@@ -465,8 +463,6 @@ public enum LiteralValues {
    * @return Literal value code for the pojo's class
    */
   public static LiteralValues valueFor(Object pojo) {
-    if (pojo instanceof ClassLoader) { return JAVA_LANG_CLASSLOADER; }
-
     Class clazz = pojo.getClass();
     LiteralValues i = valueForClassName(clazz.getName());
     if (i == OBJECT && ClassUtils.isDsoEnum(pojo.getClass())) { return ENUM; }

@@ -37,8 +37,7 @@ public class TCChangeBufferTest extends TestCase {
 
     final TCByteBufferOutputStream output = new TCByteBufferOutputStream();
     final DNAWriter writer = new DNAWriterImpl(output, mockTCObject.getObjectID(), mockTCObject.getTCClass().getName(),
-                                               serializer, encoding, mockTCObject.getTCClass()
-                                                   .getDefiningLoaderDescription().toDelimitedString(), false);
+                                               serializer, encoding, false);
 
     buffer.writeTo(writer);
     writer.markSectionEnd();
@@ -78,8 +77,7 @@ public class TCChangeBufferTest extends TestCase {
     final TCByteBufferOutputStream output = new TCByteBufferOutputStream();
 
     final DNAWriter writer = new DNAWriterImpl(output, mockTCObject.getObjectID(), mockTCObject.getTCClass().getName(),
-                                               serializer, encoding, mockTCObject.getTCClass()
-                                                   .getDefiningLoaderDescription().toDelimitedString(), false);
+                                               serializer, encoding, false);
 
     buffer.writeTo(writer);
     writer.markSectionEnd();
@@ -104,5 +102,4 @@ public class TCChangeBufferTest extends TestCase {
 
     assertEquals(1, count);
   }
-
 }

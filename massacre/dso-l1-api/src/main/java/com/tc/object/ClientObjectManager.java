@@ -11,7 +11,6 @@ import com.tc.object.appevent.ApplicationEvent;
 import com.tc.object.appevent.ApplicationEventContext;
 import com.tc.object.applicator.ApplicatorObjectManager;
 import com.tc.object.dna.api.DNA;
-import com.tc.object.loaders.LoaderDescription;
 import com.tc.object.tx.ClientTransactionManager;
 import com.tc.object.util.ToggleableStrongReference;
 
@@ -26,11 +25,10 @@ public interface ClientObjectManager extends ApplicatorObjectManager, TCObjectSe
    * Find a class based on the class name and the classloader name
    * 
    * @param className Class name
-   * @param loaderDesc Classloader name
    * @return Class, never null
    * @throws ClassNotFoundException If class not found
    */
-  public Class getClassFor(String className, LoaderDescription loaderDesc) throws ClassNotFoundException;
+  public Class getClassFor(String className) throws ClassNotFoundException;
 
   /**
    * Checks whether the state of an ObjectID is present on the current node.

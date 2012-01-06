@@ -13,7 +13,6 @@ import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.impl.ProxyInstance;
 import com.tc.object.field.TCField;
 import com.tc.object.field.TCFieldFactory;
-import com.tc.object.loaders.LoaderDescription;
 import com.tc.object.loaders.Namespace;
 import com.tc.util.Assert;
 import com.tc.util.ClassUtils;
@@ -64,7 +63,6 @@ public class TCClassImpl implements TCClass {
   private final String                   parentFieldName;
   private final Map                      declaredTCFieldsByName = new HashMap();
   private final Map                      tcFieldsByName         = new HashMap();
-  private final LoaderDescription        loaderDesc;
   private final Field                    parentField;
   private final boolean                  useNonDefaultConstructor;
   private final ClientObjectManager      objectManager;
@@ -79,15 +77,13 @@ public class TCClassImpl implements TCClass {
   private Constructor                    constructor            = null;
 
   TCClassImpl(final TCFieldFactory factory, final TCClassFactory clazzFactory, final ClientObjectManager objectManager,
-              final Class peer, final Class logicalSuperClass, final LoaderDescription loaderDesc,
-              final String logicalExtendingClassName, final boolean isLogical, final boolean isCallConstructor,
-              final boolean onLoadInjection, final String onLoadScript, final String onLoadMethod,
-              final boolean useNonDefaultConstructor, final boolean useResolveLockWhileClearing,
-              final String postCreateMethod, final String preCreateMethod) {
+              final Class peer, final Class logicalSuperClass, final String logicalExtendingClassName,
+              final boolean isLogical, final boolean isCallConstructor, final boolean onLoadInjection,
+              final String onLoadScript, final String onLoadMethod, final boolean useNonDefaultConstructor,
+              final boolean useResolveLockWhileClearing, final String postCreateMethod, final String preCreateMethod) {
     this.clazzFactory = clazzFactory;
     this.objectManager = objectManager;
     this.peer = peer;
-    this.loaderDesc = loaderDesc;
     this.indexed = peer.isArray();
 
     final boolean isStatic = Modifier.isStatic(peer.getModifiers());
@@ -346,10 +342,6 @@ public class TCClassImpl implements TCClass {
 
   public boolean isIndexed() {
     return this.indexed;
-  }
-
-  public LoaderDescription getDefiningLoaderDescription() {
-    return this.loaderDesc;
   }
 
   public boolean isLogical() {

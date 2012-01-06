@@ -5,7 +5,6 @@ package com.tc.object.applicator;
 
 import com.tc.object.ObjectID;
 import com.tc.object.TCObjectExternal;
-import com.tc.object.loaders.LoaderDescription;
 
 public interface ApplicatorObjectManager {
 
@@ -15,6 +14,6 @@ public interface ApplicatorObjectManager {
 
   Object lookupObject(ObjectID oid) throws ClassNotFoundException;
 
-  Class getClassFor(String className, LoaderDescription loaderDesc) throws ClassNotFoundException;
+  Class getClassFor(String className) throws ClassNotFoundException;
 
 }

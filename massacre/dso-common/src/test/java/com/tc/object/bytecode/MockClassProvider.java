@@ -5,30 +5,15 @@
 package com.tc.object.bytecode;
 
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.LoaderDescription;
 
 public class MockClassProvider implements ClassProvider {
-
-  public static final LoaderDescription MOCK_LOADER = new LoaderDescription(null, "mock");
 
   public MockClassProvider() {
     super();
   }
 
-  public LoaderDescription getLoaderDescriptionFor(Class clazz) {
-    return MOCK_LOADER;
-  }
-
-  public ClassLoader getClassLoader(LoaderDescription desc) {
-    return getClass().getClassLoader();
-  }
-
-  public Class getClassFor(String className, LoaderDescription desc) throws ClassNotFoundException {
+  public Class getClassFor(String className) throws ClassNotFoundException {
     return getClass().getClassLoader().loadClass(className);
-  }
-
-  public LoaderDescription getLoaderDescriptionFor(ClassLoader loader) {
-    return MOCK_LOADER;
   }
 
 }

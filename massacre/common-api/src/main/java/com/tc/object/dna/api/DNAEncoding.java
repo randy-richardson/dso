@@ -1,5 +1,6 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright notice.  All rights reserved.
+ * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
+ * notice. All rights reserved.
  */
 package com.tc.object.dna.api;
 
@@ -39,14 +40,8 @@ public interface DNAEncoding {
   public static final byte APPLICATOR = 0x02;
 
   /**
-   * Encode a classloader object onto an output stream
-   * @param value The classloader
-   * @param output The output
-   */
-  public abstract void encodeClassLoader(ClassLoader value, TCDataOutput output);
-
-  /**
    * Encode an object onto an output stream
+   * 
    * @param value The object
    * @param output The output
    */
@@ -54,12 +49,14 @@ public interface DNAEncoding {
 
   /**
    * Decode an object from an input stream
+   * 
    * @param input The input stream
    */
   public abstract Object decode(TCDataInput input) throws IOException, ClassNotFoundException;
 
   /**
    * Encode an array onto an output stream, automatically determine array length
+   * 
    * @param value The array
    * @param output The output
    */
@@ -67,6 +64,7 @@ public interface DNAEncoding {
 
   /**
    * Encode an array onto an output stream
+   * 
    * @param value The array
    * @param output The output
    * @param length The length of the array to encode

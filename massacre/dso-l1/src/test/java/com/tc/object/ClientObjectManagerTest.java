@@ -450,10 +450,6 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
       throw new ImplementMe();
     }
 
-    public String getDefiningLoaderDescription() {
-      return "mock";
-    }
-
     public boolean isDelta() {
       return false;
     }

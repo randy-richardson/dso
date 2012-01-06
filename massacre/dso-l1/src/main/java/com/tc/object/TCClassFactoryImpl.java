@@ -19,7 +19,6 @@ import com.tc.object.config.TransparencyClassSpec;
 import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.field.TCFieldFactory;
 import com.tc.object.loaders.ClassProvider;
-import com.tc.object.loaders.LoaderDescription;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 
 import java.lang.reflect.Constructor;
@@ -57,22 +56,21 @@ public class TCClassFactoryImpl implements TCClassFactory {
     TCClass rv = this.classes.get(clazz);
     if (rv != null) { return rv; }
 
-    final LoaderDescription loaderDesc = this.classProvider.getLoaderDescriptionFor(clazz);
     final String className = clazz.getName();
     final ClassInfo classInfo = JavaClassInfo.getClassInfo(clazz);
-    rv = createTCClass(clazz, objectManager, loaderDesc, className, classInfo);
+    rv = createTCClass(clazz, objectManager, className, classInfo);
 
     final TCClass existing = this.classes.putIfAbsent(clazz, rv);
     return existing == null ? rv : existing;
   }
 
-  protected TCClass createTCClass(final Class clazz, final ClientObjectManager objectManager,
-                                  final LoaderDescription loaderDesc, final String className, final ClassInfo classInfo) {
+  protected TCClass createTCClass(final Class clazz, final ClientObjectManager objectManager, final String className,
+                                  final ClassInfo classInfo) {
     TCClass rv;
     if (className.equals(TCClassFactory.CDSM_DSO_CLASSNAME)) {
       rv = new ServerMapTCClassImpl(this.manager, this.globalLocalCacheManager, this.remoteServerMapManager,
                                     this.fieldFactory, this, objectManager, clazz,
-                                    getLogicalSuperClassWithDefaultConstructor(clazz), loaderDesc,
+                                    getLogicalSuperClassWithDefaultConstructor(clazz),
                                     this.config.getLogicalExtendingClassName(className),
                                     this.config.isLogical(className), this.config.isCallConstructorOnLoad(classInfo),
                                     this.config.hasOnLoadInjection(classInfo),
@@ -84,7 +82,7 @@ public class TCClassFactoryImpl implements TCClassFactory {
                                     this.config.getPreCreateMethodIfDefined(className));
     } else {
       rv = new TCClassImpl(this.fieldFactory, this, objectManager, clazz,
-                           getLogicalSuperClassWithDefaultConstructor(clazz), loaderDesc,
+                           getLogicalSuperClassWithDefaultConstructor(clazz),
                            this.config.getLogicalExtendingClassName(className), this.config.isLogical(className),
                            this.config.isCallConstructorOnLoad(classInfo), this.config.hasOnLoadInjection(classInfo),
                            this.config.getOnLoadScriptIfDefined(classInfo),

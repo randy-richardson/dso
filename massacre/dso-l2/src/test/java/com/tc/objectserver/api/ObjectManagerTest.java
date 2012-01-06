@@ -1796,10 +1796,6 @@ public class ObjectManagerTest extends TCTestCase {
       return 3;
     }
 
-    public String getDefiningLoaderDescription() {
-      return "";
-    }
-
     public String getTypeName() {
       return "[Ljava/lang/String;";
     }
@@ -1879,10 +1875,6 @@ public class ObjectManagerTest extends TCTestCase {
 
     public int getArraySize() {
       return -1;
-    }
-
-    public String getDefiningLoaderDescription() {
-      return "";
     }
 
     public String getTypeName() {
@@ -1972,10 +1964,6 @@ public class ObjectManagerTest extends TCTestCase {
       return -1;
     }
 
-    public String getDefiningLoaderDescription() {
-      return "";
-    }
-
     public String getTypeName() {
       return "java.util.HashMap";
     }
@@ -2059,10 +2047,6 @@ public class ObjectManagerTest extends TCTestCase {
 
     public int getArraySize() {
       return -1;
-    }
-
-    public String getDefiningLoaderDescription() {
-      return "";
     }
 
     public String getTypeName() {
@@ -2194,10 +2178,6 @@ public class ObjectManagerTest extends TCTestCase {
       return false;
     }
 
-    public String getDefiningLoaderDescription() {
-      return "System";
-    }
-
     public int getArraySize() {
       return -1;
     }
@@ -2292,10 +2272,6 @@ public class ObjectManagerTest extends TCTestCase {
 
     public boolean hasLength() {
       return false;
-    }
-
-    public String getDefiningLoaderDescription() {
-      return "";
     }
 
     public int getArraySize() {

@@ -7,7 +7,6 @@ package com.tc.object;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.field.TCField;
-import com.tc.object.loaders.LoaderDescription;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -192,11 +191,6 @@ public interface TCClass {
    * @param pojo The instance to write
    */
   public void dehydrate(TCObject tcObject, DNAWriter writer, Object pojo);
-
-  /**
-   * @return Descriptor of defining classloader
-   */
-  public LoaderDescription getDefiningLoaderDescription();
 
   /**
    * Create a new TCObject
