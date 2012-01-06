@@ -8,11 +8,8 @@ import com.tc.object.loaders.NamedClassLoader;
 import com.tc.util.Assert;
 import com.tc.util.ClassUtils;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Currency;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -351,7 +348,7 @@ public enum LiteralValues {
     }
 
   },
-  JAVA_LANG_CLASS_HOLDER(), BIG_INTEGER(), BIG_DECIMAL(), JAVA_LANG_CLASSLOADER() {
+  JAVA_LANG_CLASS_HOLDER(), JAVA_LANG_CLASSLOADER() {
 
     @Override
     public int calculateDsoHashCodeForLiteral(Object value) {
@@ -371,15 +368,7 @@ public enum LiteralValues {
     }
 
   },
-  ENUM_HOLDER(), CURRENCY() {
-
-    @Override
-    public int calculateDsoHashCodeForLiteral(Object value) {
-      return ((Currency) value).getCurrencyCode().hashCode();
-    }
-
-  },
-  STRING_BYTES_COMPRESSED();
+  ENUM_HOLDER(), STRING_BYTES_COMPRESSED();
 
   public String getInputMethodName() {
     return "readObject";
@@ -458,9 +447,6 @@ public enum LiteralValues {
     addMapping(tmp, Boolean.class.getName(), BOOLEAN);
     addMapping(tmp, boolean.class.getName(), BOOLEAN);
 
-    addMapping(tmp, BigInteger.class.getName(), BIG_INTEGER);
-    addMapping(tmp, BigDecimal.class.getName(), BIG_DECIMAL);
-
     addMapping(tmp, java.lang.Class.class.getName(), JAVA_LANG_CLASS);
 
     addMapping(tmp, "com.tc.object.dna.impl.ClassInstance", JAVA_LANG_CLASS_HOLDER);
@@ -472,8 +458,6 @@ public enum LiteralValues {
     addMapping(tmp, ENUM_CLASS_DOTS, ENUM);
 
     addMapping(tmp, "com.tc.object.dna.impl.EnumInstance", ENUM_HOLDER);
-
-    addMapping(tmp, Currency.class.getName(), CURRENCY);
 
     literalsMap = Collections.unmodifiableMap(tmp);
   }

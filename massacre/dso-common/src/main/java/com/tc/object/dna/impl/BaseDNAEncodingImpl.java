@@ -24,7 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
-import java.util.Currency;
 import java.util.zip.InflaterInputStream;
 
 /**
@@ -75,7 +74,6 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
   protected static final byte                 TYPE_ID_JAVA_LANG_CLASSLOADER_HOLDER = 21;
   protected static final byte                 TYPE_ID_ENUM                         = 22;
   protected static final byte                 TYPE_ID_ENUM_HOLDER                  = 23;
-  protected static final byte                 TYPE_ID_CURRENCY                     = 24;
   protected static final byte                 TYPE_ID_STRING_COMPRESSED            = 25;
   // protected static final byte TYPE_ID_URL = 26;
 
@@ -122,10 +120,6 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
     final LiteralValues type = LiteralValues.valueFor(value);
 
     switch (type) {
-      case CURRENCY:
-        output.writeByte(TYPE_ID_CURRENCY);
-        writeString(((Currency) value).getCurrencyCode(), output, serializer);
-        break;
       case ENUM:
         output.writeByte(TYPE_ID_ENUM);
         final Class enumClass = ((Enum) value).getDeclaringClass();
@@ -313,8 +307,6 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
     final byte type = input.readByte();
 
     switch (type) {
-      case TYPE_ID_CURRENCY:
-        return readCurrency(input, type, serializer);
       case TYPE_ID_ENUM:
         return readEnum(input, type, serializer);
       case TYPE_ID_ENUM_HOLDER:
@@ -617,13 +609,6 @@ public abstract class BaseDNAEncodingImpl implements DNAEncodingInternal {
       rv[i] = input.readBoolean();
     }
     return rv;
-  }
-
-  private Object readCurrency(final TCDataInput input, final byte type, ObjectStringSerializer serializer)
-      throws IOException {
-    final byte[] data = readStringBytes(input, serializer);
-    final String currencyCode = new String(data, "UTF-8");
-    return Currency.getInstance(currencyCode);
   }
 
   private Object readEnum(final TCDataInput input, final byte type, ObjectStringSerializer serializer)

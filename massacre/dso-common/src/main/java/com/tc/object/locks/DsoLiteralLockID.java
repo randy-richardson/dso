@@ -14,7 +14,6 @@ import com.tc.object.dna.impl.UTF8ByteDataHolder;
 import com.tc.object.loaders.LoaderDescription;
 
 import java.io.IOException;
-import java.util.Currency;
 
 /**
  * Represents the a lock on a clustered literal object.
@@ -83,13 +82,6 @@ public class DsoLiteralLockID implements LockID {
         String enumName = serialInput.readString();
         literal = new EnumInstance(classInstance, new UTF8ByteDataHolder(enumName));
         return this;
-      case CURRENCY:
-        literal = Currency.getInstance(serialInput.readString());
-        return this;
-      case BIG_INTEGER:
-        throw new AssertionError();
-      case BIG_DECIMAL:
-        throw new AssertionError();
       case STRING_BYTES:
       case JAVA_LANG_CLASS_HOLDER:
       case STRING_BYTES_COMPRESSED:
@@ -145,13 +137,6 @@ public class DsoLiteralLockID implements LockID {
         serialOutput.writeString(enumInstance.getClassInstance().getName().asString());
         serialOutput.writeString(((UTF8ByteDataHolder) enumInstance.getEnumName()).asString());
         break;
-      case CURRENCY:
-        serialOutput.writeString(((Currency) literal).getCurrencyCode());
-        break;
-      case BIG_INTEGER:
-        throw new AssertionError();
-      case BIG_DECIMAL:
-        throw new AssertionError();
       case STRING_BYTES:
       case JAVA_LANG_CLASS_HOLDER:
       case STRING_BYTES_COMPRESSED:
