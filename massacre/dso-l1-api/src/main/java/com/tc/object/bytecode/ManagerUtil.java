@@ -600,13 +600,6 @@ public class ManagerUtil {
   }
 
   /**
-   * @return a hash code that will be the same on all nodes
-   */
-  public static int calculateDsoHashCode(final Object obj) {
-    return getManager().calculateDsoHashCode(obj);
-  }
-
-  /**
    * Check whether an object is locked at this lockLevel
    * 
    * @param obj Lock
@@ -1126,12 +1119,6 @@ public class ManagerUtil {
    */
   public static boolean isFieldPortableByOffset(final Object pojo, final long fieldOffset) {
     return getManager().isFieldPortableByOffset(pojo, fieldOffset);
-  }
-
-  public static boolean overridesHashCode(final Object obj) {
-    // NOTE: The absence of the OverridesHashCode interface should not be relied upon
-    if (obj instanceof OverridesHashCode) { return true; }
-    return getManager().overridesHashCode(obj);
   }
 
   //

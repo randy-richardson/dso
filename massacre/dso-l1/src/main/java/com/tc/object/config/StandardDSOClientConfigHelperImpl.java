@@ -42,7 +42,6 @@ import com.tc.object.bytecode.ClassAdapterBase;
 import com.tc.object.bytecode.ClassAdapterFactory;
 import com.tc.object.bytecode.DelegateMethodAdapter;
 import com.tc.object.bytecode.NotClearable;
-import com.tc.object.bytecode.OverridesHashCodeAdapter;
 import com.tc.object.bytecode.SafeSerialVersionUIDAdder;
 import com.tc.object.bytecode.TransparencyClassAdapter;
 import com.tc.object.bytecode.aspectwerkz.ExpressionHelper;
@@ -900,7 +899,7 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
       }
     }
 
-    return new SafeSerialVersionUIDAdder(new OverridesHashCodeAdapter(cv));
+    return new SafeSerialVersionUIDAdder(cv);
   }
 
   private TransparencyClassSpec basicGetOrCreateSpec(final String className, final String applicator,

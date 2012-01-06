@@ -104,10 +104,6 @@ public class NullManager implements Manager {
     return false;
   }
 
-  public int calculateDsoHashCode(Object object) {
-    return 0;
-  }
-
   public boolean isLogical(Object object) {
     throw new UnsupportedOperationException();
   }
@@ -118,10 +114,6 @@ public class NullManager implements Manager {
 
   public Object lookupRoot(String name) {
     throw new UnsupportedOperationException();
-  }
-
-  public boolean isLockHeldByCurrentThread(String lockId, int lockLevel) {
-    return false;
   }
 
   public void logicalInvokeWithTransaction(Object object, Object lockObject, String methodName, Object[] params) {
@@ -156,10 +148,6 @@ public class NullManager implements Manager {
     throw new UnsupportedOperationException();
   }
 
-  public int localHeldCount(Object obj, int lockLevel) {
-    throw new UnsupportedOperationException();
-  }
-
   public boolean isDsoMonitored(Object obj) {
     return false;
   }
@@ -174,10 +162,6 @@ public class NullManager implements Manager {
 
   public InstrumentationLogger getInstrumentationLogger() {
     return instrumentationLogger;
-  }
-
-  public boolean overridesHashCode(Object obj) {
-    throw new UnsupportedOperationException();
   }
 
   public ClassProvider getClassProvider() {

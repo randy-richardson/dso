@@ -500,25 +500,6 @@ public class ManagerImpl implements ManagerInternal {
     }
   }
 
-  public int calculateDsoHashCode(final Object obj) {
-    if (obj == null) { throw new NullPointerException(); }
-
-    if (LiteralValues.isLiteralInstance(obj)) {
-      // isLiteralInstance() returns false for array types, so we don't need recursion here.
-      return LiteralValues.calculateDsoHashCode(obj);
-    }
-    if (overridesHashCode(obj)) { return obj.hashCode(); }
-
-    // obj does not have a stable hashCode(); only if it is already a shared object will we use it's OID as the hashCode
-    final TCObject tcobject = lookupExistingOrNull(obj);
-    if (tcobject != null) { return tcobject.getObjectID().hashCode(); }
-
-    throw new IllegalArgumentException(
-                                       "A cluster-wide stable hash code could not be calculated for the supplied object of type ["
-                                           + obj.getClass()
-                                           + "]. A cluster-wide stable hash code can only be calculated for instances that are already clustered, or for instances of types that override hashCode() with an implementation based purely on non cluster-transient state.");
-  }
-
   public boolean isLiteralInstance(final Object obj) {
     return LiteralValues.isLiteralInstance(obj);
   }
@@ -684,10 +665,6 @@ public class ManagerImpl implements ManagerInternal {
 
   public boolean isFieldPortableByOffset(final Object pojo, final long fieldOffset) {
     throw new AssertionError();
-  }
-
-  public boolean overridesHashCode(final Object obj) {
-    return this.portability.overridesHashCode(obj);
   }
 
   public ClassProvider getClassProvider() {

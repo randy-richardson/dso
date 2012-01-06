@@ -93,7 +93,6 @@ import com.tc.object.bytecode.NotClearable;
 import com.tc.object.bytecode.NullManager;
 import com.tc.object.bytecode.NullManagerInternal;
 import com.tc.object.bytecode.NullTCObject;
-import com.tc.object.bytecode.OverridesHashCode;
 import com.tc.object.bytecode.TCMap;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.bytecode.TransparentAccess;
@@ -459,7 +458,6 @@ public class BootJarTool {
       loadTerracottaClass(IndexQueryResult.class.getName());
       loadTerracottaClass(SearchQueryResults.class.getName());
       loadTerracottaClass(ExpirableEntry.class.getName());
-      loadTerracottaClass(OverridesHashCode.class.getName());
       loadTerracottaClass(Manager.class.getName());
       loadTerracottaClass(ManagerInternal.class.getName());
       loadTerracottaClass(InstrumentationLogger.class.getName());

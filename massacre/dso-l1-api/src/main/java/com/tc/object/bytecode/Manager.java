@@ -181,14 +181,6 @@ public interface Manager extends TerracottaLocking {
   public void checkWriteAccess(Object context);
 
   /**
-   * Calculate a hash code for the object that will be the same on all nodes, i.e., that does not depend on
-   * Object.hashCode(). For objects that override hashCode(), the object's hashCode() will be used; for literals that
-   * use Object.hashCode(), like Class, a stable hash code will be computed. Note that for objects that override
-   * hashCode() but that still base the result on Object.hashCode() the result of this method may still be unstable.
-   */
-  public int calculateDsoHashCode(Object obj);
-
-  /**
    * @return true if obj is an instance of a {@link com.tc.object.LiteralValues literal type}, e.g., Class, Integer,
    *         etc.
    */
@@ -288,12 +280,6 @@ public interface Manager extends TerracottaLocking {
    * @return true if the field is portable and false otherwise
    */
   public boolean isFieldPortableByOffset(Object pojo, long fieldOffset);
-
-  /**
-   * Returns true if the given object overrides hashCode() from java.lang.Object. Enum types are NOT considered to
-   * override hashCode()
-   */
-  public boolean overridesHashCode(Object obj);
 
   /**
    * Get the ClassProvider associated with this Manager

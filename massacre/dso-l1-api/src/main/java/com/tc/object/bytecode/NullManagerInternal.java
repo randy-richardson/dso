@@ -173,10 +173,6 @@ public class NullManagerInternal implements ManagerInternal {
     NULL_MANAGER.pinLock(lock);
   }
 
-  public int calculateDsoHashCode(Object obj) {
-    return NULL_MANAGER.calculateDsoHashCode(obj);
-  }
-
   public void unpinLock(LockID lock) {
     NULL_MANAGER.unpinLock(lock);
   }
@@ -251,10 +247,6 @@ public class NullManagerInternal implements ManagerInternal {
 
   public boolean isFieldPortableByOffset(Object pojo, long fieldOffset) {
     return NULL_MANAGER.isFieldPortableByOffset(pojo, fieldOffset);
-  }
-
-  public boolean overridesHashCode(Object obj) {
-    return NULL_MANAGER.overridesHashCode(obj);
   }
 
   public ClassProvider getClassProvider() {
