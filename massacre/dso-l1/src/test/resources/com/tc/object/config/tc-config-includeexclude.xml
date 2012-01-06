@@ -17,23 +17,7 @@
 		<server host="%i" />
 	</servers>
 
-  <application>
-    <dso>
-      <instrumented-classes>
-        <include>
-          <class-expression>p.*</class-expression>
-        </include>
-        <exclude>p.q.*</exclude>
-        <include>
-          <class-expression>p.q.C</class-expression>
-        </include>
-        <include>
-          <class-expression>p.q.r.*</class-expression>
-        </include>
-        <exclude>p.q.r.D</exclude>
-      </instrumented-classes>
-    </dso>
-  </application>
+
 
 </tc:tc-config>
 

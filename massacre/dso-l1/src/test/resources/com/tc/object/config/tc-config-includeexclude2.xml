@@ -17,25 +17,5 @@
 		<server host="%i" />
 	</servers>
 
-  <application>
-    <dso>
-      <instrumented-classes>
-        <include>
-          <class-expression>A*</class-expression>
-        </include>
-        <exclude>ABC</exclude>
-        <!--  The next include overrides the previous exclude -->
-        <include>
-          <class-expression>AB*</class-expression>
-        </include>
-        <include>
-          <class-expression>ZY</class-expression>
-        </include>
-        <!--  The next exclude overrides the previous include -->
-        <exclude>Z*</exclude>
-     </instrumented-classes>
-    </dso>
-  </application>
-
 </tc:tc-config>
 

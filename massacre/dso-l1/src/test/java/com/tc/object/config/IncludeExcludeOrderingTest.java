@@ -18,6 +18,12 @@ public class IncludeExcludeOrderingTest extends BaseDSOTestCase {
   public void testMoreSpecificOrdering() throws ConfigurationSetupException {
     DSOClientConfigHelper config = loadConfigFile("tc-config-includeexclude.xml");
 
+    config.addIncludePattern("p.*");
+    config.addExcludePattern("p.q.*");
+    config.addIncludePattern("p.q.C");
+    config.addIncludePattern("p.q.r.*");
+    config.addExcludePattern("p.q.r.D");
+
     System.out.println("The following warnings about unloadable classes [p/A*] are expected.");
     ClassInfo classInfoA = AsmClassInfo.getClassInfo("p.A", getClass().getClassLoader());
     assertTrue(config.shouldBeAdapted(classInfoA));
@@ -42,6 +48,12 @@ public class IncludeExcludeOrderingTest extends BaseDSOTestCase {
    */
   public void testMoreGeneralOrdering() throws ConfigurationSetupException {
     DSOClientConfigHelper config = loadConfigFile("tc-config-includeexclude2.xml");
+
+    config.addIncludePattern("A*");
+    config.addExcludePattern("ABC");
+    config.addIncludePattern("AB*"); // this include overrides the previous exclude
+    config.addIncludePattern("ZY");
+    config.addExcludePattern("Z*"); // this exclude overrides the previous include
 
     System.out.println("The following warnings about unloadable classes [A*] and [Z*] are expected.");
     ClassInfo classInfoA = AsmClassInfo.getClassInfo("A", getClass().getClassLoader());
