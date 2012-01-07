@@ -5,9 +5,10 @@
 package com.tc.object.applicator;
 
 import com.tc.logging.TCLogger;
+import com.tc.object.ClientObjectManager;
 import com.tc.object.LiteralValues;
 import com.tc.object.ObjectID;
-import com.tc.object.TCObjectExternal;
+import com.tc.object.TCObject;
 import com.tc.object.dna.api.DNAEncoding;
 
 /**
@@ -43,14 +44,14 @@ public abstract class BaseApplicator implements ChangeApplicator {
    * @param objectManager Client-side object lookup
    * @return ObjectID representing pojo, or the pojo itself if its a literal, or null if it's a non-portable object
    */
-  protected final Object getDehydratableObject(Object pojo, ApplicatorObjectManager objectManager) {
+  protected final Object getDehydratableObject(Object pojo, ClientObjectManager objectManager) {
 
     if (pojo == null) {
       return ObjectID.NULL_ID;
     } else if (LiteralValues.isLiteralInstance(pojo)) {
       return pojo;
     } else {
-      TCObjectExternal tcObject = objectManager.lookupExistingOrNull(pojo);
+      TCObject tcObject = objectManager.lookupExistingOrNull(pojo);
       if (tcObject == null) {
         // When we dehydrate complex objects, traverser bails out on the first non portable
         // object. We dont want to dehydrate things that are not added in the ClientObjectManager.

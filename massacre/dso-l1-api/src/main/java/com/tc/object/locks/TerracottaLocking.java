@@ -3,6 +3,8 @@
  */
 package com.tc.object.locks;
 
+import com.tc.exception.TCLockUpgradeNotSupportedError;
+
 public interface TerracottaLocking {
   /**
    * Blocking acquire of a Terracotta lock.
@@ -172,4 +174,6 @@ public interface TerracottaLocking {
   public LockID generateLockIdentifier(Object obj);
 
   public LockID generateLockIdentifier(Object obj, String field);
+
+  public LockID generateLockIdentifier(long l);
 }

@@ -11,8 +11,8 @@ import com.tc.asm.ClassVisitor;
 import com.tc.asm.ClassWriter;
 import com.tc.object.ClientObjectManager;
 import com.tc.object.RemoteSearchRequestManager;
+import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.ManagerImpl;
-import com.tc.object.bytecode.ManagerInternal;
 import com.tc.object.bytecode.hook.DSOContext;
 import com.tc.object.bytecode.hook.impl.ClassProcessorHelper;
 import com.tc.object.bytecode.hook.impl.DSOContextImpl;
@@ -39,7 +39,7 @@ import java.util.concurrent.CountDownLatch;
 public class IsolationClassLoader extends URLClassLoader {
   private static final ClassLoader    SYSTEM_LOADER = ClassLoader.getSystemClassLoader();
 
-  private final ManagerInternal       manager;
+  private final Manager               manager;
   private final DSOClientConfigHelper config;
   private final Map                   onLoadErrors;
   private final Map                   adapters      = new HashMap();
@@ -81,11 +81,10 @@ public class IsolationClassLoader extends URLClassLoader {
     return ((URLClassLoader) SYSTEM_LOADER).getURLs();
   }
 
-  private ManagerInternal createManager(boolean startClient, ClientObjectManager objectManager,
-                                        ClientTransactionManager txManager, ClientLockManager lockManager,
-                                        RemoteSearchRequestManager searchRequestManager,
-                                        DSOClientConfigHelper theConfig,
-                                        PreparedComponentsFromL2Connection connectionComponents) {
+  private Manager createManager(boolean startClient, ClientObjectManager objectManager,
+                                ClientTransactionManager txManager, ClientLockManager lockManager,
+                                RemoteSearchRequestManager searchRequestManager, DSOClientConfigHelper theConfig,
+                                PreparedComponentsFromL2Connection connectionComponents) {
     return new ManagerImpl(startClient, objectManager, txManager, lockManager, searchRequestManager, theConfig,
                            connectionComponents, false, null, this, false);
   }

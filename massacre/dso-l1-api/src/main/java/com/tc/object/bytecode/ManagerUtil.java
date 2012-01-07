@@ -9,18 +9,25 @@ package com.tc.object.bytecode;
 import com.tc.exception.TCClassNotFoundException;
 import com.tc.logging.TCLogger;
 import com.tc.object.ObjectID;
-import com.tc.object.TCObjectExternal;
+import com.tc.object.TCObject;
 import com.tc.object.bytecode.hook.impl.ArrayManager;
 import com.tc.object.bytecode.hook.impl.ClassProcessorHelper;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
+import com.tc.object.metadata.MetaDataDescriptor;
+import com.tc.object.metadata.NVPair;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventSubsystem;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
 import com.tc.properties.TCProperties;
+import com.tc.search.SearchQueryResults;
 import com.tc.statistics.StatisticRetrievalAction;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 /**
  * A bunch of static methods that make calling Manager method much easier from instrumented classes
@@ -175,8 +182,8 @@ public class ManagerUtil {
    * @param type Lock level
    */
   public static void beginVolatile(final Object pojo, final long fieldOffset, final int type) {
-    TCObjectExternal TCObjectExternal = lookupExistingOrNull(pojo);
-    beginVolatile(TCObjectExternal, TCObjectExternal.getFieldNameByOffset(fieldOffset), type);
+    TCObject TCObject = lookupExistingOrNull(pojo);
+    beginVolatile(TCObject, TCObject.getFieldNameByOffset(fieldOffset), type);
   }
 
   /**
@@ -186,20 +193,20 @@ public class ManagerUtil {
    * @param fieldOffset Field offset in pojo
    */
   public static void commitVolatile(final Object pojo, final long fieldOffset, final int type) {
-    TCObjectExternal TCObjectExternal = lookupExistingOrNull(pojo);
-    commitVolatile(TCObjectExternal, TCObjectExternal.getFieldNameByOffset(fieldOffset), type);
+    TCObject TCObject = lookupExistingOrNull(pojo);
+    commitVolatile(TCObject, TCObject.getFieldNameByOffset(fieldOffset), type);
   }
 
   /**
    * Begin volatile lock
    * 
-   * @param TCObjectExternal TCObjectExternal to lock
+   * @param TCObject TCObject to lock
    * @param fieldName Field name holding volatile object
    * @param type Lock type
    */
-  public static void beginVolatile(final TCObjectExternal TCObjectExternal, final String fieldName, final int type) {
+  public static void beginVolatile(final TCObject TCObject, final String fieldName, final int type) {
     Manager mgr = getManager();
-    LockID lock = mgr.generateLockIdentifier(TCObjectExternal, fieldName);
+    LockID lock = mgr.generateLockIdentifier(TCObject, fieldName);
     mgr.lock(lock, LockLevel.fromInt(type));
   }
 
@@ -266,12 +273,12 @@ public class ManagerUtil {
   /**
    * Commit volatile lock
    * 
-   * @param TCObjectExternal Volatile object TCObjectExternal
+   * @param TCObject Volatile object TCObject
    * @param fieldName Field holding the volatile object
    */
-  public static void commitVolatile(final TCObjectExternal TCObjectExternal, final String fieldName, final int type) {
+  public static void commitVolatile(final TCObject TCObject, final String fieldName, final int type) {
     Manager mgr = getManager();
-    LockID lock = mgr.generateLockIdentifier(TCObjectExternal, fieldName);
+    LockID lock = mgr.generateLockIdentifier(TCObject, fieldName);
     mgr.unlock(lock, LockLevel.fromInt(type));
   }
 
@@ -302,9 +309,9 @@ public class ManagerUtil {
    * Find managed object, which may be null
    * 
    * @param pojo The object instance
-   * @return The TCObjectExternal
+   * @return The TCObject
    */
-  public static TCObjectExternal lookupExistingOrNull(final Object pojo) {
+  public static TCObject lookupExistingOrNull(final Object pojo) {
     return getManager().lookupExistingOrNull(pojo);
   }
 
@@ -414,12 +421,12 @@ public class ManagerUtil {
   }
 
   /**
-   * Find or create new TCObjectExternal
+   * Find or create new TCObject
    * 
    * @param obj The object instance
-   * @return The TCObjectExternal
+   * @return The TCObject
    */
-  public static TCObjectExternal lookupOrCreate(final Object obj) {
+  public static TCObject lookupOrCreate(final Object obj) {
     return getManager().lookupOrCreate(obj);
   }
 
@@ -1071,9 +1078,9 @@ public class ManagerUtil {
    * Get the TCO for an array
    * 
    * @param array The array instance
-   * @return The TCObjectExternal
+   * @return The TCObject
    */
-  public static TCObjectExternal getObject(final Object array) {
+  public static TCObject getObject(final Object array) {
     return ArrayManager.getObject(array);
   }
 
@@ -1085,10 +1092,10 @@ public class ManagerUtil {
    * @param dest Destination array
    * @param destPos Start in dest
    * @param length Number of items to copy
-   * @param tco TCObjectExternal for dest array
+   * @param tco TCObject for dest array
    */
   public static void charArrayCopy(final char[] src, final int srcPos, final char[] dest, final int destPos,
-                                   final int length, final TCObjectExternal tco) {
+                                   final int length, final TCObject tco) {
     ArrayManager.charArrayCopy(src, srcPos, dest, destPos, length, tco);
   }
 
@@ -1096,10 +1103,10 @@ public class ManagerUtil {
    * Register an array with its TCO. It is an error to register an array that has already been registered.
    * 
    * @param array Array
-   * @param obj TCObjectExternal
+   * @param obj TCObject
    * @throws NullPointerException if array or tco are null
    */
-  public static void register(final Object array, final TCObjectExternal obj) {
+  public static void register(final Object array, final TCObject obj) {
     ArrayManager.register(array, obj);
   }
 
@@ -1130,4 +1137,106 @@ public class ManagerUtil {
   public static void waitForAllCurrentTransactionsToComplete() {
     getManager().waitForAllCurrentTransactionsToComplete();
   }
+
+  public static MetaDataDescriptor createMetaDataDescriptor(String category) {
+    return getManager().createMetaDataDescriptor(category);
+  }
+
+  public static SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys,
+                                                boolean includeValues, Set<String> attributeSet,
+                                                List<NVPair> sortAttributes, List<NVPair> aggregators, int maxResults,
+                                                int batchSize) {
+    return getManager().executeQuery(cachename, queryStack, includeKeys, includeValues, attributeSet, sortAttributes,
+                                     aggregators, maxResults, batchSize);
+  }
+
+  public static NVPair createNVPair(String name, Object value) {
+    return getManager().createNVPair(name, value);
+  }
+
+  /**
+   * Begin lock
+   * 
+   * @param long lockID Lock identifier
+   * @param type Lock type
+   */
+  public static void beginLock(final long lockID, final int type) {
+    Manager mgr = getManager();
+    LockID lock = mgr.generateLockIdentifier(lockID);
+    mgr.lock(lock, LockLevel.fromInt(type));
+  }
+
+  /**
+   * Try to begin lock
+   * 
+   * @param long lockID Lock identifier
+   * @param type Lock type
+   * @return True if lock was successful
+   */
+  public static boolean tryBeginLock(final long lockID, final int type) {
+    Manager mgr = getManager();
+    LockID lock = mgr.generateLockIdentifier(lockID);
+    return mgr.tryLock(lock, LockLevel.fromInt(type));
+  }
+
+  /**
+   * Try to begin lock within a specific timespan
+   * 
+   * @param lockID Lock identifier
+   * @param type Lock type
+   * @param timeoutInNanos Timeout in nanoseconds
+   * @return True if lock was successful
+   */
+  public static boolean tryBeginLock(final long lockID, final int type, final long timeoutInNanos)
+      throws InterruptedException {
+    Manager mgr = getManager();
+    LockID lock = mgr.generateLockIdentifier(lockID);
+    return mgr.tryLock(lock, LockLevel.fromInt(type), timeoutInNanos / 1000000);
+  }
+
+  /**
+   * Commit lock
+   * 
+   * @param long lockID Lock name
+   */
+  public static void commitLock(final long lockID, final int type) {
+    Manager mgr = getManager();
+    LockID lock = mgr.generateLockIdentifier(lockID);
+    mgr.unlock(lock, LockLevel.fromInt(type));
+  }
+
+  public static void pinLock(final long lockID) {
+    Manager mgr = getManager();
+    LockID lock = mgr.generateLockIdentifier(lockID);
+    mgr.pinLock(lock);
+  }
+
+  public static void unpinLock(final long lockID) {
+    Manager mgr = getManager();
+    LockID lock = mgr.generateLockIdentifier(lockID);
+    mgr.unpinLock(lock);
+  }
+
+  /**
+   * Check whether this lock is held by the current thread
+   * 
+   * @param lockId The lock ID
+   * @param lockLevel The lock level
+   * @return True if held by current thread
+   */
+  public static boolean isLockHeldByCurrentThread(final long lockId, final int lockLevel) {
+    Manager mgr = getManager();
+    LockID lock = mgr.generateLockIdentifier(lockId);
+    return mgr.isLockedByCurrentThread(lock, LockLevel.fromInt(lockLevel));
+  }
+
+  public static void verifyCapability(String capability) {
+    getManager().verifyCapability(capability);
+  }
+
+  public static void fireOperatorEvent(EventType coreOperatorEventLevel, EventSubsystem coreEventSubsytem,
+                                       String eventMessage) {
+    getManager().fireOperatorEvent(coreOperatorEventLevel, coreEventSubsytem, eventMessage);
+  }
+
 }

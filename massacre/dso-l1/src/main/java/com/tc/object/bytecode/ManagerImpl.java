@@ -88,7 +88,7 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.management.MBeanServer;
 
-public class ManagerImpl implements ManagerInternal {
+public class ManagerImpl implements Manager {
   private static final TCLogger                    logger              = TCLogging.getLogger(Manager.class);
   private final SetOnceFlag                        clientStarted       = new SetOnceFlag();
   private final SetOnceFlag                        clientStopped       = new SetOnceFlag();
@@ -166,11 +166,6 @@ public class ManagerImpl implements ManagerInternal {
 
   public void init() {
     init(false, null);
-  }
-
-  public void initForTests() {
-    // The method that takes a latch is what we should use in tests now to avoid DMI issues
-    throw new UnsupportedOperationException();
   }
 
   public void initForTests(CountDownLatch latch) {

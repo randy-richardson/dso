@@ -15,7 +15,7 @@ import java.lang.ref.WeakReference;
  * Terracotta class attached to each shared instance Object. The TCObject may be a simple object value or may have
  * TCFields representing internal field values.
  */
-public interface TCObject extends Cacheable, TCObjectExternal {
+public interface TCObject extends Cacheable {
   /** Indicates null object identifier */
   public static final Long NULL_OBJECT_ID = Long.valueOf(-1);
 
@@ -303,5 +303,13 @@ public interface TCObject extends Cacheable, TCObjectExternal {
    * Dehydate the entire state of the peer object to the given writer
    */
   public void dehydrate(DNAWriter writer);
+
+  String getFieldNameByOffset(long fieldOffset);
+
+  void clearAccessed();
+
+  void objectFieldChangedByOffset(String classname, long fieldOffset, Object newValue, int index);
+
+  boolean recentlyAccessed();
 
 }

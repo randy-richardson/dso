@@ -4,7 +4,8 @@
  */
 package com.tc.object.applicator;
 
-import com.tc.object.TCObjectExternal;
+import com.tc.object.ClientObjectManager;
+import com.tc.object.TCObject;
 import com.tc.object.TraversedReferences;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
@@ -25,8 +26,8 @@ public interface ChangeApplicator {
    * @param pojo A new instance of the object to reconstitute - this object will be modified with the values from the
    *        DNA
    */
-  public void hydrate(ApplicatorObjectManager objectManager, TCObjectExternal tcObject, DNA dna, Object pojo)
-      throws IOException, ClassNotFoundException;
+  public void hydrate(ClientObjectManager objectManager, TCObject tcObject, DNA dna, Object pojo) throws IOException,
+      ClassNotFoundException;
 
   /**
    * Write an object's state to DNA
@@ -36,7 +37,7 @@ public interface ChangeApplicator {
    * @param writer The DNA writer for writing the DNA
    * @param pojo The object to write to writer
    */
-  public void dehydrate(ApplicatorObjectManager objectManager, TCObjectExternal tcObject, DNAWriter writer, Object pojo);
+  public void dehydrate(ClientObjectManager objectManager, TCObject tcObject, DNAWriter writer, Object pojo);
 
   /**
    * Traverse an object and find all object references within it.
@@ -54,6 +55,5 @@ public interface ChangeApplicator {
    * @param dna The DNA for the new object
    * @return The new instance
    */
-  public Object getNewInstance(ApplicatorObjectManager objectManager, DNA dna) throws IOException,
-      ClassNotFoundException;
+  public Object getNewInstance(ClientObjectManager objectManager, DNA dna) throws IOException, ClassNotFoundException;
 }

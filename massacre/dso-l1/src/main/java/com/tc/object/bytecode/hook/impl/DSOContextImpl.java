@@ -25,7 +25,6 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.ManagerImpl;
-import com.tc.object.bytecode.ManagerInternal;
 import com.tc.object.bytecode.hook.ClassLoaderPreProcessorImpl;
 import com.tc.object.bytecode.hook.DSOContext;
 import com.tc.object.config.DSOClientConfigHelper;
@@ -320,7 +319,7 @@ public class DSOContextImpl implements DSOContext {
   public void shutdown() {
     osgiRuntime.shutdown();
     if (expressRejoinClient) {
-      ((ManagerInternal) manager).stopImmediate();
+      manager.stopImmediate();
     } else {
       manager.stop();
     }

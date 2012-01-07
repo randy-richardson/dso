@@ -9,16 +9,24 @@ import com.tc.exception.TCClassNotFoundException;
 import com.tc.logging.TCLogger;
 import com.tc.management.TunneledDomainUpdater;
 import com.tc.object.ObjectID;
-import com.tc.object.TCObjectExternal;
+import com.tc.object.TCObject;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
 import com.tc.object.locks.TerracottaLocking;
 import com.tc.object.logging.InstrumentationLogger;
+import com.tc.object.metadata.MetaDataDescriptor;
+import com.tc.object.metadata.NVPair;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventSubsystem;
+import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
 import com.tc.properties.TCProperties;
+import com.tc.search.SearchQueryResults;
 import com.tc.statistics.StatisticRetrievalAction;
 
 import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import javax.management.MBeanServer;
 
@@ -49,11 +57,6 @@ public interface Manager extends TerracottaLocking {
    * Initialize the Manager
    */
   public void init();
-
-  /**
-   * Initialize the Manager for running tests
-   */
-  public void initForTests();
 
   /**
    * Stop the manager
@@ -120,15 +123,15 @@ public interface Manager extends TerracottaLocking {
    * @param obj The object instance
    * @return The TCObject
    */
-  public TCObjectExternal lookupExistingOrNull(Object obj);
+  public TCObject lookupExistingOrNull(Object obj);
 
   /**
-   * Find or create new TCObjectExternal
+   * Find or create new TCObject
    * 
    * @param obj The object instance
-   * @return The TCObjectExternal
+   * @return The TCObject
    */
-  public TCObjectExternal lookupOrCreate(Object obj);
+  public TCObject lookupOrCreate(Object obj);
 
   /**
    * Perform invoke on logical managed object
@@ -337,5 +340,21 @@ public interface Manager extends TerracottaLocking {
    * Registers a hook that will be called before shutting down this client
    */
   public void registerBeforeShutdownHook(Runnable beforeShutdownHook);
+
+  MetaDataDescriptor createMetaDataDescriptor(String category);
+
+  public SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys, boolean includeValues,
+                                         Set<String> attributeSet, List<NVPair> sortAttributes,
+                                         List<NVPair> aggregators, int maxResults, int batchSize);
+
+  public NVPair createNVPair(String name, Object value);
+
+  void verifyCapability(String capability);
+
+  void fireOperatorEvent(EventType eventLevel, EventSubsystem subsystem, String eventMessage);
+
+  void stopImmediate();
+
+  void initForTests(CountDownLatch latch);
 
 }

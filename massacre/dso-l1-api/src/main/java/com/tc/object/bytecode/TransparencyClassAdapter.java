@@ -584,7 +584,7 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
     mv.visitLdcInsn(fieldName);
     mv.visitIntInsn(BIPUSH, lockLevel);
     mv.visitMethodInsn(INVOKESTATIC, ManagerUtil.CLASS, "beginVolatile",
-                       "(Lcom/tc/object/TCObjectExternal;Ljava/lang/String;I)V");
+                       "(Lcom/tc/object/TCObject;Ljava/lang/String;I)V");
   }
 
   private void callVolatileCommit(final String fieldName, final int lockLevel, final MethodVisitor mv) {
@@ -592,7 +592,7 @@ public class TransparencyClassAdapter extends ClassAdapterBase {
     mv.visitLdcInsn(fieldName);
     mv.visitIntInsn(BIPUSH, lockLevel);
     mv.visitMethodInsn(INVOKESTATIC, ManagerUtil.CLASS, "commitVolatile",
-                       "(Lcom/tc/object/TCObjectExternal;Ljava/lang/String;I)V");
+                       "(Lcom/tc/object/TCObject;Ljava/lang/String;I)V");
   }
 
   private void createPlainGetter(final int methodAccess, final int fieldAccess, final String name, final String desc) {
