@@ -94,8 +94,7 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   private final DSOClientConfigHelperLogger                  helperLogger;
   private final L1ConfigurationSetupManager                  configSetupManager;
   private final UUID                                         id;
-  private final Map                                          classLoaderNameToAppGroup          = new ConcurrentHashMap();
-  private final Map                                          webAppNameToAppGroup               = new ConcurrentHashMap();
+
   private final List                                         locks                              = new CopyOnWriteArrayList();
   private final List                                         roots                              = new CopyOnWriteArrayList();
   private final Set                                          transients                         = Collections
@@ -833,26 +832,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     return getInstrumentationDescriptorFor(classInfo).getOnLoadMethodIfDefined();
   }
 
-  public String getAppGroup(String loaderName, String appName) {
-    // treat empty strings as null
-    if (loaderName != null && loaderName.length() == 0) {
-      loaderName = null;
-    }
-    if (appName != null && appName.length() == 0) {
-      appName = null;
-    }
-    if (loaderName == null && appName == null) { return null; }
-    String nclAppGroup = (loaderName == null) ? null : (String) classLoaderNameToAppGroup.get(loaderName);
-    String waAppGroup = (appName == null) ? null : (String) webAppNameToAppGroup.get(appName);
-    if (nclAppGroup == null) { return waAppGroup; }
-    if (waAppGroup != null && !nclAppGroup.equals(waAppGroup)) {
-      logger.error("App-group configuration conflict: web-application " + appName + " is declared to be in app-group "
-                   + waAppGroup + " but its classloader is " + loaderName + " which is declared to be in app-group "
-                   + nclAppGroup);
-    }
-    return nclAppGroup;
-  }
-
   public TransparencyClassAdapter createDsoClassAdapterFor(final ClassVisitor writer, final ClassInfo classInfo,
                                                            final InstrumentationLogger lgr, final ClassLoader caller,
                                                            final boolean forcePortable, final boolean honorTransient) {
@@ -1150,28 +1129,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     TransparencyClassSpec spec = getSpec(className);
     if (spec == null || !spec.isLogical()) { return null; }
     return spec.getLogicalExtendingClassName();
-  }
-
-  public void addToAppGroup(final String appGroup, final String[] namedClassloaders, final String[] webAppNames) {
-    if (namedClassloaders != null) {
-      for (String namedClassloader : namedClassloaders) {
-        String oldGroup = (String) classLoaderNameToAppGroup.put(namedClassloader, appGroup);
-        if (oldGroup != null) {
-          logger
-              .error("Configuration error: named-classloader \"" + namedClassloader + "\" was declared in app-group \""
-                     + oldGroup + "\" and also in app-group \"" + appGroup + "\"");
-        }
-      }
-    }
-    if (webAppNames != null) {
-      for (String webAppName : webAppNames) {
-        String oldGroup = (String) webAppNameToAppGroup.put(webAppName, appGroup);
-        if (oldGroup != null) {
-          logger.error("Configuration error: web-application \"" + webAppName + "\" was declared in app-group \""
-                       + oldGroup + "\" and also in app-group \"" + appGroup + "\"");
-        }
-      }
-    }
   }
 
   public void addUserDefinedBootSpec(final String className, final TransparencyClassSpec spec) {
