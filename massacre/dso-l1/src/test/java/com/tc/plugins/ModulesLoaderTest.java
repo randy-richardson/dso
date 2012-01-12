@@ -60,7 +60,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
     try {
       Modules modules = configHelper.getModulesForInitialization();
       EmbeddedOSGiRuntime osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, modules.getModules(), false);
       Assert.fail("Should get exception on missing bundle");
 
     } catch (BundleException e) {
@@ -100,7 +100,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
       try {
         Modules modules = configHelper.getModulesForInitialization();
         osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
+        ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, modules.getModules(), false);
         Assert.fail("Should get exception on invalid bundle");
 
       } catch (BundleException e) {
@@ -163,7 +163,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
       configHelper.addRepository(repo);
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, modules.getModules(), false);
     } finally {
       shutdownAndCleanUpJars(osgiRuntime, null);
     }
@@ -199,7 +199,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, modules.getModules(), false);
 
     } finally {
       shutdownAndCleanUpJars(osgiRuntime, new File[] { generatedJar1, generatedJar2 });
@@ -230,7 +230,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, modules.getModules(), false);
 
       // should find and load the module without error
 
@@ -275,8 +275,7 @@ public class ModulesLoaderTest extends BaseDSOTestCase {
 
       Modules modules = configHelper.getModulesForInitialization();
       osgiRuntime = EmbeddedOSGiRuntime.Factory.createOSGiRuntime(modules);
-      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, null, modules.getModules(), false);
-
+      ModulesLoader.initModules(osgiRuntime, configHelper, classProvider, modules.getModules(), false);
     } finally {
       shutdownAndCleanUpJars(osgiRuntime, new File[] { generatedJar1 });
     }

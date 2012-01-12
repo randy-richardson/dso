@@ -58,6 +58,7 @@ import com.tc.logging.LogLevel;
 import com.tc.logging.NullTCLogger;
 import com.tc.logging.TCLogger;
 import com.tc.management.TerracottaMBean;
+import com.tc.management.TunneledDomainUpdater;
 import com.tc.net.ClientID;
 import com.tc.net.GroupID;
 import com.tc.net.NIOWorkarounds;
@@ -257,7 +258,7 @@ public class BootJarTool {
 
     // load the modules
     try {
-      ModulesLoader.initModules(this.configHelper, null, null, true);
+      ModulesLoader.initModules(this.configHelper, null, true);
     } catch (final BundleException e) {
       exit("Error during module initialization.", e);
     }
@@ -454,6 +455,7 @@ public class BootJarTool {
       loadTerracottaClass(SearchQueryResults.class.getName());
       loadTerracottaClass(ExpirableEntry.class.getName());
       loadTerracottaClass(Manager.class.getName());
+      loadTerracottaClass(TunneledDomainUpdater.class.getName());
       loadTerracottaClass(InstrumentationLogger.class.getName());
       loadTerracottaClass(NullInstrumentationLogger.class.getName());
       loadTerracottaClass(NullManager.class.getName());

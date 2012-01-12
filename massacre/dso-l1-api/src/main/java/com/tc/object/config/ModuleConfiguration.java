@@ -21,4 +21,5 @@ public interface ModuleConfiguration {
 
   void addDistributedMethod(String expression);
 
+  public boolean addTunneledMBeanDomain(String tunneledMBeanDomain);
 }

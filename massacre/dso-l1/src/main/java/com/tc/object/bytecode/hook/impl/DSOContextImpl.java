@@ -146,7 +146,7 @@ public class DSOContextImpl implements DSOContext {
 
     Collection<Repository> repos = new ArrayList<Repository>();
     repos.add(new VirtualTimRepository(virtualTimJars));
-    DSOContext context = createContext(configHelper, manager, repos, expressRejoinClient);
+    DSOContextImpl context = createContext(configHelper, manager, repos, expressRejoinClient);
     try {
       context.installBundles(virtualTimJars.values());
     } catch (Exception e) {
@@ -157,22 +157,17 @@ public class DSOContextImpl implements DSOContext {
     return context;
   }
 
-  public void installBundles(Collection<URL> bundleURLs) throws Exception {
-    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(),
-                                         manager.getTunneledDomainUpdater(), false, bundleURLs.toArray(new URL[] {}));
-
+  private void installBundles(Collection<URL> bundleURLs) throws Exception {
+    ModulesLoader.installAndStartBundles(osgiRuntime, configHelper, manager.getClassProvider(), false,
+                                         bundleURLs.toArray(new URL[] {}));
   }
-
-  /**
-   * For tests
-   */
 
   public static DSOContext createContext(DSOClientConfigHelper configHelper, Manager manager) {
     return createContext(configHelper, manager, Collections.EMPTY_LIST, false);
   }
 
-  public static DSOContext createContext(DSOClientConfigHelper configHelper, Manager manager,
-                                         Collection<Repository> repos, boolean expressRejoinClient) {
+  private static DSOContextImpl createContext(DSOClientConfigHelper configHelper, Manager manager,
+                                              Collection<Repository> repos, boolean expressRejoinClient) {
     return new DSOContextImpl(configHelper, manager.getClassProvider(), manager, repos, expressRejoinClient);
   }
 
@@ -189,8 +184,7 @@ public class DSOContextImpl implements DSOContext {
     this.weavingStrategy = new DefaultWeavingStrategy(configHelper, instrumentationLogger);
 
     try {
-      osgiRuntime = ModulesLoader.initModules(configHelper, classProvider, manager.getTunneledDomainUpdater(), false,
-                                              repos);
+      osgiRuntime = ModulesLoader.initModules(configHelper, classProvider, false, repos);
       validateBootJar();
     } catch (Exception e) {
       consoleLogger.fatal(e.getMessage());
