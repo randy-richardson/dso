@@ -61,6 +61,8 @@ public class ManagedObjectStateFactory {
     classNameToStateMap.put("org.terracotta.collections.ConcurrentBlockingQueue",
                             Byte.valueOf(ManagedObjectState.QUEUE_TYPE));
     classNameToStateMap.put("org.terracotta.collections.TerracottaList", Byte.valueOf(ManagedObjectState.LIST_TYPE));
+    classNameToStateMap.put("org.terracotta.collections.quartz.DistributedSortedSet$Storage",
+                            Byte.valueOf(ManagedObjectState.SET_TYPE));
   }
 
   private ManagedObjectStateFactory(final ManagedObjectChangeListenerProvider listenerProvider,
