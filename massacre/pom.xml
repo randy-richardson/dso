@@ -29,7 +29,6 @@
     <module>dso-statistics-api</module>
     <module>dso-l1-api</module>
     <module>dso-common</module>
-    <module>management-api</module>
     <module>management</module>
     <module>dso-l2-common</module> 
     <module>dso-statistics</module>
