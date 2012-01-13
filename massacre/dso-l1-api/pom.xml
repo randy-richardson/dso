@@ -42,7 +42,7 @@
     </dependency>
     <dependency>
       <groupId>org.terracotta.internal</groupId>
-      <artifactId>thirdparty-api</artifactId>
+      <artifactId>thirdparty</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

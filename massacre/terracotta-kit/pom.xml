@@ -255,7 +255,7 @@
                       <targetPath>${rootDir}/lib</targetPath>
                       <dependency>
                         <excludeScope>provided</excludeScope>
-                        <excludeArtifactIds>${terracotta.artifactId},build-data,thirdparty-api,dso-cluster-api,stax-api,native-tool,ant,mockito-all,ant-launcher,junit,linked-child-process
+                        <excludeArtifactIds>${terracotta.artifactId},build-data,stax-api,native-tool,ant,mockito-all,ant-launcher,junit,linked-child-process
                         </excludeArtifactIds>
                       </dependency>
                       <dependenciesAtM2>true</dependenciesAtM2>
