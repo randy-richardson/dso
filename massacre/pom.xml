@@ -23,7 +23,6 @@
   <modules>
     <module>build-parent</module>
     <module>build-data</module>
-    <module>common-api</module>
     <module>common</module>
     <module>thirdparty</module>
     <module>aspectwerkz</module>
