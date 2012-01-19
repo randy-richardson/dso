@@ -42,8 +42,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Hashtable;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -59,43 +57,44 @@ import junit.framework.TestCase;
  */
 public class TCTestCase extends TestCase {
 
-  private static final String              TEST_CATEGORIES_URL_PROPERTY = "tc.tests.configuration.catagories.url";
+  private static final String                TEST_CATEGORIES_URL_PROPERTY = "tc.tests.configuration.catagories.url";
 
-  private static final String              TEST_EXECUTION_MODE_PROPERTY = "tc.tests.configuration.mode";
+  private static final String                TEST_EXECUTION_MODE_PROPERTY = "tc.tests.configuration.mode";
 
-  private static final String              TEST_CATEGORIES_PROPERTIES   = "/TestCategories.properties";
+  private static final String                TEST_CATEGORIES_PROPERTIES   = "/TestCategories.properties";
 
-  private static final long                DEFAULT_TIMEOUT_THRESHOLD    = 60000;
+  private static final long                  DEFAULT_TIMEOUT_THRESHOLD    = 60000;
 
-  private final SynchronizedRef            beforeTimeoutException       = new SynchronizedRef(null);
+  private final SynchronizedRef              beforeTimeoutException       = new SynchronizedRef(null);
 
-  private DataDirectoryHelper              dataDirectoryHelper;
-  private TempDirectoryHelper              tempDirectoryHelper;
+  private DataDirectoryHelper                dataDirectoryHelper;
+  private TempDirectoryHelper                tempDirectoryHelper;
 
-  private Date                             allDisabledUntil;
-  private final Map                        disabledUntil                = new Hashtable();
+  protected Date                             allDisabledUntil;
 
   // This stuff is static since Junit new()'s up an instance of the test case for each test method,
   // and the timeout covers the entire test case (ie. all methods). It wouldn't be very effective to start
   // the timer for each test method given this
-  private static final Timer               timeoutTimer                 = new Timer("Timeout Thread", true);
-  private static final SynchronizedBoolean timeoutTaskAdded             = new SynchronizedBoolean(false);
+  private static final Timer                 timeoutTimer                 = new Timer("Timeout Thread", true);
+  protected static final SynchronizedBoolean timeoutTaskAdded             = new SynchronizedBoolean(false);
 
-  private static boolean                   printedProcess               = false;
+  private static boolean                     printedProcess               = false;
 
   // If you want to customize this, you have to do it in the constructor of your test case (setUp() is too late)
-  private long                             timeoutThreshold             = DEFAULT_TIMEOUT_THRESHOLD;
+  private long                               timeoutThreshold             = DEFAULT_TIMEOUT_THRESHOLD;
 
   // controls for thread dumping.
-  private boolean                          dumpThreadsOnTimeout         = true;
-  private int                              numThreadDumps               = 3;
-  private long                             dumpInterval                 = 500;
+  private boolean                            dumpThreadsOnTimeout         = true;
+  private int                                numThreadDumps               = 3;
+  private long                               dumpInterval                 = 500;
 
   // a way to ensure that system clock moves forward...
-  private long                             previousSystemMillis         = 0;
+  private long                               previousSystemMillis         = 0;
 
-  private ExecutionMode                    executionMode;
-  private TestCategorization               testCategorization;
+  private ExecutionMode                      executionMode;
+  private TestCategorization                 testCategorization;
+
+  protected volatile boolean                 testWillRun                  = false;
 
   public TCTestCase() {
     super();
@@ -211,8 +210,7 @@ public class TCTestCase extends TestCase {
     return isContainerTest() ^ isConfiguredToRunWithAppServer();
   }
 
-  @Override
-  public void runBare() throws Throwable {
+  protected void tcTestCaseSetup() throws Exception {
     printOutCurrentJavaProcesses();
     if (allDisabledUntil != null) {
       if (new Date().before(this.allDisabledUntil)) {
@@ -235,16 +233,6 @@ public class TCTestCase extends TestCase {
 
     if (!shouldTestRunInCurrentExecutionMode()) { return; }
 
-    final String testMethod = getName();
-    System.out.println("**** Test case: " + testMethod + " ****");
-    System.out.println();
-    if (isTestDisabled(testMethod)) {
-      System.out.println("NOTE: Test method " + testMethod + "() is disabled until "
-                         + this.disabledUntil.get(testMethod));
-      System.out.flush();
-      return;
-    }
-
     if (shouldBeSkipped()) {
       Banner
           .warnBanner("Test "
@@ -260,6 +248,15 @@ public class TCTestCase extends TestCase {
       scheduleTimeoutTask();
     }
 
+    // this should be the last thing happening indicating this test case will actually execute
+    testWillRun = true;
+  }
+
+  @Override
+  public void runBare() throws Throwable {
+    tcTestCaseSetup();
+    if (!testWillRun) return;
+
     Throwable testException = null;
     try {
       super.runBare();
@@ -267,6 +264,10 @@ public class TCTestCase extends TestCase {
       testException = t;
     }
 
+    tcTestCaseTearDown(testException);
+  }
+
+  protected void tcTestCaseTearDown(Throwable testException) throws Throwable {
     Throwable exceptionInTimeoutCallback = (Throwable) beforeTimeoutException.get();
 
     // favor the "real" exception to make test fail. If there was a exception in the timeout callback,
@@ -284,7 +285,7 @@ public class TCTestCase extends TestCase {
     return;
   }
 
-  private void printOutCurrentJavaProcesses() {
+  protected void printOutCurrentJavaProcesses() {
     if (printedProcess) return;
     printedProcess = true;
     PrintWriter out = null;
@@ -612,11 +613,6 @@ public class TCTestCase extends TestCase {
 
   protected final boolean isAllDisabled() {
     return this.allDisabledUntil != null && new Date().before(this.allDisabledUntil);
-  }
-
-  private boolean isTestDisabled(String testMethod) {
-    Date until = (Date) disabledUntil.get(testMethod);
-    return until != null && new Date().before(until);
   }
 
   protected void checkComparator(Object smaller, Object bigger, Object equalToBigger, Comparator c) {

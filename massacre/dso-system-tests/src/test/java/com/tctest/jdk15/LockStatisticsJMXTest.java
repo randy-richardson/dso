@@ -7,9 +7,9 @@ package com.tctest.jdk15;
 import org.apache.commons.io.CopyUtils;
 
 import com.tc.config.schema.builder.InstrumentedClassConfigBuilder;
-import com.tc.config.schema.test.InstrumentedClassConfigBuilderImpl;
-import com.tc.config.schema.test.L2ConfigBuilder;
-import com.tc.config.schema.test.TerracottaConfigBuilder;
+import com.tc.config.test.schema.InstrumentedClassConfigBuilderImpl;
+import com.tc.config.test.schema.L2ConfigBuilder;
+import com.tc.config.test.schema.TerracottaConfigBuilder;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
