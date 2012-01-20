@@ -7,8 +7,8 @@ package com.tctest;
 import org.apache.commons.io.IOUtils;
 import org.apache.tools.ant.filters.StringInputStream;
 
-import com.tc.config.schema.test.L2ConfigBuilder;
-import com.tc.config.schema.test.TerracottaConfigBuilder;
+import com.tc.config.test.schema.L2ConfigBuilder;
+import com.tc.config.test.schema.TerracottaConfigBuilder;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
