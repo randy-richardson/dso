@@ -1,6 +1,5 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
- * notice. All rights reserved.
+ * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
 package com.tc.object;
 
@@ -18,4 +17,7 @@ public interface Portability {
 
   public boolean isPortableInstance(Object obj);
 
+  public boolean overridesHashCode(Object obj);
+
+  public boolean overridesHashCode(Class clazz);
 }

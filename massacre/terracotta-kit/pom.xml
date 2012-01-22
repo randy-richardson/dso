@@ -50,7 +50,7 @@
     <ehcache-core.tcschema.url>http://svn.terracotta.org/svn/ehcache/trunk/core/src/main/config/ehcache-terracotta.xml</ehcache-core.tcschema.url>
     <quartz-kit.url>http://download.terracotta.org/quartz/quartz-${quartz.version}.tar.gz</quartz-kit.url>
     
-    <maven-copy-plugin.version>0.2.3.3</maven-copy-plugin.version>
+    <maven-copy-plugin.version>0.2.3.6</maven-copy-plugin.version>
     <gmaven-plugin.version>1.3</gmaven-plugin.version>
   </properties>
 

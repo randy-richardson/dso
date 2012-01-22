@@ -1,14 +1,13 @@
 /*
- * All content copyright (c) 2003-2008 Terracotta, Inc., except as may otherwise be noted in a separate copyright
- * notice. All rights reserved.
+ * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
  */
 package com.tc.object.dna.impl;
 
 import com.tc.object.ObjectID;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNACursor;
-import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.dna.api.DNAException;
+import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.dna.api.LogicalAction;
 import com.tc.object.dna.api.PhysicalAction;
 
@@ -60,11 +59,14 @@ public class VersionizedDNAWrapper implements DNA {
     return (resetSupported ? new ResetableDNACursor(dna.getCursor()) : dna.getCursor());
   }
 
+  public String getDefiningLoaderDescription() {
+    return dna.getDefiningLoaderDescription();
+  }
+
   public boolean isDelta() {
     return dna.isDelta();
   }
 
-  @Override
   public String toString() {
     return dna.toString();
   }
@@ -84,7 +86,9 @@ public class VersionizedDNAWrapper implements DNA {
     }
 
     public boolean next() throws IOException {
-      if (++index < actions.size()) { return true; }
+      if(++index < actions.size()) {
+        return true;
+      }
       boolean success = cursor.next();
       if (success) {
         actions.add(cursor.getAction());
@@ -93,7 +97,9 @@ public class VersionizedDNAWrapper implements DNA {
     }
 
     public boolean next(DNAEncoding encoding) throws IOException, ClassNotFoundException {
-      if (++index < actions.size()) { return true; }
+      if(++index < actions.size()) {
+        return true;
+      }
       boolean success = cursor.next(encoding);
       if (success) {
         actions.add(cursor.getAction());
@@ -117,7 +123,6 @@ public class VersionizedDNAWrapper implements DNA {
       return (index < actions.size() ? actions.get(index) : cursor.getAction());
     }
 
-    @Override
     public String toString() {
       return cursor.toString();
     }
