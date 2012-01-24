@@ -5,5 +5,9 @@
     "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 
 <suppressions>
-  <suppress checks="Header" files="thirdparty.*java" />
+  <suppress checks="Header" files=".java" />
+  
+  <!-- allow hardcoded toolkit classnames in these files -->
+  <suppress id="forbidden-toolkit-classes" files="TCClassFactory.java" />
+  <suppress id="forbidden-toolkit-classes" files="ManagedObjectStateFactory.java" />  
 </suppressions>

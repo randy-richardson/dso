@@ -83,7 +83,7 @@ public class SourceValue implements Value {
 
     public boolean equals(final Object value) {
         if (!(value instanceof SourceValue)) {
-        	return false;
+            return false;
         }
         SourceValue v = (SourceValue) value;
         return size == v.size && insns.equals(v.insns);

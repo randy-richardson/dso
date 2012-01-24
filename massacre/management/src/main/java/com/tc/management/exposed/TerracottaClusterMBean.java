@@ -7,9 +7,9 @@ import com.tc.management.TerracottaMBean;
 
 public interface TerracottaClusterMBean extends TerracottaMBean {
 
-	boolean isConnected();
+  boolean isConnected();
 
-	String getNodeId();
+  String getNodeId();
 
-	String[] getNodesInCluster();
+  String[] getNodesInCluster();
 }
