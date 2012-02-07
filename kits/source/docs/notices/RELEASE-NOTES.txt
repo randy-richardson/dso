@@ -1,12 +1,6 @@
-Terracotta 3.5 - Simple Scale for Enterprise Java
+Terracotta 3.5.3-ee-patch1 
 ===================================================
-
-Release Notes: http://www.terracotta.org/kit/reflector?kitID=default&pageID=ReleaseNotes
-Documentation: http://www.terracotta.org/confluence/display/docs/Home
-Forums:        http://forums.terracotta.org/forums/forums/list.page
-Mailing Lists: http://lists.terracotta.org
-Support:       http://www.terracotta.org/kit/reflector?kitID=default&pageID=SupportServices
-
+DEV-6818 - Resolve Uncaught exception. calling CallbackOnExitDefaultHandlers
 ----
 All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
 http://www.terracotta.org
