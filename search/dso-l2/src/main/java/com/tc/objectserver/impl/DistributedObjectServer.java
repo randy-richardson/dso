@@ -441,10 +441,11 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     this.l2State = l2State;
     this.threadGroup = threadGroup;
     this.seda = seda;
-    this.serverBuilder = createServerBuilder(this.haConfig, logger, server);
+    this.serverBuilder = createServerBuilder(this.haConfig, logger, server, configSetupManager.dsoL2Config());
   }
 
-  protected DSOServerBuilder createServerBuilder(final HaConfig config, final TCLogger tcLogger, final TCServer server) {
+  protected DSOServerBuilder createServerBuilder(final HaConfig config, final TCLogger tcLogger, final TCServer server,
+                                                 L2DSOConfig l2dsoConfig) {
     Assert.assertEquals(config.isActiveActive(), false);
     return new StandardDSOServerBuilder(config, tcLogger);
   }
