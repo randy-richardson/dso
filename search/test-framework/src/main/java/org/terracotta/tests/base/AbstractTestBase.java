@@ -43,6 +43,7 @@ import javax.management.MBeanServerConnection;
 
 @RunWith(value = TcTestRunner.class)
 public abstract class AbstractTestBase extends TCTestCase {
+  private static final int            TEST_TIMEOUT_PER_CONFIG         = 900;
   private static final String         SINGLE_SERVER_CONFIG = "single-server-config";
   protected static final String       SEP                  = File.pathSeparator;
   private final TestConfig            testConfig;
@@ -86,7 +87,7 @@ public abstract class AbstractTestBase extends TCTestCase {
   @Override
   @Before
   public void setUp() throws Exception {
-    tcTestCaseSetup(true);
+    tcTestCaseSetup();
 
     if (testWillRun) {
       try {
@@ -414,6 +415,11 @@ public abstract class AbstractTestBase extends TCTestCase {
 
   protected void stopClient(final int index) {
     this.clientRunner.stopClient(index);
+  }
+
+  @Override
+  public int getTimeoutValueInSeconds() {
+    return TEST_TIMEOUT_PER_CONFIG;
   }
 
 }

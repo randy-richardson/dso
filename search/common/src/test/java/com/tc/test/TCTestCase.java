@@ -211,7 +211,7 @@ public class TCTestCase extends TestCase {
     return isContainerTest() ^ isConfiguredToRunWithAppServer();
   }
 
-  protected void tcTestCaseSetup(boolean shouldStartNewTimer) throws Exception {
+  protected void tcTestCaseSetup() throws Exception {
     printOutCurrentJavaProcesses();
     if (allDisabledUntil != null) {
       if (new Date().before(this.allDisabledUntil)) {
@@ -245,7 +245,7 @@ public class TCTestCase extends TestCase {
     // don't move this stuff to runTest(), you want the timeout timer to catch hangs in setUp() too.
     // Yes it means you can't customize the timeout threshold in setUp() -- take a deep breath and
     // set your value in the constructor of your test case instead of setUp()
-    if (shouldStartNewTimer || timeoutTaskAdded.commit(false, true)) {
+    if (timeoutTaskAdded.commit(false, true)) {
       scheduleTimeoutTask();
     }
 
@@ -255,7 +255,7 @@ public class TCTestCase extends TestCase {
 
   @Override
   public void runBare() throws Throwable {
-    tcTestCaseSetup(false);
+    tcTestCaseSetup();
     if (!testWillRun) return;
 
     Throwable testException = null;
@@ -300,7 +300,7 @@ public class TCTestCase extends TestCase {
     }
   }
 
-  public void scheduleTimeoutTask() {
+  public synchronized void scheduleTimeoutTask() {
     // enforce some sanity
     final int MINIMUM = 30;
     long junitTimeout = this.getTimeoutValueInSeconds();
@@ -435,7 +435,7 @@ public class TCTestCase extends TestCase {
   }
 
   protected final void timebombTestForRewrite() {
-    timebombTest("2012-02-10");
+    timebombTest("2012-02-16");
   }
 
   /**
