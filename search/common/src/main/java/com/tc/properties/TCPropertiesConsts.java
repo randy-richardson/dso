@@ -944,6 +944,10 @@ public interface TCPropertiesConsts {
   public static final String SEARCH_LUCENE_USE_OFFHEAP_DIRECTORY                            = "search.lucene.use.offHeap.directory";
   public static final String SEARCH_LUCENE_USE_OFFHEAP_BLOCK_SIZE                           = "search.lucene.use.offHeap.blockSize";
   public static final String SEARCH_LUCENE_MAX_BUFFER                                       = "search.lucene.max.buffer";
+  public static final String SEARCH_LUCENE_MERGE_FACTOR                                     = "search.lucene.mergefactor";
+  public static final String SEARCH_LUCENE_MAX_BUFFERED_DOCS                                = "search.lucene.maxBufferedDocs";
+  public static final String SEARCH_LUCENE_MAX_MERGE_DOCS                                   = "search.lucene.maxMergeDocs";
+
 
   public static final String APP_GROUPS_DEBUG                                               = "appgroups.debug";
 
