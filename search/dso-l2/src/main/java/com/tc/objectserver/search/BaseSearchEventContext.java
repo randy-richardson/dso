@@ -6,8 +6,16 @@ package com.tc.objectserver.search;
 import com.tc.async.api.MultiThreadedEventContext;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.metadata.MetaDataProcessingContext;
+import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 
 class BaseSearchEventContext implements SearchEventContext, MultiThreadedEventContext {
+
+  private static final int                INDEX_PER_CACHE = TCPropertiesImpl
+                                                              .getProperties()
+                                                              .getInt(TCPropertiesConsts.SEARCH_LUCENE_INDEXES_PER_CACHE);
+  private static final int                THREAD_SEGMENTS = TCPropertiesImpl.getProperties()
+                                                              .getInt(TCPropertiesConsts.L2_SEDA_SEARCH_THREADS);
 
   private final MetaDataProcessingContext metaDataContext;
   private final String                    cacheName;
@@ -20,7 +28,11 @@ class BaseSearchEventContext implements SearchEventContext, MultiThreadedEventCo
   }
 
   public final Object getKey() {
-    return segmentOid;
+    // Pick the thread segment using cache name
+    int threadSegment = Math.abs(cacheName.hashCode()) % THREAD_SEGMENTS;
+    // Pick the index segment using segment id
+    int indexSegment = (int) (Math.abs(segmentOid.toLong()) % INDEX_PER_CACHE);
+    return (threadSegment * THREAD_SEGMENTS) + indexSegment;
   }
 
   public MetaDataProcessingContext getMetaDataProcessingContext() {

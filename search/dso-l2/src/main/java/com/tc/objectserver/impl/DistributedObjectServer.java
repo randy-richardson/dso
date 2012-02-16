@@ -865,7 +865,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
         .createStage(ServerConfigurationContext.SYNC_WRITE_TXN_RECVD_STAGE,
                      new SyncWriteTransactionReceivedHandler(channelManager), 4, maxStageSize);
 
-    int searchThreads = TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_SEDA_SEARCH_THREADS);
+    int searchThreads = TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.L2_SEDA_SEARCH_THREADS)
+                        * TCPropertiesImpl.getProperties().getInt(TCPropertiesConsts.SEARCH_LUCENE_INDEXES_PER_CACHE);
 
     final Stage searchEventStage = stageManager.createStage(ServerConfigurationContext.SEARCH_EVENT_STAGE,
                                                             new SearchEventHandler(), searchThreads, 1, maxStageSize);
