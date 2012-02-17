@@ -11,11 +11,11 @@ import com.tc.properties.TCPropertiesImpl;
 
 class BaseSearchEventContext implements SearchEventContext, MultiThreadedEventContext {
 
-  private static final int                INDEX_PER_CACHE = TCPropertiesImpl
-                                                              .getProperties()
-                                                              .getInt(TCPropertiesConsts.SEARCH_LUCENE_INDEXES_PER_CACHE);
-  private static final int                THREAD_SEGMENTS = TCPropertiesImpl.getProperties()
-                                                              .getInt(TCPropertiesConsts.L2_SEDA_SEARCH_THREADS);
+  private static final int                INDEX_PER_CACHE     = TCPropertiesImpl
+                                                                  .getProperties()
+                                                                  .getInt(TCPropertiesConsts.SEARCH_LUCENE_INDEXES_PER_CACHE);
+  private static final int                SEDA_SEARCH_THREADS = TCPropertiesImpl.getProperties()
+                                                                  .getInt(TCPropertiesConsts.L2_SEDA_SEARCH_THREADS);
 
   private final MetaDataProcessingContext metaDataContext;
   private final String                    cacheName;
@@ -28,11 +28,11 @@ class BaseSearchEventContext implements SearchEventContext, MultiThreadedEventCo
   }
 
   public final Object getKey() {
-    // Pick the thread segment using cache name
-    int threadSegment = Math.abs(cacheName.hashCode()) % THREAD_SEGMENTS;
-    // Pick the index segment using segment id
+    // Pick the start thread index using cache name
+    int threadStart = Math.abs(cacheName.hashCode()) % SEDA_SEARCH_THREADS;
+    // Pick the next n threads for n indexes using segment id
     int indexSegment = (int) (Math.abs(segmentOid.toLong()) % INDEX_PER_CACHE);
-    return (threadSegment * THREAD_SEGMENTS) + indexSegment;
+    return (threadStart + indexSegment) % SEDA_SEARCH_THREADS;
   }
 
   public MetaDataProcessingContext getMetaDataProcessingContext() {
