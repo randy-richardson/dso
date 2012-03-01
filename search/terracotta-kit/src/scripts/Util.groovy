@@ -2,12 +2,14 @@
 class Util {
     static final def ant = new AntBuilder()
     
-    static boolean rename(String oldFile, String newFile) {
-      return new File(oldFile).renameTo(new File(newFile))  
+    static void rename(String oldFile, String newFile) {
+      boolean success = new File(oldFile).renameTo(new File(newFile))
+      if (!success) {
+        throw new RuntimeException("Failed to rename '" + oldFile + "' to '" + newFile + "'")
+      } 
     }
     
     static void processEhcacheDistribution(project) {
-      def ehcacheArtifactId = project.properties['ehcache.artifactId']
       def ehcacheVersion = project.properties['ehcache.version']
       def kitEdition = project.properties['kit.edition']
       def rootDir = project.properties['rootDir']
@@ -22,10 +24,13 @@ class Util {
     
     static void processQuartzDistribution(project) {
       def quartzVersion = project.properties['quartz.version']
-      def rootDir = project.properties['rootDir']
       def kitEdition = project.properties['kit.edition']
+      def rootDir = project.properties['rootDir']
       
-      def currentName =  rootDir + "/quartz-" + quartzVersion
+      def prefix =  kitEdition == 'enterprise' ? "/quartz-ee-" : "/quartz-"
+      def rootQuartzFolder = prefix + quartzVersion
+      
+      def currentName =  rootDir + rootQuartzFolder
       def newName = rootDir  + "/quartz"
       rename(currentName, newName)
       if (kitEdition == "enterprise") {        

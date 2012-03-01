@@ -5,6 +5,12 @@
 package com.tc.object.bytecode.hook.impl;
 
 import org.apache.commons.io.CopyUtils;
+import org.apache.log4j.Hierarchy;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.SimpleLayout;
+import org.apache.log4j.WriterAppender;
+import org.apache.log4j.spi.RootLogger;
 
 import com.tc.aspectwerkz.reflect.impl.java.JavaClassInfo;
 import com.tc.aspectwerkz.transform.InstrumentationContext;
@@ -22,7 +28,6 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.ManagerImpl;
-import com.tc.object.bytecode.hook.ClassLoaderPreProcessorImpl;
 import com.tc.object.bytecode.hook.DSOContext;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.config.ModuleConfiguration;
@@ -39,6 +44,7 @@ import com.terracottatech.config.ConfigurationModel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -163,6 +169,17 @@ public class DSOContextImpl implements DSOContext {
   private void resolveClasses() {
     // This fixes a class circularity error in JavaClassInfoRepository
     JavaClassInfo.getClassInfo(getClass());
+
+    // This is to help a deadlock in log4j (see MNK-3461)
+    Logger l = new RootLogger(Level.ALL);
+    Hierarchy h = new Hierarchy(l);
+    l.addAppender(new WriterAppender(new SimpleLayout(), new OutputStream() {
+      @Override
+      public void write(int b) {
+        //
+      }
+    }));
+    l.debug(h.toString(), new Throwable());
   }
 
   public Manager getManager() {
@@ -179,7 +196,6 @@ public class DSOContextImpl implements DSOContext {
    * offset.
    * 
    * @return new byte array if the class is instrumented and same input byte array if not.
-   * @see ClassLoaderPreProcessorImpl
    */
   public byte[] preProcess(String name, byte[] data, int offset, int length, ClassLoader caller) {
     InstrumentationContext context = new InstrumentationContext(name, data, caller);
