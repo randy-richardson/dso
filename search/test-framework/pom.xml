@@ -14,6 +14,7 @@
   <name>test-framework</name>
   
   <properties>
+    <byteman.version>2.0.1</byteman.version>
     <skip.testjar>true</skip.testjar>
   </properties>
 
@@ -163,6 +164,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+        <groupId>org.jboss.byteman</groupId>
+        <artifactId>byteman</artifactId>
+        <version>${byteman.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.terracotta.internal</groupId>
       <artifactId>dso-l2</artifactId>
       <version>${project.version}</version>
@@ -237,9 +243,9 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>com.goldin.plugins</groupId>
-        <artifactId>maven-copy-plugin</artifactId>
-        <version>${maven-copy-plugin.version}</version>
+        <groupId>com.github.goldin</groupId>
+        <artifactId>copy-maven-plugin</artifactId>
+        <version>${copy-maven-plugin.version}</version>
         <executions>
           <execution>
             <id>create-source-archive</id>
@@ -273,5 +279,6 @@
       </plugin>
     </plugins>
   </build>
-  
+
+
 </project>

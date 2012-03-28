@@ -3,8 +3,6 @@
  */
 package com.tc.async.impl;
 
-import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
-
 import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.EventContext;
 import com.tc.async.api.Stage;
@@ -13,13 +11,14 @@ import com.tc.lang.TCThreadGroup;
 import com.tc.lang.ThrowableHandler;
 import com.tc.logging.CallbackOnExitHandler;
 import com.tc.logging.CallbackOnExitState;
+import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.util.concurrent.QueueFactory;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.TestCase;
 import junit.framework.Assert;
+import junit.framework.TestCase;
 
 public class TCNotRunningTest extends TestCase {
 
@@ -32,9 +31,8 @@ public class TCNotRunningTest extends TestCase {
     super.setUp();
     debug("In setup");
     try {
-      ThrowableHandler throwableHandler = new ThrowableHandler(TCLogging.getLogger(StageManagerImpl.class));
-      stageManager = new StageManagerImpl(new TCThreadGroup(throwableHandler),
-                                          new QueueFactory());
+      ThrowableHandler throwableHandler = new NonExitingThrowableHandler(TCLogging.getLogger(StageManagerImpl.class));
+      stageManager = new StageManagerImpl(new TCThreadGroup(throwableHandler), new QueueFactory());
       callbackOnExitHandler = new TestCallbackOnExitHandler();
       throwableHandler.addCallbackOnExitDefaultHandler(callbackOnExitHandler);
       testHandler = new TestHandler();
@@ -50,6 +48,7 @@ public class TCNotRunningTest extends TestCase {
     stage.getSink().add(new TestEventContext());
     testHandler.waitUntilHandledEventCount(1);
     Assert.assertFalse("Exit should not be called", callbackOnExitHandler.exitCalled);
+    debug("test complete");
   }
 
   public void testWrapped() {
@@ -60,7 +59,7 @@ public class TCNotRunningTest extends TestCase {
     stage.getSink().add(new TestEventContext());
     testHandler.waitUntilHandledEventCount(1);
     Assert.assertFalse("Exit should not be called", callbackOnExitHandler.exitCalled);
-
+    debug("test complete");
   }
 
   public void testOtherException() {
@@ -71,10 +70,11 @@ public class TCNotRunningTest extends TestCase {
     stage.getSink().add(new TestEventContext());
     testHandler.waitUntilHandledEventCount(1);
     junit.framework.Assert.assertTrue("Exit should be called", callbackOnExitHandler.exitCalled);
+    debug("test complete");
   }
 
   private static void debug(String msg) {
-    System.out.println(msg);
+    System.out.println("[" + System.currentTimeMillis() + "]" + msg);
   }
 
   private static enum HandlerState {
@@ -112,11 +112,13 @@ public class TCNotRunningTest extends TestCase {
         if (currentCount == count) {
           break;
         } else {
+          debug("Sleeping for 1 sec...");
           try {
             Thread.sleep(1000);
           } catch (Exception e) {
-            // ignored
+            e.printStackTrace();
           }
+          debug("after sleep");
         }
       }
     }
@@ -134,5 +136,18 @@ public class TCNotRunningTest extends TestCase {
       debug("Callback on exit called");
       exitCalled = true;
     }
+  }
+
+  private static class NonExitingThrowableHandler extends ThrowableHandler {
+
+    public NonExitingThrowableHandler(TCLogger logger) {
+      super(logger);
+    }
+
+    @Override
+    protected synchronized void exit(int status) {
+      debug("EXIT CALLED - not exiting for tests");
+    }
+
   }
 }
