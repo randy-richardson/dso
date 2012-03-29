@@ -68,7 +68,7 @@ public class NullIndexManager implements IndexManager {
     return new String[] {};
   }
 
-  public InputStream getIndexFile(String cacheName, String fileName) {
+  public InputStream getIndexFile(String cacheName, String indexId, String fileName) {
     throw new AssertionError();
   }
 }

@@ -41,5 +41,5 @@ public interface IndexManager {
 
   String[] getSearchIndexNames();
 
-  InputStream getIndexFile(String indexName, String fileName) throws IOException;
+  InputStream getIndexFile(String cacheName, String indexId, String fileName) throws IOException;
 }
