@@ -78,7 +78,7 @@ public class TestClientManager {
     TestBaseUtil.removeDuplicateJvmArgs(jvmArgs);
     TestBaseUtil.setHeapSizeArgs(jvmArgs, testConfig.getClientConfig().getMinHeap(), testConfig.getClientConfig()
         .getMaxHeap());
-    testConfig.getClientConfig().getBytemanConfig().addTo(jvmArgs);
+    testConfig.getClientConfig().getBytemanConfig().addTo(jvmArgs, tempDir);
 
     String clientArgs = System.getProperty(CLIENT_ARGS);
     if (clientArgs != null) {
@@ -141,6 +141,7 @@ public class TestClientManager {
         testBase.evaluateClientOutput(client.getName(), result.getExitCode(), output);
       } catch (Throwable t) {
         System.out.println("*************Got excpetion in One of the Clients Killing other clients");
+        System.out.println("**** For Details Refer to client Logs at " + output.getAbsolutePath());
         stopAllClients();
         throw new AssertionError(t);
       }
