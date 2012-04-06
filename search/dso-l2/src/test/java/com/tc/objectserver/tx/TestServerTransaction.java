@@ -33,6 +33,7 @@ public final class TestServerTransaction implements ServerTransaction {
   private final TxnBatchID          bid;
   private final GlobalTransactionID gtid;
   public long[]                     hwm;
+  public MetaDataReader[]           metaDataReaders;
 
   public TestServerTransaction(ServerTransactionID sid, TxnBatchID bid) {
     this(sid, bid, null);
@@ -95,9 +96,9 @@ public final class TestServerTransaction implements ServerTransaction {
   public DmiDescriptor[] getDmiDescriptors() {
     throw new ImplementMe();
   }
-  
+
   public MetaDataReader[] getMetaDataReaders() {
-    return new MetaDataReader[0];
+    return this.metaDataReaders;
   }
 
   public boolean isPassive() {
@@ -127,6 +128,11 @@ public final class TestServerTransaction implements ServerTransaction {
 
   public long[] getHighWaterMarks() {
     return this.hwm;
+  }
+
+  @Override
+  public boolean isSearchEnabled() {
+    return false;
   }
 
 }

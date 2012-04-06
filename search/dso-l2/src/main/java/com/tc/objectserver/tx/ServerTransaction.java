@@ -51,7 +51,7 @@ public interface ServerTransaction extends GlobalTransaction {
   public Collection getNotifies();
 
   public DmiDescriptor[] getDmiDescriptors();
-  
+
   public MetaDataReader[] getMetaDataReaders();
 
   public boolean isActiveTxn();
@@ -64,4 +64,6 @@ public interface ServerTransaction extends GlobalTransaction {
 
   // Used in active-active
   public long[] getHighWaterMarks();
+
+  public boolean isSearchEnabled();
 }

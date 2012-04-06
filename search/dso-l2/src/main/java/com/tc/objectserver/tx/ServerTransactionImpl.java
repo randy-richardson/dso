@@ -188,4 +188,9 @@ public class ServerTransactionImpl implements ServerTransaction {
   public long[] getHighWaterMarks() {
     return this.highWaterMarks;
   }
+
+  @Override
+  public boolean isSearchEnabled() {
+    return getMetaDataReaders().length > 0;
+  }
 }

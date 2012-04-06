@@ -135,4 +135,8 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
     return EMPTY_LONG_ARRAY;
   }
 
+  @Override
+  public boolean isSearchEnabled() {
+    return false;
+  }
 }

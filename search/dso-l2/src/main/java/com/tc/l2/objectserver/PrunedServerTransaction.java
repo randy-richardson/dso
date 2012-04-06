@@ -58,7 +58,7 @@ public class PrunedServerTransaction implements ServerTransaction {
   public DmiDescriptor[] getDmiDescriptors() {
     return this.orgTxn.getDmiDescriptors();
   }
-  
+
   public MetaDataReader[] getMetaDataReaders() {
     return this.orgTxn.getMetaDataReaders();
   }
@@ -117,6 +117,11 @@ public class PrunedServerTransaction implements ServerTransaction {
 
   public long[] getHighWaterMarks() {
     return EMPTY_LONG_ARRAY;
+  }
+
+  @Override
+  public boolean isSearchEnabled() {
+    return this.orgTxn.isSearchEnabled();
   }
 
 }
