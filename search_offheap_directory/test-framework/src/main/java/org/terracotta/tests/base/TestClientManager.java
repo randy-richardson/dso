@@ -51,12 +51,11 @@ public class TestClientManager {
    * Starts a new client
    * 
    * @param client : the class which is to be started as client
-   * @param withStandaloneJar : do we need to start the client with standalone jar
    * @param clientName name of : the client to be started
    * @param extraClientMainArgs : List of arguments with which the client will start
    */
-  protected void runClient(Class<? extends Runnable> client, boolean withStandaloneJar, String clientName,
-                           List<String> extraClientMainArgs) throws Throwable {
+  protected void runClient(Class<? extends Runnable> client, String clientName, List<String> extraClientMainArgs)
+      throws Throwable {
     synchronized (TestClientManager.class) {
       if (stopped.isSet()) { return; }
     }
@@ -79,6 +78,7 @@ public class TestClientManager {
     TestBaseUtil.removeDuplicateJvmArgs(jvmArgs);
     TestBaseUtil.setHeapSizeArgs(jvmArgs, testConfig.getClientConfig().getMinHeap(), testConfig.getClientConfig()
         .getMaxHeap());
+    testConfig.getClientConfig().getBytemanConfig().addTo(jvmArgs, tempDir);
 
     String clientArgs = System.getProperty(CLIENT_ARGS);
     if (clientArgs != null) {
@@ -114,7 +114,7 @@ public class TestClientManager {
 
     LinkedJavaProcess clientProcess = new LinkedJavaProcess(TestClientLauncher.class.getName(), clientMainArgs, jvmArgs);
     clientProcess.setMaxRuntime(TestConfigObject.getInstance().getJunitTimeoutInSeconds());
-    String classPath = testBase.createClassPath(client, withStandaloneJar);
+    String classPath = testBase.createClassPath(client);
     classPath = testBase.makeClasspath(classPath, testBase.getTestDependencies());
     classPath = addRequiredJarsToClasspath(client, classPath);
     classPath = addExtraJarsToClassPath(classPath);
@@ -141,6 +141,7 @@ public class TestClientManager {
         testBase.evaluateClientOutput(client.getName(), result.getExitCode(), output);
       } catch (Throwable t) {
         System.out.println("*************Got excpetion in One of the Clients Killing other clients");
+        System.out.println("**** For Details Refer to client Logs at " + output.getAbsolutePath());
         stopAllClients();
         throw new AssertionError(t);
       }

@@ -26,7 +26,7 @@
     
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.version>6.1.8</jetty.version>
-    <slf4j.version>1.6.1</slf4j.version>
+    <slf4j.version>1.6.4</slf4j.version>
     <offheap-store.version>1.0.6</offheap-store.version>
     <management.version>1.0.0-SNAPSHOT</management.version>
     <terracotta-license.version>1.0.4-SNAPSHOT</terracotta-license.version>
@@ -35,6 +35,7 @@
     <sleepycat.version>4.1.17</sleepycat.version>
     <linked-child-process.version>1.0.6</linked-child-process.version>
     <gmaven-plugin.version>1.3</gmaven-plugin.version>
+    <copy-maven-plugin.version>0.2.3.8</copy-maven-plugin.version>
     <surefire.version>2.10</surefire.version>
     <maven-forge-plugin.version>1.0.5-SNAPSHOT</maven-forge-plugin.version>
     <skip.deploy>false</skip.deploy>
@@ -147,11 +148,6 @@
         <version>1.0</version>
       </dependency>
       <dependency>
-        <groupId>knopflerfish-tc</groupId>
-        <artifactId>knopflerfish-tc</artifactId>
-        <version>2.0.1-20100819</version>
-      </dependency>
-      <dependency>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>servlet-api-2.5</artifactId>
         <version>${jetty.version}</version>
@@ -257,11 +253,6 @@
         <groupId>hsqldb</groupId>
         <artifactId>hsqldb</artifactId>
         <version>1.7.2.2</version>
-      </dependency>
-      <dependency>
-        <groupId>httpunit</groupId>
-        <artifactId>httpunit</artifactId>
-        <version>1.6</version>
       </dependency>
 
       <!-- Dependencies for core Terracotta artifacts -->
@@ -778,66 +769,44 @@
       </snapshots>
     </repository>
     <repository>
+      <id>jboss-public</id>
+      <url>http://repository.jboss.org/nexus/content/groups/public</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
       <id>oracle</id>
-      <url>http://download.oracle.com/maven/</url>
+      <url>http://download.oracle.com/maven</url>
       <releases>
         <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </repository>
-    <repository>
-      <id>jboss</id>
-      <url>http://repository.jboss.com/maven2</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>evgeny-goldin</id>
-      <url>http://evgeny-goldin.org/artifactory/repo</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>    
+    </repository>      
   </repositories>
   <pluginRepositories>
     <pluginRepository>
       <id>terracotta-snapshots</id>
       <url>http://www.terracotta.org/download/reflector/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
     </pluginRepository>
     <pluginRepository>
       <id>terracotta-releases</id>
       <url>http://www.terracotta.org/download/reflector/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
     </pluginRepository>
     <pluginRepository>
-      <id>evgeny-goldin</id>
-      <url>http://evgeny-goldin.org/artifactory/repo</url>
+      <id>evgenyg.artifactoryonline.com</id>
+      <url>http://evgenyg.artifactoryonline.com/evgenyg/repo/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </pluginRepository>     
+    </pluginRepository>    
   </pluginRepositories>
 </project>
