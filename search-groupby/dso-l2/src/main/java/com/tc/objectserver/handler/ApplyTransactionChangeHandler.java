@@ -70,10 +70,11 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
       this.txnObjectMgr.applyTransactionComplete(applyInfo);
     } else {
       this.transactionManager.skipApplyAndCommit(txn);
+
       getLogger().warn("Not applying previously applied transaction: " + stxnID);
     }
 
-    this.transactionManager.processMetaData(txn, applyInfo);
+    this.transactionManager.processMetaData(txn, atc.needsApply() ? applyInfo : null);
 
     for (final Iterator i = txn.getNotifies().iterator(); i.hasNext();) {
       final Notify notify = (Notify) i.next();

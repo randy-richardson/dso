@@ -118,6 +118,14 @@ public final class TestServerTransaction implements ServerTransaction {
     return true;
   }
 
+  public boolean isResent() {
+    return false;
+  }
+
+  public void markResent() {
+    throw new ImplementMe();
+  }
+
   public int getNumApplicationTxn() {
     return 1;
   }

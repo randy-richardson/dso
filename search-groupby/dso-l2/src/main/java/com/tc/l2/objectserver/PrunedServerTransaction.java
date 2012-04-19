@@ -107,6 +107,14 @@ public class PrunedServerTransaction implements ServerTransaction {
     return this.orgTxn.isActiveTxn();
   }
 
+  public boolean isResent() {
+    return this.orgTxn.isResent();
+  }
+
+  public void markResent() {
+    this.orgTxn.markResent();
+  }
+
   public int getNumApplicationTxn() {
     return this.orgTxn.getNumApplicationTxn();
   }
