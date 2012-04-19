@@ -221,6 +221,14 @@ public class BroadcastChangeHandlerTest extends TCTestCase {
       return false;
     }
 
+    public boolean isResent() {
+      return false;
+    }
+
+    public void markResent() {
+      throw new ImplementMe();
+    }
+
   }
 
   private static class TestServerConfigurationContext implements ServerConfigurationContext {

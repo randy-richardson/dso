@@ -56,6 +56,10 @@ public interface ServerTransaction extends GlobalTransaction {
 
   public boolean isActiveTxn();
 
+  public boolean isResent();
+
+  public void markResent();
+
   /**
    * Number of actual client/application transactions that this server transaction contains. Txn folding on the client
    * might make the relationship not 1:1
