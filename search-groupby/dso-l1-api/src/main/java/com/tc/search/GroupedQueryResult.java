@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface GroupedQueryResult extends IndexQueryResult {
 
-  public List<?> getAggregatorResults();
+  public List<NVPair> getAggregatorResults();
 
   public List<NVPair> getGroupedAttributes();
 }
