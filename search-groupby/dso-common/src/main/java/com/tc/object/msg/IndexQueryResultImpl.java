@@ -35,7 +35,7 @@ public abstract class IndexQueryResultImpl implements IndexQueryResult {
   public Object deserializeFrom(TCByteBufferInput input) throws IOException {
     int size = input.readInt();
 
-    this.attributes = size > 0 ? new ArrayList<NVPair>() : Collections.EMPTY_LIST;
+    this.attributes = size > 0 ? new ArrayList<NVPair>(size) : Collections.EMPTY_LIST;
 
     for (int i = 0; i < size; i++) {
       NVPair pair = AbstractNVPair.deserializeInstance(input, NULL_SERIALIZER);
@@ -43,7 +43,7 @@ public abstract class IndexQueryResultImpl implements IndexQueryResult {
     }
 
     int sortSize = input.readInt();
-    this.sortAttributes = sortSize > 0 ? new ArrayList<NVPair>() : Collections.EMPTY_LIST;
+    this.sortAttributes = sortSize > 0 ? new ArrayList<NVPair>(sortSize) : Collections.EMPTY_LIST;
 
     for (int i = 0; i < sortSize; i++) {
       NVPair pair = AbstractNVPair.deserializeInstance(input, NULL_SERIALIZER);

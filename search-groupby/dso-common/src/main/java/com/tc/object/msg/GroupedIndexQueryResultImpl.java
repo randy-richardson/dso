@@ -51,7 +51,7 @@ public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements
 
     int size = input.readInt();
 
-    this.groupByAttributes = size > 0 ? new ArrayList<NVPair>() : Collections.EMPTY_LIST;
+    this.groupByAttributes = new ArrayList<NVPair>(size);
 
     for (int i = 0; i < size; i++) {
       NVPair pair = AbstractNVPair.deserializeInstance(input, NULL_SERIALIZER);
@@ -59,8 +59,8 @@ public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements
     }
 
     int aggregatorCount = input.readInt();
-    this.aggregatorResults = new ArrayList<NVPair>();
-    while (aggregatorCount-- < 0) {
+    this.aggregatorResults = new ArrayList<NVPair>(aggregatorCount);
+    for (int i = 0; i < aggregatorCount; i++) {
       NVPair pair = AbstractNVPair.deserializeInstance(input, NULL_SERIALIZER);
       this.aggregatorResults.add(pair);
     }

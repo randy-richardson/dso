@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface SearchQueryResults {
 
-  List<IndexQueryResult> getResults();
+  <T extends IndexQueryResult> List<T> getResults();
 
   List<Object> getAggregatorResults();
 
