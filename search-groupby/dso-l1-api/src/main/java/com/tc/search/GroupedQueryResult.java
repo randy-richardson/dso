@@ -4,12 +4,13 @@
 package com.tc.search;
 
 import com.tc.object.metadata.NVPair;
+import com.tc.search.aggregator.Aggregator;
 
 import java.util.List;
 
 public interface GroupedQueryResult extends IndexQueryResult {
 
-  public List<NVPair> getAggregatorResults();
+  public List<Aggregator> getAggregators();
 
   public List<NVPair> getGroupedAttributes();
 }

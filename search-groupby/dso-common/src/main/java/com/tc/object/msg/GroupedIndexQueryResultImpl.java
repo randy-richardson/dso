@@ -8,6 +8,8 @@ import com.tc.io.TCByteBufferOutput;
 import com.tc.object.metadata.AbstractNVPair;
 import com.tc.object.metadata.NVPair;
 import com.tc.search.GroupedQueryResult;
+import com.tc.search.aggregator.AbstractAggregator;
+import com.tc.search.aggregator.Aggregator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,18 +18,18 @@ import java.util.List;
 
 public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements GroupedQueryResult {
 
-  private List<NVPair> aggregatorResults;
-  private List<NVPair> groupByAttributes;
+  private List<Aggregator> aggregators;
+  private List<NVPair>     groupByAttributes;
 
   GroupedIndexQueryResultImpl() {
     //
   }
 
   public GroupedIndexQueryResultImpl(List<NVPair> attributes, List<NVPair> sortAttributes,
-                                     List<NVPair> groupByAttributes, List<NVPair> aggregatorResults) {
+                                     List<NVPair> groupByAttributes, List<Aggregator> aggregatorResults) {
     super(attributes, sortAttributes);
     this.groupByAttributes = groupByAttributes;
-    this.aggregatorResults = aggregatorResults;
+    this.aggregators = aggregatorResults;
   }
 
   @Override
@@ -38,9 +40,9 @@ public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements
       pair.serializeTo(output, NULL_SERIALIZER);
     }
 
-    output.writeInt(this.aggregatorResults.size());
-    for (NVPair pair : this.aggregatorResults) {
-      pair.serializeTo(output, NULL_SERIALIZER);
+    output.writeInt(this.aggregators.size());
+    for (Aggregator agg : this.aggregators) {
+      agg.serializeTo(output);
     }
 
   }
@@ -59,17 +61,17 @@ public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements
     }
 
     int aggregatorCount = input.readInt();
-    this.aggregatorResults = new ArrayList<NVPair>(aggregatorCount);
+    this.aggregators = new ArrayList<Aggregator>(aggregatorCount);
     for (int i = 0; i < aggregatorCount; i++) {
-      NVPair pair = AbstractNVPair.deserializeInstance(input, NULL_SERIALIZER);
-      this.aggregatorResults.add(pair);
+      Aggregator aggregator = AbstractAggregator.deserializeInstance(input);
+      this.aggregators.add(aggregator);
     }
     return this;
   }
 
   @Override
-  public List<NVPair> getAggregatorResults() {
-    return Collections.unmodifiableList(aggregatorResults);
+  public List<Aggregator> getAggregators() {
+    return Collections.unmodifiableList(aggregators);
   }
 
   @Override

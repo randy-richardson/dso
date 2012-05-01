@@ -168,7 +168,7 @@ public class SearchQueryResponseMessageImpl extends DSOMessageBase implements Se
 
       case RESULTS_SIZE:
         int size = getIntValue();
-        this.results = new ArrayList(size);
+        this.results = new ArrayList<IndexQueryResult>(size);
         this.isQueryGroupBy = getBooleanValue();
         while (size-- > 0) {
           IndexQueryResult result = IndexQueryResultImpl.getInstance(this.isQueryGroupBy);
@@ -179,7 +179,7 @@ public class SearchQueryResponseMessageImpl extends DSOMessageBase implements Se
 
       case AGGREGATOR_RESULTS_SIZE:
         int aggregatorSize = getIntValue();
-        this.aggregators = new ArrayList(aggregatorSize);
+        this.aggregators = new ArrayList<Aggregator>(aggregatorSize);
         while (aggregatorSize-- > 0) {
           Aggregator aggregator = AbstractAggregator.deserializeInstance(input);
           this.aggregators.add(aggregator);

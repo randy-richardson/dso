@@ -5,9 +5,9 @@ package com.tc.search;
 
 import java.util.List;
 
-public interface SearchQueryResults {
+public interface SearchQueryResults<T extends IndexQueryResult> {
 
-  <T extends IndexQueryResult> List<T> getResults();
+  List<T> getResults();
 
   List<Object> getAggregatorResults();
 
