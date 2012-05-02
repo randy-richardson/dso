@@ -14,19 +14,21 @@ import com.tc.search.aggregator.Aggregator;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements GroupedQueryResult {
 
   private List<Aggregator> aggregators;
-  private List<NVPair>     groupByAttributes;
+  private Set<NVPair>      groupByAttributes;
 
   GroupedIndexQueryResultImpl() {
     //
   }
 
   public GroupedIndexQueryResultImpl(List<NVPair> attributes, List<NVPair> sortAttributes,
-                                     List<NVPair> groupByAttributes, List<Aggregator> aggregatorResults) {
+                                     Set<NVPair> groupByAttributes, List<Aggregator> aggregatorResults) {
     super(attributes, sortAttributes);
     this.groupByAttributes = groupByAttributes;
     this.aggregators = aggregatorResults;
@@ -53,7 +55,7 @@ public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements
 
     int size = input.readInt();
 
-    this.groupByAttributes = new ArrayList<NVPair>(size);
+    this.groupByAttributes = new HashSet<NVPair>(size);
 
     for (int i = 0; i < size; i++) {
       NVPair pair = AbstractNVPair.deserializeInstance(input, NULL_SERIALIZER);
@@ -75,8 +77,8 @@ public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements
   }
 
   @Override
-  public List<NVPair> getGroupedAttributes() {
-    return Collections.unmodifiableList(groupByAttributes);
+  public Set<NVPair> getGroupedAttributes() {
+    return Collections.unmodifiableSet(groupByAttributes);
   }
 
 }
