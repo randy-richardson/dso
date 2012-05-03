@@ -9,6 +9,7 @@ import com.tc.async.api.EventContext;
 import com.tc.async.api.EventHandlerException;
 import com.tc.async.api.MultiThreadedEventContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
+import com.terracottatech.search.IndexException;
 
 import java.io.IOException;
 
@@ -33,8 +34,14 @@ public class SearchEventHandler extends AbstractEventHandler {
       SearchUpsertContext suc = (SearchUpsertContext) context;
 
       try {
-        this.indexManager.upsert(suc.getCacheName(), suc.getCacheKey(), suc.getCacheValue(), suc.getAttributes(),
-                                 suc.isPutIfAbsent(), suc.getSegmentOid(), suc.getMetaDataProcessingContext());
+        if (suc.isInsert()) {
+          this.indexManager.insert(suc.getCacheName(), suc.getCacheKey(), suc.getCacheValue(), suc.getAttributes(),
+                                   suc.getSegmentOid(), suc.getMetaDataProcessingContext());
+        } else {
+
+          this.indexManager.update(suc.getCacheName(), suc.getCacheKey(), suc.getCacheValue(), suc.getAttributes(),
+                                   suc.getSegmentOid(), suc.getMetaDataProcessingContext());
+        }
       } catch (IndexException e) {
         // TODO: figure out what to do with IndexException, rethrow for now.
         throw new EventHandlerException(e);

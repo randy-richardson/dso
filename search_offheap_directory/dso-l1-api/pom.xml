@@ -11,7 +11,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>3.7.0-SNAPSHOT</version>
+    <version>3.8.0-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
   
@@ -25,6 +25,16 @@
   </properties>
   
   <dependencies>
+    <dependency>
+      <groupId>com.terracottatech</groupId>
+      <artifactId>search</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.lucene</groupId>
+          <artifactId>lucene-core</artifactId>
+        </exclusion>          
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.terracotta.internal</groupId>
       <artifactId>common</artifactId>

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>3.7.0-SNAPSHOT</version>
+    <version>3.8.0-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
 
@@ -18,6 +18,10 @@
         Version and scope for each dependency is declared in the
         dependencyManagement section of the parent POM.
     -->
+    <dependency>
+      <groupId>com.terracottatech</groupId>
+      <artifactId>search</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.terracotta</groupId>
       <artifactId>management-ehcache-impl</artifactId>
