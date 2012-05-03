@@ -73,7 +73,7 @@ public class GroupedIndexQueryResultImpl extends IndexQueryResultImpl implements
 
   @Override
   public List<Aggregator> getAggregators() {
-    return Collections.unmodifiableList(aggregators);
+    return aggregators;
   }
 
   @Override
