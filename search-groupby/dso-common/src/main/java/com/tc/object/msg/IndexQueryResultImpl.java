@@ -80,7 +80,7 @@ public abstract class IndexQueryResultImpl implements IndexQueryResult {
   }
 
   static IndexQueryResult getInstance(boolean isGrouped) {
-    return isGrouped ? new NonGroupedIndexQueryResultImpl() : new GroupedIndexQueryResultImpl();
+    return isGrouped ? new GroupedIndexQueryResultImpl() : new NonGroupedIndexQueryResultImpl();
   }
 
 }
