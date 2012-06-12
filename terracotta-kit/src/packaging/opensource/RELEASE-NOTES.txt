@@ -1,6 +1,11 @@
 Terracotta - Simple Scale for Enterprise Java
 ===================================================
 
+3.6.2-ee-patch1
+---------------
+DEV-7508 - fix for AssertionError when spare passive takes over for stopped active, in presence of another fully synced passive
+
+---------------
 Release Notes: http://www.terracotta.org/kit/reflector?kitID=default&pageID=ReleaseNotes
 Documentation: http://www.terracotta.org/confluence/display/docs/Home
 Forums:        http://forums.terracotta.org/forums/forums/list.page
