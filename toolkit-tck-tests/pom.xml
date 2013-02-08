@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>4.0.0</version>
     <relativePath>../build-parent</relativePath>
   </parent>
 
@@ -15,7 +15,7 @@
   <description>Toolkit compatiblity check</description>
 
   <properties>
-    <toolkit-tck.version>1.0-SNAPSHOT</toolkit-tck.version>
+    <toolkit-tck.version>1.0</toolkit-tck.version>
   </properties>
 
   <dependencies>
@@ -27,7 +27,7 @@
     <dependency>
       <groupId>org.terracotta</groupId>
       <artifactId>terracotta-toolkit-runtime</artifactId>
-      <version>4.0.0-SNAPSHOT</version>
+      <version>4.0.0</version>
     </dependency>    
   </dependencies>
 
