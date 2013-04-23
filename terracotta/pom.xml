@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-parent</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
+    <version>4.0.1-SNAPSHOT</version>
     <relativePath>../terracotta-parent</relativePath>
   </parent>
 
@@ -75,7 +75,7 @@
         </property>
       </activation>
       <properties>
-        <excludeGroupIdsForClasspath></excludeGroupIdsForClasspath>
+        <excludeGroupIdsForClasspath/>
         <devmodeResourcePath>${project.build.outputDirectory}/META-INF/devmode/${project.groupId}/${project.artifactId}</devmodeResourcePath>
         <devmodeDependencies>${devmodeResourcePath}/dependencies.txt</devmodeDependencies>        
       </properties>
