@@ -1,5 +1,6 @@
+/test.sh
 /.classpath
 /.project
-/.settings
 /target
-
+/nbactions.xml
+/.settings
