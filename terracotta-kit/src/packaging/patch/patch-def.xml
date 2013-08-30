@@ -4,7 +4,7 @@
     Patch level identifier.  May be any arbitrary string, but for official
     patches should be a positive integer in increasing sequence.
   -->
-  <level>2</level>
+  <level>3</level>
 
   <!--
     List of files to include in the patch tar.  File paths listed here are
