@@ -13,6 +13,7 @@
   <files>
     <file>RELEASE-NOTES.txt</file>
     <file>lib/tc.jar</file>
+    <file>common/terracotta-toolkit-1.5-runtime-ee-4.2.0.jar</file>
   </files>
 </patch>
 
