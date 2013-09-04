@@ -1,6 +1,9 @@
 Terracotta - Simple Scale for Enterprise Java
 ===================================================
 
+3.6.2-ee-patch3
+CRQ-111 - OOO selectLoop Outage
+
 3.6.2-ee-patch2
 CRQ-49 - fix for ArrayIndexOutOfBounds exception due to eviction transactions
 
