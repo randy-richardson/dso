@@ -41,7 +41,7 @@ public interface SearchQueryResponseMessage extends TCMessage {
    */
   public void initSearchResponseMessage(SearchRequestID searchRequestID, GroupID groupIDFrom,
                                         List<IndexQueryResult> results, List<Aggregator> aggregators,
-                                        boolean anyCriteriaMatched, boolean isGroupBy);
+                                        boolean anyCriteriaMatched, boolean isGroupBy, long totalCount);
 
   /**
    * Initialize error response
@@ -69,5 +69,10 @@ public interface SearchQueryResponseMessage extends TCMessage {
   public boolean isAnyCriteriaMatched();
 
   public boolean isQueryGroupBy();
+
+  /**
+   * Not necessarily the same as size of {@link #getResults()} list, if results were paginated.
+   */
+  public long getTotalResultCount();
 
 }

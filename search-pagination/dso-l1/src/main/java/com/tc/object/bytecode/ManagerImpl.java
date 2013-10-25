@@ -73,6 +73,7 @@ import com.tc.util.concurrent.TaskRunner;
 import com.tcclient.cluster.DsoClusterInternal;
 import com.terracottatech.search.AbstractNVPair;
 import com.terracottatech.search.NVPair;
+import com.terracottatech.search.SearchBuilder.Search;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -886,7 +887,12 @@ public class ManagerImpl implements Manager {
       waitForAllCurrentTransactionsToComplete();
     }
     return searchRequestManager.query(cachename, queryStack, includeKeys, includeValues, attributeSet, sortAttributes,
-                                      aggregators, maxResults, batchSize);
+                                      aggregators,
+                                      maxResults,
+                                      batchSize,
+                                      TCPropertiesImpl.getProperties()
+                                          .getInt(TCPropertiesConsts.SEARCH_QUERY_RESULT_LIMIT,
+                                                  Search.BATCH_SIZE_UNLIMITED));
   }
 
   @Override
