@@ -73,7 +73,6 @@ import com.tc.util.concurrent.TaskRunner;
 import com.tcclient.cluster.DsoClusterInternal;
 import com.terracottatech.search.AbstractNVPair;
 import com.terracottatech.search.NVPair;
-import com.terracottatech.search.SearchBuilder.Search;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -881,7 +880,8 @@ public class ManagerImpl implements Manager {
   @Override
   public SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys, boolean includeValues,
                                          Set<String> attributeSet, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn)
+                                         List<NVPair> aggregators, int maxResults, int batchSize, int resultPageSize, 
+                                         boolean waitForTxn)
       throws AbortedOperationException {
     if (shouldWaitForTxn(waitForTxn)) {
       waitForAllCurrentTransactionsToComplete();
@@ -890,9 +890,7 @@ public class ManagerImpl implements Manager {
                                       aggregators,
                                       maxResults,
                                       batchSize,
-                                      TCPropertiesImpl.getProperties()
-                                          .getInt(TCPropertiesConsts.SEARCH_QUERY_RESULT_LIMIT,
-                                                  Search.BATCH_SIZE_UNLIMITED));
+                                      resultPageSize);
   }
 
   @Override

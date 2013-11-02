@@ -826,11 +826,13 @@ public interface TCPropertiesConsts {
   // for tests
   public static final String L2_OFFHEAP_SKIP_JVMARG_CHECK                                   = "l2.offHeapCache.skip.jvmarg.check";
 
+  public static final String L1_SEARCH_MAX_OPEN_RESULT_SETS                                 = "l1.search.max.open.resultSets";
+  public static final String L2_SEARCH_MAX_PAGED_RESULT_SETS                                = "l2.search.max.paged.resultSets";
+
   public static final String SEARCH_QUERY_WAIT_FOR_TXNS                                     = "search.query.wait.for.txns";
   public static final String SEARCH_USE_COMMIT_THREAD                                       = "search.use.commit.thread";
   public static final String SEARCH_PASSIVE_MAX_CHUNK                                       = "search.passive.max.chunk";
   public static final String SEARCH_PASSIVE_MAX_PENDING                                     = "search.passive.max.pending";
-  public static final String SEARCH_QUERY_RESULT_LIMIT                                      = "search.query.result.limit";
   public static final String SEARCH_LUCENE_USE_RAM_DIRECTORY                                = "search.lucene.use.ram.directory";
   public static final String SEARCH_LUCENE_USE_OFFHEAP_DIRECTORY                            = "search.lucene.use.offHeap.directory";
   public static final String SEARCH_LUCENE_MAX_BUFFER                                       = "search.lucene.max.buffer";
