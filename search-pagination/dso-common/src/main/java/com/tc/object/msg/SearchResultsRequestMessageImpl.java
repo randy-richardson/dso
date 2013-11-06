@@ -17,13 +17,11 @@ import java.io.IOException;
 
 public class SearchResultsRequestMessageImpl extends DSOMessageBase implements SearchResultsRequestMessage {
 
-  private static final byte CLIENT_ID         = 0;
-  private static final byte SEARCH_REQUEST_ID = 1;
-  private static final byte CACHE_NAME        = 2;
-  private static final byte START_OFFSET      = 3;
-  private static final byte SIZE              = 4;
+  private static final byte SEARCH_REQUEST_ID = 0;
+  private static final byte CACHE_NAME        = 1;
+  private static final byte START_OFFSET      = 2;
+  private static final byte SIZE              = 3;
 
-  private ClientID          clientId;
   private SearchRequestID   reqId;
   private int               startOffset;
   private int               pageSize;
@@ -41,7 +39,7 @@ public class SearchResultsRequestMessageImpl extends DSOMessageBase implements S
 
   @Override
   public ClientID getClientID() {
-    return clientId;
+    return (ClientID) getSourceNodeID();
   }
 
   @Override
@@ -65,9 +63,8 @@ public class SearchResultsRequestMessageImpl extends DSOMessageBase implements S
   }
 
   @Override
-  public void initialize(String cache, ClientID client, SearchRequestID req, int start, int size) {
+  public void initialize(String cache, SearchRequestID req, int start, int size) {
     this.cacheName = cache;
-    this.clientId = client;
     this.reqId = req;
     this.startOffset = start;
     this.pageSize = size;
@@ -76,7 +73,6 @@ public class SearchResultsRequestMessageImpl extends DSOMessageBase implements S
   @Override
   protected void dehydrateValues() {
     putNVPair(CACHE_NAME, cacheName);
-    putNVPair(CLIENT_ID, clientId.toLong());
     putNVPair(SEARCH_REQUEST_ID, reqId.toLong());
     putNVPair(START_OFFSET, startOffset);
     putNVPair(SIZE, pageSize);
@@ -87,9 +83,6 @@ public class SearchResultsRequestMessageImpl extends DSOMessageBase implements S
     switch (name) {
       case CACHE_NAME:
         cacheName = getStringValue();
-        return true;
-      case CLIENT_ID:
-        clientId = new ClientID(getLongValue());
         return true;
       case SEARCH_REQUEST_ID:
         reqId = new SearchRequestID(getLongValue());

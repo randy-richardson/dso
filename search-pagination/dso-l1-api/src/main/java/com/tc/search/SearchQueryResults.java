@@ -26,4 +26,6 @@ public interface SearchQueryResults<T extends IndexQueryResult> {
 
   List<Aggregator> getAggregators();
 
+  void close();
+
 }

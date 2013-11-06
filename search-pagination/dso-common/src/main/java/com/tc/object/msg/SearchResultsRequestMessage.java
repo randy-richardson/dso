@@ -3,7 +3,6 @@
  */
 package com.tc.object.msg;
 
-import com.tc.net.ClientID;
 import com.tc.object.SearchRequestID;
 
 public interface SearchResultsRequestMessage extends SearchRequestMessage {
@@ -21,6 +20,6 @@ public interface SearchResultsRequestMessage extends SearchRequestMessage {
   /**
    * Initialize this message
    */
-  public void initialize(final String cacheName, ClientID clientId, SearchRequestID reqId, int start, int pageSize);
+  public void initialize(final String cacheName, SearchRequestID reqId, int start, int pageSize);
 
 }
