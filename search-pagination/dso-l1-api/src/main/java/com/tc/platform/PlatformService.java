@@ -131,4 +131,8 @@ public interface PlatformService {
   boolean isRejoinInProgress();
 
   TaskRunner getTaskRunner();
+
+  boolean isExplicitlyLocked(Object lockID, LockLevel level);
+
+  boolean isLockedBeforeRejoin(Object lockID, LockLevel level);
 }
