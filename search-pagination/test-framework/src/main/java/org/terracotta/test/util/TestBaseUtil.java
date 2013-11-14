@@ -302,7 +302,7 @@ public class TestBaseUtil {
   }
 
   private static String getMavenLocalRepo() {
-    String base = System.getProperty("localMavenRepository");
+    String base = System.getProperty("maven.repo.local");
     try {
       if (base == null) {
         base = new File(System.getProperty("user.home"), "/.m2/repository").getCanonicalPath();
