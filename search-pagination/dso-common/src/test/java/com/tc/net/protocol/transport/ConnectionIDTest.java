@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 import junit.framework.TestCase;
 
-import java.util.Arrays;
+public class ConnectionIDTest extends TestCase {
   public void testSerializeFullyPopulated() throws Exception {
     ConnectionID id = new ConnectionID("abcd", 1, "abcd", "abcd", "abcd".toCharArray(), ProductID.USER);
     checkSerializeDeserialize(id);
@@ -40,6 +40,7 @@ import java.util.Arrays;
     ConnectionID after = ConnectionID.readFrom(inputStream);
     assertConnectionIDsEqual(id, after);
   }
+
   private static void assertConnectionIDsEqual(ConnectionID expected, ConnectionID actual) {
     assertEquals(expected.getJvmID(), actual.getJvmID());
     assertEquals(expected.getChannelID(), actual.getChannelID());
