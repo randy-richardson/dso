@@ -134,6 +134,8 @@ import com.tc.object.msg.RequestRootResponseMessage;
 import com.tc.object.msg.ResourceManagerThrottleMessage;
 import com.tc.object.msg.SearchQueryRequestMessageImpl;
 import com.tc.object.msg.SearchQueryResponseMessageImpl;
+import com.tc.object.msg.SearchResultsRequestMessageImpl;
+import com.tc.object.msg.SearchResultsResponseMessageImpl;
 import com.tc.object.msg.ServerEventBatchMessageImpl;
 import com.tc.object.msg.SyncWriteTransactionReceivedMessage;
 import com.tc.object.msg.UnregisterServerEventListenerMessage;
@@ -1087,8 +1089,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   protected void initRouteMessages(TCMessageRouter messageRouter, final Stage processTx, final Stage rootRequest,
                                    final Stage requestLock, final Stage objectRequestStage, final Stage oidRequest,
                                    final Stage transactionAck, final Stage clientHandshake, final Stage txnLwmStage,
-                                   final Stage jmxRemoteTunnelStage,
- final Stage clusterMetaDataStage,
+                                   final Stage jmxRemoteTunnelStage, final Stage clusterMetaDataStage,
                                    final Stage serverMapRequestStage, final Stage searchQueryRequestStage,
                                    final Stage registerServerEventListenerStage) {
     final Sink hydrateSink = this.hydrateStage.getSink();
@@ -1122,6 +1123,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                    serverMapRequestStage.getSink(), hydrateSink);
     messageRouter.routeMessageType(TCMessageType.SEARCH_QUERY_REQUEST_MESSAGE, searchQueryRequestStage.getSink(),
                                    hydrateSink);
+    messageRouter.routeMessageType(TCMessageType.SEARCH_RESULTS_REQUEST_MESSAGE, searchQueryRequestStage.getSink(),
+                                   hydrateSink);
+
     messageRouter.routeMessageType(TCMessageType.REGISTER_SERVER_EVENT_LISTENER_MESSAGE, registerServerEventListenerStage.getSink(),
                                    hydrateSink);
     messageRouter.routeMessageType(TCMessageType.UNREGISTER_SERVER_EVENT_LISTENER_MESSAGE, registerServerEventListenerStage.getSink(),
@@ -1186,6 +1190,9 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     messageTypeClassMapping.put(TCMessageType.TUNNELED_DOMAINS_CHANGED_MESSAGE, TunneledDomainsChanged.class);
     messageTypeClassMapping.put(TCMessageType.SEARCH_QUERY_REQUEST_MESSAGE, SearchQueryRequestMessageImpl.class);
     messageTypeClassMapping.put(TCMessageType.SEARCH_QUERY_RESPONSE_MESSAGE, SearchQueryResponseMessageImpl.class);
+    messageTypeClassMapping.put(TCMessageType.SEARCH_RESULTS_REQUEST_MESSAGE, SearchResultsRequestMessageImpl.class);
+    messageTypeClassMapping.put(TCMessageType.SEARCH_RESULTS_RESPONSE_MESSAGE, SearchResultsResponseMessageImpl.class);
+
     messageTypeClassMapping.put(TCMessageType.INVALIDATE_OBJECTS_MESSAGE, InvalidateObjectsMessage.class);
     messageTypeClassMapping.put(TCMessageType.RESOURCE_MANAGER_THROTTLE_STATE_MESSAGE,
                                 ResourceManagerThrottleMessage.class);

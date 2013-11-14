@@ -7,6 +7,7 @@ import com.tc.async.api.AbstractEventHandler;
 import com.tc.async.api.ConfigurationContext;
 import com.tc.async.api.EventContext;
 import com.tc.object.msg.SearchQueryRequestMessage;
+import com.tc.object.msg.SearchResultsRequestMessage;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 
 /**
@@ -23,6 +24,9 @@ public class SearchQueryRequestMessageHandler extends AbstractEventHandler {
     if (context instanceof SearchQueryRequestMessage) {
       SearchQueryRequestMessage msg = (SearchQueryRequestMessage) context;
       this.searchRequestManager.queryRequest(msg);
+    } else if (context instanceof SearchResultsRequestMessage) {
+      SearchResultsRequestMessage msg = (SearchResultsRequestMessage) context;
+      this.searchRequestManager.resultsRequest(msg);
     } else {
       throw new AssertionError("Unknown context " + context);
     }

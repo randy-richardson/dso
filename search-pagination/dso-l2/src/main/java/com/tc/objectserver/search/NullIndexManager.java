@@ -38,6 +38,11 @@ public class NullIndexManager implements IndexManager {
   }
 
   @Override
+  public void releaseAllResultsFor(ClientID clientId) throws IndexException {
+    //
+  }
+
+  @Override
   public void shutdown() {
     //
   }

@@ -10,7 +10,6 @@ import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 import com.tc.search.SearchQueryResults;
 import com.terracottatech.search.IndexQueryResult;
-import com.terracottatech.search.aggregator.Aggregator;
 
 import java.util.List;
 
@@ -19,7 +18,7 @@ public class NullSearchResultManager implements SearchResultManager {
   @Override
   public void addResponse(SessionID sessionID, SearchRequestID requestID, GroupID group,
                           List<IndexQueryResult> queryResults,
-                          long totalResultCount, List<Aggregator> aggregators, NodeID nodeID, boolean anyCriteriaMatched) {
+                          NodeID nodeID) {
     //
   }
 
