@@ -305,7 +305,8 @@ public class TestBaseUtil {
     String base = System.getProperty("maven.repo.local");
     try {
       if (base == null) {
-        base = new File(System.getProperty("user.home"), "/.m2/repository").getCanonicalPath();
+        base = System.getProperty("localMavenRepository");
+        if (base == null) base = new File(System.getProperty("user.home"), "/.m2/repository").getCanonicalPath();
       }
       File settingsXml = new File(System.getProperty("user.home"), "/.m2/settings.xml");
       if (settingsXml.exists()) {
