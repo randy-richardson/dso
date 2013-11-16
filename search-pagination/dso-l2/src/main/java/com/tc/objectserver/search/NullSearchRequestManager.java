@@ -5,6 +5,7 @@ package com.tc.objectserver.search;
 
 import com.tc.async.api.ConfigurationContext;
 import com.tc.object.msg.SearchQueryRequestMessage;
+import com.tc.object.msg.SearchResultsCloseMessage;
 import com.tc.object.msg.SearchResultsRequestMessage;
 
 public class NullSearchRequestManager implements SearchRequestManager {
@@ -21,6 +22,11 @@ public class NullSearchRequestManager implements SearchRequestManager {
 
   @Override
   public void initializeContext(ConfigurationContext context) {
+    //
+  }
+
+  @Override
+  public void closeResultsRequest(SearchResultsCloseMessage request) {
     //
   }
 
