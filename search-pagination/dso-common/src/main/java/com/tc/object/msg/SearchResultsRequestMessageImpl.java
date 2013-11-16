@@ -19,6 +19,7 @@ public class SearchResultsRequestMessageImpl extends DSOMessageBase implements S
 
   private static final byte SEARCH_REQUEST_ID = 0;
   private static final byte CACHE_NAME        = 1;
+
   private static final byte START_OFFSET      = 2;
   private static final byte SIZE              = 3;
 

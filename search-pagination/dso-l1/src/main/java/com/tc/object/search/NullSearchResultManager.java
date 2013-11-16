@@ -60,7 +60,7 @@ public class NullSearchResultManager implements SearchResultManager {
   }
 
   @Override
-  public void releaseResults(SearchRequestID request) {
+  public void releaseResults(SearchRequestID request, String cacheName) {
     //
   }
 

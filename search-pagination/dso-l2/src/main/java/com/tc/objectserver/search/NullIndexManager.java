@@ -38,6 +38,11 @@ public class NullIndexManager implements IndexManager {
   }
 
   @Override
+  public void releaseSearchResults(ClientID clientId, SearchRequestID reqId, String indexName) throws IndexException {
+    //
+  }
+
+  @Override
   public void releaseAllResultsFor(ClientID clientId) throws IndexException {
     //
   }

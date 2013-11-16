@@ -65,4 +65,6 @@ public interface IndexManager {
   InputStream getIndexFile(String cacheName, String indexId, String fileName) throws IOException;
 
   void releaseAllResultsFor(ClientID clientId) throws IndexException;
+
+  void releaseSearchResults(ClientID clientId, SearchRequestID reqId, String indexName) throws IndexException;
 }

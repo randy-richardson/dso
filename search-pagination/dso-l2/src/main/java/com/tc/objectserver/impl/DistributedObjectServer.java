@@ -134,6 +134,7 @@ import com.tc.object.msg.RequestRootResponseMessage;
 import com.tc.object.msg.ResourceManagerThrottleMessage;
 import com.tc.object.msg.SearchQueryRequestMessageImpl;
 import com.tc.object.msg.SearchQueryResponseMessageImpl;
+import com.tc.object.msg.SearchResultsCloseMessageImpl;
 import com.tc.object.msg.SearchResultsRequestMessageImpl;
 import com.tc.object.msg.SearchResultsResponseMessageImpl;
 import com.tc.object.msg.ServerEventBatchMessageImpl;
@@ -1125,6 +1126,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
                                    hydrateSink);
     messageRouter.routeMessageType(TCMessageType.SEARCH_RESULTS_REQUEST_MESSAGE, searchQueryRequestStage.getSink(),
                                    hydrateSink);
+    messageRouter.routeMessageType(TCMessageType.SEARCH_RESULTS_CLOSE_MESSAGE, searchQueryRequestStage.getSink(),
+                                   hydrateSink);
 
     messageRouter.routeMessageType(TCMessageType.REGISTER_SERVER_EVENT_LISTENER_MESSAGE, registerServerEventListenerStage.getSink(),
                                    hydrateSink);
@@ -1192,6 +1195,7 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
     messageTypeClassMapping.put(TCMessageType.SEARCH_QUERY_RESPONSE_MESSAGE, SearchQueryResponseMessageImpl.class);
     messageTypeClassMapping.put(TCMessageType.SEARCH_RESULTS_REQUEST_MESSAGE, SearchResultsRequestMessageImpl.class);
     messageTypeClassMapping.put(TCMessageType.SEARCH_RESULTS_RESPONSE_MESSAGE, SearchResultsResponseMessageImpl.class);
+    messageTypeClassMapping.put(TCMessageType.SEARCH_RESULTS_CLOSE_MESSAGE, SearchResultsCloseMessageImpl.class);
 
     messageTypeClassMapping.put(TCMessageType.INVALIDATE_OBJECTS_MESSAGE, InvalidateObjectsMessage.class);
     messageTypeClassMapping.put(TCMessageType.RESOURCE_MANAGER_THROTTLE_STATE_MESSAGE,
