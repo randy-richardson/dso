@@ -50,7 +50,7 @@ public class OnlineEhcacheSMLocalStore implements ServerMapLocalStore<Object, Ob
   public List<Object> getKeys() {
     List encodedKeys = this.localStoreCache.getKeys();
     List rv = new ArrayList(encodedKeys.size());
-    for (Object key : this.localStoreCache.getKeys()) {
+    for (Object key : encodedKeys) {
       rv.add(decode(key));
     }
     return rv;
@@ -60,9 +60,9 @@ public class OnlineEhcacheSMLocalStore implements ServerMapLocalStore<Object, Ob
   public Object put(Object key, Object value) throws ServerMapLocalStoreFullException {
     try {
       Object encodedKey = encode(key);
-      Element element = localStoreCache.get(encodedKey);
-      localStoreCache.put(new Element(encodedKey, value));
-      return element == null ? null : element.getObjectValue();
+      Element oldElement = localStoreCache.removeWithReturn(encodedKey);
+      localStoreCache.put(encodedKey,value);
+      return oldElement == null ? null : oldElement.getObjectValue();
     } catch (CacheException e) {
       handleCacheException(e);
       throw e;
@@ -80,8 +80,9 @@ public class OnlineEhcacheSMLocalStore implements ServerMapLocalStore<Object, Ob
     Object encodedKey = encode(key);
     Element element = localStoreCache.get(encodedKey);
     if (element == null || !value.equals(element.getObjectValue())) { return null; }
-    boolean removed = localStoreCache.remove(encodedKey);
-    if (removed) { return element.getObjectValue(); }
+    if ( localStoreCache.removeElement(element) ) { 
+      return element.getObjectValue(); 
+    }
     return null;
   }
 
