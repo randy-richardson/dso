@@ -6,19 +6,19 @@
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent-ee</artifactId>
-    <version>3.5</version>
+    <version>3.4</version>
     <relativePath/>
   </parent>
   
   <groupId>org.terracotta</groupId>
   <artifactId>terracotta-root</artifactId>
-  <version>4.0.6</version>
+  <version>4.0.6.1</version>
   <name>terracotta-root</name>
   <packaging>pom</packaging>
 
   <properties>
     <build.edition>opensource</build.edition>
-    <maven-forge-plugin.version>1.2.1</maven-forge-plugin.version>
+    <maven-forge-plugin.version>1.0.8</maven-forge-plugin.version>
   </properties>
   
   <modules>
