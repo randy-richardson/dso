@@ -18,7 +18,9 @@ public class LockIdFactory {
   }
 
   public LockID generateLockIdentifier(final Object obj) {
-    if (obj instanceof Long) {
+    if (obj instanceof LockID) {
+      return (LockID) obj;
+    } else if (obj instanceof Long) {
       return generateLockIdentifier(((Long) obj).longValue());
     } else if (obj instanceof String) {
       return generateLockIdentifier((String) obj);

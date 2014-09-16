@@ -8,6 +8,7 @@ import org.terracotta.toolkit.internal.concurrent.locks.ToolkitLockTypeInternal;
 
 import com.tc.abortable.AbortedOperationException;
 import com.tc.object.ObjectID;
+import com.tc.object.locks.LockID;
 import com.tc.platform.PlatformService;
 import com.tc.util.Assert;
 import com.terracotta.toolkit.abortable.ToolkitAbortableOperationException;
@@ -144,7 +145,7 @@ public class ToolkitLockingApi {
   }
 
   private static void assertLockIdType(Object lockId) {
-    boolean condition = (lockId instanceof String) || (lockId instanceof Long);
+    boolean condition = (lockId instanceof String) || (lockId instanceof Long) || lockId instanceof LockID;
     Assert.assertTrue("lockId should be String OR Long but " + lockId.getClass().getName(), condition);
   }
 
