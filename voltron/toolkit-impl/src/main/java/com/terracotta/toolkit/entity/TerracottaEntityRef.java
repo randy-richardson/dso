@@ -3,39 +3,56 @@ package com.terracotta.toolkit.entity;
 import org.terracotta.toolkit.entity.ConfigurationMismatchException;
 import org.terracotta.toolkit.entity.Entity;
 import org.terracotta.toolkit.entity.EntityConfiguration;
+import org.terracotta.toolkit.entity.EntityCreationService;
 import org.terracotta.toolkit.entity.EntityMaintenanceRef;
-import org.terracotta.toolkit.internal.concurrent.locks.ToolkitLockTypeInternal;
 
-import com.tc.object.locks.EntityLockID;
-import com.tc.object.locks.LockID;
+import com.tc.net.GroupID;
 import com.tc.platform.PlatformService;
 import com.terracotta.toolkit.concurrent.locks.ToolkitLockingApi;
+import com.terracotta.toolkit.concurrent.locks.UnnamedToolkitLock;
+
+import java.util.ServiceLoader;
 
 /**
  * @author twu
  */
 public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceRef<T> {
   private final PlatformService platformService;
+  private final MaintenanceModeService maintenanceModeService;
   private final Class<T> type;
   private final String name;
-  private final LockID maintenanceLockID;
+  private final UnnamedToolkitLock createLock;
 
   private enum ReferenceState {
     FREE, IN_USE, MAINTENANCE
   }
 
+  private T entity;
   private ReferenceState state = ReferenceState.FREE;
 
-  public TerracottaEntityRef(final PlatformService platformService, final Class<T> type, final String name) {
+  public TerracottaEntityRef(final PlatformService platformService, final MaintenanceModeService maintenanceModeService, final Class<T> type, final String name) {
     this.platformService = platformService;
+    this.maintenanceModeService = maintenanceModeService;
     this.type = type;
     this.name = name;
-    maintenanceLockID = new EntityLockID(type.getName(), name);
+    createLock = ToolkitLockingApi.createConcurrentTransactionLock("foo", platformService);
   }
 
   @Override
   public synchronized T get() {
-    throw new UnsupportedOperationException("Implement me!");
+    if (state == ReferenceState.IN_USE) {
+      return entity;
+    } else if (state == ReferenceState.FREE) {
+      maintenanceModeService.readLockEntity(type, name);
+      EntityClientEndpoint endpoint = (EntityClientEndpoint) platformService.lookupRoot(name, new GroupID(0));
+      if (entity == null) {
+        maintenanceModeService.readUnlockEntity(type, name);
+        throw new IllegalStateException("doesn't exist");
+      }
+      entity = getCreationService(type).create(endpoint.getEntityConfiguration());
+      state = ReferenceState.IN_USE;
+    }
+    return entity;
   }
 
   @Override
@@ -57,13 +74,25 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
   @Override
   public synchronized void create(final EntityConfiguration configuration) {
     checkMaintenanceMode();
-    throw new UnsupportedOperationException("Implement me!");
+
+    EntityClientEndpoint endpoint = (EntityClientEndpoint) platformService.lookupRoot(name, new GroupID(0));
+    if (endpoint == null) {
+      createLock.lock();
+      try {
+        platformService.lookupOrCreateRoot(name, new EntityClientEndpoint(configuration), new GroupID(0));
+      } finally {
+        createLock.unlock(); // TODO: This should probably be synchronous in some way
+      }
+    } else {
+      throw new IllegalStateException("Already exists");
+    }
+    entity = getCreationService(type).create(configuration);
   }
 
   @Override
   public synchronized void exitMaintenanceMode() {
     checkMaintenanceMode();
-    ToolkitLockingApi.unlock(maintenanceLockID, ToolkitLockTypeInternal.WRITE, platformService);
+    maintenanceModeService.exitMaintenanceMode(type, name);
     state = ReferenceState.FREE;
   }
 
@@ -72,8 +101,7 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
     if (state != ReferenceState.FREE) {
       throw new IllegalStateException("Reference is not free to enter maintenance mode.");
     }
-    // Should there be 1 lock per-stripe?
-    ToolkitLockingApi.lock(maintenanceLockID, ToolkitLockTypeInternal.WRITE, platformService);
+    maintenanceModeService.enterMaintenanceMode(type, name);
     state = ReferenceState.MAINTENANCE;
     return this;
   }
@@ -82,5 +110,14 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
     if (state != ReferenceState.MAINTENANCE) {
       throw new IllegalStateException("Not in maintenance mode");
     }
+  }
+
+  private static <T extends Entity> EntityCreationService getCreationService(Class<T> type) {
+    ServiceLoader<EntityCreationService> loader = ServiceLoader.load(ServiceUtil.getServiceClass(type),
+        TerracottaEntityRef.class.getClassLoader());
+    for (EntityCreationService entityCreationService : loader) {
+      return entityCreationService;
+    }
+    throw new UnsupportedOperationException("Don't have a service to handle type " + type.getName());
   }
 }

@@ -4,6 +4,7 @@
  */
 package com.tc.object;
 
+import com.tc.object.applicator.SelfApplicable;
 import com.tc.object.config.DSOClientConfigHelper;
 
 import java.util.Map;
@@ -29,7 +30,7 @@ public class PortabilityImpl implements Portability {
 
     String clazzName = clazz.getName();
 
-    boolean bool = LiteralValues.isLiteral(clazzName) || (config.getSpec(clazzName) != null) || clazz == Object.class;
+    boolean bool = LiteralValues.isLiteral(clazzName) || (config.getSpec(clazzName) != null) || clazz == Object.class || SelfApplicable.class.isAssignableFrom(clazz);
     portableCache.put(clazz, Boolean.valueOf(bool));
     return bool;
   }

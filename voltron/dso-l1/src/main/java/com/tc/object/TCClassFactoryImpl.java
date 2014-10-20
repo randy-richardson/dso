@@ -8,6 +8,8 @@ import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.applicator.BaseApplicator;
 import com.tc.object.applicator.ChangeApplicator;
+import com.tc.object.applicator.PassthroughApplicator;
+import com.tc.object.applicator.SelfApplicable;
 import com.tc.object.config.DSOClientConfigHelper;
 import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.loaders.ClassProvider;
@@ -71,6 +73,9 @@ public class TCClassFactoryImpl implements TCClassFactory {
 
   @Override
   public ChangeApplicator createApplicatorFor(final TCClass clazz) {
+    if (SelfApplicable.class.isAssignableFrom(clazz.getPeerClass())) {
+      return new PassthroughApplicator();
+    }
     final Class applicatorClazz = this.config.getChangeApplicator(clazz.getPeerClass());
 
     if (applicatorClazz == null) { return new BaseApplicator(this.encoding); }

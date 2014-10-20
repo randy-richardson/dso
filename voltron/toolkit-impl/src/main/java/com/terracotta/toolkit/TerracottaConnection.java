@@ -5,6 +5,7 @@ import org.terracotta.toolkit.entity.Entity;
 import org.terracotta.toolkit.entity.EntityRef;
 
 import com.tc.platform.PlatformService;
+import com.terracotta.toolkit.entity.MaintenanceModeService;
 import com.terracotta.toolkit.entity.TerracottaEntityRef;
 
 import java.util.Collection;
@@ -14,6 +15,7 @@ import java.util.Collection;
  */
 public class TerracottaConnection implements Connection {
   private final PlatformService platformService;
+  private final MaintenanceModeService maintenanceModeService;
   private final Runnable shutdown;
 
   private boolean isShutdown = false;
@@ -21,12 +23,13 @@ public class TerracottaConnection implements Connection {
   public TerracottaConnection(final PlatformService platformService, final Runnable shutdown) {
     this.platformService = platformService;
     this.shutdown = shutdown;
+    this.maintenanceModeService = new MaintenanceModeService(platformService);
   }
 
   @Override
   public synchronized <T extends Entity> EntityRef<T> getEntityRef(final Class<T> cls, final String name) {
     checkShutdown();
-    return new TerracottaEntityRef<T>(platformService, cls, name);
+    return new TerracottaEntityRef<T>(platformService, maintenanceModeService, cls, name);
   }
 
   @Override

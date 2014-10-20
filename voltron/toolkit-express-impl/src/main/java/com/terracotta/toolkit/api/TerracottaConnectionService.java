@@ -10,9 +10,7 @@ import com.terracotta.toolkit.express.TerracottaInternalClient;
 import com.terracotta.toolkit.express.TerracottaInternalClientStaticFactory;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author twu
@@ -28,11 +26,13 @@ public class TerracottaConnectionService implements ConnectionService {
   }
 
   @Override
-  public Connection connect(final URI uri) throws ConnectionException {
+  public Connection connect(final URI uri, final Properties properties) throws ConnectionException {
     if (!handlesURI(uri)) {
       throw new IllegalArgumentException("Unknown URI " + uri);
     }
-//    Map<String, String> configMap = parseQueryString(uri.getQuery());
+
+    // TODO: Make use of those properties
+
     TerracottaClientConfig clientConfig = new TerracottaClientConfigParams().isUrl(true)
         .tcConfigSnippetOrUrl(uri.getHost() + ":" + uri.getPort()).newTerracottaClientConfig();
     final TerracottaInternalClient client = TerracottaInternalClientStaticFactory.getOrCreateTerracottaInternalClient(clientConfig);
@@ -49,18 +49,5 @@ public class TerracottaConnectionService implements ConnectionService {
     } catch (Exception e) {
       throw new ConnectionException(e);
     }
-  }
-
-  private static Map<String, String> parseQueryString(String query) {
-    if (query == null) {
-      return Collections.emptyMap();
-    }
-    Map<String, String> map = new HashMap<String, String>();
-    String[] pairs = query.split("&");
-    for (String pair : pairs) {
-      String[] nvPair = pair.split("=");
-      map.put(nvPair[0], nvPair[1]);
-    }
-    return map;
   }
 }
