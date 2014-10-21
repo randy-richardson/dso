@@ -20,6 +20,7 @@ import com.tc.object.session.SessionID;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * ThreadLocal based transaction manager interface. Changes go through here to the transaction for the current thread.
@@ -86,6 +87,16 @@ public interface ClientTransactionManager extends ClearableCallback {
    * @param parameters Parameter values in call
    */
   public void logicalInvoke(TCObject source, LogicalOperation method, Object[] parameters);
+
+  /**
+   * Invoke a method asynchronously with the possibility of returning a value.
+   *
+   * @param source object to invoke on
+   * @param method method to invoke
+   * @param parameters invocation parameters
+   * @return future
+   */
+  public Future<?> asyncInvoke(TCObject source, LogicalOperation method, Object[] parameters) throws AbortedOperationException;
 
   /**
    * Record notify() or notifyAll() call on object in current transaction

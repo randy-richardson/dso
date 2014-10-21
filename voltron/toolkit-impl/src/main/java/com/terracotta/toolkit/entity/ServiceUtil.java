@@ -1,7 +1,9 @@
 package com.terracotta.toolkit.entity;
 
+import org.terracotta.toolkit.collections.ClusteredMap;
 import org.terracotta.toolkit.entity.Entity;
-import org.terracotta.toolkit.entity.EntityCreationService;
+
+import com.terracotta.toolkit.collections.ClusteredMapService;
 
 import java.lang.reflect.Field;
 
@@ -10,14 +12,10 @@ import java.lang.reflect.Field;
  */
 public class ServiceUtil {
   public static <T extends Entity, S extends EntityCreationService>  Class<S> getServiceClass(Class<T> typeClass) {
-    try {
-      final Field service = typeClass.getDeclaredField("SERVICE");
-      return (Class<S>) service.get(typeClass);
-    } catch (NoSuchFieldException e) {
-      e.printStackTrace();
-    } catch (IllegalAccessException e) {
-      e.printStackTrace();
+    // TODO: this should probably not be hard coded like so...
+    if (typeClass == ClusteredMap.class) {
+      return (Class<S>) ClusteredMapService.class;
     }
-    throw new RuntimeException("nope");
+    throw new IllegalArgumentException("Dunno what to do with " + typeClass);
   }
 }

@@ -102,7 +102,9 @@ public class ManagedObjectStateFactory {
   public ManagedObjectState createState(final ObjectID oid, final ObjectID parentID, final String className,
                                         final DNACursor cursor) {
     ManagedObjectStateStaticConfig config = ManagedObjectStateStaticConfig.getConfigForClientClassName(className);
-    if (config == null) {
+    if (className.contains("EntityClientEndpoint")) {
+      return new EntityManagedObjectState();
+    } else if (config == null) {
       throw new IllegalArgumentException("'" + className + "' is not a supported managed object type.");
     }
     return config.getFactory().newInstance(oid, config.ordinal(), objectFactory);
@@ -115,7 +117,9 @@ public class ManagedObjectStateFactory {
   public ManagedObjectState readManagedObjectStateFrom(final ObjectInput in, final byte type) throws IOException {
     try {
       Factory factory = ManagedObjectStateStaticConfig.Factory.getFactoryForType(type);
-      if (factory != null) { return factory.readFrom(in, objectFactory); }
+      if (type == 0x50) {
+        return new EntityManagedObjectState();
+      } else if (factory != null) { return factory.readFrom(in, objectFactory); }
 
       // Unreachable!
       throw new AssertionError("Unknown type : " + type + " : Dont know how to deserialize this type !");

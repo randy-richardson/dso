@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * MockTransactionManager for unit testing.
@@ -84,6 +85,11 @@ public class MockTransactionManager implements ClientTransactionManager {
   @Override
   public void logicalInvoke(TCObject source, LogicalOperation name, Object[] parameters) {
     throw new ImplementMe();
+  }
+
+  @Override
+  public Future<?> asyncInvoke(final TCObject source, final LogicalOperation method, final Object[] parameters) {
+    throw new UnsupportedOperationException("Implement me!");
   }
 
   public static class Begin {

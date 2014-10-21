@@ -4,6 +4,7 @@
  */
 package com.tc.object.tx;
 
+import com.google.common.util.concurrent.Futures;
 import com.tc.abortable.AbortableOperationManager;
 import com.tc.abortable.AbortedOperationException;
 import com.tc.exception.PlatformRejoinException;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -507,6 +509,17 @@ public class ClientTransactionManagerImpl implements ClientTransactionManager, P
   @Override
   public void logicalInvoke(final TCObject source, final LogicalOperation method, final Object[] parameters) {
     logicalInvoke(source, method, parameters, LogicalChangeID.NULL_ID);
+  }
+
+  @Override
+  public Future<?> asyncInvoke(final TCObject source, final LogicalOperation method, final Object[] parameters) throws AbortedOperationException {
+    begin(CAS_LOCK_ID, LockLevel.CONCURRENT, false);
+    try {
+      logicalInvoke(source, method, parameters, LogicalChangeID.NULL_ID);
+    } finally {
+      commit(CAS_LOCK_ID, LockLevel.CONCURRENT, false, null);
+    }
+    return Futures.immediateFuture(null); // TODO: link this up
   }
 
   private void logicalInvoke(final TCObject source, final LogicalOperation method,

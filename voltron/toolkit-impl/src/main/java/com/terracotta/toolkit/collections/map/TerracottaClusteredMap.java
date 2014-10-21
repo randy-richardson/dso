@@ -6,15 +6,23 @@ import com.tc.object.applicator.BaseApplicator;
 import com.tc.object.applicator.ChangeApplicator;
 import com.tc.object.applicator.SelfApplicable;
 import com.tc.object.TCObjectSelfImpl;
+import com.terracotta.toolkit.entity.EntityClientEndpoint;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author twu
  */
-public class TerracottaClusteredMap<K, V> extends TCObjectSelfImpl implements ClusteredMap<K, V>, SelfApplicable {
+public class TerracottaClusteredMap<K, V> extends TCObjectSelfImpl implements ClusteredMap<K, V> {
+  private final EntityClientEndpoint endpoint;
+
+  public TerracottaClusteredMap(final EntityClientEndpoint endpoint) {
+    this.endpoint = endpoint;
+  }
+
   @Override
   public void drop() {
     throw new UnsupportedOperationException("Implement me!");
@@ -47,7 +55,11 @@ public class TerracottaClusteredMap<K, V> extends TCObjectSelfImpl implements Cl
 
   @Override
   public V put(final K key, final V value) {
-    throw new UnsupportedOperationException("Implement me!");
+    try {
+      return (V) endpoint.beginInvoke().payload("Do this; Do that.").invoke().get();
+    } catch (Exception e) {
+      throw new RuntimeException("oh crap.", e);
+    }
   }
 
   @Override
@@ -80,8 +92,4 @@ public class TerracottaClusteredMap<K, V> extends TCObjectSelfImpl implements Cl
     throw new UnsupportedOperationException("Implement me!");
   }
 
-  @Override
-  public ChangeApplicator getApplicator() {
-    return new BaseApplicator(null);
-  }
 }

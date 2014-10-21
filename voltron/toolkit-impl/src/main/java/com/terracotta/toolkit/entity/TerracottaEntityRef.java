@@ -3,7 +3,6 @@ package com.terracotta.toolkit.entity;
 import org.terracotta.toolkit.entity.ConfigurationMismatchException;
 import org.terracotta.toolkit.entity.Entity;
 import org.terracotta.toolkit.entity.EntityConfiguration;
-import org.terracotta.toolkit.entity.EntityCreationService;
 import org.terracotta.toolkit.entity.EntityMaintenanceRef;
 
 import com.tc.net.GroupID;
@@ -49,7 +48,7 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
         maintenanceModeService.readUnlockEntity(type, name);
         throw new IllegalStateException("doesn't exist");
       }
-      entity = getCreationService(type).create(endpoint.getEntityConfiguration());
+      entity = getCreationService(type).create(endpoint, endpoint.getEntityConfiguration());
       state = ReferenceState.IN_USE;
     }
     return entity;
@@ -99,7 +98,7 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
     } else {
       throw new IllegalStateException("Already exists");
     }
-    entity = getCreationService(type).create(configuration);
+    entity = getCreationService(type).create(endpoint, configuration);
   }
 
   @Override
