@@ -5,41 +5,57 @@ import com.tc.logging.TCLogging;
 import com.tc.object.LogicalOperation;
 import com.tc.object.ObjectID;
 import com.tc.object.dna.api.DNA;
-import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
-import com.tc.object.dna.api.LogicalAction;
+import com.tc.object.dna.api.LogicalChangeResult;
+import com.tc.object.dna.impl.UTF8ByteDataHolder;
 
 import java.io.IOException;
 import java.io.ObjectOutput;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * @author twu
  */
-public class EntityManagedObjectState extends AbstractManagedObjectState {
+public class EntityManagedObjectState extends LogicalManagedObjectState {
   private static final TCLogger logger = TCLogging.getLogger(EntityManagedObjectState.class);
 
-  @Override
-  protected boolean basicEquals(final AbstractManagedObjectState o) {
-    throw new UnsupportedOperationException("Implement me!");
+  private final Map<String, String> stuff = new HashMap<String, String>();
+
+  public EntityManagedObjectState() {
+    super(0);
   }
 
   @Override
-  public void apply(final ObjectID objectID, final DNACursor cursor, final ApplyTransactionInfo applyInfo) throws IOException {
-    while (cursor.next()) {
-      final LogicalAction logicalAction = cursor.getLogicalAction();
-      if (logicalAction.getLogicalOperation() == LogicalOperation.CREATE_ENTITY) {
-        logger.info("Creating type " + logicalAction.getParameters()[0]);
-      } else if (logicalAction.getLogicalOperation() == LogicalOperation.INVOKE_WITH_PAYLOAD) {
-        logger.info("Invocation with params " + logicalAction.getParameters()[0]);
+  protected LogicalChangeResult applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final LogicalOperation method, final Object[] params) {
+    if (method == LogicalOperation.CREATE_ENTITY) {
+      logger.info("Creating type " + params[0]);
+    } else if (method == LogicalOperation.INVOKE_WITH_PAYLOAD) {
+      String[] invocation = ((UTF8ByteDataHolder) params[0]).asString().split(" ");
+      if ("put".equals(invocation[0])) {
+        stuff.put(invocation[1], invocation[2]);
+      } else if ("get".equals(invocation[0])) {
+        return new LogicalChangeResult(stuff.get(invocation[1]));
       }
     }
+    return LogicalChangeResult.SUCCESS;
   }
 
   @Override
-  public Set<ObjectID> getObjectReferences() {
-    return Collections.emptySet();
+  protected void addAllObjectReferencesTo(final Set refs) {
+
+  }
+
+  @Override
+  protected void basicWriteTo(final ObjectOutput out) throws IOException {
+
+  }
+
+  @Override
+  protected boolean basicEquals(final LogicalManagedObjectState o) {
+    throw new UnsupportedOperationException("Implement me!");
   }
 
   @Override
@@ -49,7 +65,7 @@ public class EntityManagedObjectState extends AbstractManagedObjectState {
 
   @Override
   public void dehydrate(final ObjectID objectID, final DNAWriter writer, final DNA.DNAType type) {
-    throw new UnsupportedOperationException("Implement me!");
+
   }
 
   @Override
@@ -57,13 +73,4 @@ public class EntityManagedObjectState extends AbstractManagedObjectState {
     return (byte) 0x50; // magic number, very bad idea.
   }
 
-  @Override
-  public String getClassName() {
-    throw new UnsupportedOperationException("Implement me!");
-  }
-
-  @Override
-  public void writeTo(final ObjectOutput o) throws IOException {
-
-  }
 }

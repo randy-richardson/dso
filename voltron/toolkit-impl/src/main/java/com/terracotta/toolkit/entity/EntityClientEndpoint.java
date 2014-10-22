@@ -2,7 +2,6 @@ package com.terracotta.toolkit.entity;
 
 import org.terracotta.toolkit.entity.EntityConfiguration;
 
-import com.google.common.util.concurrent.Futures;
 import com.tc.abortable.AbortedOperationException;
 import com.tc.object.LogicalOperation;
 import com.tc.object.TCObjectSelfImpl;
@@ -28,8 +27,8 @@ public class EntityClientEndpoint extends TCObjectSelfImpl {
     // Should only call this during mmode
   }
 
-  public Future<?> asyncInvoke(final LogicalOperation method, Object ... parameters) throws AbortedOperationException {
-    return getTCClass().getObjectManager().getTransactionManager().asyncInvoke(this, method, parameters);
+  public Future<?> asyncInvoke(final LogicalOperation method, final boolean returnsValue, Object... parameters) throws AbortedOperationException {
+    return getTCClass().getObjectManager().getTransactionManager().asyncInvoke(this, method, returnsValue, parameters);
   }
 
   EntityConfiguration getEntityConfiguration() {
@@ -50,9 +49,15 @@ public class EntityClientEndpoint extends TCObjectSelfImpl {
 
   public class InvocationBuilder {
     private boolean invoked = false;
+    private boolean returnsValue = false;
     private Serializable payload;
 
     // TODO: fill in durability/consistency options here.
+
+    public synchronized InvocationBuilder returnsValue(boolean returnsValue) {
+      this.returnsValue = returnsValue;
+      return this;
+    }
 
     public synchronized InvocationBuilder payload(Serializable serializable) {
       checkInvoked();
@@ -63,7 +68,7 @@ public class EntityClientEndpoint extends TCObjectSelfImpl {
     public synchronized Future<?> invoke() throws AbortedOperationException {
       checkInvoked();
       invoked = true;
-      return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, payload);
+      return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, returnsValue, payload);
     }
 
     private void checkInvoked() {

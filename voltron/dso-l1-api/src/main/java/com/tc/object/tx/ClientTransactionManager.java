@@ -93,10 +93,10 @@ public interface ClientTransactionManager extends ClearableCallback {
    *
    * @param source object to invoke on
    * @param method method to invoke
-   * @param parameters invocation parameters
-   * @return future
+   * @param returnsValue
+   *@param parameters invocation parameters  @return future
    */
-  public Future<?> asyncInvoke(TCObject source, LogicalOperation method, Object[] parameters) throws AbortedOperationException;
+  public Future<?> asyncInvoke(TCObject source, LogicalOperation method, final boolean returnsValue, Object[] parameters) throws AbortedOperationException;
 
   /**
    * Record notify() or notifyAll() call on object in current transaction

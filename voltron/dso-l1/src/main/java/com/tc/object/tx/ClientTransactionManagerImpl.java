@@ -512,14 +512,19 @@ public class ClientTransactionManagerImpl implements ClientTransactionManager, P
   }
 
   @Override
-  public Future<?> asyncInvoke(final TCObject source, final LogicalOperation method, final Object[] parameters) throws AbortedOperationException {
+  public Future<?> asyncInvoke(final TCObject source, final LogicalOperation method, final boolean returnsValue, final Object[] parameters) throws AbortedOperationException {
+    final LogicalChangeID logicalChangeID = returnsValue ? getNextLogicalChangeId() : LogicalChangeID.NULL_ID;
+    LogicalChangeResultCallback callback = null;
+    if (returnsValue) {
+      callback = createLogicalChangeFuture(logicalChangeID);
+    }
     begin(CAS_LOCK_ID, LockLevel.CONCURRENT, false);
     try {
-      logicalInvoke(source, method, parameters, LogicalChangeID.NULL_ID);
+      logicalInvoke(source, method, parameters, logicalChangeID);
     } finally {
       commit(CAS_LOCK_ID, LockLevel.CONCURRENT, false, null);
     }
-    return Futures.immediateFuture(null); // TODO: link this up
+    return Futures.immediateFuture(!returnsValue ? null : callback.getResult()); // TODO: link this up
   }
 
   private void logicalInvoke(final TCObject source, final LogicalOperation method,
@@ -697,7 +702,7 @@ public class ClientTransactionManagerImpl implements ClientTransactionManager, P
       } finally {
         commit(CAS_LOCK_ID, LockLevel.CONCURRENT, false, null);
       }
-      return future.getResult();
+      return (Boolean) future.getResult();
     } finally {
       logicalChangeCallbacks.remove(id);
     }
@@ -731,7 +736,7 @@ public class ClientTransactionManagerImpl implements ClientTransactionManager, P
       notifyAll();
     }
 
-    public synchronized boolean getResult() throws PlatformRejoinException, AbortedOperationException {
+    public synchronized Object getResult() throws PlatformRejoinException, AbortedOperationException {
       boolean interrupted = false;
       try {
         while (result == null) {
@@ -746,7 +751,7 @@ public class ClientTransactionManagerImpl implements ClientTransactionManager, P
             if (ClientTransactionManagerImpl.this.abortableOperationManager.isAborted()) { throw new AbortedOperationException(); }
           }
         }
-        return result.isSuccess();
+        return result.getResult();
       } finally {
         if (interrupted) {
           Thread.currentThread().interrupt();

@@ -88,7 +88,7 @@ public class MockTransactionManager implements ClientTransactionManager {
   }
 
   @Override
-  public Future<?> asyncInvoke(final TCObject source, final LogicalOperation method, final Object[] parameters) {
+  public Future<?> asyncInvoke(final TCObject source, final LogicalOperation method, final boolean returnsValue, final Object[] parameters) {
     throw new UnsupportedOperationException("Implement me!");
   }
 

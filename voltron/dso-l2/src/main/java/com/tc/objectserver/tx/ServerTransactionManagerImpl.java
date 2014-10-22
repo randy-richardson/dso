@@ -386,7 +386,8 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     this.transactionRateCounter.increment(txn.getNumApplicationTxn());
 
     fireTransactionAppliedEvent(stxnID, txn.getNewObjectIDs());
-    this.gtxm.recordApplyResults(stxnID, applyInfo.getApplyResultRecorder().getResults());
+    // TODO: Need to figure out what to do with operation results
+//    this.gtxm.recordApplyResults(stxnID, applyInfo.getApplyResultRecorder().getResults());
     this.gtxm.commit(stxnID);
   }
 

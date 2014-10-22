@@ -8,6 +8,8 @@ import com.tc.object.applicator.SelfApplicable;
 import com.tc.object.TCObjectSelfImpl;
 import com.terracotta.toolkit.entity.EntityClientEndpoint;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -50,13 +52,17 @@ public class TerracottaClusteredMap<K, V> extends TCObjectSelfImpl implements Cl
 
   @Override
   public V get(final Object key) {
-    throw new UnsupportedOperationException("Implement me!");
+    try {
+      return (V) endpoint.beginInvoke().payload("get " + key).returnsValue(true).invoke().get();
+    } catch (Exception e) {
+      throw new RuntimeException("oh crap.", e);
+    }
   }
 
   @Override
   public V put(final K key, final V value) {
     try {
-      return (V) endpoint.beginInvoke().payload("Do this; Do that.").invoke().get();
+      return (V) endpoint.beginInvoke().payload("put " + key + " " + value).invoke().get();
     } catch (Exception e) {
       throw new RuntimeException("oh crap.", e);
     }
