@@ -20,8 +20,8 @@ public class EntityClientEndpoint extends TCObjectSelfImpl {
   public EntityClientEndpoint() {
   }
 
-  public EntityClientEndpoint(EntityConfiguration entityConfiguration) {
-
+  public EntityClientEndpoint(final String typeName, EntityConfiguration entityConfiguration) {
+    this.typeName = typeName;
   }
 
   void setEntityConfiguration(EntityConfiguration entityConfiguration) {
@@ -63,7 +63,7 @@ public class EntityClientEndpoint extends TCObjectSelfImpl {
     public synchronized Future<?> invoke() throws AbortedOperationException {
       checkInvoked();
       invoked = true;
-      return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, new Object[] { payload });
+      return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, payload);
     }
 
     private void checkInvoked() {

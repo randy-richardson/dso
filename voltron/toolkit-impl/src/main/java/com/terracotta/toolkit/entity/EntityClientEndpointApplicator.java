@@ -31,14 +31,16 @@ public class EntityClientEndpointApplicator extends BaseApplicator {
     final DNACursor cursor = dna.getCursor();
     if (cursor.next()) {
       final LogicalAction typeNameAction = cursor.getLogicalAction();
-      endpoint.setTypeName((String) typeNameAction.getParameters()[0]);
+      if (typeNameAction.getLogicalOperation() == LogicalOperation.CREATE_ENTITY) {
+        endpoint.setTypeName((String) typeNameAction.getParameters()[0]);
+      }
     }
   }
 
   @Override
   public void dehydrate(final ClientObjectManager objectManager, final TCObject tcObject, final DNAWriter writer, final Object pojo) {
     EntityClientEndpoint endpoint = (EntityClientEndpoint) tcObject;
-    writer.addLogicalAction(LogicalOperation.NO_OP, new Object[] { endpoint.getTypeName() });
+    writer.addLogicalAction(LogicalOperation.CREATE_ENTITY, new Object[] { endpoint.getTypeName() });
   }
 
   @Override

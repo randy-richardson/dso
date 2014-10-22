@@ -91,7 +91,7 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
     if (endpoint == null) {
       createLock.lock();
       try {
-        platformService.lookupOrCreateRoot(name, new EntityClientEndpoint(configuration), new GroupID(0));
+        platformService.lookupOrCreateRoot(name, new EntityClientEndpoint(type.getName(), configuration), new GroupID(0));
       } finally {
         createLock.unlock(); // TODO: This should probably be synchronous in some way
       }

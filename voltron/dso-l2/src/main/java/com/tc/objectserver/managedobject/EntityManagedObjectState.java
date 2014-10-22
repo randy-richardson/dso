@@ -29,7 +29,7 @@ public class EntityManagedObjectState extends AbstractManagedObjectState {
   public void apply(final ObjectID objectID, final DNACursor cursor, final ApplyTransactionInfo applyInfo) throws IOException {
     while (cursor.next()) {
       final LogicalAction logicalAction = cursor.getLogicalAction();
-      if (logicalAction.getLogicalOperation() == LogicalOperation.NO_OP) {
+      if (logicalAction.getLogicalOperation() == LogicalOperation.CREATE_ENTITY) {
         logger.info("Creating type " + logicalAction.getParameters()[0]);
       } else if (logicalAction.getLogicalOperation() == LogicalOperation.INVOKE_WITH_PAYLOAD) {
         logger.info("Invocation with params " + logicalAction.getParameters()[0]);
