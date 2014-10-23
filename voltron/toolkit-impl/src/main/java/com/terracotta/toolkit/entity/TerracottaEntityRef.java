@@ -55,21 +55,13 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
   }
 
   @Override
-  public T acquireEntity(final EntityConfiguration configuration) throws ConfigurationMismatchException {
+  public T getEntity() {
     throw new UnsupportedOperationException("Implement me!");
   }
 
   @Override
-  public synchronized void releaseEntity(final T entity) {
-    if (state != ReferenceState.IN_USE) {
-      throw new IllegalStateException("Not in use.");
-    } else if (this.entity != entity) {
-      throw new IllegalArgumentException("This entity isn't from this reference.");
-    }
-
-    maintenanceModeService.readUnlockEntity(type, name);
-    this.entity = null;
-    state = ReferenceState.FREE;
+  public T acquireEntity(final EntityConfiguration configuration) throws ConfigurationMismatchException {
+    throw new UnsupportedOperationException("Implement me!");
   }
 
   @Override

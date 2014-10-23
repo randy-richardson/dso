@@ -26,7 +26,7 @@ public class TerracottaClusteredMap<K, V> extends TCObjectSelfImpl implements Cl
   }
 
   @Override
-  public void drop() {
+  public void release() {
     throw new UnsupportedOperationException("Implement me!");
   }
 
