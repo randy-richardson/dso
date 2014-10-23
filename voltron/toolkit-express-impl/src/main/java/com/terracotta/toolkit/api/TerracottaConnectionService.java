@@ -2,6 +2,7 @@ package com.terracotta.toolkit.api;
 
 import org.terracotta.toolkit.connection.Connection;
 import org.terracotta.toolkit.connection.ConnectionException;
+import org.terracotta.toolkit.connection.DisconnectHandler;
 import org.terracotta.toolkit.connection.ConnectionService;
 
 import com.terracotta.toolkit.client.TerracottaClientConfig;
@@ -26,12 +27,13 @@ public class TerracottaConnectionService implements ConnectionService {
   }
 
   @Override
-  public Connection connect(final URI uri, final Properties properties) throws ConnectionException {
+  public Connection connect(final URI uri, final DisconnectHandler disconnectHandler, final Properties properties) throws ConnectionException {
     if (!handlesURI(uri)) {
       throw new IllegalArgumentException("Unknown URI " + uri);
     }
 
     // TODO: Make use of those properties
+    // TODO: hook in the connection listener
 
     TerracottaClientConfig clientConfig = new TerracottaClientConfigParams().isUrl(true)
         .tcConfigSnippetOrUrl(uri.getHost() + ":" + uri.getPort()).newTerracottaClientConfig();
