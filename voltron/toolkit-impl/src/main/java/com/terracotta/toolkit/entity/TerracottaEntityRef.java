@@ -4,6 +4,7 @@ import org.terracotta.toolkit.entity.ConfigurationMismatchException;
 import org.terracotta.toolkit.entity.Entity;
 import org.terracotta.toolkit.entity.EntityConfiguration;
 import org.terracotta.toolkit.entity.EntityMaintenanceRef;
+import org.terracotta.toolkit.entity.EntityRef;
 
 import com.tc.net.GroupID;
 import com.tc.platform.PlatformService;
@@ -15,7 +16,7 @@ import java.util.ServiceLoader;
 /**
  * @author twu
  */
-public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceRef<T> {
+public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceRef<T>, EntityRef<T> {
   private final PlatformService platformService;
   private final MaintenanceModeService maintenanceModeService;
   private final Class<T> type;
