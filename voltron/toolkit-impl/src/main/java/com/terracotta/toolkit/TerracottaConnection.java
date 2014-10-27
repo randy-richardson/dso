@@ -2,6 +2,7 @@ package com.terracotta.toolkit;
 
 import org.terracotta.toolkit.connection.Connection;
 import org.terracotta.toolkit.entity.Entity;
+import org.terracotta.toolkit.entity.EntityMaintenanceRef;
 import org.terracotta.toolkit.entity.EntityRef;
 
 import com.tc.platform.PlatformService;
@@ -10,7 +11,6 @@ import com.terracotta.toolkit.entity.TerracottaEntityRef;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author twu
@@ -22,7 +22,7 @@ public class TerracottaConnection implements Connection {
 
   private boolean isShutdown = false;
 
-  private final Map<EntityKey<? extends Entity>, EntityRef<? extends Entity>> references = new HashMap<EntityKey<? extends Entity>, EntityRef<? extends Entity>>();
+  private final HashMap<EntityKey<? extends Entity>, TerracottaEntityRef<? extends Entity>> references = new HashMap<EntityKey<? extends Entity>, TerracottaEntityRef<? extends Entity>>();
 
   public TerracottaConnection(final PlatformService platformService, final Runnable shutdown) {
     this.platformService = platformService;
@@ -33,8 +33,19 @@ public class TerracottaConnection implements Connection {
   @Override
   public synchronized <T extends Entity> EntityRef<T> getEntityRef(final Class<T> cls, final String name) {
     checkShutdown();
+    return getOrCreateRef(cls, name);
+  }
+
+  @Override
+  public <T extends Entity> EntityMaintenanceRef<T> acquireMaintenanceModeRef(final Class<T> cls, final String name) {
+    checkShutdown();
+    return getOrCreateRef(cls, name).enterMaintenanceMode();
+  }
+
+  private <T extends Entity> TerracottaEntityRef<T> getOrCreateRef(final Class<T> cls, final String name) {
+    checkShutdown();
     final EntityKey<T> key = new EntityKey<T>(cls, name);
-    EntityRef<T> ref = (EntityRef<T>) references.get(key);
+    TerracottaEntityRef<T> ref = (TerracottaEntityRef<T>) references.get(key);
     if (ref == null) {
       ref = new TerracottaEntityRef<T>(platformService, maintenanceModeService, cls, name);
       references.put(key, ref);

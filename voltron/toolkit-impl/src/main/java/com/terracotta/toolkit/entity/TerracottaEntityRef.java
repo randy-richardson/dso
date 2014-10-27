@@ -101,7 +101,6 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
     state = ReferenceState.FREE;
   }
 
-  @Override
   public synchronized EntityMaintenanceRef<T> enterMaintenanceMode() {
     if (state != ReferenceState.FREE) {
       throw new IllegalStateException("Reference is not free to enter maintenance mode.");
