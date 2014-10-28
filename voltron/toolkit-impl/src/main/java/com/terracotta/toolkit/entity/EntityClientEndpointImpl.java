@@ -1,5 +1,8 @@
 package com.terracotta.toolkit.entity;
 
+import jersey.repackaged.com.google.common.util.concurrent.Futures;
+import org.terracotta.entity.EntityClientEndpoint;
+import org.terracotta.entity.InvocationBuilder;
 import org.terracotta.toolkit.entity.EntityConfiguration;
 
 import com.tc.abortable.AbortedOperationException;
@@ -12,63 +15,75 @@ import java.util.concurrent.Future;
 /**
  * @author twu
  */
-public class EntityClientEndpoint extends TCObjectSelfImpl {
+public class EntityClientEndpointImpl extends TCObjectSelfImpl implements EntityClientEndpoint {
   // TODO: Handle saving configuration here?
   private String typeName;
 
-  public EntityClientEndpoint() {
+  public EntityClientEndpointImpl() {
   }
 
-  public EntityClientEndpoint(final String typeName, EntityConfiguration entityConfiguration) {
+  public EntityClientEndpointImpl(final String typeName, EntityConfiguration entityConfiguration) {
     this.typeName = typeName;
   }
 
-  void setEntityConfiguration(EntityConfiguration entityConfiguration) {
+  @Override
+  public void setEntityConfiguration(EntityConfiguration entityConfiguration) {
     // Should only call this during mmode
   }
 
-  public Future<?> asyncInvoke(final LogicalOperation method, final boolean returnsValue, Object... parameters) throws AbortedOperationException {
+  private Future<?> asyncInvoke(final LogicalOperation method, final boolean returnsValue, Object... parameters) throws AbortedOperationException {
     return getTCClass().getObjectManager().getTransactionManager().asyncInvoke(this, method, returnsValue, parameters);
   }
 
-  EntityConfiguration getEntityConfiguration() {
+  @Override
+  public EntityConfiguration getEntityConfiguration() {
     return null;
   }
 
+  @Override
   public String getTypeName() {
     return typeName;
   }
 
+  @Override
   public void setTypeName(final String typeName) {
     this.typeName = typeName;
   }
 
+  @Override
   public InvocationBuilder beginInvoke() {
-    return new InvocationBuilder();
+    return new InvocationBuilderImpl();
   }
 
-  public class InvocationBuilder {
+  private class InvocationBuilderImpl implements InvocationBuilder {
     private boolean invoked = false;
     private boolean returnsValue = false;
     private Serializable payload;
 
     // TODO: fill in durability/consistency options here.
 
-    public synchronized InvocationBuilder returnsValue(boolean returnsValue) {
+    @Override
+    public synchronized InvocationBuilderImpl returnsValue(boolean returnsValue) {
       this.returnsValue = returnsValue;
       return this;
     }
 
-    public synchronized InvocationBuilder payload(Serializable serializable) {
+    @Override
+    public synchronized InvocationBuilderImpl payload(Serializable serializable) {
       checkInvoked();
       payload = serializable;
       return this;
     }
 
-    public synchronized Future<?> invoke() throws AbortedOperationException {
+    @Override
+    public synchronized Future<?> invoke() {
       checkInvoked();
       invoked = true;
-      return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, returnsValue, payload);
+      try {
+        return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, returnsValue, payload);
+      } catch (AbortedOperationException e) {
+        return Futures.immediateFailedFuture(e);
+      }
     }
 
     private void checkInvoked() {

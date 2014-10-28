@@ -13,7 +13,7 @@ import com.terracotta.toolkit.collections.map.ToolkitMapImpl;
 import com.terracotta.toolkit.collections.map.ToolkitMapImplApplicator;
 import com.terracotta.toolkit.collections.map.ToolkitSortedMapImpl;
 import com.terracotta.toolkit.collections.map.ToolkitSortedMapImplApplicator;
-import com.terracotta.toolkit.entity.EntityClientEndpoint;
+import com.terracotta.toolkit.entity.EntityClientEndpointImpl;
 import com.terracotta.toolkit.entity.EntityClientEndpointApplicator;
 import com.terracotta.toolkit.events.ToolkitNotifierImpl;
 import com.terracotta.toolkit.events.ToolkitNotifierImplApplicator;
@@ -90,7 +90,7 @@ public class ToolkitConfigurator {
                                         ToolkitSortedMapImplApplicator.class.getName());
     spec.setUseNonDefaultConstructor(true);
 
-    spec = configHelper.getOrCreateSpec(EntityClientEndpoint.class.getName(), EntityClientEndpointApplicator.class.getName());
+    spec = configHelper.getOrCreateSpec(EntityClientEndpointImpl.class.getName(), EntityClientEndpointApplicator.class.getName());
     spec.setUseNonDefaultConstructor(true);
   }
 }

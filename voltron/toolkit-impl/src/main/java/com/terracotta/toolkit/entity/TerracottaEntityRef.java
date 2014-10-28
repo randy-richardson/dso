@@ -1,5 +1,6 @@
 package com.terracotta.toolkit.entity;
 
+import org.terracotta.entity.EntityCreationServiceFactory;
 import org.terracotta.toolkit.entity.ConfigurationMismatchException;
 import org.terracotta.toolkit.entity.Entity;
 import org.terracotta.toolkit.entity.EntityConfiguration;
@@ -10,8 +11,6 @@ import com.tc.net.GroupID;
 import com.tc.platform.PlatformService;
 import com.terracotta.toolkit.concurrent.locks.ToolkitLockingApi;
 import com.terracotta.toolkit.concurrent.locks.UnnamedToolkitLock;
-
-import java.util.ServiceLoader;
 
 /**
  * @author twu
@@ -44,12 +43,12 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
       return entity;
     } else if (state == ReferenceState.FREE) {
       maintenanceModeService.readLockEntity(type, name);
-      EntityClientEndpoint endpoint = (EntityClientEndpoint) platformService.lookupRoot(name, new GroupID(0));
-      if (entity == null) {
+      EntityClientEndpointImpl endpoint = (EntityClientEndpointImpl) platformService.lookupRoot(name, new GroupID(0));
+      if (endpoint == null) {
         maintenanceModeService.readUnlockEntity(type, name);
         throw new IllegalStateException("doesn't exist");
       }
-      entity = getCreationService(type).create(endpoint, endpoint.getEntityConfiguration());
+      entity = EntityCreationServiceFactory.creationServiceForType(type).create(endpoint, endpoint.getEntityConfiguration());
       state = ReferenceState.IN_USE;
     }
     return entity;
@@ -80,18 +79,18 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
   public synchronized void create(final EntityConfiguration configuration) {
     checkMaintenanceMode();
 
-    EntityClientEndpoint endpoint = (EntityClientEndpoint) platformService.lookupRoot(name, new GroupID(0));
+    EntityClientEndpointImpl endpoint = (EntityClientEndpointImpl) platformService.lookupRoot(name, new GroupID(0));
     if (endpoint == null) {
       createLock.lock();
       try {
-        platformService.lookupOrCreateRoot(name, new EntityClientEndpoint(type.getName(), configuration), new GroupID(0));
+        endpoint = new EntityClientEndpointImpl(type.getName(), configuration);
+        platformService.lookupOrCreateRoot(name, endpoint, new GroupID(0));
       } finally {
         createLock.unlock(); // TODO: This should probably be synchronous in some way
       }
     } else {
       throw new IllegalStateException("Already exists");
     }
-    entity = getCreationService(type).create(endpoint, configuration);
   }
 
   @Override
@@ -114,14 +113,5 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
     if (state != ReferenceState.MAINTENANCE) {
       throw new IllegalStateException("Not in maintenance mode");
     }
-  }
-
-  private static <T extends Entity> EntityCreationService getCreationService(Class<T> type) {
-    ServiceLoader<EntityCreationService> loader = ServiceLoader.load(ServiceUtil.getServiceClass(type),
-        TerracottaEntityRef.class.getClassLoader());
-    for (EntityCreationService entityCreationService : loader) {
-      return entityCreationService;
-    }
-    throw new UnsupportedOperationException("Don't have a service to handle type " + type.getName());
   }
 }

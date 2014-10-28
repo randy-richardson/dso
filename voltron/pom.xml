@@ -54,6 +54,7 @@
 
     <module>management</module>
     <module>management-agent</module>
+    <module>entity-client-api</module>
   </modules>
 
   <build>

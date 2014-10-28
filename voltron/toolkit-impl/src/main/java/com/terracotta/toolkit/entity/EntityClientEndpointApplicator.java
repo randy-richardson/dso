@@ -27,7 +27,7 @@ public class EntityClientEndpointApplicator extends BaseApplicator {
 
   @Override
   public void hydrate(final ClientObjectManager objectManager, final TCObject tcObject, final DNA dna, final Object pojo) throws IOException, ClassNotFoundException {
-    EntityClientEndpoint endpoint = (EntityClientEndpoint) tcObject;
+    EntityClientEndpointImpl endpoint = (EntityClientEndpointImpl) tcObject;
     final DNACursor cursor = dna.getCursor();
     if (cursor.next()) {
       final LogicalAction typeNameAction = cursor.getLogicalAction();
@@ -39,7 +39,7 @@ public class EntityClientEndpointApplicator extends BaseApplicator {
 
   @Override
   public void dehydrate(final ClientObjectManager objectManager, final TCObject tcObject, final DNAWriter writer, final Object pojo) {
-    EntityClientEndpoint endpoint = (EntityClientEndpoint) tcObject;
+    EntityClientEndpointImpl endpoint = (EntityClientEndpointImpl) tcObject;
     writer.addLogicalAction(LogicalOperation.CREATE_ENTITY, new Object[] { endpoint.getTypeName() });
   }
 
@@ -50,6 +50,6 @@ public class EntityClientEndpointApplicator extends BaseApplicator {
 
   @Override
   public Object getNewInstance(final ClientObjectManager objectManager, final DNA dna, final PlatformService platformService) throws IOException, ClassNotFoundException {
-    return new EntityClientEndpoint();
+    return new EntityClientEndpointImpl();
   }
 }

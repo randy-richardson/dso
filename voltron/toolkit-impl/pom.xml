@@ -72,6 +72,11 @@
       <artifactId>powermock-module-junit4</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.terracotta</groupId>
+      <artifactId>entity-client-api</artifactId>
+      <version>4.3.0-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <reporting>

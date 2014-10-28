@@ -1,0 +1,18 @@
+package org.terracotta.entity;
+
+import org.terracotta.toolkit.entity.EntityConfiguration;
+
+/**
+ * @author twu
+ */
+public interface EntityClientEndpoint {
+  void setEntityConfiguration(EntityConfiguration entityConfiguration);
+
+  EntityConfiguration getEntityConfiguration();
+
+  String getTypeName();
+
+  void setTypeName(String typeName);
+
+  InvocationBuilder beginInvoke();
+}

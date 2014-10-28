@@ -1,19 +1,13 @@
 package com.terracotta.toolkit.collections.map;
 
+import org.terracotta.entity.EntityClientEndpoint;
 import org.terracotta.toolkit.collections.ClusteredMap;
 
-import com.tc.object.applicator.BaseApplicator;
-import com.tc.object.applicator.ChangeApplicator;
-import com.tc.object.applicator.SelfApplicable;
 import com.tc.object.TCObjectSelfImpl;
-import com.terracotta.toolkit.entity.EntityClientEndpoint;
 
-import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author twu
