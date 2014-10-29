@@ -13,9 +13,9 @@
   <artifactId>entity-client-api</artifactId>
   <dependencies>
     <dependency>
-      <groupId>org.terracotta.toolkit</groupId>
-      <artifactId>terracotta-toolkit-api</artifactId>
-      <version>${toolkit-api.version}</version>
+      <groupId>org.terracotta</groupId>
+      <artifactId>connection-api</artifactId>
+      <version>${connection-api.version}</version>
     </dependency>
   </dependencies>
 </project>

@@ -1,6 +1,6 @@
 package org.terracotta.entity;
 
-import org.terracotta.toolkit.entity.EntityConfiguration;
+import org.terracotta.connection.entity.EntityConfiguration;
 
 /**
  * @author twu

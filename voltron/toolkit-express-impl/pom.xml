@@ -20,6 +20,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.terracotta</groupId>
+      <artifactId>connection-api</artifactId>
+      <version>${connection-api.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.terracotta.toolkit</groupId>
       <artifactId>terracotta-toolkit-api-internal</artifactId>
       <version>${toolkit-api-internal.version}</version>

@@ -1,9 +1,9 @@
 package com.terracotta.toolkit.api;
 
-import org.terracotta.toolkit.connection.Connection;
-import org.terracotta.toolkit.connection.ConnectionException;
-import org.terracotta.toolkit.connection.DisconnectHandler;
-import org.terracotta.toolkit.connection.ConnectionService;
+import org.terracotta.connection.Connection;
+import org.terracotta.connection.ConnectionException;
+import org.terracotta.connection.ConnectionService;
+import org.terracotta.connection.DisconnectHandler;
 
 import com.terracotta.toolkit.client.TerracottaClientConfig;
 import com.terracotta.toolkit.client.TerracottaClientConfigParams;

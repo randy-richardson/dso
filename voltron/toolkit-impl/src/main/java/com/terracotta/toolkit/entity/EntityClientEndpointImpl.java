@@ -1,9 +1,9 @@
 package com.terracotta.toolkit.entity;
 
 import jersey.repackaged.com.google.common.util.concurrent.Futures;
+import org.terracotta.connection.entity.EntityConfiguration;
 import org.terracotta.entity.EntityClientEndpoint;
 import org.terracotta.entity.InvocationBuilder;
-import org.terracotta.toolkit.entity.EntityConfiguration;
 
 import com.tc.abortable.AbortedOperationException;
 import com.tc.object.LogicalOperation;

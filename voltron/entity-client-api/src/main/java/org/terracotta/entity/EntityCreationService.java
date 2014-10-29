@@ -1,8 +1,8 @@
 package org.terracotta.entity;
 
+import org.terracotta.connection.entity.Entity;
+import org.terracotta.connection.entity.EntityConfiguration;
 import org.terracotta.entity.EntityClientEndpoint;
-import org.terracotta.toolkit.entity.Entity;
-import org.terracotta.toolkit.entity.EntityConfiguration;
 
 /**
  * @author twu

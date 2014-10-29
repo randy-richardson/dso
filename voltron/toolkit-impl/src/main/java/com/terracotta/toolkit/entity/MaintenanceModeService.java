@@ -1,6 +1,6 @@
 package com.terracotta.toolkit.entity;
 
-import org.terracotta.toolkit.entity.Entity;
+import org.terracotta.connection.entity.Entity;
 import org.terracotta.toolkit.internal.concurrent.locks.ToolkitLockTypeInternal;
 
 import com.tc.object.locks.EntityLockID;

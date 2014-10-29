@@ -1,9 +1,10 @@
 package com.terracotta.toolkit;
 
-import org.terracotta.toolkit.connection.Connection;
-import org.terracotta.toolkit.entity.Entity;
-import org.terracotta.toolkit.entity.EntityMaintenanceRef;
-import org.terracotta.toolkit.entity.EntityRef;
+
+import org.terracotta.connection.Connection;
+import org.terracotta.connection.entity.Entity;
+import org.terracotta.connection.entity.EntityMaintenanceRef;
+import org.terracotta.connection.entity.EntityRef;
 
 import com.tc.platform.PlatformService;
 import com.terracotta.toolkit.entity.MaintenanceModeService;

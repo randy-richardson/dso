@@ -1,11 +1,11 @@
 package com.terracotta.toolkit.entity;
 
+import org.terracotta.connection.entity.ConfigurationMismatchException;
+import org.terracotta.connection.entity.Entity;
+import org.terracotta.connection.entity.EntityConfiguration;
+import org.terracotta.connection.entity.EntityMaintenanceRef;
+import org.terracotta.connection.entity.EntityRef;
 import org.terracotta.entity.EntityCreationServiceFactory;
-import org.terracotta.toolkit.entity.ConfigurationMismatchException;
-import org.terracotta.toolkit.entity.Entity;
-import org.terracotta.toolkit.entity.EntityConfiguration;
-import org.terracotta.toolkit.entity.EntityMaintenanceRef;
-import org.terracotta.toolkit.entity.EntityRef;
 
 import com.tc.net.GroupID;
 import com.tc.platform.PlatformService;

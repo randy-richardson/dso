@@ -1,6 +1,6 @@
 package org.terracotta.entity;
 
-import org.terracotta.toolkit.entity.Entity;
+import org.terracotta.connection.entity.Entity;
 
 import java.util.ServiceLoader;
 
