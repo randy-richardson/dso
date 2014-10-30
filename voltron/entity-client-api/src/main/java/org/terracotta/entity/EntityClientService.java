@@ -7,7 +7,7 @@ import org.terracotta.entity.EntityClientEndpoint;
 /**
  * @author twu
  */
-public interface EntityCreationService<T extends Entity> {
+public interface EntityClientService<T extends Entity> {
   /**
    * Check if this service handles the given entity type.
    *

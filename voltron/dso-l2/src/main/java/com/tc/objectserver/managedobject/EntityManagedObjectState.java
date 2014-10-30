@@ -1,5 +1,8 @@
 package com.tc.objectserver.managedobject;
 
+import org.terracotta.entity.EntityServerService;
+import org.terracotta.entity.ServerEntity;
+
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.LogicalOperation;
@@ -11,9 +14,7 @@ import com.tc.object.dna.impl.UTF8ByteDataHolder;
 
 import java.io.IOException;
 import java.io.ObjectOutput;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 /**
@@ -22,7 +23,7 @@ import java.util.Set;
 public class EntityManagedObjectState extends LogicalManagedObjectState {
   private static final TCLogger logger = TCLogging.getLogger(EntityManagedObjectState.class);
 
-  private final Map<String, String> stuff = new HashMap<String, String>();
+  private ServerEntity serverEntity;
 
   public EntityManagedObjectState() {
     super(0);
@@ -30,17 +31,28 @@ public class EntityManagedObjectState extends LogicalManagedObjectState {
 
   @Override
   protected LogicalChangeResult applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final LogicalOperation method, final Object[] params) {
+    UTF8ByteDataHolder byteDataHolder = (UTF8ByteDataHolder) params[0];
     if (method == LogicalOperation.CREATE_ENTITY) {
-      logger.info("Creating type " + params[0]);
-    } else if (method == LogicalOperation.INVOKE_WITH_PAYLOAD) {
-      String[] invocation = ((UTF8ByteDataHolder) params[0]).asString().split(" ");
-      if ("put".equals(invocation[0])) {
-        stuff.put(invocation[1], invocation[2]);
-      } else if ("get".equals(invocation[0])) {
-        return new LogicalChangeResult(stuff.get(invocation[1]));
+      String typeName = byteDataHolder.asString();
+      ServiceLoader<EntityServerService> loader = ServiceLoader.load(EntityServerService.class,
+          EntityManagedObjectState.class.getClassLoader());
+      for (EntityServerService entityServerService : loader) {
+        if (entityServerService.handlesEntityType(typeName)) {
+          serverEntity = entityServerService.createEntity(null);
+          return LogicalChangeResult.SUCCESS;
+        }
       }
+      // TODO: give back an error indicating we can't handle this object type
+      throw new RuntimeException("Can't find entity type");
+    } else if (method == LogicalOperation.INVOKE_WITH_PAYLOAD) {
+      if (serverEntity == null) {
+        // TODO: throw some object not initialized error back to the client
+        return LogicalChangeResult.FAILURE;
+      }
+      return new LogicalChangeResult(serverEntity.invoke(byteDataHolder.getBytes()));
     }
-    return LogicalChangeResult.SUCCESS;
+    // TODO: throw unknown operation exception back
+    return LogicalChangeResult.FAILURE;
   }
 
   @Override

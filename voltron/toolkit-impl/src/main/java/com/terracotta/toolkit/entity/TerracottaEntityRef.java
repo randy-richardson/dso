@@ -5,7 +5,7 @@ import org.terracotta.connection.entity.Entity;
 import org.terracotta.connection.entity.EntityConfiguration;
 import org.terracotta.connection.entity.EntityMaintenanceRef;
 import org.terracotta.connection.entity.EntityRef;
-import org.terracotta.entity.EntityCreationServiceFactory;
+import org.terracotta.entity.EntityClientServiceFactory;
 
 import com.tc.net.GroupID;
 import com.tc.platform.PlatformService;
@@ -48,7 +48,7 @@ public class TerracottaEntityRef<T extends Entity> implements EntityMaintenanceR
         maintenanceModeService.readUnlockEntity(type, name);
         throw new IllegalStateException("doesn't exist");
       }
-      entity = EntityCreationServiceFactory.creationServiceForType(type).create(endpoint, endpoint.getEntityConfiguration());
+      entity = EntityClientServiceFactory.creationServiceForType(type).create(endpoint, endpoint.getEntityConfiguration());
       state = ReferenceState.IN_USE;
     }
     return entity;
