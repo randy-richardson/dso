@@ -2,6 +2,7 @@ package com.terracotta.toolkit.entity;
 
 import jersey.repackaged.com.google.common.util.concurrent.Futures;
 import org.terracotta.connection.entity.EntityConfiguration;
+import org.terracotta.entity.EndpointListener;
 import org.terracotta.entity.EntityClientEndpoint;
 import org.terracotta.entity.InvocationBuilder;
 
@@ -51,6 +52,11 @@ public class EntityClientEndpointImpl extends TCObjectSelfImpl implements Entity
   }
 
   @Override
+  public void registerListener(final EndpointListener listener) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
   public InvocationBuilder beginInvoke() {
     return new InvocationBuilderImpl();
   }
@@ -58,7 +64,7 @@ public class EntityClientEndpointImpl extends TCObjectSelfImpl implements Entity
   private class InvocationBuilderImpl implements InvocationBuilder {
     private boolean invoked = false;
     private boolean returnsValue = false;
-    private Serializable payload;
+    private byte[] payload;
 
     // TODO: fill in durability/consistency options here.
 
@@ -69,9 +75,9 @@ public class EntityClientEndpointImpl extends TCObjectSelfImpl implements Entity
     }
 
     @Override
-    public synchronized InvocationBuilderImpl payload(Serializable serializable) {
+    public synchronized InvocationBuilderImpl payload(byte[] payload) {
       checkInvoked();
-      payload = serializable;
+      this.payload = payload;
       return this;
     }
 
@@ -80,7 +86,7 @@ public class EntityClientEndpointImpl extends TCObjectSelfImpl implements Entity
       checkInvoked();
       invoked = true;
       try {
-        return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, returnsValue, payload);
+        return asyncInvoke(LogicalOperation.INVOKE_WITH_PAYLOAD, returnsValue, new Object[] { payload });
       } catch (AbortedOperationException e) {
         return Futures.immediateFailedFuture(e);
       }

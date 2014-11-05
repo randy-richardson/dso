@@ -9,7 +9,7 @@ import java.util.concurrent.Future;
 public interface InvocationBuilder {
   InvocationBuilder returnsValue(boolean returnsValue);
 
-  InvocationBuilder payload(Serializable serializable);
+  InvocationBuilder payload(byte[] payload);
 
   Future<?> invoke();
 }

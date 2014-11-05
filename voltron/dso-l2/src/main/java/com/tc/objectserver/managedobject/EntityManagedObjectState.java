@@ -31,9 +31,9 @@ public class EntityManagedObjectState extends LogicalManagedObjectState {
 
   @Override
   protected LogicalChangeResult applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final LogicalOperation method, final Object[] params) {
-    UTF8ByteDataHolder byteDataHolder = (UTF8ByteDataHolder) params[0];
+
     if (method == LogicalOperation.CREATE_ENTITY) {
-      String typeName = byteDataHolder.asString();
+      String typeName = ((UTF8ByteDataHolder) params[0]).asString();
       ServiceLoader<EntityServerService> loader = ServiceLoader.load(EntityServerService.class,
           EntityManagedObjectState.class.getClassLoader());
       for (EntityServerService entityServerService : loader) {
@@ -49,7 +49,7 @@ public class EntityManagedObjectState extends LogicalManagedObjectState {
         // TODO: throw some object not initialized error back to the client
         return LogicalChangeResult.FAILURE;
       }
-      return new LogicalChangeResult(serverEntity.invoke(byteDataHolder.getBytes()));
+      return new LogicalChangeResult(serverEntity.invoke((byte[]) params[0]));
     }
     // TODO: throw unknown operation exception back
     return LogicalChangeResult.FAILURE;

@@ -14,5 +14,7 @@ public interface EntityClientEndpoint {
 
   void setTypeName(String typeName);
 
+  void registerListener(EndpointListener listener);
+
   InvocationBuilder beginInvoke();
 }
