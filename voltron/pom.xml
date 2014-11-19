@@ -56,6 +56,7 @@
     <module>management-agent</module>
     <module>entity-client-api</module>
     <module>entity-server-api</module>
+    <module>entity-test-lib</module>
   </modules>
 
   <build>
