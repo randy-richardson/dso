@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-root</artifactId>
-    <version>3.7.9-SNAPSHOT</version>
+    <version>3.7.9</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -33,7 +33,7 @@
     <search.version>1.1.2</search.version>
     <security-core-version>1.0.10-SNAPSHOT</security-core-version>
     <security-keychain-version>1.0.10-SNAPSHOT</security-keychain-version>
-    <management.version>1.0.3-SNAPSHOT</management.version>
+    <management.version>1.0.2</management.version>
     <terracotta-license.version>1.0.5</terracotta-license.version>
     <derby.version>10.8.2.2</derby.version>
     <tc-config.version>3.7.0</tc-config.version>
