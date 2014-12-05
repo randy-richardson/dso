@@ -1,16 +1,15 @@
 package com.terracotta.toolkit.entity;
 
-import jersey.repackaged.com.google.common.util.concurrent.Futures;
 import org.terracotta.connection.entity.EntityConfiguration;
 import org.terracotta.entity.EndpointListener;
 import org.terracotta.entity.EntityClientEndpoint;
 import org.terracotta.entity.InvocationBuilder;
 
+import com.google.common.util.concurrent.Futures;
 import com.tc.abortable.AbortedOperationException;
 import com.tc.object.LogicalOperation;
 import com.tc.object.TCObjectSelfImpl;
 
-import java.io.Serializable;
 import java.util.concurrent.Future;
 
 /**
