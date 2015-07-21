@@ -1,48 +1,25 @@
-<?xml version="1.0"?>
-<!--
-The contents of this file are subject to the Terracotta Public License Version
-2.0 (the "License"); You may not use this file except in compliance with the
-License. You may obtain a copy of the License at 
-
-     http://terracotta.org/legal/terracotta-public-license.
-
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
-the specific language governing rights and limitations under the License.
-
-The Covered Software is Terracotta Platform.
-
-The Initial Developer of the Covered Software is 
-     Terracotta, Inc., a Software AG company
--->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-root</artifactId>
-    <version>4.3.1-SNAPSHOT</version>
+    <version>4.3.1.0.175</version>
     <relativePath>..</relativePath>
   </parent>
-
   <artifactId>system-tests-parent</artifactId>
   <packaging>pom</packaging>
-
   <name>System Tests Parent</name>
   <description>Parent POM for system tests</description>
-
   <licenses>
     <license>
       <name>Terracotta Public License</name>
       <url>http://www.terracotta.org/license.txt</url>
     </license>
   </licenses>
-
   <properties>
     <group>system</group>
     <tcmaven.version>2.1.0</tcmaven.version>
-    <terracotta.core.version>4.3.1-SNAPSHOT</terracotta.core.version>
+    <terracotta.core.version>4.3.1.0.97</terracotta.core.version>
     <tc.core.groupId>org.terracotta</tc.core.groupId>
     <tc.core.artifactId>terracotta</tc.core.artifactId>
     <tc.management.war.groupId>org.terracotta</tc.management.war.groupId>
@@ -50,10 +27,8 @@ The Initial Developer of the Covered Software is
     <productKeyPath/>
     <ee.license>-Dcom.tc.productkey.path=${productKeyPath}</ee.license>
     <container-test-framework.version>2.0.1-SNAPSHOT</container-test-framework.version>
-
     <tc.tests.configuration.properties.file>${project.build.testOutputDirectory}/tc.tests.properties</tc.tests.configuration.properties.file>
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
-
     <hamcrest.version>1.3</hamcrest.version>
     <surefire.version>2.15</surefire.version>
     <gmaven-plugin.version>1.5</gmaven-plugin.version>
@@ -64,13 +39,12 @@ The Initial Developer of the Covered Software is
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
     <tc.base-dir>${project.build.directory}</tc.base-dir>
     <tc.dso.globalmode>false</tc.dso.globalmode>
-
     <tc.tests.info.property-files>${tc.tests.configuration.properties.file}</tc.tests.info.property-files>
     <tc.tests.info.temp-root>${project.build.directory}/temp</tc.tests.info.temp-root>
     <tc.tests.info.data-root>${project.build.directory}/data</tc.tests.info.data-root>
     <tc.tests.info.linked-child-process-classpath>${localMavenRepository}/org/terracotta/linked-child-process/${tc.linked-child-process.version}/linked-child-process-${tc.linked-child-process.version}.jar</tc.tests.info.linked-child-process-classpath>
     <tc.tests.info.junit-test-timeout-inseconds>1800</tc.tests.info.junit-test-timeout-inseconds>
-    <absolute-test-timeout-secs>${tc.tests.info.junit-test-timeout-inseconds}</absolute-test-timeout-secs><!-- use this to control the final timeout value for all unit tests -->
+    <absolute-test-timeout-secs>${tc.tests.info.junit-test-timeout-inseconds}</absolute-test-timeout-secs>
     <tc.tests.info.l2.startup.mode>internal</tc.tests.info.l2.startup.mode>
     <jrockit-jvm-arguments/>
     <surefire.min-memory>64m</surefire.min-memory>
@@ -78,17 +52,9 @@ The Initial Developer of the Covered Software is
     <surefire.additional-jvm-args/>
     <surefire.argLine>-server -Xms${surefire.min-memory} -Xmx${surefire.max-memory} ${surefire.additional-jvm-args} ${jrockit-jvm-arguments} -Dtc.base-dir=${tc.base-dir} ${tc.config} -Dtc.dso.globalmode=${tc.dso.globalmode} -Dtc.tests.info.property-files=${tc.tests.info.property-files} -Dcom.tc.properties=${tc.system.tests.properties} -Dcom.sun.management.jmxremote ${ee.license}</surefire.argLine>
     <skipTests>true</skipTests>
-
-    <!--
-        Unfortunately, this silly localMavenRepository property is necessary
-        because we have to treat it specially on Windows and set it to
-        C:\DOCUME~1\${user.name}\.m2\repository to avoid spaces in the path
-        (see the container-tests-windows profile definition).
-    -->
     <localMavenRepository>${user.home}/.m2/repository</localMavenRepository>
     <os-classifier>linux</os-classifier>
   </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -118,7 +84,6 @@ The Initial Developer of the Covered Software is
       </dependency>
     </dependencies>
   </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>${tc.core.groupId}</groupId>
@@ -139,7 +104,7 @@ The Initial Developer of the Covered Software is
           <artifactId>hamcrest-core</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>    
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -149,7 +114,7 @@ The Initial Developer of the Covered Software is
         <exclusion>
           <groupId>org.hamcrest</groupId>
           <artifactId>hamcrest-core</artifactId>
-          </exclusion>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -169,7 +134,6 @@ The Initial Developer of the Covered Software is
       <version>1.0.1</version>
     </dependency>
   </dependencies>
-
   <build>
     <resources>
       <resource>
@@ -199,9 +163,6 @@ The Initial Developer of the Covered Software is
           <version>${cargo-maven2-plugin.version}</version>
         </plugin>
         <plugin>
-          <!-- we include the surefire plugin to get a known version and to always tell
-               it to skip tests. The toolkit resolver plugin is the actual thing that runs
-               tests -->
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire.version}</version>
@@ -209,7 +170,6 @@ The Initial Developer of the Covered Software is
             <skipTests>true</skipTests>
           </configuration>
         </plugin>
-
         <plugin>
           <groupId>org.terracotta</groupId>
           <artifactId>maven-forge-plugin</artifactId>
@@ -268,9 +228,8 @@ The Initial Developer of the Covered Software is
                 <goal>execute</goal>
               </goals>
               <configuration>
-                <source><![CDATA[
-                  Properties outputProperties = new Properties()
-                  project.properties.each { key, value ->
+                <source>Properties outputProperties = new Properties()
+                  project.properties.each { key, value -&gt;
                     if (key.startsWith("tc.tests")) {
                       outputProperties.setProperty(key, value)
                     }
@@ -287,8 +246,7 @@ The Initial Developer of the Covered Software is
                   }
                   finally {
                     outputStream.close()
-                  }
-                  ]]></source>
+                  }</source>
               </configuration>
             </execution>
           </executions>
@@ -343,7 +301,6 @@ The Initial Developer of the Covered Software is
             </execution>
           </executions>
         </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
@@ -407,19 +364,19 @@ The Initial Developer of the Covered Software is
       </plugin>
     </plugins>
   </build>
-
   <profiles>
     <profile>
       <id>workaround-windows</id>
       <activation>
-        <os><family>windows</family></os>
+        <os>
+          <family>windows</family>
+        </os>
       </activation>
       <properties>
         <localMavenRepository>C:\DOCUME~1\${user.name}\.m2\repository</localMavenRepository>
         <os-classifier>windows</os-classifier>
       </properties>
     </profile>
-
     <profile>
       <id>enable-system-gc-jrockit</id>
       <activation>
@@ -432,7 +389,6 @@ The Initial Developer of the Covered Software is
         <jrockit-jvm-arguments>-XXfullSystemGC</jrockit-jvm-arguments>
       </properties>
     </profile>
-
     <profile>
       <id>container-debug</id>
       <build>
@@ -458,7 +414,6 @@ The Initial Developer of the Covered Software is
         </plugins>
       </build>
     </profile>
-
     <profile>
       <id>ee</id>
       <properties>
@@ -469,12 +424,11 @@ The Initial Developer of the Covered Software is
         <skipTests>false</skipTests>
       </properties>
     </profile>
-
     <profile>
       <id>check-short</id>
       <properties>
         <should_skip_tests>false</should_skip_tests>
-      </properties>     
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -495,7 +449,7 @@ The Initial Developer of the Covered Software is
                 <phase>process-test-classes</phase>
               </execution>
             </executions>
-          </plugin>        
+          </plugin>
           <plugin>
             <groupId>org.terracotta</groupId>
             <artifactId>maven-forge-plugin</artifactId>
@@ -504,15 +458,13 @@ The Initial Developer of the Covered Software is
               <groups>org.terracotta.test.categories.CheckShorts</groups>
               <failIfNoTests>false</failIfNoTests>
               <printSummary>true</printSummary>
-              <reportFormat>plain</reportFormat>              
+              <reportFormat>plain</reportFormat>
             </configuration>
           </plugin>
-        </plugins>      
+        </plugins>
       </build>
     </profile>
-
     <profile>
-      <!-- Not sure this is used anywhere anymore -->
       <id>single-server</id>
       <properties>
         <should_skip_tests>false</should_skip_tests>
@@ -554,7 +506,6 @@ The Initial Developer of the Covered Software is
               <startServer>false</startServer>
             </configuration>
           </plugin>
-
           <plugin>
             <groupId>org.reflections</groupId>
             <artifactId>reflections-maven</artifactId>
@@ -587,7 +538,6 @@ The Initial Developer of the Covered Software is
         </plugins>
       </build>
     </profile>
-
     <profile>
       <id>container-tests</id>
       <activation>
@@ -606,7 +556,6 @@ The Initial Developer of the Covered Software is
       </dependencies>
       <build>
         <plugins>
-          <!-- increase websphere test timeout to 2700 seconds (45 minutes) -->
           <plugin>
             <groupId>org.codehaus.gmaven</groupId>
             <artifactId>gmaven-plugin</artifactId>
@@ -619,8 +568,7 @@ The Initial Developer of the Covered Software is
                   <goal>execute</goal>
                 </goals>
                 <configuration>
-                  <source><![CDATA[
-                    import org.apache.maven.artifact.Artifact
+                  <source>import org.apache.maven.artifact.Artifact
                     if (project.properties['appserver'] =~ /websphere/) {
                       project.properties.setProperty('tc.tests.info.junit-test-timeout-inseconds', '2700')
                       project.properties.setProperty('absolute-test-timeout-secs', '2700')
@@ -634,19 +582,16 @@ The Initial Developer of the Covered Software is
                         cacheVersion = artifactVersionFile.text
                       }                        
                       for (def a : project.getArtifacts()) {
-                        if (a.artifactId == "websphere-profiles" && !cacheVersion.equals(a.version)) {
+                        if (a.artifactId == "websphere-profiles" &amp;&amp; !cacheVersion.equals(a.version)) {
                           ant.untar(src: a.getFile(), dest: cacheDir, compression: "gzip")
                           artifactVersionFile.write(a.version)
                         }
                       }
-                    }
-                    ]]>
-                  </source>
+                    }</source>
                 </configuration>
               </execution>
             </executions>
           </plugin>
-
           <plugin>
             <groupId>org.terracotta.plugin</groupId>
             <artifactId>maven-appserver-plugin</artifactId>
@@ -671,7 +616,6 @@ The Initial Developer of the Covered Software is
         </plugins>
       </build>
     </profile>
-
     <profile>
       <id>run-test-group</id>
       <properties>
@@ -696,7 +640,6 @@ The Initial Developer of the Covered Software is
         </plugins>
       </build>
     </profile>
-
     <profile>
       <id>client-jvm</id>
       <properties>
@@ -709,7 +652,6 @@ The Initial Developer of the Covered Software is
         <surefire.jvm.mode>-server</surefire.jvm.mode>
       </properties>
     </profile>
-
     <profile>
       <id>check</id>
       <build>
@@ -726,8 +668,7 @@ The Initial Developer of the Covered Software is
                   <goal>execute</goal>
                 </goals>
                 <configuration>
-                  <source>
-                    def target = project.properties['target']
+                  <source>def target = project.properties['target']
                     if (target == null) fail("-Dtarget needs to be set for this profile")
                     def targetSet = new HashSet(Arrays.asList(target.split(",")))
                     def projectGroups = new HashSet()
@@ -736,16 +677,14 @@ The Initial Developer of the Covered Software is
                     }
                     targetSet.retainAll(projectGroups)
                     def shouldSkipTest = targetSet.size() == 0
-                    project.properties.should_skip_tests = String.valueOf(shouldSkipTest)
-                  </source>
+                    project.properties.should_skip_tests = String.valueOf(shouldSkipTest)</source>
                 </configuration>
               </execution>
             </executions>
-          </plugin>         
-        </plugins>          
+          </plugin>
+        </plugins>
       </build>
-    </profile>    
-
+    </profile>
     <profile>
       <id>system-tests</id>
       <properties>
@@ -766,9 +705,8 @@ The Initial Developer of the Covered Software is
           </plugin>
         </plugins>
       </build>
-    </profile>    
+    </profile>
   </profiles>
-
   <repositories>
     <repository>
       <id>terracotta-snapshots</id>
@@ -811,5 +749,4 @@ The Initial Developer of the Covered Software is
       <url>http://www.terracotta.org/download/reflector/releases</url>
     </pluginRepository>
   </pluginRepositories>
-
 </project>
