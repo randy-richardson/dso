@@ -1,29 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-root</artifactId>
-    <version>4.3.0-SNAPSHOT</version>
+    <version>4.3.0.2.37</version>
     <relativePath>..</relativePath>
   </parent>
-
   <artifactId>build-parent</artifactId>
   <name>build-parent</name>
   <packaging>pom</packaging>
-
   <licenses>
     <license>
       <name>Terracotta Public License</name>
       <url>http://www.terracotta.org/legal/terracotta-public-license</url>
     </license>
   </licenses>
-
   <properties>
     <group>unit</group>
-
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <core-storage-api.version>1.3</core-storage-api.version>
     <heap-core-storage.version>1.1.2</heap-core-storage.version>
@@ -34,16 +27,15 @@
     <search.version>1.4.13</search.version>
     <security-version>2.0.16</security-version>
     <management-core-version>2.0.12</management-core-version>
-    <management.apps.parent.version>1.4.0-SNAPSHOT</management.apps.parent.version>
-    <session-management.version>${project.version}</session-management.version>
-    <wan-management.version>4.3.0-SNAPSHOT</wan-management.version>
+    <management.apps.parent.version>1.4.0.2.40</management.apps.parent.version>
+    <session-management.version>4.3.0.2.21</session-management.version>
+    <wan-management.version>4.3.0.2.19</wan-management.version>
     <tc-messaging.version>1.0.0</tc-messaging.version>
     <terracotta-license.version>1.1.2</terracotta-license.version>
-    <toolkit-api.version>2.7</toolkit-api.version> 
+    <toolkit-api.version>2.7</toolkit-api.version>
     <toolkit-api-internal.version>1.17</toolkit-api-internal.version>
-    <!-- version of ehcache embedded inside toolkit -->
-    <ehcache.version>2.10.0-SNAPSHOT</ehcache.version>
-    <ehcache-ee.version>2.10.0-SNAPSHOT</ehcache-ee.version>
+    <ehcache.version>2.10.0-15</ehcache.version>
+    <ehcache-ee.version>2.10.0.2.18</ehcache-ee.version>
     <tcconfig.version>9.1</tcconfig.version>
     <linked-child-process.version>1.0.8</linked-child-process.version>
     <gmaven-plugin.version>1.4</gmaven-plugin.version>
@@ -55,7 +47,6 @@
     <listName>checkshort.txt</listName>
     <localMavenRepository>${user.home}/.m2/repository</localMavenRepository>
     <checkstyle-suppressions-file>${basedir}/../checkstyle/suppressions.xml</checkstyle-suppressions-file>
-
     <tc.tests.configuration.properties.file>${project.build.testOutputDirectory}/tc.tests.properties</tc.tests.configuration.properties.file>
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
@@ -84,9 +75,8 @@
       -Dcom.tc.properties=${tc.system.tests.properties}
       -Dtc.install-root.ignore-checks=true
       -Dcom.sun.management.jmxremote 
-      ${surefire.additional-jvm-args}</surefire.argLine>   
+      ${surefire.additional-jvm-args}</surefire.argLine>
   </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -173,7 +163,7 @@
             <groupId>stax</groupId>
             <artifactId>stax-api</artifactId>
           </exclusion>
-        </exclusions>        
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.xmlbeans</groupId>
@@ -189,7 +179,6 @@
         <groupId>org.eclipse.jetty.aggregate</groupId>
         <artifactId>jetty-all-server</artifactId>
         <version>${jetty.version}</version>
-        <!-- we exclude all flagged jars so we can switch them for Glassfish -->
         <exclusions>
           <exclusion>
             <groupId>org.eclipse.jetty.orbit</groupId>
@@ -201,13 +190,13 @@
           </exclusion>
           <exclusion>
             <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.annotation</artifactId>       
+            <artifactId>javax.annotation</artifactId>
           </exclusion>
           <exclusion>
             <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.mail.glassfish</artifactId>        
+            <artifactId>javax.mail.glassfish</artifactId>
           </exclusion>
-        </exclusions>        
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>jline</groupId>
@@ -218,7 +207,7 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
           </exclusion>
-        </exclusions>        
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.h2database</groupId>
@@ -239,7 +228,7 @@
         <groupId>org.terracotta</groupId>
         <artifactId>management-core</artifactId>
         <version>${management-core-version}</version>
-      </dependency>      
+      </dependency>
       <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>management-core-resources</artifactId>
@@ -268,7 +257,7 @@
           <exclusion>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-          </exclusion>          
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -301,8 +290,6 @@
         <artifactId>jackson-databind</artifactId>
         <version>2.3.3</version>
       </dependency>
-
-      <!-- Glassfish substitutes -->
       <dependency>
         <groupId>gf-3122</groupId>
         <artifactId>gf.javax.servlet-api</artifactId>
@@ -312,7 +299,7 @@
         <groupId>gf-3122</groupId>
         <artifactId>gf.javax.security.auth.message</artifactId>
         <version>1.0</version>
-      </dependency>  
+      </dependency>
       <dependency>
         <groupId>gf-3122</groupId>
         <artifactId>gf.javax.annotation</artifactId>
@@ -323,8 +310,6 @@
         <artifactId>gf.javax.mail</artifactId>
         <version>1.4.4</version>
       </dependency>
-
-      <!-- Dependencies for core Terracotta artifacts -->
       <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>tcconfig</artifactId>
@@ -340,8 +325,6 @@
         <artifactId>tcstats</artifactId>
         <version>${tcconfig.version}</version>
       </dependency>
-
-      <!-- tests -->
       <dependency>
         <groupId>com.thoughtworks.xstream</groupId>
         <artifactId>xstream</artifactId>
@@ -379,7 +362,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -406,9 +388,8 @@
       <artifactId>test-listeners</artifactId>
       <version>1.0.1</version>
       <scope>test</scope>
-    </dependency>         
+    </dependency>
   </dependencies>
-
   <build>
     <resources>
       <resource>
@@ -420,7 +401,6 @@
         <filtering>true</filtering>
       </resource>
     </resources>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -435,9 +415,8 @@
                 <goal>execute</goal>
               </goals>
               <configuration>
-                <source><![CDATA[
-                  Properties outputProperties = new Properties()
-                  project.properties.each { key, value ->
+                <source>Properties outputProperties = new Properties()
+                  project.properties.each { key, value -&gt;
                     if (key =~ /^tc\.tests\./) {
                       outputProperties.setProperty(key, value)
                     }
@@ -453,16 +432,12 @@
                   }
                   finally {
                     outputStream.close()
-                  }
-                  ]]></source>
+                  }</source>
               </configuration>
             </execution>
           </executions>
         </plugin>
         <plugin>
-          <!-- we include the surefire plugin to get a known version and to always tell
-               it to skip tests. The toolkit resolver plugin is the actual thing that runs
-               tests -->
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire.version}</version>
@@ -470,7 +445,6 @@
             <skipTests>true</skipTests>
           </configuration>
         </plugin>
-
         <plugin>
           <groupId>org.terracotta</groupId>
           <artifactId>maven-forge-plugin</artifactId>
@@ -488,7 +462,7 @@
               <configuration>
                 <rootPath>${basedir}/..</rootPath>
               </configuration>
-            </execution>          
+            </execution>
             <execution>
               <id>default-test</id>
               <phase>integration-test</phase>
@@ -501,13 +475,13 @@
                     <name>listener</name>
                     <value>net.sf.ehcache.SystemExitListener</value>
                   </property>
-                </properties>              
+                </properties>
                 <failIfNoTests>false</failIfNoTests>
                 <printSummary>true</printSummary>
                 <reportFormat>plain</reportFormat>
                 <includes>
                   <include>**/*Test.java</include>
-                </includes>         
+                </includes>
                 <skipTests>${should_skip_tests}</skipTests>
                 <forkMode>always</forkMode>
                 <forkedProcessTimeoutInSeconds>${tc.tests.info.junit-test-timeout-inseconds}</forkedProcessTimeoutInSeconds>
@@ -518,7 +492,7 @@
               </configuration>
             </execution>
           </executions>
-        </plugin>        
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
@@ -559,8 +533,6 @@
             </execution>
           </executions>
         </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings
-          only. It has no influence on the Maven build itself. -->
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
@@ -571,9 +543,7 @@
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>com.goldin.plugins</groupId>
-                    <artifactId>
-                      maven-properties-plugin
-                    </artifactId>
+                    <artifactId>maven-properties-plugin</artifactId>
                     <versionRange>[0.2.2,)</versionRange>
                     <goals>
                       <goal>set-properties</goal>
@@ -585,12 +555,8 @@
                 </pluginExecution>
                 <pluginExecution>
                   <pluginExecutionFilter>
-                    <groupId>
-                      org.apache.maven.plugins
-                    </groupId>
-                    <artifactId>
-                      maven-dependency-plugin
-                    </artifactId>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
                     <versionRange>[2.1,)</versionRange>
                     <goals>
                       <goal>unpack-dependencies</goal>
@@ -617,9 +583,7 @@
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>
-                      exec-maven-plugin
-                    </artifactId>
+                    <artifactId>exec-maven-plugin</artifactId>
                     <versionRange>[1.2,)</versionRange>
                     <goals>
                       <goal>exec</goal>
@@ -632,9 +596,7 @@
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.terracotta</groupId>
-                    <artifactId>
-                      maven-forge-plugin
-                    </artifactId>
+                    <artifactId>maven-forge-plugin</artifactId>
                     <versionRange>[1.0.2,)</versionRange>
                     <goals>
                       <goal>buildinfo</goal>
@@ -647,9 +609,7 @@
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.terracotta</groupId>
-                    <artifactId>
-                      maven-forge-plugin
-                    </artifactId>
+                    <artifactId>maven-forge-plugin</artifactId>
                     <versionRange>[1.0.2,)</versionRange>
                     <goals>
                       <goal>manifest</goal>
@@ -658,13 +618,11 @@
                   <action>
                     <ignore/>
                   </action>
-                </pluginExecution>                
+                </pluginExecution>
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>
-                      build-helper-maven-plugin
-                    </artifactId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
                     <versionRange>[1.5,)</versionRange>
                     <goals>
                       <goal>add-source</goal>
@@ -673,26 +631,24 @@
                   <action>
                     <ignore/>
                   </action>
-                </pluginExecution>                
+                </pluginExecution>
               </pluginExecutions>
             </lifecycleMappingMetadata>
           </configuration>
-        </plugin>       
+        </plugin>
       </plugins>
     </pluginManagement>
-
     <plugins>
       <plugin>
         <groupId>org.terracotta</groupId>
         <artifactId>maven-forge-plugin</artifactId>
-      </plugin>  
+      </plugin>
       <plugin>
         <groupId>org.codehaus.gmaven</groupId>
         <artifactId>gmaven-plugin</artifactId>
-      </plugin>      
+      </plugin>
     </plugins>
   </build>
-
   <profiles>
     <profile>
       <id>system-tests</id>
@@ -700,7 +656,6 @@
         <should_skip_tests>false</should_skip_tests>
       </properties>
     </profile>
-
     <profile>
       <id>client-jvm</id>
       <properties>
@@ -713,7 +668,6 @@
         <surefire.jvm.mode>-server</surefire.jvm.mode>
       </properties>
     </profile>
-
     <profile>
       <id>workaround-windows</id>
       <activation>
@@ -725,12 +679,11 @@
         <localMavenRepository>C:\DOCUME~1\${user.name}\.m2\repository</localMavenRepository>
       </properties>
     </profile>
-
     <profile>
       <id>check-short</id>
       <properties>
         <should_skip_tests>false</should_skip_tests>
-      </properties>     
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -761,10 +714,9 @@
               <failIfNoTests>false</failIfNoTests>
             </configuration>
           </plugin>
-        </plugins>      
+        </plugins>
       </build>
-    </profile>   
-
+    </profile>
     <profile>
       <id>check</id>
       <build>
@@ -781,8 +733,7 @@
                   <goal>execute</goal>
                 </goals>
                 <configuration>
-                  <source>
-                    def target = project.properties['target']
+                  <source>def target = project.properties['target']
                     if (target == null) fail("-Dtarget needs to be set for this profile")
                     def targetSet = new HashSet(Arrays.asList(target.split(",")))
                     def projectGroups = new HashSet()
@@ -791,17 +742,15 @@
                     }
                     targetSet.retainAll(projectGroups)
                     def shouldSkipTest = targetSet.size() == 0
-                    project.properties.should_skip_tests = String.valueOf(shouldSkipTest)
-                  </source>
+                    project.properties.should_skip_tests = String.valueOf(shouldSkipTest)</source>
                 </configuration>
               </execution>
             </executions>
-          </plugin>         
-        </plugins>          
+          </plugin>
+        </plugins>
       </build>
     </profile>
   </profiles>
-
   <repositories>
     <repository>
       <id>terracotta-snapshots</id>
@@ -842,7 +791,7 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </repository>      
+    </repository>
   </repositories>
   <pluginRepositories>
     <pluginRepository>
@@ -862,6 +811,6 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </pluginRepository>    
+    </pluginRepository>
   </pluginRepositories>
 </project>
