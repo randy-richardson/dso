@@ -1,7 +1,7 @@
+/target
 /.classpath
 /.project
+/nb-configuration.xml
 /.settings
-/target
-/devwork
 /*.iml
 /.idea
