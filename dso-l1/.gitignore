@@ -1,6 +1,5 @@
 /.classpath
-/test.patch
-/race2.patch
 /.project
-/target
 /.settings
+/target
+/*.iml

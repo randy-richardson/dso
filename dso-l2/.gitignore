@@ -1,5 +1,6 @@
-/nbactions-devmode.xml
 /.classpath
 /.project
 /target
 /.settings
+/*.iml
+/nbactions-devmode.xml
