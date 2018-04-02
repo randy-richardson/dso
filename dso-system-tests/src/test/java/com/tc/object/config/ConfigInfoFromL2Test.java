@@ -16,7 +16,6 @@
  */
 package com.tc.object.config;
 
-import com.tc.config.schema.context.ConfigContext;
 import org.apache.commons.io.IOUtils;
 import org.apache.xmlbeans.XmlObject;
 

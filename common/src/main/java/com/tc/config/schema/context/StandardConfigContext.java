@@ -16,19 +16,15 @@
  */
 package com.tc.config.schema.context;
 
+import org.apache.xmlbeans.XmlException;
+import org.apache.xmlbeans.XmlObject;
+
 import com.tc.config.schema.IllegalConfigurationChangeHandler;
 import com.tc.config.schema.defaults.DefaultValueProvider;
 import com.tc.config.schema.dynamic.ConfigItem;
 import com.tc.config.schema.listen.ConfigurationChangeListener;
 import com.tc.config.schema.repository.BeanRepository;
 import com.tc.util.Assert;
-import org.apache.xmlbeans.XmlException;
-import org.apache.xmlbeans.XmlObject;
-
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.HashSet;
 
 /**
  * Binds together a {@link BeanRepository} and a {@link DefaultValueProvider}.
@@ -78,7 +74,7 @@ public class StandardConfigContext implements ConfigContext {
 
   @Override
   public XmlObject bean() {
-    return beanRepository.bean();
+    return this.beanRepository.bean();
   }
 
   @Override
