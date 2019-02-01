@@ -1,45 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
-The contents of this file are subject to the Terracotta Public License Version
-2.0 (the "License"); You may not use this file except in compliance with the
-License. You may obtain a copy of the License at 
-
-     http://terracotta.org/legal/terracotta-public-license.
-
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
-the specific language governing rights and limitations under the License.
-
-The Covered Software is Terracotta Platform.
-
-The Initial Developer of the Covered Software is 
-     Terracotta, Inc., a Software AG company
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-root</artifactId>
-    <version>4.3.6-SNAPSHOT</version>
+    <version>4.3.6.5.1</version>
     <relativePath>..</relativePath>
   </parent>
-
   <artifactId>build-parent</artifactId>
   <name>build-parent</name>
   <packaging>pom</packaging>
-
   <licenses>
     <license>
       <name>Terracotta Public License</name>
       <url>http://www.terracotta.org/legal/terracotta-public-license</url>
     </license>
   </licenses>
-
   <properties>
     <group>unit</group>
-
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <core-storage-api.version>1.3.2</core-storage-api.version>
     <heap-core-storage.version>1.1.2</heap-core-storage.version>
@@ -50,13 +27,12 @@ The Initial Developer of the Covered Software is
     <search.version>1.5.7</search.version>
     <shiro.version>1.4.0</shiro.version>
     <management-core-version>2.1.8</management-core-version>
-    <session-management.version>${project.version}</session-management.version>
+    <session-management.version>4.3.6.5.1</session-management.version>
     <tc-messaging.version>1.1.2</tc-messaging.version>
     <terracotta-license.version>1.1.5</terracotta-license.version>
-    <toolkit-api.version>2.7</toolkit-api.version> 
+    <toolkit-api.version>2.7</toolkit-api.version>
     <toolkit-api-internal.version>1.17</toolkit-api-internal.version>
-    <!-- version of ehcache embedded inside toolkit -->
-    <ehcache.version>2.10.6-SNAPSHOT</ehcache.version>
+    <ehcache.version>2.10.6.5.1</ehcache.version>
     <tcconfig.version>9.3</tcconfig.version>
     <linked-child-process.version>1.0.12</linked-child-process.version>
     <gmaven-plugin.version>1.4</gmaven-plugin.version>
@@ -68,7 +44,6 @@ The Initial Developer of the Covered Software is
     <listName>checkshort.txt</listName>
     <localMavenRepository>${user.home}/.m2/repository</localMavenRepository>
     <checkstyle-suppressions-file>${basedir}/../checkstyle/suppressions.xml</checkstyle-suppressions-file>
-
     <tc.tests.configuration.properties.file>${project.build.testOutputDirectory}/tc.tests.properties</tc.tests.configuration.properties.file>
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
@@ -97,9 +72,8 @@ The Initial Developer of the Covered Software is
       -Dcom.tc.properties=${tc.system.tests.properties}
       -Dtc.install-root.ignore-checks=true
       -Dcom.sun.management.jmxremote 
-      ${surefire.additional-jvm-args}</surefire.argLine>   
+      ${surefire.additional-jvm-args}</surefire.argLine>
   </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -181,7 +155,7 @@ The Initial Developer of the Covered Software is
             <groupId>stax</groupId>
             <artifactId>stax-api</artifactId>
           </exclusion>
-        </exclusions>        
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.xmlbeans</groupId>
@@ -194,15 +168,14 @@ The Initial Developer of the Covered Software is
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-security</artifactId>
-      <version>${jetty.version}</version>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-security</artifactId>
+        <version>${jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
         <version>${jetty.version}</version>
-        <!-- we exclude all flagged jars so we can switch them for Glassfish -->
         <exclusions>
           <exclusion>
             <groupId>javax.servlet</groupId>
@@ -234,7 +207,7 @@ The Initial Developer of the Covered Software is
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
           </exclusion>
-        </exclusions>        
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.h2database</groupId>
@@ -255,7 +228,7 @@ The Initial Developer of the Covered Software is
         <groupId>org.terracotta</groupId>
         <artifactId>management-core</artifactId>
         <version>${management-core-version}</version>
-      </dependency>      
+      </dependency>
       <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>management-core-resources</artifactId>
@@ -286,8 +259,6 @@ The Initial Developer of the Covered Software is
         <artifactId>hsqldb</artifactId>
         <version>1.7.2.2</version>
       </dependency>
-
-      <!-- Glassfish substitutes -->
       <dependency>
         <groupId>gf-40</groupId>
         <artifactId>gf.javax.servlet-api</artifactId>
@@ -308,8 +279,6 @@ The Initial Developer of the Covered Software is
         <artifactId>gf.javax.mail</artifactId>
         <version>1.4.4</version>
       </dependency>
-
-      <!-- Dependencies for core Terracotta artifacts -->
       <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>tcconfig</artifactId>
@@ -325,8 +294,6 @@ The Initial Developer of the Covered Software is
         <artifactId>tcstats</artifactId>
         <version>${tcconfig.version}</version>
       </dependency>
-
-      <!-- tests -->
       <dependency>
         <groupId>com.thoughtworks.xstream</groupId>
         <artifactId>xstream</artifactId>
@@ -364,7 +331,6 @@ The Initial Developer of the Covered Software is
       </dependency>
     </dependencies>
   </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -391,9 +357,8 @@ The Initial Developer of the Covered Software is
       <artifactId>test-listeners</artifactId>
       <version>1.0.1</version>
       <scope>test</scope>
-    </dependency>         
+    </dependency>
   </dependencies>
-
   <build>
     <resources>
       <resource>
@@ -405,7 +370,6 @@ The Initial Developer of the Covered Software is
         <filtering>true</filtering>
       </resource>
     </resources>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -420,9 +384,9 @@ The Initial Developer of the Covered Software is
                 <goal>execute</goal>
               </goals>
               <configuration>
-                <source><![CDATA[
+                <source>
                   Properties outputProperties = new Properties()
-                  project.properties.each { key, value ->
+                  project.properties.each { key, value -&gt;
                     if (key =~ /^tc\.tests\./) {
                       outputProperties.setProperty(key, value)
                     }
@@ -439,15 +403,12 @@ The Initial Developer of the Covered Software is
                   finally {
                     outputStream.close()
                   }
-                  ]]></source>
+                  </source>
               </configuration>
             </execution>
           </executions>
         </plugin>
         <plugin>
-          <!-- we include the surefire plugin to get a known version and to always tell
-               it to skip tests. The toolkit resolver plugin is the actual thing that runs
-               tests -->
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire.version}</version>
@@ -455,7 +416,6 @@ The Initial Developer of the Covered Software is
             <skipTests>true</skipTests>
           </configuration>
         </plugin>
-
         <plugin>
           <groupId>org.terracotta</groupId>
           <artifactId>maven-forge-plugin</artifactId>
@@ -473,7 +433,7 @@ The Initial Developer of the Covered Software is
               <configuration>
                 <rootPath>${basedir}/..</rootPath>
               </configuration>
-            </execution>          
+            </execution>
             <execution>
               <id>default-test</id>
               <phase>integration-test</phase>
@@ -486,13 +446,13 @@ The Initial Developer of the Covered Software is
                     <name>listener</name>
                     <value>net.sf.ehcache.SystemExitListener</value>
                   </property>
-                </properties>              
+                </properties>
                 <failIfNoTests>false</failIfNoTests>
                 <printSummary>true</printSummary>
                 <reportFormat>plain</reportFormat>
                 <includes>
                   <include>**/*Test.java</include>
-                </includes>         
+                </includes>
                 <skipTests>${should_skip_tests}</skipTests>
                 <forkMode>always</forkMode>
                 <forkedProcessTimeoutInSeconds>${tc.tests.info.junit-test-timeout-inseconds}</forkedProcessTimeoutInSeconds>
@@ -503,7 +463,7 @@ The Initial Developer of the Covered Software is
               </configuration>
             </execution>
           </executions>
-        </plugin>        
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
@@ -544,8 +504,6 @@ The Initial Developer of the Covered Software is
             </execution>
           </executions>
         </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings
-          only. It has no influence on the Maven build itself. -->
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
@@ -643,7 +601,7 @@ The Initial Developer of the Covered Software is
                   <action>
                     <ignore/>
                   </action>
-                </pluginExecution>                
+                </pluginExecution>
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
@@ -658,26 +616,24 @@ The Initial Developer of the Covered Software is
                   <action>
                     <ignore/>
                   </action>
-                </pluginExecution>                
+                </pluginExecution>
               </pluginExecutions>
             </lifecycleMappingMetadata>
           </configuration>
-        </plugin>       
+        </plugin>
       </plugins>
     </pluginManagement>
-
     <plugins>
       <plugin>
         <groupId>org.terracotta</groupId>
         <artifactId>maven-forge-plugin</artifactId>
-      </plugin>  
+      </plugin>
       <plugin>
         <groupId>org.codehaus.gmaven</groupId>
         <artifactId>gmaven-plugin</artifactId>
-      </plugin>      
+      </plugin>
     </plugins>
   </build>
-
   <profiles>
     <profile>
       <id>system-tests</id>
@@ -685,7 +641,6 @@ The Initial Developer of the Covered Software is
         <should_skip_tests>false</should_skip_tests>
       </properties>
     </profile>
-
     <profile>
       <id>client-jvm</id>
       <properties>
@@ -698,7 +653,6 @@ The Initial Developer of the Covered Software is
         <surefire.jvm.mode>-server</surefire.jvm.mode>
       </properties>
     </profile>
-
     <profile>
       <id>workaround-windows</id>
       <activation>
@@ -710,12 +664,11 @@ The Initial Developer of the Covered Software is
         <localMavenRepository>C:\DOCUME~1\${user.name}\.m2\repository</localMavenRepository>
       </properties>
     </profile>
-
     <profile>
       <id>check-short</id>
       <properties>
         <should_skip_tests>false</should_skip_tests>
-      </properties>     
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -746,10 +699,9 @@ The Initial Developer of the Covered Software is
               <failIfNoTests>false</failIfNoTests>
             </configuration>
           </plugin>
-        </plugins>      
+        </plugins>
       </build>
-    </profile>   
-
+    </profile>
     <profile>
       <id>check</id>
       <build>
@@ -781,12 +733,11 @@ The Initial Developer of the Covered Software is
                 </configuration>
               </execution>
             </executions>
-          </plugin>         
-        </plugins>          
+          </plugin>
+        </plugins>
       </build>
     </profile>
   </profiles>
-
   <repositories>
     <repository>
       <id>terracotta-snapshots</id>
@@ -827,7 +778,7 @@ The Initial Developer of the Covered Software is
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </repository>      
+    </repository>
   </repositories>
   <pluginRepositories>
     <pluginRepository>
@@ -847,6 +798,6 @@ The Initial Developer of the Covered Software is
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </pluginRepository>    
+    </pluginRepository>
   </pluginRepositories>
 </project>
