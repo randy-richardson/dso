@@ -72,6 +72,8 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
 
   @Override
   public void contextInitialized(ServletContextEvent sce) {
+    LOG.info("Loading TSA agent version \"4.3.6.2.3 TAB-7683 patch\"");
+
     try {
       ServiceLocator serviceLocator = new ServiceLocator();
 
