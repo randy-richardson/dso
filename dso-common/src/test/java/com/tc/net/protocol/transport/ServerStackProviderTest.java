@@ -35,6 +35,7 @@ import com.tc.util.Assert;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -88,24 +89,30 @@ public class ServerStackProviderTest extends TCTestCase {
   }
 
   public void testAttachAlreadyConnectedTransport() throws Exception {
-    NetworkStackHarness harness = mock(NetworkStackHarness.class);
-    NetworkStackHarnessFactory harnessFactory = when(mock(NetworkStackHarnessFactory.class).createServerHarness(
-        any(ServerMessageChannelFactory.class), any(MessageTransport.class), any(MessageTransportListener[].class))).thenReturn(harness).getMock();
+    NetworkStackHarness mockHarness = mock(NetworkStackHarness.class);
+    NetworkStackHarnessFactory mockHarnessFactory = mock(NetworkStackHarnessFactory.class);
+    when(mockHarnessFactory.createServerHarness(
+        any(ServerMessageChannelFactory.class), any(MessageTransport.class), any(MessageTransportListener[].class))).thenReturn(mockHarness);
     ServerMessageChannelFactory serverMessageChannelFactory = mock(ServerMessageChannelFactory.class);
     MessageTransportFactory messageTransportFactory = mock(MessageTransportFactory.class);
+    MessageTransport mockMessageTransport = mock(MessageTransport.class);
     DefaultConnectionIdFactory connectionIdFactory = new DefaultConnectionIdFactory();
-    ServerStackProvider serverStackProvider = new ServerStackProvider(Collections.emptySet(), harnessFactory, serverMessageChannelFactory, messageTransportFactory,
+    ServerStackProvider serverStackProvider = new ServerStackProvider(Collections.emptySet(), mockHarnessFactory, serverMessageChannelFactory, messageTransportFactory,
         spy(new TransportMessageFactoryImpl()), connectionIdFactory, new NullConnectionPolicy(), mock(WireProtocolAdaptorFactory.class), new ReentrantLock());
 
     // This is the next connection ID the connectionIDFactory is going to assign out, need to save it first before it
     // gets changed by the connectionIDFactory assigning it out.
     ConnectionID nextConnectionID = new ConnectionID("foo", connectionIdFactory.getCurrentConnectionID(), connectionIdFactory.getServerID());
 
+    when(messageTransportFactory.createNewTransport(any(ConnectionID.class), any(TCConnection.class),
+        any(TransportHandshakeErrorHandler.class),
+        any(TransportHandshakeMessageFactory.class), any(List.class))).thenReturn(mockMessageTransport);
+
     // Attach once for the normal case.
     serverStackProvider.attachNewConnection(new ConnectionID("foo", -1), new TestTCConnection());
 
     // Now make the attach fail due to IllegalReconnectException, we should force a reconnection rejected exception now
-    when(harness.attachNewConnection(any(TCConnection.class))).thenThrow(new IllegalReconnectException());
+    when(mockHarness.attachNewConnection(any(TCConnection.class))).thenThrow(new IllegalReconnectException());
     try {
       serverStackProvider.attachNewConnection(nextConnectionID, new TestTCConnection());
       fail("Should have gotten a reconnection rejected when attaching a new TCConnection results in an IllegalReconnectException");

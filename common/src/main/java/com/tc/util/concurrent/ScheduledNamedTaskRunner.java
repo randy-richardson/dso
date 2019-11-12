@@ -124,7 +124,8 @@ public class ScheduledNamedTaskRunner extends ScheduledThreadPoolExecutor implem
 
   /**
    * {@inheritDoc}
-   * <p/>Since {@link FutureTask} maintains exceptions internally, and {@link Thread.UncaughtExceptionHandler} is not called,
+   * <br>
+   * Since {@link FutureTask} maintains exceptions internally, and {@link Thread.UncaughtExceptionHandler} is not called,
    * we need to manually invoke the handler.
    */
   @Override

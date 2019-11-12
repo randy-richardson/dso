@@ -493,7 +493,7 @@ public interface TCPropertiesConsts {
    * <code>
    * Section : Common Stage Monitoring properties for both L1 and L2
    * Description : Stage monitoring can be enabled or disabled for debugging.
-   * stage.monitor.enabled                : <true/false>    - Enable or Disable Monitoring
+   * stage.monitor.enabled                : &lt;true/false&gt;    - Enable or Disable Monitoring
    * stage.monitor.delay                  : long            - frequency in milliseconds
    * bytebuffer.pooling.enabled           : Enable/disable tc byte buffer pooling
    * bytebuffer.common.pool.maxcount      : Max size of pool for tc byte buffer
@@ -513,8 +513,8 @@ public interface TCPropertiesConsts {
    * <code>
    * Section : Common property for TC Management MBean
    * Description : TC Management MBeans can be enabled/disabled
-   * mbeans.enabled : <true/false> - All mbeans enabled/disabled test.mbeans.enabled : <true/false> - Test mode mbeans
-   * enabled/disabled
+   * mbeans.enabled : &lt;true/false&gt; - All mbeans enabled/disabled test.mbeans.enabled : &lt;true/false&gt; - Test
+   * mode mbeans enabled/disabled
    * </code>
    ********************************************************************************************************************/
   public static final String TC_MANAGEMENT_MBEANS_ENABLED                                   = "tc.management.mbeans.enabled";
@@ -660,7 +660,7 @@ public interface TCPropertiesConsts {
 
   /*********************************************************************************************************************
    * <code>
-   *  Section : HealthChecker { server->client, server->server (HA), client->server }
+   *  Section : HealthChecker { server-&gt;client, server-&gt;server (HA), client-&gt;server }
    *  ping.enabled         - If true, healthchecker is enabled.
    *  ping.idletime        - Connection idletime (in milliseconds), after which healthchecker
    *                         starts its ping test.
@@ -910,7 +910,7 @@ public interface TCPropertiesConsts {
   /*********************************************************************************************************************
    * <code>
    * Section :  Version Settings
-   * version.compatibility.check - check version compatibility for client<->server and server<-> connections
+   * version.compatibility.check - check version compatibility for client&lt;-&gt;server and server&lt;-&gt;connections
    * </code>
    ********************************************************************************************************************/
   public static final String VERSION_COMPATIBILITY_CHECK                                    = "version.compatibility.check";

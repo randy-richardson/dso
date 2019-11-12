@@ -53,7 +53,7 @@ public class BytemanConfig {
 
   /**
    * Add the Byteman configuration to the jvmArgs.
-   * <p/>
+   * <br>
    * Note: This is a noop if a script is not configured.
    * 
    * @param jvmArgs the list to add the byteman configuration to

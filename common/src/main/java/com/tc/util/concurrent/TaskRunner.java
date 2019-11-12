@@ -25,7 +25,8 @@ public interface TaskRunner {
   /**
    * Constructs an unnamed timer to schedule tasks. Unlike {@link java.util.Timer},
    * all timers share a common thread pool, maintained by this {@link TaskRunner}.
-   * <p/>Attempting to call this method after shutting down the task runner throws {@link IllegalStateException}.
+   * <br>
+   * Attempting to call this method after shutting down the task runner throws {@link IllegalStateException}.
    *
    * @return a new unnamed {@link Timer} instance
    */
@@ -34,7 +35,8 @@ public interface TaskRunner {
   /**
    * Constructs a named timer to schedule tasks. Unlike {@link java.util.Timer},
    * all timers share a common thread pool, maintained by this {@link TaskRunner}.
-   * <p/>Attempting to call this method after shutting down the task runner throws {@link IllegalStateException}.
+   * <br>
+   * Attempting to call this method after shutting down the task runner throws {@link IllegalStateException}.
    *
    * @return a new named {@link Timer} instance
    */
@@ -50,8 +52,8 @@ public interface TaskRunner {
   /**
    * Attempts to stop all actively executing tasks and halts the
    * processing of waiting tasks.
-   * <p/>
-   * <p>There are no guarantees beyond best-effort attempts to stop
+   * <br>
+   * There are no guarantees beyond best-effort attempts to stop
    * processing actively executing tasks.  For example, typical
    * implementations will cancel via {@link Thread#interrupt}, so any
    * task that fails to respond to interrupts may never terminate.

@@ -31,7 +31,7 @@ import com.terracotta.toolkit.type.IsolatedClusteredObjectLookup;
 import com.terracotta.toolkit.type.IsolatedToolkitTypeFactory;
 
 /**
- * An implementation of {@link ToolkitSortedSetFactory}
+ * An implementation of {@link ToolkitObjectFactory}
  */
 public class ToolkitSortedSetFactoryImpl extends
     AbstractPrimaryToolkitObjectFactory<ToolkitSortedSetImpl, ToolkitSortedMapImpl> {

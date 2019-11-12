@@ -49,7 +49,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -60,6 +60,8 @@ import static org.mockito.Mockito.when;
  * @author Ludovic Orban
  */
 public class RemoteManagementImplTest {
+
+  private static final ManagementRequestID MANAGEMENT_REQUEST_ID = new ManagementRequestID(0L);
 
   @Test
   public void testGetAllClientIDs() throws Exception {
@@ -89,6 +91,7 @@ public class RemoteManagementImplTest {
 
     ListRegisteredServicesMessage listRegisteredServicesMessage = mock(ListRegisteredServicesMessage.class);
     when(messageChannel.createMessage(TCMessageType.LIST_REGISTERED_SERVICES_MESSAGE)).thenReturn(listRegisteredServicesMessage);
+    when(listRegisteredServicesMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     doAnswer(new Answer() {
@@ -98,6 +101,7 @@ public class RemoteManagementImplTest {
         when(responseMessage.getRemoteCallDescriptors()).thenReturn(new HashSet<RemoteCallDescriptor>() {{
           add(remoteCallDescriptor);
         }});
+        when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
         ManagementResponseListener managementResponseListener = (ManagementResponseListener)invocation.getArguments()[1];
         managementResponseListener.onResponse(responseMessage);
@@ -124,6 +128,7 @@ public class RemoteManagementImplTest {
 
     ListRegisteredServicesMessage listRegisteredServicesMessage = mock(ListRegisteredServicesMessage.class);
     when(messageChannel.createMessage(TCMessageType.LIST_REGISTERED_SERVICES_MESSAGE)).thenReturn(listRegisteredServicesMessage);
+    when(listRegisteredServicesMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     remoteManagement.listRegisteredServices(clientID, 1, TimeUnit.MILLISECONDS);
     verify(serverManagementHandler, times(1)).registerResponseListener(any(ManagementRequestID.class), any(ManagementResponseListener.class));
@@ -142,6 +147,7 @@ public class RemoteManagementImplTest {
 
     ListRegisteredServicesMessage listRegisteredServicesMessage = mock(ListRegisteredServicesMessage.class);
     when(messageChannel.createMessage(TCMessageType.LIST_REGISTERED_SERVICES_MESSAGE)).thenReturn(listRegisteredServicesMessage);
+    when(listRegisteredServicesMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     Thread.currentThread().interrupt();
     try {
@@ -166,6 +172,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final String response = "this is a response";
@@ -175,7 +182,7 @@ public class RemoteManagementImplTest {
         InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
         ResponseHolder responseHolder = new ResponseHolder(response);
         when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-        when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+        when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
         ManagementResponseListener managementResponseListener = (ManagementResponseListener)invocation.getArguments()[1];
         managementResponseListener.onResponse(responseMessage);
@@ -203,6 +210,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final Exception response = new IllegalArgumentException("this is an error");
@@ -212,7 +220,7 @@ public class RemoteManagementImplTest {
         InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
         ResponseHolder responseHolder = new ResponseHolder(response);
         when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-        when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+        when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
         ManagementResponseListener managementResponseListener = (ManagementResponseListener)invocation.getArguments()[1];
         managementResponseListener.onResponse(responseMessage);
@@ -245,6 +253,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final Exception response = new IllegalArgumentException("this is an error");
@@ -254,7 +263,7 @@ public class RemoteManagementImplTest {
         InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
         ResponseHolder responseHolder = new ResponseHolder(response);
         when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-        when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+        when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
         ManagementResponseListener managementResponseListener = (ManagementResponseListener)invocation.getArguments()[1];
         managementResponseListener.onResponse(responseMessage);
@@ -288,6 +297,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final String response = "this is a response";
@@ -297,7 +307,7 @@ public class RemoteManagementImplTest {
         InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
         ResponseHolder responseHolder = new ResponseHolder(response);
         when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-        when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+        when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
         ManagementResponseListener managementResponseListener = (ManagementResponseListener)invocation.getArguments()[1];
         managementResponseListener.onResponse(responseMessage);
@@ -324,7 +334,7 @@ public class RemoteManagementImplTest {
     when(channelManager.getActiveChannel(clientID)).thenReturn(messageChannel);
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
-    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(999));
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
@@ -371,6 +381,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final String response = "this is a response";
@@ -401,7 +412,7 @@ public class RemoteManagementImplTest {
     InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
     ResponseHolder responseHolder = new ResponseHolder(response);
     when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-    when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+    when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
     managementResponseListenerAtomicReference.get().onResponse(responseMessage);
 
     // check that we get the response, and that cancelling after that has no effect
@@ -425,6 +436,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final String response = "this is a response";
@@ -455,7 +467,7 @@ public class RemoteManagementImplTest {
     InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
     ResponseHolder responseHolder = new ResponseHolder(response);
     when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-    when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+    when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
     managementResponseListenerAtomicReference.get().onResponse(responseMessage);
 
     // try to cancel, cannot be done as the response arrived
@@ -481,6 +493,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final String response = "this is a response";
@@ -516,7 +529,7 @@ public class RemoteManagementImplTest {
     InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
     ResponseHolder responseHolder = new ResponseHolder(response);
     when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-    when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+    when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
     managementResponseListenerAtomicReference.get().onResponse(responseMessage);
 
     // make sure get fails as the request was cancelled before the response arrived
@@ -543,6 +556,7 @@ public class RemoteManagementImplTest {
 
     InvokeRegisteredServiceMessage invokeRegisteredServiceMessage = mock(InvokeRegisteredServiceMessage.class);
     when(messageChannel.createMessage(TCMessageType.INVOKE_REGISTERED_SERVICE_MESSAGE)).thenReturn(invokeRegisteredServiceMessage);
+    when(invokeRegisteredServiceMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
     final RemoteCallDescriptor remoteCallDescriptor = new RemoteCallDescriptor(clientID, new ServiceID("myClass", 0), "myMethod", new String[0]);
     final String response = "this is a response";
@@ -552,7 +566,7 @@ public class RemoteManagementImplTest {
         InvokeRegisteredServiceResponseMessage responseMessage = mock(InvokeRegisteredServiceResponseMessage.class);
         ResponseHolder responseHolder = new ResponseHolder(response);
         when(responseMessage.getResponseHolder()).thenReturn(responseHolder);
-        when(responseMessage.getManagementRequestID()).thenReturn(new ManagementRequestID(0L));
+        when(responseMessage.getManagementRequestID()).thenReturn(MANAGEMENT_REQUEST_ID);
 
         ManagementResponseListener managementResponseListener = (ManagementResponseListener)invocation.getArguments()[1];
         managementResponseListener.onResponse(responseMessage);

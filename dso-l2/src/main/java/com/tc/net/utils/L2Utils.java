@@ -43,7 +43,7 @@ public class L2Utils {
 
   /**
    * Calculates the optimal number of worker threads for the apply stage.
-   * <p/>{@code l2.seda.apply.stage.threads} configuration property overrides this value.
+   * {@code l2.seda.apply.stage.threads} configuration property overrides this value.
    *
    * @param usesDisk if uses disk then less computational
    * @return the optimal number of threads for the apply stage
@@ -59,13 +59,13 @@ public class L2Utils {
 
   /**
    * Calculates the optimal number of worker threads based on the formula below:
-   * <p/> {@code N_threads = N_cpu * U_cpu * (1 + W/C)}, where
+   * <br> {@code N_threads = N_cpu * U_cpu * (1 + W/C)}, where
    * <ul>
    * <li>{@code N_cpu} - number of CPUs.</li>
-   * <li>{@code U_cpu} - target CPU utilization, 0 <= U_cpu <= 1.</li>
+   * <li>{@code U_cpu} - target CPU utilization, 0 &lt;= U_cpu &lt;= 1.</li>
    * <li>{@code W/C} - ratio of wait time to compute time. Empirical value.</li>
    * </ul>
-   * <p/> If the task is pure computational, that is {@code wait = 0},
+   * <br> If the task is pure computational, that is {@code wait = 0},
    * one more thread added to compensate any possible pauses (e.g. page fault).
    *
    * @return the optimal number of threads

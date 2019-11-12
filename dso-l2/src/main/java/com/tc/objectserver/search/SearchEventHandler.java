@@ -38,8 +38,6 @@ public class SearchEventHandler extends AbstractEventHandler {
 
   /**
    * {@inheritDoc}
-   * 
-   * @throws IOException
    */
   @Override
   public void handleEvent(EventContext context) throws EventHandlerException {

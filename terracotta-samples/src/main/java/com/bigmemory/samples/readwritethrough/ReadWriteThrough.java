@@ -23,9 +23,7 @@ import net.sf.ehcache.Element;
 import java.io.IOException;
 
 /**
- * <p/>
  * Read and Write through
- * <p/>
  */
 public class ReadWriteThrough {
   public static void main(String[] args) throws IOException {

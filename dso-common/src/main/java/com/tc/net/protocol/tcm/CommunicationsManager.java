@@ -50,8 +50,8 @@ public interface CommunicationsManager {
    * Creates a client message channel to the given host/port.
    * 
    * @param maxReconnectTries The number of times the channel will attempt to reestablish communications with the server
-   *        if the connection is lost. If n==0, the channel will not attempt to reestablish communications. If n>0, the
-   *        channel will attempt to reestablish communications n times. If n<0 the channel will always try to
+   *        if the connection is lost. If n==0, the channel will not attempt to reestablish communications. If n&gt;0,
+   *        the channel will attempt to reestablish communications n times. If n&lt;0 the channel will always try to
    *        reestablish communications.
    * @param hostname The hostname to connect to.
    * @param port The remote port to connect to.

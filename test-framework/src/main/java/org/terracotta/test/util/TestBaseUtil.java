@@ -47,11 +47,9 @@ import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -66,7 +64,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 public class TestBaseUtil {
-  private static final String  SEP                       = File.pathSeparator;
+  private static final String  SEP              = File.pathSeparator;
   private static final String  MAVEN_LOCAL_REPO = getMavenLocalRepo();
   private static final Pattern ARTIFACT_PATTERN = Pattern.compile("^\\s*([^:]+):([^:]+):([^:]+):([^:]+):(.+)$");
 
@@ -147,15 +145,16 @@ public class TestBaseUtil {
   }
 
   public static void setupVerboseGC(List<String> jvmArgs, File verboseGcOutputFile) {
-    if (Vm.isJRockit()) {
-      jvmArgs.add("-Xverbose:gcpause,gcreport");
-      jvmArgs.add("-Xverboselog:" + verboseGcOutputFile.getAbsolutePath());
-    } else if (Vm.isIBM()) {
+    if (Vm.isIBM()) {
       jvmArgs.add("-Xverbosegclog:" + verboseGcOutputFile.getAbsolutePath());
     } else {
-      jvmArgs.add("-Xloggc:" + verboseGcOutputFile.getAbsolutePath());
-      jvmArgs.add("-XX:+PrintGCTimeStamps");
-      jvmArgs.add("-XX:+PrintGCDetails");
+      if (Vm.isPreJava9()) {
+        jvmArgs.add("-Xloggc:" + verboseGcOutputFile.getAbsolutePath());
+        jvmArgs.add("-XX:+PrintGCTimeStamps");
+        jvmArgs.add("-XX:+PrintGCDetails");
+      } else {
+        jvmArgs.add("-Xlog:gc*:file=" + verboseGcOutputFile.getAbsolutePath());
+      }
     }
   }
 

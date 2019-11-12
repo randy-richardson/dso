@@ -55,27 +55,27 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * Eventual Mapping
  * <ul>
- * <li>key -> (value, valueoid)</li> (local ehcache)
- * <li>valueoid -> key</li> (local ehcache)
+ * <li>key -&gt; (value, valueoid) (local ehcache)</li>
+ * <li>valueoid -&gt; key (local ehcache)</li>
  * </ul>
- * <p/>
+ * <br>
  * Strong Mapping (if value is not literal)
  * <ul>
- * <li>key -> (value, lockid)</li> (local ehcache)
- * <li>valueoid -> key</li> (local ehcache)
- * <li>lockid -> List&lt;valueoid></li> (In memory) lockIDMappings
+ * <li>key -&gt; (value, lockid) (local ehcache)</li>
+ * <li>valueoid -&gt; key (local ehcache)</li>
+ * <li>lockid -&gt; List&lt;valueoid&gt; (In memory) lockIDMappings</li>
  * </ul>
- * <p/>
+ * <br>
  * Strong Mapping (if value is literal)
  * <ul>
- * <li>key -> (value, lockid)</li> (local ehcache)
- * <li>lockid -> List&lt;key></li> (In memory)
+ * <li>key -&gt; (value, lockid) (local ehcache)</li>
+ * <li>lockid -&gt; List&lt;key&gt; (In memory)</li>
  * </ul>
- * <p/>
+ * <br>
  * Bulk load
  * <ul>
- * <li>key -> (value, valueoid)</li>
- * <li>valueoid -> key</li>
+ * <li>key -&gt; (value, valueoid)</li>
+ * <li>valueoid -&gt; key</li>
  * </ul>
  */
 public final class ServerMapLocalCacheImpl implements ServerMapLocalCache {

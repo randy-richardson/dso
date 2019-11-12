@@ -27,10 +27,9 @@ import net.sf.ehcache.config.TerracottaConfiguration;
 import java.io.IOException;
 
 /**
- * <p>Size-based config using a programmatic configuration
- * <p/>
- * <p> Link to doc http://ehcache.org/documentation/configuration/bigmemory </p>
- *
+ * Size-based config using a programmatic configuration
+ * <br>
+ * Link to doc http://ehcache.org/documentation/configuration/bigmemory
  */
 public class ProgrammaticBasedBigMemoryConfiguration {
 

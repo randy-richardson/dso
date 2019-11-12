@@ -17,7 +17,7 @@
 package com.terracotta.toolkit.meta;
 
 /**
- * A callback for {@link ToolkitCacheWithMetadata}
+ * A callback for {@link MetaData}
  */
 public interface ToolkitCacheMetaDataCallback {
 

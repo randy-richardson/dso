@@ -115,7 +115,7 @@ public interface LockManager {
    * called with holders context and waiters.
    * 
    * @param cid - Id of the client requesting
-   * @param serverLockContext - Id of the client requesting
+   * @param serverLockContexts
    */
   void reestablishState(ClientID cid, Collection<ClientServerExchangeLockContext> serverLockContexts);
 

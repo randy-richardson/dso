@@ -228,6 +228,6 @@ public class ServerMapRequestManagerTest extends TestCase {
     when(managedObject.getManagedObjectState()).thenReturn(managedObjectState);
     serverMapRequestManager.sendResponseFor(mapID, managedObject);
     
-    verify(objectManager).lookupObjectsFor(eq(clientID), any(ServerMapRequestPrefetchObjectsContext.class));
+    verify(objectManager).lookupObjectsFor(eq(clientID), any(ObjectManagerResultsContext.class));
   }
 }

@@ -29,8 +29,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 /**
- * Contains components created during L2-connection time, in {@link DSOContextImpl}, that are needed by the
- * {@link DistributedObjectClient} eventually.
+ * Contains components created during L2-connection time that are needed by the {@link DistributedObjectClient} eventually.
  */
 public class PreparedComponentsFromL2Connection {
   private final L1ConfigurationSetupManager config;

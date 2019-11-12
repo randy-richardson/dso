@@ -25,6 +25,7 @@ import org.junit.Test;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.concurrent.TaskRunner;
 import com.terracotta.toolkit.util.ImmediateTimer;
+import org.mockito.hamcrest.MockitoHamcrest;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -97,7 +98,7 @@ public class LocalBufferedMapTest {
     bufferedMap.startBuffering();
     bufferedMap.put("foo", "bar", 1, 2, 3, 4);
     timer.runSaved();
-    verify(backend).drain((Map<String,BufferedOperation<String>>) argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
+    verify(backend).drain((Map<String,BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
   }
 
   @Test
@@ -112,7 +113,7 @@ public class LocalBufferedMapTest {
     bufferedMap.startBuffering();
     bufferedMap.remove("foo", 1);
     timer.runSaved();
-    verify(backend).drain((Map<String,BufferedOperation<String>>) argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.REMOVE, null , 1, -1, -1, -1))));
+    verify(backend).drain((Map<String,BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.REMOVE, null , 1, -1, -1, -1))));
   }
 
   @Test
@@ -137,7 +138,7 @@ public class LocalBufferedMapTest {
     bufferedMap.put("foo", "bar", 1, 2, 3, 4);
     bufferedMap.put("foo", "baz", 4, 3, 2, 1);
     timer.runSaved();
-    verify(backend).drain((Map<String,BufferedOperation<String>>) argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "baz" , 4, 3, 2, 1))));
+    verify(backend).drain((Map<String,BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "baz" , 4, 3, 2, 1))));
   }
 
   @Test
@@ -146,7 +147,7 @@ public class LocalBufferedMapTest {
     bufferedMap.put("foo", "bar", 1, 2, 3, 4);
     bufferedMap.remove("foo", 5);
     timer.runSaved();
-    verify(backend).drain((Map<String,BufferedOperation<String>>) argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.REMOVE, null , 5, -1, -1, -1))));
+    verify(backend).drain((Map<String,BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.REMOVE, null , 5, -1, -1, -1))));
   }
 
   @Test
@@ -155,7 +156,7 @@ public class LocalBufferedMapTest {
     bufferedMap.put("foo", "bar", 1, 2, 3, 4);
     bufferedMap.putIfAbsent("foo", "baz", 4, 3, 2, 1);
     timer.runSaved();
-    verify(backend).drain((Map<String, BufferedOperation<String>>)argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
+    verify(backend).drain((Map<String, BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
   }
 
   @Test
@@ -163,7 +164,7 @@ public class LocalBufferedMapTest {
     bufferedMap.startBuffering();
     bufferedMap.putIfAbsent("foo", "baz", 4, 3, 2, 1);
     timer.runSaved();
-    verify(backend).drain((Map<String,BufferedOperation<String>>) argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT_IF_ABSENT, "baz" , 4, 3, 2, 1))));
+    verify(backend).drain((Map<String,BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT_IF_ABSENT, "baz" , 4, 3, 2, 1))));
   }
 
   @Test
@@ -178,7 +179,7 @@ public class LocalBufferedMapTest {
     bufferedMap.startBuffering();
     bufferedMap.put("foo", "bar", 1, 2, 3, 4);
     bufferedMap.flush();
-    verify(backend).drain((Map<String,BufferedOperation<String>>) argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
+    verify(backend).drain((Map<String,BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
   }
 
   @Test
@@ -195,7 +196,7 @@ public class LocalBufferedMapTest {
     bufferedMap.startBuffering();
     bufferedMap.put("foo", "bar", 1, 2, 3, 4);
     bufferedMap.flushAndStopBuffering();
-    verify(backend).drain((Map<String,BufferedOperation<String>>) argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
+    verify(backend).drain((Map<String,BufferedOperation<String>>) MockitoHamcrest.argThat(hasEntry(is("foo"), operationWith(BufferedOperation.Type.PUT, "bar", 1, 2, 3, 4))));
   }
 
   @Test(expected = IllegalStateException.class)

@@ -214,7 +214,7 @@ public class ClusterManager {
   public static String findAgentWarLocation(String version) {
     String groupId = "org.terracotta";
     String artifactId = "management-tsa-war";
-    if (ProductInfo.ENTERPRISE.equals(ProductInfo.getInstance().edition())) {
+    if (true || ProductInfo.ENTERPRISE.equals(ProductInfo.getInstance().edition())) {
       groupId = "com.terracottatech";
       artifactId = "ent-management-tsa-war";
     }

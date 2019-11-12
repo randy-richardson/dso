@@ -70,8 +70,8 @@ public class TCFuture {
    * @return the value set in this future (which may be null)
    * @throws InterruptedException if the current thread is interrupted while waiting for the result to be set
    * @throws TCTimeoutException if timeout period expires
-   * @throws TCExceptionResultExecption if another thread sets the future result to an exception.
-   * @see setException(Throwable t)
+   * @throws TCExceptionResultException if another thread sets the future result to an exception.
+   * @see #setException(Throwable)
    */
   public Object get(long timeout) throws InterruptedException, TCTimeoutException, TCExceptionResultException {
     return get(timeout, true);
@@ -87,8 +87,8 @@ public class TCFuture {
    * @return the value set in this future (which may be null)
    * @throws InterruptedException if the current thread is interrupted while waiting for the result to be set
    * @throws TCTimeoutException if timeout period expires
-   * @throws TCExceptionResultExecption if another thread sets the future result to an exception.
-   * @see setException(Throwable t)
+   * @throws TCExceptionResultException if another thread sets the future result to an exception
+   * @see #setException(Throwable)
    */
   public Object get(long timeout, boolean flagIfTimedOut) throws InterruptedException, TCTimeoutException,
       TCExceptionResultException {

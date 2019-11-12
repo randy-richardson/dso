@@ -32,8 +32,8 @@ public class URLConfigUtil {
   /**
    * Parses the input string for ${.*} patterns and expands individual pattern based on the system property
    * 
-   * @input String. ${tc_active} , ${tc_passive_1}, ${tc_passive_2}, ..
-   * @return String. activeHost:9510, passive1Host:9510, passive2Host:9510, ..
+   * @param urlConfig ${tc_active}, ${tc_passive_1}, ${tc_passive_2}, ..
+   * @return activeHost:9510, passive1Host:9510, passive2Host:9510, ..
    */
   public static String translateSystemProperties(final String urlConfig) {
 

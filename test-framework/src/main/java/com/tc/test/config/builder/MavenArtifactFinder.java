@@ -28,11 +28,15 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -104,7 +108,7 @@ public class MavenArtifactFinder {
     } else {
       // running from IDE? try to get the version from the pom file
       try {
-        File folder = new File(".").getAbsoluteFile();
+        File folder = new File(jar).getAbsoluteFile();
         File pomFile = new File(folder, "pom.xml");
 
         for (int i = 0; i < 10; i++) {
@@ -120,14 +124,9 @@ public class MavenArtifactFinder {
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(pomFile);
-
-        NodeList childNodes = doc.getDocumentElement().getChildNodes();
-        for (int i=0;i<childNodes.getLength();i++) {
-          Node node = childNodes.item(i);
-          if ("version".equals(node.getNodeName())) {
-            return node.getTextContent();
-          }
-        }
+        Map<String, String> versionMap = getVersionsFromPom(doc);
+        String version = versionMap.get("version");
+        return version != null ? version : versionMap.get("parent/version");
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -135,4 +134,40 @@ public class MavenArtifactFinder {
     }
   }
 
+  private static Map<String, String> getVersionsFromPom(Document doc) {
+    HashMap<String, String> result = new HashMap<>();
+    List<Node> nodeList = new ArrayList<>();
+    gatherTextNodes(doc.getDocumentElement(), nodeList);
+    NodeList childNodes = doc.getDocumentElement().getChildNodes();
+    nodeList.stream().forEach(node -> {
+      if ("version".equals(node.getNodeName())) {
+        result.put(buildNodePath(node), node.getTextContent());
+      }
+    });
+
+    return result;
+  }
+
+  private static void gatherTextNodes(Node node, List<Node> nodeList) {
+    if (node.getNodeType() == Node.ELEMENT_NODE) {
+      nodeList.add(node);
+    }
+    NodeList childNodes = node.getChildNodes();
+    for (int i = 0; i < childNodes.getLength(); i++) {
+      gatherTextNodes(childNodes.item(i), nodeList);
+    }
+  }
+
+  private static String buildNodePath(Node node) {
+    List<String> nodeList = new ArrayList<>();
+    while (node != null) {
+      nodeList.add(node.getNodeName());
+      node = node.getParentNode();
+      if (node.getNodeName().equals("project")) {
+        break;
+      }
+    }
+    Collections.reverse(nodeList);
+    return nodeList.stream().collect(Collectors.joining("/"));
+  }
 }

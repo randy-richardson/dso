@@ -51,8 +51,8 @@ public interface ClientTransactionManager extends ClearableCallback {
   /**
    * Commit a thread local current transaction
    * 
-   * @param callable
-   * @param lockName Lock name
+   * @param lock lock id
+   * @param lockLevel level
    * @param atomic whether to commit the atomic transaction
    * @param callable to call after the current transaction is committed
    * @throws UnlockedSharedObjectException If a shared object is being accessed from outside a shared transaction
@@ -71,7 +71,7 @@ public interface ClientTransactionManager extends ClearableCallback {
    * @param txType Transaction type
    * @param lockIDs Locks involved in the transaction
    * @param objectChanges Collection of DNA indicating changes
-   * @param newRoots Map of new roots, Root name -> ObjectID
+   * @param newRoots Map of new roots, Root name -&gt; ObjectID
    */
   public void apply(TxnType txType, List<LockID> lockIDs, Collection objectChanges, Map newRoots);
 
@@ -95,7 +95,6 @@ public interface ClientTransactionManager extends ClearableCallback {
    * 
    * @param source TCObject for object
    * @param method Method constant from SerializationUtil
-   * @param methodName Method name
    * @param parameters Parameter values in call
    */
   public void logicalInvoke(TCObject source, LogicalOperation method, Object[] parameters);
@@ -150,7 +149,7 @@ public interface ClientTransactionManager extends ClearableCallback {
   public void addMetaDataDescriptor(TCObject tco, MetaDataDescriptorInternal md);
 
   /**
-   * @returns the current open transaction for the calling thread, null if no open transaction
+   * @return the current open transaction for the calling thread, null if no open transaction
    */
   public ClientTransaction getCurrentTransaction();
 

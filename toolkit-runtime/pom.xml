@@ -87,36 +87,6 @@ The Initial Developer of the Covered Software is
 				<filtering>true</filtering>
 			</resource>
 		</resources>
-		<pluginManagement>
-			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings 
-					only. It has no influence on the Maven build itself. -->
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-dependency-plugin</artifactId>
-										<versionRange>[2.1,)</versionRange>
-										<goals>
-											<goal>list</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore/>
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
 	</build>
 
 	<profiles>
@@ -149,7 +119,7 @@ The Initial Developer of the Covered Software is
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-dependency-plugin</artifactId>
-            <version>2.8</version>
+                        <version>3.1.1</version>
 						<executions>
 							<execution>
 								<id>list-dependencies</id>
@@ -259,7 +229,7 @@ The Initial Developer of the Covered Software is
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-dependency-plugin</artifactId>
-						<version>2.8</version>
+						<version>3.1.1</version>
 						<executions>
 							<execution>
 								<id>copy-javadoc</id>
@@ -313,7 +283,7 @@ The Initial Developer of the Covered Software is
 						<artifactId>maven-jar-plugin</artifactId>
 						<configuration>
 							<archive>
-                <index>true</index>
+								<index>true</index>
 								<manifestFile>${project.build.directory}/MANIFEST.MF</manifestFile>
 							</archive>
 						</configuration>
@@ -460,7 +430,7 @@ The Initial Developer of the Covered Software is
 					<plugin>
 						<groupId>org.apache.felix</groupId>
 						<artifactId>maven-bundle-plugin</artifactId>
-						<version>2.3.7</version>
+						<version>4.2.1</version>
 						<extensions>true</extensions>
 						<configuration>
 							<manifestLocation>${project.build.directory}</manifestLocation>
@@ -490,7 +460,7 @@ The Initial Developer of the Covered Software is
 									javax.management.loading,
 									javax.net.ssl,*</Import-Package>
 								<Export-Package>org.terracotta.toolkit.*;-split-package:=merge-last</Export-Package>
-								<Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
+								<Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
 								<Bundle-ClassPath>., {maven-dependencies}</Bundle-ClassPath>
 								<Include-Resource> {maven-resources}, {maven-dependencies},
 									target/classes

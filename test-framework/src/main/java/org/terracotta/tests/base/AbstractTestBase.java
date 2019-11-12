@@ -38,7 +38,6 @@ import com.tc.test.setup.TestServerManager;
 import com.tc.text.Banner;
 import com.tc.util.PortChooser;
 import com.tc.util.runtime.Os;
-import com.tc.util.runtime.Vm;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -92,9 +91,6 @@ public abstract class AbstractTestBase extends TCTestCase implements TestFailure
       tcConfigProxyFile = getTempFile(TC_CONFIG_PROXY_FILE_NAME);
     } catch (Exception e) {
       throw new RuntimeException(e);
-    }
-    if (Vm.isJRockit()) {
-      testConfig.getClientConfig().addExtraClientJvmArg("-XXfullSystemGC");
     }
     testConfig.getClientConfig().addExtraClientJvmArg("-XX:+HeapDumpOnOutOfMemoryError");
     if (Boolean.getBoolean("com.tc.test.toolkit.devmode")) {
@@ -354,7 +350,7 @@ public abstract class AbstractTestBase extends TCTestCase implements TestFailure
       writer.write("<root level=\"INFO\"/>" + "\n");
       int i=1;
       for (Entry<String, LogLevel> entry : tcLoggingConfigs.entrySet()) {
-        writer.write("<logger name=" + entry.getKey() + " " + "level=" + "\"" + entry.getValue().name()+"\"/>" + "\n");
+        writer.write("<logger name=\"" + entry.getKey() + "\" " + "level=" + "\"" + entry.getValue().name()+"\"/>" + "\n");
       }
       writer.write("</configuration>" + "\n");
     } catch (IOException e) {

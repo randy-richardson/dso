@@ -17,8 +17,10 @@
 package com.tc.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
@@ -27,6 +29,7 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.Arrays;
 import java.util.Enumeration;
 
 import junit.framework.TestCase;
@@ -34,8 +37,7 @@ import junit.framework.TestCase;
 public class ProductInfoTest extends TestCase {
 
   public void testNullCodeSource() throws Exception {
-    URL[] urls = ((URLClassLoader) ClassLoader.getSystemClassLoader()).getURLs();
-    ClassLoaderWithoutCodeSource loader = new ClassLoaderWithoutCodeSource(urls);
+    ClassLoaderWithoutCodeSource loader = new ClassLoaderWithoutCodeSource();
 
     loader.nullCodeSource = true;
     Class<?> productInfoClass = loader.loadClass(ProductInfo.class.getName());
@@ -47,8 +49,7 @@ public class ProductInfoTest extends TestCase {
   }
 
   public void testNullCodeSourceLocation() throws Exception {
-    URL[] urls = ((URLClassLoader) ClassLoader.getSystemClassLoader()).getURLs();
-    ClassLoaderWithoutCodeSource loader = new ClassLoaderWithoutCodeSource(urls);
+    ClassLoaderWithoutCodeSource loader = new ClassLoaderWithoutCodeSource();
 
     loader.nullLocation = true;
     Class<?> productInfoClass = loader.loadClass(ProductInfo.class.getName());
@@ -181,13 +182,26 @@ public class ProductInfoTest extends TestCase {
     assertEquals("Patch Level [unknown]", info.toShortPatchString());
   }
 
+  private static URL[] systemPaths() {
+    String pathSeparator = System.getProperty("path.separator");
+    String[] classPathEntries = System.getProperty("java.class.path").split(pathSeparator);
+    return Arrays.stream(classPathEntries).map(s -> {
+      try {
+        return new File(s).toURI().toURL();
+      } catch (MalformedURLException e) {
+        e.printStackTrace();
+        return null;
+      }
+    }).toArray(URL[]::new);
+  }
+
   private static class ClassLoaderWithoutCodeSource extends URLClassLoader {
 
     boolean nullLocation   = false;
     boolean nullCodeSource = false;
 
-    ClassLoaderWithoutCodeSource(URL[] urls) {
-      super(urls, null);
+    ClassLoaderWithoutCodeSource() {
+      super(systemPaths(), null);
     }
 
     @Override

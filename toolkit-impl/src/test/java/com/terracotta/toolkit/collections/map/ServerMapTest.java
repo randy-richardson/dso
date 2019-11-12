@@ -21,25 +21,26 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyObject;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
-import org.mockito.internal.matchers.And;
+import static org.mockito.AdditionalMatchers.and;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.terracotta.toolkit.builder.ToolkitCacheConfigBuilder;
 import org.terracotta.toolkit.collections.ToolkitMap;
@@ -71,7 +72,6 @@ import com.tc.object.dna.api.LogicalChangeID;
 import com.tc.object.dna.api.PhysicalAction;
 import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.metadata.MetaDataDescriptorImpl;
-import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.platform.PlatformService;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
@@ -102,6 +102,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author tim
  */
 @RunWith(PowerMockRunner.class)
+@PowerMockIgnore("javax.management.*")
 public class ServerMapTest {
   private PlatformService platformService;
   private Configuration configuration;
@@ -235,17 +236,17 @@ public class ServerMapTest {
 
     serverMap.drain(operations);
     verify(tcObjectServerMap).doLogicalPutUnlockedVersioned(any(TCServerMap.class), eq("foo"), any(), eq(4L));
-    verify(tcObjectServerMap).addMetaData(argThat(and(
-        hasNVPair(SearchMetaData.COMMAND, SearchCommand.PUT),
-        hasNVPair(SearchMetaData.KEY, "foo"))));
+    verify(tcObjectServerMap).addMetaData(and(
+        argThat(hasNVPair(SearchMetaData.COMMAND, SearchCommand.PUT)),
+        argThat(hasNVPair(SearchMetaData.KEY, "foo"))));
     verify(tcObjectServerMap).doLogicalPutIfAbsentVersioned(eq("bar"), any(), eq(4L));
-    verify(tcObjectServerMap).addMetaData(argThat(and(
-        hasNVPair(SearchMetaData.COMMAND, SearchCommand.PUT_IF_ABSENT),
-        hasNVPair(SearchMetaData.KEY, "bar"))));
+    verify(tcObjectServerMap).addMetaData(and(
+        argThat(hasNVPair(SearchMetaData.COMMAND, SearchCommand.PUT_IF_ABSENT)),
+        argThat(hasNVPair(SearchMetaData.KEY, "bar"))));
     verify(tcObjectServerMap).doLogicalRemoveUnlockedVersioned(any(TCServerMap.class), eq("baz"), eq(4L));
-    verify(tcObjectServerMap).addMetaData(argThat(and(
-        hasNVPair(SearchMetaData.COMMAND, SearchCommand.REMOVE),
-        hasNVPair(SearchMetaData.KEY, "baz"))));
+    verify(tcObjectServerMap).addMetaData(and(
+        argThat(hasNVPair(SearchMetaData.COMMAND, SearchCommand.REMOVE)),
+        argThat(hasNVPair(SearchMetaData.KEY, "baz"))));
   }
 
   @Test
@@ -294,14 +295,10 @@ public class ServerMapTest {
     return serverMap;
   }
 
-  private static <T> Matcher<T> and(Matcher<T> ... matchers) {
-    return new And((List) Arrays.asList(matchers));
-  }
-
-  private static Matcher<MetaDataDescriptor> hasNVPair(final SearchMetaData searchMetaData, final Object value) {
+  private static ArgumentMatcher<MetaDataDescriptor> hasNVPair(final SearchMetaData searchMetaData, final Object value) {
     return new ArgumentMatcher<MetaDataDescriptor>() {
       @Override
-      public boolean matches(final Object item) {
+      public boolean matches(final MetaDataDescriptor item) {
         if (item instanceof MetaDataDescriptor) {
           MetaDataDescriptor mdd = (MetaDataDescriptor) item;
           for(Iterator<NVPair> i = mdd.getMetaDatas(); i.hasNext();) {
@@ -336,14 +333,14 @@ public class ServerMapTest {
 
   private static SerializedMapValue<String> mockSerializedMapValue(String value) throws IOException, ClassNotFoundException {
     SerializedMapValue<String> smv = mock(SerializedMapValue.class);
-    when(smv.getDeserializedValue(any(SerializationStrategy.class), anyBoolean(), any(L1ServerMapLocalCacheStore.class), any(), anyBoolean()))
+    when(smv.getDeserializedValue(any(SerializationStrategy.class), anyBoolean(), isNull(), any(), anyBoolean()))
         .thenReturn(value);
     return smv;
   }
 
   private static SerializedMapValue<String> mockSerializedMapValue(String value, boolean expired) throws IOException, ClassNotFoundException {
     SerializedMapValue<String> smv = mock(CustomLifespanSerializedMapValue.class);
-    when(smv.getDeserializedValue(any(SerializationStrategy.class), anyBoolean(), any(L1ServerMapLocalCacheStore.class), any(), anyBoolean()))
+    when(smv.getDeserializedValue(any(SerializationStrategy.class), anyBoolean(), isNull(), any(), anyBoolean()))
         .thenReturn(value);
     when(smv.isExpired(anyInt(), anyInt(), anyInt())).thenReturn(expired);
     return smv;

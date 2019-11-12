@@ -16,10 +16,6 @@
  */
 package com.tc.objectserver.persistence.impl;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-
 import com.tc.async.api.EventContext;
 import com.tc.async.api.Sink;
 import com.tc.l2.api.L2Coordinator;
@@ -29,13 +25,14 @@ import com.tc.objectserver.handler.GlobalTransactionIDBatchRequestHandler;
 import com.tc.objectserver.handler.GlobalTransactionIDBatchRequestHandler.GlobalTransactionIDBatchRequestContext;
 import com.tc.test.TCTestCase;
 import com.tc.util.sequence.BatchSequenceReceiver;
+import org.mockito.ArgumentMatcher;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.AdditionalMatchers.and;
 
 public class GlobalTransactionIDBatchRequestHandlerTest extends TCTestCase {
 
@@ -62,7 +59,12 @@ public class GlobalTransactionIDBatchRequestHandlerTest extends TCTestCase {
   public void testRequestBatch() throws Exception {
     BatchSequenceReceiver receiver = mock(BatchSequenceReceiver.class);
     provider.requestBatch(receiver, 5);
-    verify(requestBatchSink).add((EventContext) argThat(allOf(hasBatchSize(5), hasReceiver(receiver))));
+    verify(requestBatchSink).add((EventContext) argThat(new ArgumentMatcher<GlobalTransactionIDBatchRequestContext>() {
+      @Override
+      public boolean matches(final GlobalTransactionIDBatchRequestContext o) {
+        return receiver.equals(o.getReceiver()) && o.getBatchSize() == 5;
+      }
+    }));
   }
 
   public void testHandleRequest() throws Exception {
@@ -73,41 +75,4 @@ public class GlobalTransactionIDBatchRequestHandlerTest extends TCTestCase {
     verify(persistentSequence).nextBatch(5);
     verify(receiver).setNextBatch(0, 5);
   }
-
-  private static Matcher<EventContext> hasReceiver(final BatchSequenceReceiver receiver) {
-    return new BaseMatcher<EventContext>() {
-      @Override
-      public boolean matches(final Object o) {
-        if (o instanceof GlobalTransactionIDBatchRequestContext) {
-          return receiver.equals(((GlobalTransactionIDBatchRequestContext)o).getReceiver());
-        } else {
-          return false;
-        }
-      }
-
-      @Override
-      public void describeTo(final Description description) {
-        //
-      }
-    };
-  }
-
-  private static Matcher<EventContext> hasBatchSize(final int batchSize) {
-    return new BaseMatcher<EventContext>() {
-      @Override
-      public boolean matches(final Object o) {
-        if (o instanceof GlobalTransactionIDBatchRequestContext) {
-          return ((GlobalTransactionIDBatchRequestContext)o).getBatchSize() == batchSize;
-        } else {
-          return false;
-        }
-      }
-
-      @Override
-      public void describeTo(final Description description) {
-        //
-      }
-    };
-  }
-
 }

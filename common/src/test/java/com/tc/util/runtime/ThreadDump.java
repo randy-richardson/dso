@@ -39,15 +39,6 @@ public class ThreadDump {
 
   public static void main(String args[]) {
     dumpThreadsOnce();
-
-    // This flush()'ing and sleeping is a (perhaps poor) attempt at making ThreadDumpTest pass on Jrockit
-    System.err.flush();
-    System.out.flush();
-    try {
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
   }
 
   public static void dumpThreadsOnce() {
@@ -110,26 +101,7 @@ public class ThreadDump {
   }
 
   private static void doDump(PID pid) {
-    if (Vm.isJRockit()) {
-      doJrcmd(pid);
-    } else {
-      doJstack(pid);
-    }
-  }
-
-  private static void doJrcmd(PID pid) {
-    File jrcmd = getProgram("jrcmd");
-    if (jrcmd.isFile()) {
-      try {
-        Result result = Exec.execute(new String[] { jrcmd.getAbsolutePath(), String.valueOf(pid.getPid()),
-            "print_threads" }, TIMEOUT);
-        System.err.println(result.getStdout() + result.getStderr());
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    } else {
-      Banner.warnBanner("jrcmd not found");
-    }
+    doJstack(pid);
   }
 
   private static void doJstack(PID pid) {

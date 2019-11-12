@@ -27,9 +27,6 @@ import com.terracotta.toolkit.object.ToolkitObjectStripe;
 
 /**
  * A factory thats responsible for creating objects necessary for an AggregateToolkitType
- * 
- * @param T The type of the aggregate
- * @param C The type of the clustered object component of the aggregate type
  */
 public interface DistributedToolkitTypeFactory<T extends DistributedToolkitType<S>, S extends TCToolkitObject> {
 

@@ -130,7 +130,7 @@ public class SearchQueryContext implements EventContext {
   /**
    * Attribute keys, should return values with result set.
    * 
-   * @return Set<String> attributes.
+   * @return {@code Set<String>} attributes.
    */
   public Set<String> getAttributeSet() {
     return attributeSet;
@@ -146,9 +146,9 @@ public class SearchQueryContext implements EventContext {
   }
 
   /**
-   * Attribute aggregators, returns a attribute->aggregator type pairs.
+   * Attribute aggregators, returns a attribute-&gt;aggregator type pairs.
    * 
-   * @return List<NVPair>
+   * @return {@code List<NVPair>}
    */
   public List<NVPair> getAggregators() {
     return aggregators;

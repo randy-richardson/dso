@@ -41,8 +41,8 @@ public interface TransactionAccount {
    * Remove waitee associated with @{link TransactionID}
    * 
    * @param waitee Node still to give acknowledgment.
-   * @param requestID TransactionID ID of transaction.
-   * @returns boolean true if completed, false if not completed or if the client has sent a duplicate ACK.
+   * @param txnID TransactionID ID of transaction.
+   * @return boolean true if completed, false if not completed or if the client has sent a duplicate ACK.
    */
   public boolean removeWaitee(NodeID waitee, TransactionID txnID);
 
@@ -98,8 +98,8 @@ public interface TransactionAccount {
   /**
    * Return set of @{link TransactionID} that is waiting for an acknowledgement from waitee.
    * 
-   * @param NodeID waitee nodeID for all the transaction waiting on it.
-   * @return Set<TransactionID> returns set of transaction waiting for waitee.
+   * @param waitee NodeID for all the transaction waiting on it.
+   * @return {@code Set<TransactionID>} returns set of transaction waiting for waitee.
    */
   public Set<TransactionID> requestersWaitingFor(NodeID waitee);
 
@@ -107,7 +107,7 @@ public interface TransactionAccount {
    * Acknowledge that transaction has been relayed. This is usually used to send transactions to be applied on the
    * passive.
    * 
-   * @param requestID TransactionID ID of transaction.
+   * @param txnID ID of transaction.
    * @return boolean true if completed, false if not completed.
    */
   public boolean relayTransactionComplete(TransactionID txnID);
@@ -115,21 +115,21 @@ public interface TransactionAccount {
   /**
    * Acknowledge arrival of incoming transactions to the server.
    * 
-   * @param Set<ServerTransactionID> serverTransactionIDs server transactions.
+   * @param serverTransactionIDs server transactions.
    */
   public void incomingTransactions(Set<ServerTransactionID> serverTransactionIDs);
 
   /**
    * Add all pending @{link ServerTransactionID} to set.
    * 
-   * @param Set<ServerTransactionID> txnsInSystem set to add ServerTransactionIDs to.
+   * @param txnsInSystem set to add ServerTransactionIDs to.
    */
   public void addAllPendingServerTransactionIDsTo(Set<ServerTransactionID> txnsInSystem);
 
   /**
    * Notify TransactionAccount that node is dead. invoke callback if no pending transactions.
    * 
-   * @param CallBackOnComplete callBack, callBack on completion.
+   * @param callBack, callBack on completion.
    */
   public void nodeDead(CallBackOnComplete callBack);
 
@@ -158,7 +158,7 @@ public interface TransactionAccount {
     /**
      * Call back method
      * 
-     * @param NodeID dead. Dead node.
+     * @param dead Dead node id.
      */
     public void onComplete(NodeID dead);
   }

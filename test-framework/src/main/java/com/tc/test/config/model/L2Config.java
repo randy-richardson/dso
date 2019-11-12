@@ -219,7 +219,7 @@ public class L2Config {
   /**
    * Sets "-XX:MaxDirectMemorySize"
    * 
-   * @param -XX:MaxDirectMemorySize in MB
+   * @param directMemorySize MaxDirectMemorySize in MB
    */
   public void setDirectMemorySize(int directMemorySize) {
     this.directMemorySize = directMemorySize;

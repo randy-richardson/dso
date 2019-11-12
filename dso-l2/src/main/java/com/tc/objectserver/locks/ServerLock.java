@@ -117,7 +117,7 @@ public interface ServerLock extends TimerCallback {
    * called with holders context and waiters.
    * 
    * @param serverLockContext - Id of the client requesting
-   * @param helper - Helps getting stats manager, state machine, etc.
+   * @param lockHelper - Helps getting stats manager, state machine, etc.
    */
   void reestablishState(ClientServerExchangeLockContext serverLockContext, LockHelper lockHelper);
 

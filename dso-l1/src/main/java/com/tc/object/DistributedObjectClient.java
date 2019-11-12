@@ -1102,7 +1102,7 @@ public class DistributedObjectClient extends SEDA implements TCClient {
 
   @Override
   public void dump() {
-    this.dumpHandler.dump();
+    // this.dumpHandler.dump();
   }
 
   @Override

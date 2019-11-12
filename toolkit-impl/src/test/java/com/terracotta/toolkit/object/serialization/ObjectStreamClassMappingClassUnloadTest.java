@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
+import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,8 @@ public class ObjectStreamClassMappingClassUnloadTest {
 
   @Before
   public void createSpecialObject() throws Exception {
-    ClassLoader duplicate = new URLClassLoader(((URLClassLoader) SpecialClass.class.getClassLoader()).getURLs(), null);
+    URL[] urls = new URL[] {SpecialClass.class.getProtectionDomain().getCodeSource().getLocation()};
+    ClassLoader duplicate = new URLClassLoader(urls, null);
 
     @SuppressWarnings("unchecked")
     Class<? extends Serializable> special = (Class<? extends Serializable>) duplicate.loadClass(SpecialClass.class.getName());

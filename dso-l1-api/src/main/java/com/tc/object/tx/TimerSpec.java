@@ -83,7 +83,7 @@ public final class TimerSpec {
   }
 
   /**
-   * @return True if timeouts are > 0
+   * @return True if timeouts are &gt; 0
    */
   public boolean needsToWait() {
     return millis > 0 || nanos > 0;

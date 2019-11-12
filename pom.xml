@@ -22,7 +22,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent-ee</artifactId>
-    <version>4.1</version>
+    <version>4.10</version>
     <relativePath/>
   </parent>
 
@@ -38,7 +38,7 @@ The Initial Developer of the Covered Software is
   
   <properties>
     <build.edition>opensource</build.edition>
-    <maven-forge-plugin.version>1.2.19</maven-forge-plugin.version>
+    <maven-forge-plugin.version>1.2.27</maven-forge-plugin.version>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
   </properties>
@@ -148,6 +148,18 @@ The Initial Developer of the Covered Software is
       </modules>
     </profile>
 
+    <profile>
+      <id>terracotta-checkstyle</id>
+      <activation>
+        <file>
+          <exists>devwork/terracotta-checkstyle</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/terracotta-checkstyle</module>
+      </modules>
+    </profile>
+
     <!-- activate by default if 'terracotta-toolkit-api' module exists.
          You have to check out this module manually under 'community/devwork' -->
     <profile>
@@ -161,8 +173,34 @@ The Initial Developer of the Covered Software is
         <module>devwork/terracotta-toolkit-api</module>
       </modules>
     </profile>
+
+    <profile>
+      <id>toolkit-api-internal</id>
+      <activation>
+        <file>
+          <exists>devwork/terracotta-toolkit-api-internal</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/terracotta-toolkit-api-internal</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>ehcache-parent</id>
+      <activation>
+        <file>
+          <exists>devwork/ehcache-parent</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/ehcache-parent</module>
+      </modules>
+    </profile>
     <!-- activate by default if 'ehcache' module exists.
-         You have to check out this module manually under 'community/devwork' -->
+         You have to check out this module manually under 'community/devwork'.
+         The 'ehcache-ee' module includes 'ehcache' (as 'ehcache-os') so this profile
+         is unneeded if 'ehcache-ee' is present. -->
     <profile>
       <id>ehcache</id>
       <activation>
@@ -175,7 +213,8 @@ The Initial Developer of the Covered Software is
       </modules>
     </profile>
     <!-- activate by default if 'ehcache-ee' module exists.
-         You have to check out this module manually under 'community/devwork' -->
+         You have to check out this module manually under 'community/devwork'.
+         This module includes the 'ehcache' module (as 'ehcache-os'). -->
     <profile>
       <id>ehcache-ee</id>
       <activation>
@@ -249,6 +288,30 @@ The Initial Developer of the Covered Software is
     </profile>
 
     <profile>
+      <id>tc-messaging</id>
+      <activation>
+        <file>
+          <exists>devwork/tc-messaging</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/tc-messaging</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>ipc-eventbus</id>
+      <activation>
+        <file>
+          <exists>devwork/ipc-eventbus</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/ipc-eventbus</module>
+      </modules>
+    </profile>
+
+    <profile>
       <id>core-storage-api</id>
       <activation>
         <file>
@@ -259,6 +322,7 @@ The Initial Developer of the Covered Software is
         <module>devwork/core-storage-api</module>
       </modules>
     </profile>
+
     <profile>
       <id>heap-core-storage</id>
       <activation>
@@ -270,6 +334,7 @@ The Initial Developer of the Covered Software is
         <module>devwork/heap-core-storage</module>
       </modules>
     </profile>
+
     <profile>
       <id>bigmemory-core-storage</id>
       <activation>
@@ -279,6 +344,30 @@ The Initial Developer of the Covered Software is
       </activation>
       <modules>
         <module>devwork/bigmemory-core-storage</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>offheap-restartable-store</id>
+      <activation>
+        <file>
+          <exists>devwork/offheap-restartable-store</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/offheap-restartable-store</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>bigmemory-restartable-core-storage</id>
+      <activation>
+        <file>
+          <exists>devwork/bigmemory-restartable-core-storage</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/bigmemory-restartable-core-storage</module>
       </modules>
     </profile>
 
@@ -343,6 +432,18 @@ The Initial Developer of the Covered Software is
     </profile>
 
     <profile>
+      <id>container-test-framework</id>
+      <activation>
+        <file>
+          <exists>devwork/container-test-framework</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/container-test-framework</module>
+      </modules>
+    </profile>
+
+    <profile>
       <id>wan40</id>
       <activation>
         <file>
@@ -365,6 +466,163 @@ The Initial Developer of the Covered Software is
         <module>devwork/terracotta-sessions</module>
       </modules>
     </profile>
+
+    <profile>
+      <id>osgi-test-tool</id>
+      <activation>
+        <file>
+          <exists>devwork/osgi-test-tool</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/osgi-test-tool</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>fast-restartable-store</id>
+      <activation>
+        <file>
+          <exists>devwork/fast-restartable-store</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/fast-restartable-store</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>product-upgradability-testing-utils</id>
+      <activation>
+        <file>
+          <exists>devwork/product-upgradability-testing-utils</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/product-upgradability-testing-utils</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>jmxremote_optional_tc</id>
+      <activation>
+        <file>
+          <exists>devwork/jmxremote_optional_tc</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/jmxremote_optional_tc</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>linked-child-process</id>
+      <activation>
+        <file>
+          <exists>devwork/linked-child-process</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/linked-child-process</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>test-listeners</id>
+      <activation>
+        <file>
+          <exists>devwork/test-listeners</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/test-listeners</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>clustered-entity-management</id>
+      <activation>
+        <file>
+          <exists>devwork/clustered-entity-management</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/clustered-entity-management</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>tc-config-schema</id>
+      <activation>
+        <file>
+          <exists>devwork/tc-config-schema</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/tc-config-schema</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>x-platform</id>
+      <activation>
+        <file>
+          <exists>devwork/x-platform</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/x-platform</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>bigmemory-max-code-samples</id>
+      <activation>
+        <file>
+          <exists>devwork/bigmemory-max/code-samples</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/bigmemory-max/code-samples</module>
+      </modules>
+    </profile>
+
+    <!--profile>
+      <id>bigmemory-max-code-samples-test</id>
+      <activation>
+        <file>
+          <exists>devwork/bigmemory-max/code-samples-test</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/bigmemory-max/code-samples-test</module>
+      </modules>
+    </profile-->
+
+    <profile>
+      <id>bigmemory-go-code-samples</id>
+      <activation>
+        <file>
+          <exists>devwork/bigmemory-go/code-samples</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/bigmemory-go/code-samples</module>
+      </modules>
+    </profile>
+
+    <!--profile>
+      <id>bigmemory-go-code-samples-test</id>
+      <activation>
+        <file>
+          <exists>devwork/bigmemory-go/code-samples-test</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>devwork/bigmemory-go/code-samples-test</module>
+      </modules>
+    </profile-->
+
     <profile>
       <id>sag-deps</id>
         <activation>
@@ -379,6 +637,7 @@ The Initial Developer of the Covered Software is
               <plugin>
               <groupId>org.terracotta</groupId>
               <artifactId>maven-forge-plugin</artifactId>
+              <version>${maven-forge-plugin.version}</version>
               <dependencies>
                 <dependency>
                   <groupId>com.softwareag.ibit.tools.util</groupId>
@@ -392,6 +651,25 @@ The Initial Developer of the Covered Software is
             </plugins>
           </pluginManagement>
         </build>
+    </profile>
+    <profile>
+      <id>testVM</id>
+      <activation>
+        <property>
+          <name>testVM</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.terracotta</groupId>
+            <artifactId>maven-forge-plugin</artifactId>
+            <configuration>
+              <jvm>${testVM}</jvm>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 

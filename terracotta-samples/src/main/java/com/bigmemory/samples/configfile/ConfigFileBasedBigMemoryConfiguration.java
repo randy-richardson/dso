@@ -22,9 +22,7 @@ import net.sf.ehcache.CacheManager;
 import java.io.IOException;
 
 /**
- * <p>
  * Size-based config using an xml configuration
- * <p/>
  */
 
 public class ConfigFileBasedBigMemoryConfiguration {

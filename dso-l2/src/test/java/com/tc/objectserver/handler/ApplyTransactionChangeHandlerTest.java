@@ -16,17 +16,15 @@
  */
 package com.tc.objectserver.handler;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.mockito.ArgumentCaptor;
 
 import com.tc.async.api.EventContext;
@@ -72,6 +70,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import junit.framework.TestCase;
+import org.mockito.ArgumentMatcher;
 
 public class ApplyTransactionChangeHandlerTest extends TestCase {
 
@@ -126,8 +125,7 @@ public class ApplyTransactionChangeHandlerTest extends TestCase {
   }
 
   private void verifyNotifies(ServerTransaction tx) {
-    verify(lockManager, times(tx.getNotifies()
-        .size())).notify(any(LockID.class), any(ClientID.class), any(ThreadID.class),
+    verify(lockManager, times(tx.getNumApplicationTxn())).notify(any(LockID.class), any(ClientID.class), any(ThreadID.class),
         any(ServerLock.NotifyAction.class), any(NotifiedWaiters.class));
     verify(broadcastSink, atLeastOnce()).add(any(EventContext.class));
     for (Notify notify : (Collection<Notify>) tx.getNotifies()) {
@@ -139,7 +137,7 @@ public class ApplyTransactionChangeHandlerTest extends TestCase {
     verify(broadcastSink).add(argThat(new BroadcastNotifiedWaiterMatcher(notifiedWaitersArgumentCaptor.getValue())));
   }
 
-  private static class BroadcastNotifiedWaiterMatcher extends BaseMatcher<EventContext> {
+  private static class BroadcastNotifiedWaiterMatcher implements ArgumentMatcher<BroadcastChangeContext> {
     private final NotifiedWaiters notifiedWaiters;
 
     private BroadcastNotifiedWaiterMatcher(final NotifiedWaiters notifiedWaiters) {
@@ -147,21 +145,12 @@ public class ApplyTransactionChangeHandlerTest extends TestCase {
     }
 
     @Override
-    public boolean matches(final Object o) {
-      if (o instanceof BroadcastChangeContext) {
-        if (notifiedWaiters == null) {
-          return ((BroadcastChangeContext)o).getNewlyPendingWaiters() == null;
-        } else {
-          return notifiedWaiters.equals(((BroadcastChangeContext)o).getNewlyPendingWaiters());
-        }
+    public boolean matches(final BroadcastChangeContext o) {
+      if (notifiedWaiters == null) {
+        return ((BroadcastChangeContext)o).getNewlyPendingWaiters() == null;
       } else {
-        return false;
+        return notifiedWaiters.equals(((BroadcastChangeContext)o).getNewlyPendingWaiters());
       }
-    }
-
-    @Override
-    public void describeTo(final Description description) {
-      //
     }
   }
 

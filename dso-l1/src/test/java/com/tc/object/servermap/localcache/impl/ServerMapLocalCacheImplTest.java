@@ -704,7 +704,8 @@ public class ServerMapLocalCacheImplTest extends TestCase {
     LocalCacheStoreStrongValue strong = mock(LocalCacheStoreStrongValue.class);
     when(strong.isStrongConsistentValue()).thenReturn(true);
     when(strong.getValueObjectId()).thenReturn(new ObjectID(42L));
-    
+    when(strong.getLockId()).thenReturn(new LongLockID(24L));
+
     cache.addToCache("foo", strong, MapOperationType.PUT);
     
     verify(platformService, times(1)).pinLock(any(LockID.class), anyLong());

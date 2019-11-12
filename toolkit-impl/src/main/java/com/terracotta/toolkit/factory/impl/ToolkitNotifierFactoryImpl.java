@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * An implementation of {@link ClusteredListFactory}
+ * An implementation of {@link ToolkitObjectFactory}
  */
 public class ToolkitNotifierFactoryImpl extends
     AbstractPrimaryToolkitObjectFactory<DestroyableToolkitNotifier, ToolkitNotifierImpl> {

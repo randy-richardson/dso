@@ -16,6 +16,9 @@
  */
 package com.tc.platform;
 
+import static org.mockito.AdditionalMatchers.or;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -65,6 +68,8 @@ public class PlatformServiceImplTest {
     TaskRunner taskRunner = mock(TaskRunner.class);
     ClientHandshakeManager clientHandshakeManager = mock(ClientHandshakeManager.class);
 
+    when(lockIdFactory.generateLockIdentifier(or(any(LockID.class), anyLong()))).thenReturn(new LongLockID(42));
+
     PlatformService ps = new PlatformServiceImpl(clientObjectManager, clientTransactionManager, clientShutdownManager,
                                                  clientLockManager, remoteSearchRequestManager,
                                                  distributedObjectClient, lockIdFactory, dsoCluster,
@@ -72,7 +77,7 @@ public class PlatformServiceImplTest {
                                                  rejoinManager, taskRunner, clientHandshakeManager);
 
     doThrow(SomeException.class).when(clientTransactionManager).begin(any(LockID.class), any(LockLevel.class),
-                                                                      any(Boolean.TYPE));
+                                                                      anyBoolean());
     when(clientLockManager.tryLock(any(LockID.class), any(LockLevel.class))).thenReturn(Boolean.TRUE);
     when(clientLockManager.tryLock(any(LockID.class), any(LockLevel.class), any(Long.TYPE))).thenReturn(Boolean.TRUE);
 
@@ -134,10 +139,10 @@ public class PlatformServiceImplTest {
   }
 
   private static void verifyException(RuntimeException e) throws AssertionError {
-    if (e.getCause().getClass() != SomeException.class) { throw new AssertionError(e.getCause().getClass()); }
+    if (e.getClass() != SomeException.class) { throw new AssertionError(e.getCause().getClass()); }
   }
 
-  private class SomeException extends Exception {
+  private class SomeException extends RuntimeException {
     //
   }
 }

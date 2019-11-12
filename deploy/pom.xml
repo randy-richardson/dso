@@ -33,8 +33,7 @@ The Initial Developer of the Covered Software is
 
   <properties>
     <skip.deploy>true</skip.deploy>
-    <jersey.version>2.6</jersey.version>
-    <hk2.version>2.2.0</hk2.version>
+    <jersey.version>2.27</jersey.version>
     <jackson.version>2.9.9</jackson.version>
     <jackson-databind.version>2.9.9.1</jackson-databind.version>
   </properties>
@@ -99,91 +98,136 @@ The Initial Developer of the Covered Software is
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.javax.annotation-api</artifactId>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
       <version>1.2</version>
     </dependency>
     <dependency>
       <groupId>gf-3122</groupId>
       <artifactId>gf.javax.security.auth.message</artifactId>
     </dependency>
+<!-- Temporarily retained to maintain diff alignment
     <dependency>
       <groupId>gf-3122</groupId>
       <artifactId>gf.javax.annotation</artifactId>
     </dependency>
+-->
     <dependency>
       <groupId>gf-3122</groupId>
       <artifactId>gf.javax.mail</artifactId>
     </dependency>
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.javax.servlet-api</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.jersey-client</artifactId>
-      <version>2.6</version>
-    </dependency>
-    <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.jersey-common</artifactId>
-      <version>2.6</version>
-    </dependency>
-    <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.javax.ws.rs-api</artifactId>
-      <version>2.0</version>
-    </dependency>
-    <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.jersey-media-sse</artifactId>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
       <version>${jersey.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-common</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.inject</groupId>
+      <artifactId>jersey-hk2</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>javax.ws.rs-api</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-sse</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <version>${jersey.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.module</groupId>
+          <artifactId>jackson-module-jaxb-annotations</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>javax.validation</groupId>
       <artifactId>validation-api</artifactId>
       <version>1.1.0.Final</version>
     </dependency>
+<!--
     <dependency>
       <groupId>gf-40</groupId>
       <artifactId>gf.jersey-guava</artifactId>
       <version>${jersey.version}</version>
     </dependency>
+-->
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.hk2-api</artifactId>
+      <groupId>org.glassfish.hk2</groupId>
+      <artifactId>hk2-api</artifactId>
+      <version>${hk2.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.inject</groupId>
+          <artifactId>javax.inject</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.hk2</groupId>
+      <artifactId>hk2-utils</artifactId>
+      <version>${hk2.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.inject</groupId>
+          <artifactId>javax.inject</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.hk2.external</groupId>
+      <artifactId>aopalliance-repackaged</artifactId>
       <version>${hk2.version}</version>
     </dependency>
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.hk2-utils</artifactId>
+      <groupId>org.glassfish.hk2.external</groupId>
+      <artifactId>javax.inject</artifactId>
       <version>${hk2.version}</version>
     </dependency>
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.aopalliance-repackaged</artifactId>
+      <groupId>org.glassfish.hk2</groupId>
+      <artifactId>hk2-locator</artifactId>
       <version>${hk2.version}</version>
     </dependency>
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.javax.inject</artifactId>
-      <version>${hk2.version}</version>
+      <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
     </dependency>
     <dependency>
-      <groupId>gf-40</groupId>
-      <artifactId>gf.hk2-locator</artifactId>
-      <version>${hk2.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>gf-3122</groupId>
-      <artifactId>gf.osgi-resource-locator</artifactId>
-      <version>1.0.1</version>
+      <groupId>org.glassfish.hk2</groupId>
+      <artifactId>osgi-resource-locator</artifactId>
     </dependency>
 
     <dependency>
       <groupId>commons-httpclient</groupId>
       <artifactId>commons-httpclient</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.terracotta.internal</groupId>
@@ -213,16 +257,6 @@ The Initial Developer of the Covered Software is
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>org.javassist</groupId>
@@ -240,9 +274,8 @@ The Initial Developer of the Covered Software is
       <version>${jackson.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.xml.bind</groupId>
-      <artifactId>jaxb-api</artifactId>
-      <version>2.3.0</version>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
     </dependency>
   </dependencies>
 

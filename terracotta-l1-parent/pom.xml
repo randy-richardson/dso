@@ -42,8 +42,8 @@ The Initial Developer of the Covered Software is
       <version>${project.version}</version>      
       <exclusions>    
         <exclusion>
-          <groupId>gf-40</groupId>
-          <artifactId>gf.javax.servlet-api</artifactId>
+          <groupId>javax.servlet</groupId>
+          <artifactId>javax.servlet-api</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.slf4j</groupId>
@@ -70,10 +70,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-collections</groupId>
