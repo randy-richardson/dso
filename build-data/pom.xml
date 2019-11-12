@@ -36,10 +36,6 @@ The Initial Developer of the Covered Software is
       <plugin>
         <groupId>org.terracotta</groupId>
         <artifactId>maven-forge-plugin</artifactId>
-        <configuration>
-          <rootPath>${basedir}/..</rootPath>
-          <eeRootPath>${basedir}/../..</eeRootPath>
-        </configuration>
         <executions>
           <execution>
             <id>create-build-info</id>
@@ -47,6 +43,10 @@ The Initial Developer of the Covered Software is
               <goal>buildinfo</goal>
             </goals>
             <phase>generate-resources</phase>
+            <configuration>
+              <rootPath>${basedir}/..</rootPath>
+              <eeRootPath>${basedir}/../..</eeRootPath>
+            </configuration>
           </execution>
         </executions>
       </plugin>       

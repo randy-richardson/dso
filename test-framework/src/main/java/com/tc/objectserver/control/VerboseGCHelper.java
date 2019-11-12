@@ -29,9 +29,7 @@ public class VerboseGCHelper {
   private static final String          XX_PRINT_GC_DETAILS         = "-XX:+PrintGCDetails";
   private static final String          XX_PRINT_GC_TIME_STAMPS     = "-XX:+PrintGCTimeStamps";
   private static final String          XLOGGC                      = "-Xloggc:";
-
-  private static final String          XX_PRINT_GC_DETAILS_JROCKIT = "-Xverbose:gcpause,gcreport";
-  private static final String          XLOGGC_JROCKIT              = "-Xverboselog:";
+  private static final String          XLOG_GC_DETAILS_FILE        = "-Xlog:gc*:file";
 
   private final static VerboseGCHelper instance                    = new VerboseGCHelper();
   private File                         tempDir;
@@ -71,20 +69,19 @@ public class VerboseGCHelper {
       String arg = iter.next();
       if (arg != null) {
         if (arg.startsWith(XLOGGC) || arg.startsWith(XX_PRINT_GC_TIME_STAMPS) || arg.startsWith(XX_PRINT_GC_DETAILS)
-            || arg.startsWith(XLOGGC_JROCKIT) || arg.startsWith(XX_PRINT_GC_DETAILS_JROCKIT)) {
+        || arg.startsWith(XLOG_GC_DETAILS_FILE)) {
           System.out.println("XXX: Removing previous verbose gc arg: " + arg);
           iter.remove();
         }
       }
     }
 
-    if (Vm.isJRockit()) {
-      jvmArgs.add(XX_PRINT_GC_DETAILS_JROCKIT);
-      jvmArgs.add(XLOGGC_JROCKIT + verboseGcOutputFile.getAbsolutePath());
-    } else {
+    if (Vm.isPreJava9()) {
       jvmArgs.add(XLOGGC + verboseGcOutputFile.getAbsolutePath());
       jvmArgs.add(XX_PRINT_GC_TIME_STAMPS);
       jvmArgs.add(XX_PRINT_GC_DETAILS);
+    } else {
+      jvmArgs.add(XLOG_GC_DETAILS_FILE + "=" + verboseGcOutputFile.getAbsolutePath());
     }
   }
 

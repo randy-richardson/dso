@@ -171,7 +171,7 @@ public class LossyTCLogger implements TCLogger {
    * be logged anyways. Note one should also test the log level along with this method to be sure that the following
    * call to log will actually log.
    * <p>
-   * if(lossyLogger.isDebugEnabled() && lossyLogger.isLoggingEnabledNow()) lossyLogger.debug(message);
+   * {@code if(lossyLogger.isDebugEnabled() && lossyLogger.isLoggingEnabledNow()) lossyLogger.debug(message);}
    * <p>
    */
   public boolean isLoggingEnabledNow() {

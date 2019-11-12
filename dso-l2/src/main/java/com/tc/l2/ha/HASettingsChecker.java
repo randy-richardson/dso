@@ -92,7 +92,7 @@ public class HASettingsChecker {
   /**
    * To guard against the scenario described in DEV-6345 and FWS-101. Checks if there is enough time for L1s to fail
    * over to a new ACTIVE L2 by taking into account L2 election time and client reconnect window. Prints a warning if
-   * L1-L2HealthCheck > L2-L2HealthCheck + ElectionTime + ClientReconnectWindow
+   * L1-L2HealthCheck &gt; L2-L2HealthCheck + ElectionTime + ClientReconnectWindow
    */
   public void printWarningIfL1L2FailureToleranceHigherThanL2L2FailureTolerance() {
     if (isL1L2FailureToleranceHigherThanL2L2FailureTolerance()) {
@@ -103,7 +103,7 @@ public class HASettingsChecker {
 
   /**
    * To guard against the scenario described in DEV-6345 and FWS-32. In case of a new ACTIVE L2, this ensures that the
-   * L1 clients attempt to connect to L2 only after the election is complete. Prints a warning if L1-L2HealthCheck <
+   * L1 clients attempt to connect to L2 only after the election is complete. Prints a warning if L1-L2HealthCheck &lt;
    * L2-L2HealthCheck + ElectionTime
    */
 

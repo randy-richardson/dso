@@ -58,8 +58,6 @@ public class ObjectStreamClassMapping {
   static final String                             SERIALIZER_ADD_MAPPING_THREAD = "Serializer Add Mapping Thread";
   private static final TCLogger                   LOGGER                        = TCLogging
                                                                                     .getLogger(ObjectStreamClassMapping.class);
-  private static final Field                      SUPER_DESC;
-  private static final Method                     IS_SERIALIZABLE;
   private static final String                     CHARSET                       = "ISO-8859-1";
   private static final String                     NEXT_MAPPING                  = "nextMapping";
   private static final String                     LOCK_NAME                     = "lock-for-" + NEXT_MAPPING;
@@ -80,33 +78,6 @@ public class ObjectStreamClassMapping {
                                                                                     });
   private final AbortableOperationManager         abortableOperationManager;
   private final ConcurrentMap<ObjectStreamClass, SerializableDataKey> oscKeyCache = new MapMaker().weakKeys().makeMap();
-
-  static {
-    Field superDesc = null;
-    Method isSerializable = null;
-    if (Vm.isJRockit()) {
-      if (Boolean.getBoolean(ObjectStreamClassMapping.class.getName() + ".disablePruning")) {
-        LOGGER
-            .warn("JRockit ObjectStreamClass pruning work-around explicitly disabled.  Invalid caching behavior may result.");
-      } else {
-        try {
-          superDesc = ObjectStreamClass.class.getDeclaredField("superDesc");
-          isSerializable = ObjectStreamClass.class.getDeclaredMethod("isSerializable");
-          superDesc.setAccessible(true);
-          isSerializable.setAccessible(true);
-          LOGGER.info("JRockit ObjectStreamClass pruning work-around enabled.");
-        } catch (Throwable ex) {
-          LOGGER
-              .error("JRockit ObjectStreamClass pruning work-around could not be enabled.  Invalid caching behavior may result.",
-                     ex);
-          superDesc = null;
-          isSerializable = null;
-        }
-      }
-    }
-    SUPER_DESC = superDesc;
-    IS_SERIALIZABLE = isSerializable;
-  }
 
   public ObjectStreamClassMapping(PlatformService platformService, SerializerMap serializerMap) {
     /**
@@ -155,8 +126,7 @@ public class ObjectStreamClassMapping {
   // This will be slow, we can optimize it in two ways :
   // 1. Have a local cache CHM of hashCode of ObjectStreamClass -> List<CO> where CO = kclass and mapping
   // 2. Modify our serializerMap to have complex object as keys rather than only String as keys.
-  public int getMappingFor(ObjectStreamClass descParam) throws IOException {
-    final ObjectStreamClass desc = prune(descParam);
+  public int getMappingFor(ObjectStreamClass desc) throws IOException {
     final SerializableDataKey key = getSerializableDataKey(desc);
 
     Integer value = (Integer) serializerMap.localGet(key.getStringForm());
@@ -301,24 +271,5 @@ public class ObjectStreamClassMapping {
       oout.close();
     }
     return bout.toByteArray();
-  }
-
-  private static ObjectStreamClass prune(ObjectStreamClass desc) {
-    if (IS_SERIALIZABLE == null || SUPER_DESC == null) {
-      return desc;
-    } else {
-      try {
-        for (ObjectStreamClass osc = desc; osc != null; osc = (ObjectStreamClass) SUPER_DESC.get(osc)) {
-          ObjectStreamClass superDesc = (ObjectStreamClass) SUPER_DESC.get(osc);
-          if (superDesc != null && !((Boolean) IS_SERIALIZABLE.invoke(superDesc)).booleanValue()) {
-            SUPER_DESC.set(osc, null);
-          }
-        }
-        return desc;
-      } catch (Throwable t) {
-        LOGGER.warn("JRockit ObjectStreamClass pruning work-around failed.", t);
-        return desc;
-      }
-    }
   }
 }

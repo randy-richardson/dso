@@ -30,7 +30,7 @@ import com.terracotta.toolkit.type.IsolatedClusteredObjectLookup;
 import com.terracotta.toolkit.type.IsolatedToolkitTypeFactory;
 
 /**
- * An implementation of {@link ClusteredListFactory}
+ * An implementation of {@link ToolkitObjectFactory}
  */
 public class ToolkitListFactoryImpl extends
     AbstractPrimaryToolkitObjectFactory<DestroyableToolkitList, ToolkitListImpl> {

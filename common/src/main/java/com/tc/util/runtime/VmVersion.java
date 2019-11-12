@@ -24,28 +24,25 @@ import java.util.Properties;
  */
 public final class VmVersion {
 
-  private final boolean        isIBM;
-  private final boolean        isJRockit;
+  private final boolean isIBM;
 
   /**
    * Construct with system properties, which will be parsed to determine version. Looks at properties like java.version,
-   * java.runtime.version, jrockit.version, java.vm.name, and java.vendor.
+   * java.runtime.version, java.vm.name, and java.vendor.
    *
    * @param props Typically System.getProperties()
    */
   public VmVersion(final Properties props) {
-    this(isJRockit(props), isIBM(props));
+    this(isIBM(props));
   }
 
   /**
    * Construct with specific version information
    *
-   * @param isJRockit True if BEA JRockit JVM
    * @param isIBM True if IBM JVM
    */
-  private VmVersion(final boolean isJRockit, final boolean isIBM) {
+  private VmVersion(final boolean isIBM) {
     this.isIBM = isIBM;
-    this.isJRockit = isJRockit;
   }
 
   /**
@@ -55,19 +52,7 @@ public final class VmVersion {
     return isIBM;
   }
 
-  /**
-   * @return True if BEA JRockit
-   */
-  public boolean isJRockit() {
-    return isJRockit;
-  }
-
   private static boolean isIBM(Properties props) {
     return props.getProperty("java.vm.name", "").toLowerCase(Locale.ENGLISH).contains("ibm");
-  }
-
-  private static boolean isJRockit(Properties props) {
-    return props.getProperty("jrockit.version") != null
-           || props.getProperty("java.vm.name", "").toLowerCase(Locale.ENGLISH).indexOf("jrockit") >= 0;
   }
 }

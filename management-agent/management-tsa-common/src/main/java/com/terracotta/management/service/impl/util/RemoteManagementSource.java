@@ -224,14 +224,14 @@ public class RemoteManagementSource {
           }
         } catch (Exception e) {
           if (NOTIFICATION_LOGGED.compareAndSet(false, true)) {
-            LOG.error("Unable to cleanup Jersey 2.6 Client listeners, you may run into a memory leak!", e);
+            LOG.debug("Unable to cleanup Jersey 2.6 Client listeners, you may run into a memory leak!", e);
             LOG.debug("Here is the number of listeners on this client : " + lbdq.size());
           }
         }
       }
     } catch (Exception e) {
       if (NOTIFICATION_LOGGED.compareAndSet(false, true)) {
-        LOG.error("Unable to cleanup Jersey 2.6 Client listeners, you may run into a memory leak!", e);
+        LOG.debug("Unable to cleanup Jersey 2.6 Client listeners, you may run into a memory leak!", e);
       }
     }
   }

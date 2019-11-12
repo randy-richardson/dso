@@ -16,7 +16,11 @@
  */
 package com.tc.stats;
 
-import static org.mockito.Matchers.isA;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +29,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -111,17 +114,13 @@ public class DSOMBeanRegTest {
     }).when(channel).close();
 
     when(smCtxt.getChannelManager()).thenReturn((DSOChannelManagerMBean) channelMgrMbean);
-    when(stats.getCounter(Matchers.same(channel), Matchers.startsWith("serverMap")))
+    when(stats.getCounter(same(channel), startsWith("serverMap")))
         .thenReturn(mock(SampledCumulativeCounter.class));
-    when(stats.getCounter(Matchers.same(channel), Matchers.argThat(new ArgumentMatcher<String>() {
-
+    when(stats.getCounter(same(channel), argThat(new ArgumentMatcher<String>() {
       @Override
-      public boolean matches(Object argument) {
-        // Ugly, ugly, ugly
-        String str = (String) argument;
+      public boolean matches(String str) {
         return !str.startsWith("serverMap");
       }
-
     }))).thenReturn(SampledCounter.NULL_SAMPLED_COUNTER);
     when(smCtxt.getChannelStats()).thenReturn(stats);
     mbeanSvr = mock(MBeanServer.class);
@@ -139,27 +138,25 @@ public class DSOMBeanRegTest {
     InOrder order = Mockito.inOrder(mbeanSvr);
 
     order.verify(mbeanSvr).addNotificationListener(isA(ObjectName.class),
-                                                     Matchers.argThat(new ArgumentMatcher<NotificationListener>() {
-
+                                                     argThat(new ArgumentMatcher<NotificationListener>() {
                                                        @Override
-                                                       public boolean matches(Object arg) {
+                                                       public boolean matches(NotificationListener arg) {
                                                          return arg instanceof DSOClient
                                                                 && clientId.toLong() == (((DSOClient) arg)
                                                                                                 .getClientID());
                                                        }
 
-                                                   }), isA(NotificationFilter.class), Matchers.any());
+                                                   }), isA(NotificationFilter.class), any());
     order.verify(mbeanSvr).removeNotificationListener(isA(ObjectName.class),
-                                                        Matchers.argThat(new ArgumentMatcher<NotificationListener>() {
-
+                                                        argThat(new ArgumentMatcher<NotificationListener>() {
                                                           @Override
-                                                          public boolean matches(Object arg) {
+                                                          public boolean matches(NotificationListener arg) {
                                                             return arg instanceof DSOClient
                                                                    && clientId.toLong() == (((DSOClient) arg)
                                                                        .getClientID());
                                                           }
 
-                                                      }), isA(NotificationFilter.class), Matchers.any());
+                                                      }), isA(NotificationFilter.class), any());
   }
 
 }

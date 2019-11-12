@@ -35,10 +35,6 @@ public class ThreadDumpTest extends TCTestCase {
     }
   }
 
-  // XXX: This test is known to fail under jrockit on the monkey. When we decide to deal with JRockit, we'll have to get
-  // this thing working too. One alternative: If there is a magic jrockit specific way to get thread dumps, feel to try
-  // it instead of kill -3 or CTRL-Break
-
   public void testDump() throws IOException, InterruptedException {
     LinkedJavaProcess process = new LinkedJavaProcess(ThreadDump.class.getName());
 

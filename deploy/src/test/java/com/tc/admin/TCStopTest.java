@@ -18,6 +18,7 @@ package com.tc.admin;
 
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
 import java.net.URI;
@@ -35,37 +36,14 @@ import javax.ws.rs.core.Response;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.anyVararg;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class TCStopTest {
-  @Test
-  public void testUnknownError() throws Exception {
-    WebTarget target = mockWebTarget("localhost", 12323);
-    responseCode(target, 403);
-    String errorMessage = "critical failure";
-    when(target.request(MediaType.APPLICATION_JSON_TYPE)
-        .post(any(Entity.class))
-        .readEntity(any(Class.class))).thenReturn(
-            new HashMap<String, String>(){{
-              put("error", errorMessage);
-              // important since TCStop will try to read it
-              put("stackTrace", "");
-            }}
-    );
-    try {
-      TCStop.restStop(target, false);
-      fail();
-    } catch (IOException e) {
-      assertThat(e.getMessage(), containsString(errorMessage));
-    }
-  }
-
   @Test(expected = IOException.class)
   public void testAuthenticationFailure() throws Exception {
     WebTarget target = mockWebTarget("localhost", 12323);
@@ -98,26 +76,48 @@ public class TCStopTest {
         argThat(entityWithContent(false, MediaType.APPLICATION_JSON_TYPE)));
   }
 
+  @Test
+  public void testUnknownError() throws Exception {
+    WebTarget target = mockWebTarget("localhost", 12323);
+    responseCode(target, 403);
+    String errorMessage = "critical failure";
+    when(target.request(MediaType.APPLICATION_JSON_TYPE)
+        .post(Entity.json(null))
+        .readEntity(any(Class.class))).thenReturn(
+        new HashMap<String, String>(){{
+          put("error", errorMessage);
+          // important since TCStop will try to read it
+          put("stackTrace", "");
+        }}
+    );
+    try {
+      TCStop.restStop(target, false);
+      fail();
+    } catch (IOException e) {
+      assertThat(e.getMessage(), containsString(errorMessage));
+    }
+  }
+
   private void responseCode(WebTarget target, int responseCode) {
     when(target.request(MediaType.APPLICATION_JSON_TYPE).post(Entity.json(null)).getStatus()).thenReturn(responseCode);
   }
 
   private WebTarget mockWebTarget(String host, int port) throws URISyntaxException {
     Response response = mock(Response.class);
-    when(response.readEntity(Boolean.class)).thenReturn(true);
+    when(response.readEntity(Boolean.class)).thenReturn(Boolean.TRUE);
     Invocation.Builder builder = mock(Invocation.Builder.class);
     when(builder.post(any(Entity.class))).thenReturn(response);
     WebTarget target = mock(WebTarget.class);
     when(target.getUri()).thenReturn(new URI("http://" + host + ":" + port));
     when(target.path(anyString())).thenReturn(target);
-    when(target.request((MediaType[]) anyVararg())).thenReturn(builder);
+    when(target.request(ArgumentMatchers.<MediaType>any())).thenReturn(builder);
     return target;
   }
 
   private static <T> ArgumentMatcher<Entity<T>> entityWithContent(final boolean expected, final MediaType mediaType) {
     return new ArgumentMatcher<Entity<T>>() {
       @Override
-      public boolean matches(final Object argument) {
+      public boolean matches(final Entity<T> argument) {
         if (argument instanceof Entity) {
           Entity match = (Entity) argument;
           if (!(match.getEntity() instanceof Map)) return false;

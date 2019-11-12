@@ -49,16 +49,14 @@ The Initial Developer of the Covered Software is
     <productKeyPath/>
     <ee.license>-Dcom.tc.productkey.path=${productKeyPath}</ee.license>
     <!-- must not be a SNAPSHOT, pipeline checks for that -->
-    <container-test-framework.version>3.0.0</container-test-framework.version>
+    <container-test-framework.version>3.0.1</container-test-framework.version>
 
     <tc.tests.configuration.properties.file>${project.build.testOutputDirectory}/tc.tests.properties</tc.tests.configuration.properties.file>
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
 
-    <hamcrest.version>1.3</hamcrest.version>
-    <surefire.version>2.15</surefire.version>
     <gmaven-plugin.version>1.5</gmaven-plugin.version>
     <cargo-maven2-plugin.version>1.0.3</cargo-maven2-plugin.version>
-    <tc.linked-child-process.version>1.0.12</tc.linked-child-process.version>
+    <tc.linked-child-process.version>1.0.15</tc.linked-child-process.version>
     <maven-appserver-plugin.version>1.0.5</maven-appserver-plugin.version>
     <gmavenProviderSelection>2.0</gmavenProviderSelection>
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
@@ -76,7 +74,8 @@ The Initial Developer of the Covered Software is
     <surefire.min-memory>64m</surefire.min-memory>
     <surefire.max-memory>1g</surefire.max-memory>
     <surefire.additional-jvm-args/>
-    <surefire.argLine>-server -Xms${surefire.min-memory} -Xmx${surefire.max-memory} ${surefire.additional-jvm-args} ${jrockit-jvm-arguments} -Dtc.base-dir=${tc.base-dir} ${tc.config} -Dtc.dso.globalmode=${tc.dso.globalmode} -Dtc.tests.info.property-files=${tc.tests.info.property-files} -Dcom.tc.properties=${tc.system.tests.properties} -Dcom.sun.management.jmxremote ${ee.license}</surefire.argLine>
+    <surefire.additional-jvm-module-args/>
+    <surefire.argLine>-server -Xms${surefire.min-memory} -Xmx${surefire.max-memory} ${surefire.additional-jvm-module-args} ${surefire.additional-jvm-args} ${jrockit-jvm-arguments} -Dtc.base-dir=${tc.base-dir} ${tc.config} -Dtc.dso.globalmode=${tc.dso.globalmode} -Dtc.tests.info.property-files=${tc.tests.info.property-files} -Dcom.tc.properties=${tc.system.tests.properties} -Dcom.sun.management.jmxremote ${ee.license}</surefire.argLine>
     <skipTests>true</skipTests>
 
     <!--
@@ -129,36 +128,6 @@ The Initial Developer of the Covered Software is
       <artifactId>linked-child-process</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>1.9.5</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>    
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-          </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
-      <version>${hamcrest.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.terracotta.test</groupId>
       <artifactId>test-framework</artifactId>
       <scope>test</scope>
@@ -166,7 +135,7 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.terracotta.junit</groupId>
       <artifactId>test-listeners</artifactId>
-      <version>1.0.2_JAVA11-SNAPSHOT</version>
+      <version>1.0.2</version>
     </dependency>
     <dependency>
       <groupId>org.terracotta.internal</groupId>
@@ -211,7 +180,6 @@ The Initial Developer of the Covered Software is
                tests -->
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>${surefire.version}</version>
           <configuration>
             <skipTests>true</skipTests>
           </configuration>
@@ -233,7 +201,8 @@ The Initial Developer of the Covered Software is
               </goals>
               <configuration>
                 <skipTests>${skipTests}</skipTests>
-                <forkMode>always</forkMode>
+                <forkCount>1</forkCount>
+                <reuseForks>false</reuseForks>
                 <printSummary>true</printSummary>
                 <forkedProcessTimeoutInSeconds>${absolute-test-timeout-secs}</forkedProcessTimeoutInSeconds>
                 <useSystemClassLoader>true</useSystemClassLoader>
@@ -303,11 +272,11 @@ The Initial Developer of the Covered Software is
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.8</version>
+          <version>3.1.1</version>
           <executions>
             <execution>
               <id>build-full-classpath</id>
-              <phase>integration-test</phase>
+              <phase>generate-sources</phase>
               <goals>
                 <goal>build-classpath</goal>
               </goals>
@@ -317,7 +286,7 @@ The Initial Developer of the Covered Software is
             </execution>
             <execution>
               <id>build-compile-classpath</id>
-              <phase>integration-test</phase>
+              <phase>generate-sources</phase>
               <goals>
                 <goal>build-classpath</goal>
               </goals>
@@ -328,7 +297,7 @@ The Initial Developer of the Covered Software is
             </execution>
             <execution>
               <id>build-test-classpath</id>
-              <phase>integration-test</phase>
+              <phase>generate-sources</phase>
               <goals>
                 <goal>build-classpath</goal>
               </goals>
@@ -339,7 +308,7 @@ The Initial Developer of the Covered Software is
             </execution>
             <execution>
               <id>build-runtime-classpath</id>
-              <phase>compile</phase>
+              <phase>generate-sources</phase>
               <goals>
                 <goal>build-classpath</goal>
               </goals>
@@ -350,47 +319,27 @@ The Initial Developer of the Covered Software is
             </execution>
           </executions>
         </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
         <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.servicemix.tooling</groupId>
-                    <artifactId>depends-maven-plugin</artifactId>
-                    <versionRange>[1.2,)</versionRange>
-                    <goals>
-                      <goal>generate-depends-file</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore/>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.terracotta.maven.plugins</groupId>
-          <artifactId>tc-maven-plugin</artifactId>
-          <version>${tcmaven.version}</version>
-          <dependencies>
-            <dependency>
-              <groupId>com.terracottatech</groupId>
-              <artifactId>terracotta-ee</artifactId>
-              <version>${terracotta.core.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.terracotta.qa</groupId>
-              <artifactId>license-wrapper</artifactId>
-              <version>1.0.0</version>
-            </dependency>
-          </dependencies>
+           <groupId>org.apache.maven.plugins</groupId>
+           <artifactId>maven-install-plugin</artifactId>
+           <version>3.0.0-M1</version>
+           <configuration>
+              <groupId>org.terracotta</groupId>
+              <artifactId>system-test-parent</artifactId>
+              <version>${project.version}</version>
+              <packaging>pom</packaging>
+              <file>${basedir}/pom.xml</file>
+              <generatePom>false</generatePom>
+           </configuration>
+           <executions>
+              <execution>
+                 <id>install-jar-lib</id>
+                 <goals>
+                    <goal>install-file</goal>
+                 </goals>
+                 <phase>validate</phase>
+              </execution>
+           </executions>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -416,6 +365,16 @@ The Initial Developer of the Covered Software is
   </build>
 
   <profiles>
+<!--    <profile>-->
+<!--      <id>surefire.additional-jvm-module-args</id>-->
+<!--      <activation>-->
+<!--        <jdk>[9,)</jdk>-->
+<!--      </activation>-->
+<!--      <properties>-->
+<!--        <surefire.additional-jvm-module-args>&#45;&#45;add-exports java.base/jdk.internal.misc=ALL-UNNAMED</surefire.additional-jvm-module-args>-->
+<!--      </properties>-->
+<!--    </profile>-->
+    
     <profile>
       <id>workaround-windows</id>
       <activation>
@@ -441,25 +400,19 @@ The Initial Developer of the Covered Software is
     </profile>
 
     <profile>
-      <id>container-debug</id>
+      <id>testVM</id>
+      <activation>
+        <property>
+          <name>testVM</name>
+        </property>
+      </activation>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.terracotta</groupId>
-            <artifactId>maven-forge-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <printSummary>true</printSummary>
-              <reportFormat>plain</reportFormat>
-              <systemProperties>
-                <property>
-                  <name>com.tc.test.server.appserver.deployment.GenericServer.ENABLE_DEBUGGER</name>
-                  <value>true</value>
-                </property>
-                <property>
-                  <name>tc.classloader.writeToDisk</name>
-                  <value>true</value>
-                </property>
-              </systemProperties>
+              <jvm>${testVM}</jvm>
             </configuration>
           </plugin>
         </plugins>

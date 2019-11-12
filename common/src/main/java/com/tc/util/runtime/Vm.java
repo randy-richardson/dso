@@ -49,15 +49,6 @@ public class Vm {
   }
 
   /**
-   * True if JRockit
-   * 
-   * @return True if BEA Jrockit VM
-   */
-  public static boolean isJRockit() {
-    return VERSION.isJRockit();
-  }
-
-  /**
    * Attempts to determine the max direct memory usable by the JVM.
    * If this cannot be determined, return a constant matching the startup script.
    *
@@ -76,5 +67,9 @@ public class Vm {
         throw new AssertionError("Unexpected failure in converting default");
       }
     }
+  }
+
+  public static boolean isPreJava9() {
+    return System.getProperty("java.specification.version").contains(".");
   }
 }

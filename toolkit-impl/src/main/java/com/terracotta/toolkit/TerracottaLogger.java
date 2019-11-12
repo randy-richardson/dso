@@ -32,7 +32,7 @@ public class TerracottaLogger implements ToolkitLogger {
    * The supplied name is prefixed with a fixed value to ensure toolkit loggers are confined within a namespace.
    * 
    * @param name logger identifier
-   * @param platformService2
+   * @param platformService
    * @throws NullPointerException if the supplied name is null
    */
   public TerracottaLogger(String name, PlatformService platformService) {

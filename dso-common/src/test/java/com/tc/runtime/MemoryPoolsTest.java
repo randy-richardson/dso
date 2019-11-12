@@ -53,6 +53,6 @@ public class MemoryPoolsTest extends TCTestCase {
     assertNotNull(mu2);
     long collectorCount2 = mu2.getCollectionCount();
     System.err.println("Now the Collector Count  is  " + collectorCount2);
-    assertTrue(collectorCount2 > collectorCount1);
+    assertTrue(collectorCount2 >= collectorCount1);
   }
 }

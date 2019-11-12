@@ -22,9 +22,9 @@ import net.sf.ehcache.CacheManager;
 import java.io.IOException;
 
 /**
- * <p>BigMemory configuration - size based config using Automatic Resource Control and dynamically adding one instance
+ * BigMemory configuration - size based config using Automatic Resource Control and dynamically adding one instance
  * so they share the memory allocated by Automatic Resource Control
- * <p/>
+ * <br>
  * <p>Automatic Resource Control (ARC) is an intelligent approach to caching with fine-grained controls for tuning cache performance. ARC offers a wealth of benefits, including:
  * <ul>
  * <li>Sizing limitations on in-memory caches to avoid OutOfMemory errors</li>
@@ -33,11 +33,8 @@ import java.io.IOException;
  * <li>Sizing by bytes, entries, or percentages for more flexibility</li>
  * <li>Keeping hot or eternal data where it can substantially boost performance</li>
  * </ul>
- * </p>
- * <p>The two instances share 128 MB
- * <p/>
- * <p>Link to doc : http://ehcache.org/documentation/arc/index </p>
- * <p/>
+ * <p>The two instances share 128 MB</p>
+ * <p>Link to doc : http://ehcache.org/documentation/arc/index</p>
  */
 public class ArcConfiguration {
 

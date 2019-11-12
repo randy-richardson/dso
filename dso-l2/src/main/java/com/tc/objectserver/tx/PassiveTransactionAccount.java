@@ -152,7 +152,7 @@ public class PassiveTransactionAccount implements TransactionAccount {
   /**
    * Always returns first since {@link PassiveTransactionAccount} doesn't support waitee accounting.
    * 
-   * @param TransactionID requestID
+   * @param requestID
    * @return boolean
    */
   @Override
@@ -161,8 +161,8 @@ public class PassiveTransactionAccount implements TransactionAccount {
   }
 
   /**
-   * @param NodeID waitee
-   * @param TransactionID requestID
+   * @param waitee
+   * @param requestID
    * @throws AssertionError always, should not be called.
    */
   @Override
@@ -172,7 +172,7 @@ public class PassiveTransactionAccount implements TransactionAccount {
   }
 
   /**
-   * @param TransactionID requestID
+   * @param requestID
    * @return boolean
    * @throws AssertionError always, should not be called.
    */
@@ -182,7 +182,7 @@ public class PassiveTransactionAccount implements TransactionAccount {
   }
 
   /**
-   * @param TransactionID requestID
+   * @param requestID
    * @return boolean true when the TransactionState for the requestID is complete.
    */
   @Override
@@ -198,7 +198,7 @@ public class PassiveTransactionAccount implements TransactionAccount {
   }
 
   /**
-   * @param TransactionID requestID
+   * @param requestID
    * @return boolean
    * @throws AssertionError always, should not be called.
    */
@@ -208,7 +208,7 @@ public class PassiveTransactionAccount implements TransactionAccount {
   }
 
   /**
-   * @param TransactionID requestID
+   * @param requestID
    * @return boolean
    * @throws AssertionError always, should not be called.
    */
@@ -220,7 +220,7 @@ public class PassiveTransactionAccount implements TransactionAccount {
   /**
    * Returns empty collection since {@link PassiveTransactionAccount} does not do waitee accounting.
    * 
-   * @param NodeID waitee
+   * @param waitee
    * @return Set set
    */
   @Override

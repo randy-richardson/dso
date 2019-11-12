@@ -116,7 +116,7 @@ public class TCConcurrentMultiMap<K, V> implements PrettyPrintable {
   /**
    * Removes the mapping of key to value if it exists in the Multimap.
    * 
-   * @returns true if the mapping existed and was successfully removed, false if the mapping didn't exist.
+   * @return true if the mapping existed and was successfully removed, false if the mapping didn't exist.
    * @throws NullPointerException if key or value is null
    */
   public boolean remove(final K key, final V value) {

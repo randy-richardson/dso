@@ -16,13 +16,13 @@
  */
 package com.tc.objectserver.impl;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
@@ -33,6 +33,10 @@ import com.tc.objectserver.context.ServerMapEvictionContext;
 import com.tc.objectserver.l1.impl.ClientObjectReferenceSet;
 
 import java.util.Collections;
+
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.intThat;
 
 /**
  *
@@ -118,21 +122,14 @@ public class AbstractEvictionTriggerTest {
     }
     
     if (found != null) {
-      Mockito.verify(map).getRandomSamples(Matchers.intThat(new BaseMatcher<Integer>() {
+      Mockito.verify(map).getRandomSamples(intThat(new ArgumentMatcher<Integer>() {
         int maxLocal = et.boundsCheckSampleSize(Integer.MAX_VALUE);
 
         @Override
-        public boolean matches(Object item) {
-          if (item instanceof Integer && ((Integer) item) <= maxLocal && ((Integer) item) >= 0) { return true; }
-          return false;
+        public boolean matches(Integer item) {
+          return item <= maxLocal && item >= 0;
         }
-
-        @Override
-        public void describeTo(Description description) {
-          description.appendText("< " + maxLocal);
-        }
-
-      }), Matchers.eq(cs), SamplingType.FOR_EVICTION);
+      }), eq(cs), SamplingType.FOR_EVICTION);
       Mockito.verify(map).evictionCompleted();
     }
   }
@@ -177,7 +174,7 @@ public class AbstractEvictionTriggerTest {
     evm = getEvictableMap();
     trigger = getTrigger();
     Mockito.when(evm.startEviction()).thenReturn(Boolean.TRUE);
-    Mockito.when(evm.getRandomSamples(Matchers.anyInt(), Matchers.eq(clientSet), Matchers.eq(SamplingType.FOR_EVICTION)))
+    Mockito.when(evm.getRandomSamples(anyInt(), eq(clientSet), eq(SamplingType.FOR_EVICTION)))
         .thenReturn(Collections.<Object, EvictableEntry> emptyMap());
   }
 

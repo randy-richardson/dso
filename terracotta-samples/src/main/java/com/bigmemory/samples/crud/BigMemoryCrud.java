@@ -36,9 +36,7 @@ import java.util.Map;
 import static com.bigmemory.commons.util.ReadUtil.waitForInput;
 
 /**
- * <p>Sample app briefly showing some of the api's one can use to create, read, update and delete in
- * BigMemory.
- * <p/>
+ * Sample app briefly showing some of the api's one can use to create, read, update and delete in BigMemory.
  */
 public class BigMemoryCrud {
 

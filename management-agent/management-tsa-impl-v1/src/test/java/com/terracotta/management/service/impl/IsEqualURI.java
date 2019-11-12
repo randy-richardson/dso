@@ -18,7 +18,6 @@ package com.terracotta.management.service.impl;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 
 import java.net.URI;
@@ -110,7 +109,6 @@ public class IsEqualURI extends BaseMatcher<URI> {
     description.appendValue(expectedValue);
   }
 
-  @Factory
   public static Matcher<URI> equalToUri(URI operand) {
     return new IsEqualURI(operand);
   }

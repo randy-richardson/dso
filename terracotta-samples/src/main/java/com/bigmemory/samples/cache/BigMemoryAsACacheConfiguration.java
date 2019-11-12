@@ -28,9 +28,7 @@ import net.sf.ehcache.config.TerracottaConfiguration;
 import com.bigmemory.commons.model.Person;
 
 /**
- * <p>Using BigMemory as a cache and dynamically adding
- * a cache instance
- * <p/>
+ * Using BigMemory as a cache and dynamically adding a cache instance
  */
 public class BigMemoryAsACacheConfiguration {
 

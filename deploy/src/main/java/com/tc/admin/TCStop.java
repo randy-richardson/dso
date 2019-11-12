@@ -43,7 +43,7 @@ import javax.ws.rs.core.Response;
 public class TCStop {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
 
-  private static final int MAX_TRIES = 50;
+  private static final int MAX_TRIES = 10;
   private static final int TRY_INTERVAL = 1000;
 
   private static final String FORCE_OPTION_NAME = "force";

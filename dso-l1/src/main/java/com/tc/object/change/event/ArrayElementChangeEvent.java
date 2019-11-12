@@ -33,7 +33,7 @@ public class ArrayElementChangeEvent implements TCChangeBufferEvent {
   /**
    * @param index index in the array for the changed element or start index for the subarray
    * @param value new value or copied array for the subarray
-   * @param legnth the length of the subarray
+   * @param length the length of the subarray
    */
   public ArrayElementChangeEvent(int index, Object value, int length) {
     this.index = index;

@@ -36,7 +36,7 @@ public interface ConfigurationCreator {
 
   /**
    * @return the directory containing the configuration file from which config was loaded,
-   *         <em>IF<em> such a thing exists; this may well return <code>null</code> (for
+   *         <em>IF</em> such a thing exists; this may well return <code>null</code> (for
    *         example, if configuration was loaded from a URL rather than a file).
    */
   File directoryConfigurationLoadedFrom();

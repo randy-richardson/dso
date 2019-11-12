@@ -17,21 +17,18 @@
 package com.tc.objectserver.tx;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyCollection;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.AdditionalMatchers.and;
+import static org.mockito.AdditionalMatchers.not;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
 import com.tc.async.api.EventContext;
@@ -152,7 +149,8 @@ public class TransactionalObjectManagerTest extends TCTestCase {
 
     ApplyTransactionInfo applyTransactionInfo5 = applyInfoWithTransactionID(5);
     txObjectManager.applyTransactionComplete(applyTransactionInfo5);
-    assertThat(applyTransactionInfo5.getObjectsToRelease(), containsObjectWithID(new ObjectID(1)));
+    Collection<ManagedObject> mos = applyTransactionInfo5.getObjectsToRelease();
+    assertTrue(mos.stream().anyMatch(mo -> mo.getID().equals(new ObjectID(1))));
   }
 
   public void testAlreadyCommittedTransaction() throws Exception {
@@ -160,11 +158,12 @@ public class TransactionalObjectManagerTest extends TCTestCase {
     gtxMgr.commit(new ServerTransactionID(new ClientID(0), new TransactionID(1)));
     txObjectManager.addTransactions(asList(createTransaction(1, Collections.EMPTY_SET, asList(1L))));
     txObjectManager.lookupObjectsForTransactions();
-    verify(coordinator).addToApplyStage((EventContext) argThat(allOf(hasTransactionID(1), not(needsApply()))));
+    verify(coordinator).addToApplyStage((EventContext) and(argThat(hasTransactionID(1)), not(argThat(needsApply()))));
 
     ApplyTransactionInfo applyTransactionInfo = applyInfoWithTransactionID(1);
     txObjectManager.applyTransactionComplete(applyTransactionInfo);
-    assertThat(applyTransactionInfo.getObjectsToRelease(), containsObjectWithID(new ObjectID(1L)));
+    Collection<ManagedObject> mos = applyTransactionInfo.getObjectsToRelease();
+    assertTrue(mos.stream().anyMatch(mo -> mo.getID().equals(new ObjectID(1))));
     objectManager.releaseAll(applyTransactionInfo.getObjectsToRelease());
   }
 
@@ -208,7 +207,8 @@ public class TransactionalObjectManagerTest extends TCTestCase {
 
     ApplyTransactionInfo applyTransactionInfo = applyInfoWithTransactionID(1);
     txObjectManager.applyTransactionComplete(applyTransactionInfo);
-    assertThat(applyTransactionInfo.getObjectsToRelease(), containsObjectWithID(new ObjectID(1L)));
+    Collection<ManagedObject> mos = applyTransactionInfo.getObjectsToRelease();
+    assertTrue(mos.stream().anyMatch(mo -> mo.getID().equals(new ObjectID(1))));
     objectManager.releaseAll(applyTransactionInfo.getObjectsToRelease());
 
     // Another transaction on the newly released object can't go through because another earlier transaction
@@ -233,7 +233,7 @@ public class TransactionalObjectManagerTest extends TCTestCase {
     txObjectManager.lookupObjectsForTransactions();
 
     verify(objectManager, never()).createNewObjects((Set) argThat(containsObjectWithID(new ObjectID(1L))));
-    verify(coordinator).addToApplyStage((EventContext) argThat(allOf(hasTransactionID(0), hasIgnorableObject(new ObjectID(1L)))));
+    verify(coordinator).addToApplyStage((EventContext) and(argThat(hasTransactionID(0)), argThat(hasIgnorableObject(new ObjectID(1L)))));
   }
 
   private static Collection<ObjectID> asCollectionOfObjectIDs(Long ... longs) {
@@ -251,79 +251,45 @@ public class TransactionalObjectManagerTest extends TCTestCase {
                                         clientChannelMonitor));
   }
 
-  private <T> Matcher<T> containsObjectWithID(final ObjectID id) {
-    return new BaseMatcher<T>() {
+  private ArgumentMatcher<Collection<ManagedObject>> containsObjectWithID(final ObjectID id) {
+    return new ArgumentMatcher<Collection<ManagedObject>>() {
       @Override
-      public boolean matches(final Object o) {
-        if (o instanceof Collection) {
-          for (Object obj : (Collection) o) {
-            if (obj instanceof ManagedObject && id.equals(((ManagedObject)obj).getID())) {
-              return true;
-            }
+      public boolean matches(final Collection<ManagedObject> mos) {
+        for (ManagedObject mo : mos) {
+          if (id.equals(mo.getID())) {
+            return true;
           }
         }
         return false;
       }
+    };
+  }
 
+  private ArgumentMatcher<ApplyTransactionContext> hasIgnorableObject(final ObjectID oid) {
+    return new ArgumentMatcher<ApplyTransactionContext>() {
       @Override
-      public void describeTo(final Description description) {
-        //
+      public boolean matches(final ApplyTransactionContext cntx) {
+        return cntx.getIgnoredObjects().contains(oid);
       }
     };
   }
 
-  private Matcher<ApplyTransactionContext> hasIgnorableObject(final ObjectID oid) {
-    return new BaseMatcher<ApplyTransactionContext>() {
+  private ArgumentMatcher<ApplyTransactionContext> hasTransactionID(final long transactionID) {
+    return new ArgumentMatcher<ApplyTransactionContext>() {
       @Override
-      public boolean matches(final Object o) {
-        if (o instanceof ApplyTransactionContext) {
-          return ((ApplyTransactionContext)o).getIgnoredObjects().contains(oid);
-        } else {
-          return false;
-        }
-      }
-
-      @Override
-      public void describeTo(final Description description) {
-
+      public boolean matches(final ApplyTransactionContext cntx) {
+        return cntx.getTxn()
+            .getServerTransactionID()
+            .equals(new ServerTransactionID(new ClientID(0), new TransactionID(transactionID)));
       }
     };
   }
 
-  private Matcher<ApplyTransactionContext> hasTransactionID(final long transactionID) {
-    return new BaseMatcher<ApplyTransactionContext>() {
+  private ArgumentMatcher<ApplyTransactionContext> needsApply() {
+    return new ArgumentMatcher<ApplyTransactionContext>() {
       @Override
-      public boolean matches(final Object o) {
-        if (o instanceof ApplyTransactionContext) {
-          return ((ApplyTransactionContext)o).getTxn()
-              .getServerTransactionID()
-              .equals(new ServerTransactionID(new ClientID(0), new TransactionID(transactionID)));
-        } else {
-          return false;
-        }
-      }
-
-      @Override
-      public void describeTo(final Description description) {
-        //
-      }
-    };
-  }
-
-  private Matcher<ApplyTransactionContext> needsApply() {
-    return new BaseMatcher<ApplyTransactionContext>() {
-      @Override
-      public boolean matches(final Object o) {
-        if (o instanceof ApplyTransactionContext) {
-          return ((ApplyTransactionContext)o).needsApply();
-        } else {
-          return false;
-        }
-      }
-
-      @Override
-      public void describeTo(final Description description) {
-        //
+      public boolean matches(final ApplyTransactionContext cntx) {
+        return cntx.needsApply();
       }
     };
   }

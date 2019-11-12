@@ -17,6 +17,8 @@
 package com.tc.objectserver.managedobject;
 
 import static java.util.Arrays.asList;
+import static org.mockito.AdditionalMatchers.or;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
@@ -264,7 +266,7 @@ public class ConcurrentDistributedServerMapManagedObjectStateTest extends TCTest
     verify(applyTransactionInfo).invalidate(oid, value2.getObjectID());
     verify(applyTransactionInfo).invalidate(oid, value3.getObjectID());
 
-    verify(mutationEventPublisher, times(3)).publishEvent(any(Set.class), eq(ServerEventType.REMOVE), any(), any(CDSMValue.class), anyString());
+    verify(mutationEventPublisher, times(3)).publishEvent(any(Set.class), eq(ServerEventType.REMOVE), any(), any(CDSMValue.class), or(anyString(), isNull()));
     verify(mutationEventPublisher, never()).publishEvent(any(Set.class), eq(ServerEventType.REMOVE_LOCAL), any(), any(CDSMValue.class), anyString());
   }
 
@@ -287,9 +289,9 @@ public class ConcurrentDistributedServerMapManagedObjectStateTest extends TCTest
     verify(applyTransactionInfo).invalidate(oid, value2.getObjectID());
     verify(applyTransactionInfo).invalidate(oid, value3.getObjectID());
 
-    verify(mutationEventPublisher, times(3)).publishEvent(any(Set.class), eq(ServerEventType.REMOVE), any(), any(CDSMValue.class), anyString());
+    verify(mutationEventPublisher, times(3)).publishEvent(any(Set.class), eq(ServerEventType.REMOVE), any(), any(CDSMValue.class), or(anyString(), isNull()));
     verify(mutationEventPublisher, times(3)).publishEvent(any(Set.class), eq(ServerEventType.REMOVE_LOCAL), any(), any(CDSMValue.class),
-        anyString());
+        or(anyString(), isNull()));
   }
 
   public void testSetLastAccessedTime() throws Exception {

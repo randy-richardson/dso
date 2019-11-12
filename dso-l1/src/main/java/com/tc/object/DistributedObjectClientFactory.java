@@ -161,11 +161,12 @@ public class DistributedObjectClientFactory {
 
   private static void startToolkitConfigurator(DSOClientConfigHelper configHelper) throws Exception {
     Class toolkitConfiguratorClass = null;
-    try {
-      toolkitConfiguratorClass = Class.forName("com.terracotta.toolkit.EnterpriseToolkitConfigurator");
-    } catch (ClassNotFoundException e) {
-      toolkitConfiguratorClass = Class.forName("com.terracotta.toolkit.ToolkitConfigurator");
-    }
+//    try {
+//      toolkitConfiguratorClass = Class.forName("com.terracotta.toolkit.EnterpriseToolkitConfigurator");
+//    } catch (ClassNotFoundException e) {
+//      toolkitConfiguratorClass = Class.forName("com.terracotta.toolkit.ToolkitConfigurator");
+//    }
+    toolkitConfiguratorClass = Class.forName("com.terracotta.toolkit.ToolkitConfigurator");
 
     Object toolkitConfigurator = toolkitConfiguratorClass.newInstance();
     Method start = toolkitConfiguratorClass.getMethod("start", DSOClientConfigHelper.class);

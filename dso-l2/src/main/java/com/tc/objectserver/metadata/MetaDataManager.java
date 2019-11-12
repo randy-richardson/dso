@@ -30,8 +30,8 @@ public interface MetaDataManager {
   /**
    * Process metadata.
    * 
-   * @param ServerTransaction transaction associated with metadata reader.
-   * @param ApplyTransactionInfo applyinfo associated with the txn.
+   * @param txn transaction associated with metadata reader.
+   * @param applyInfo applyinfo associated with the txn.
    * @return boolean if all meta data processing is complete
    */
   public boolean processMetaData(ServerTransaction txn, ApplyTransactionInfo applyInfo);

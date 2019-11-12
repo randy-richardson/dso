@@ -35,6 +35,11 @@ public class Exec {
   public static final long NO_TIMEOUT = -1;
 
   public static String getJavaExecutable() {
+    String testVM = System.getProperty("testVM");
+    if (testVM != null) {
+      return testVM;
+    }
+
     String javaHome = System.getProperty("java.home");
     if (javaHome == null) { throw new IllegalStateException("java.home system property not set"); }
 

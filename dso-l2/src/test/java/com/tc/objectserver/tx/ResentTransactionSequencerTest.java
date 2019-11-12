@@ -28,6 +28,7 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
 import com.google.common.collect.Lists;
@@ -158,8 +159,8 @@ public class ResentTransactionSequencerTest extends TCTestCase {
     sequencer.addTransactions(batch2);
     sequencer.addTransactions(batch1);
 
-    ArgumentCaptor<Map> c = ArgumentCaptor.<Map> forClass(Map.class);
-    ArgumentCaptor<NodeID> n = ArgumentCaptor.<NodeID> forClass(NodeID.class);
+    ArgumentCaptor<Map> c = ArgumentCaptor.forClass(Map.class);
+    ArgumentCaptor<NodeID> n = ArgumentCaptor.forClass(NodeID.class);
 
     InOrder inOrder = inOrder(replicatedObjectManager, transactionManager);
     inOrder.verify(transactionManager).incomingTransactions(n.capture(), c.capture());
@@ -193,8 +194,8 @@ public class ResentTransactionSequencerTest extends TCTestCase {
     sequencer.addTransactions(batch3);
     sequencer.addTransactions(batch4);
 
-    ArgumentCaptor<Map> c = ArgumentCaptor.<Map> forClass(Map.class);
-    ArgumentCaptor<NodeID> n = ArgumentCaptor.<NodeID> forClass(NodeID.class);
+    ArgumentCaptor<Map> c = ArgumentCaptor.forClass(Map.class);
+    ArgumentCaptor<NodeID> n = ArgumentCaptor.forClass(NodeID.class);
 
     InOrder inOrder = inOrder(replicatedObjectManager, transactionManager);
     inOrder.verify(transactionManager).incomingTransactions(n.capture(), c.capture());
@@ -205,7 +206,7 @@ public class ResentTransactionSequencerTest extends TCTestCase {
     verifyBatches(true, c, batch1, batch2);
 
     // reset arg captor
-    c = ArgumentCaptor.<Map> forClass(Map.class);
+    c = ArgumentCaptor.forClass(Map.class);
 
     inOrder.verify(transactionManager).incomingTransactions(n.capture(), c.capture());
     inOrder.verify(replicatedObjectManager).relayTransactions(batch3);
@@ -242,27 +243,23 @@ public class ResentTransactionSequencerTest extends TCTestCase {
     inOrder.verify(replicatedObjectManager).relayTransactions(argThat(hasClientIDAndTxns(0, serverTransactionID(0, 2))));
   }
 
-  private Matcher<Map<ServerTransactionID, ServerTransaction>> hasServerTransactions(final ServerTransactionID... txnIDs) {
-    return new BaseMatcher<Map<ServerTransactionID, ServerTransaction>>() {
+  private ArgumentMatcher<Map<ServerTransactionID, ServerTransaction>> hasServerTransactions(final ServerTransactionID... txnIDs) {
+    return new ArgumentMatcher<Map<ServerTransactionID, ServerTransaction>>() {
       @Override
-      public boolean matches(final Object item) {
+      public boolean matches(final Map<ServerTransactionID, ServerTransaction> item) {
         if (item instanceof Map) {
           Map<?, ?> map = (Map<?, ?>) item;
           return map.keySet().containsAll(Arrays.asList(txnIDs)) && map.size() == txnIDs.length;
         }
         return false;
       }
-
-      @Override
-      public void describeTo(final Description description) {
-      }
     };
   }
 
-  private Matcher<TransactionBatchContext> hasClientIDAndTxns(final long clientID, final ServerTransactionID ... txnIDs) {
-    return new BaseMatcher<TransactionBatchContext>() {
+  private ArgumentMatcher<TransactionBatchContext> hasClientIDAndTxns(final long clientID, final ServerTransactionID ... txnIDs) {
+    return new ArgumentMatcher<TransactionBatchContext>() {
       @Override
-      public boolean matches(final Object item) {
+      public boolean matches(final TransactionBatchContext item) {
         if (item instanceof TransactionBatchContext) {
           TransactionBatchContext transactionBatchContext = (TransactionBatchContext)item;
           return transactionBatchContext.getSourceNodeID().equals(new ClientID(clientID)) &&
@@ -271,10 +268,6 @@ public class ResentTransactionSequencerTest extends TCTestCase {
         } else {
           return false;
         }
-      }
-
-      @Override
-      public void describeTo(final Description description) {
       }
     };
   }

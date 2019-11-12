@@ -435,8 +435,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   @Override
   public void dump() {
-    this.dumpHandler.dump();
-    this.serverBuilder.dump();
+//    this.dumpHandler.dump();
+//    this.serverBuilder.dump();
   }
 
   public synchronized void start() throws IOException, LocationNotCreatedException, FileNotCreatedException {
@@ -1575,13 +1575,13 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
   }
 
   public void dumpClusterState() {
-    try {
-      L2DumperMBean mbean = (L2DumperMBean) l2Management.findMBean(L2MBeanNames.DUMPER, L2DumperMBean.class);
-      mbean.dumpClusterState();
-    } catch (Exception e) {
-      logger.warn("Could not take Cluster dump, hence taking server dump only");
-      dump();
-    }
+//    try {
+//      L2DumperMBean mbean = (L2DumperMBean) l2Management.findMBean(L2MBeanNames.DUMPER, L2DumperMBean.class);
+//      mbean.dumpClusterState();
+//    } catch (Exception e) {
+//      logger.warn("Could not take Cluster dump, hence taking server dump only");
+//      dump();
+//    }
   }
 
   public BackupManager getBackupManager() {

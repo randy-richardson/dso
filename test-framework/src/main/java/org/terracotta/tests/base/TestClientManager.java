@@ -53,7 +53,7 @@ public class TestClientManager {
   /**
    * arguments to be passed to the clients. e.g mvn -Psystem-tests integration-test -Dtest=MyTest
    * -DclientJVMArgs="-DsomeProp=value1 -DsomeProp2=value2" In the spawned clients, these will be passed as JVMArgs
-   * System.getProperty("someProp"); => will return value1 System.getProperty("someProp2"); => will return value2
+   * System.getProperty("someProp"); =&gt; will return value1 System.getProperty("someProp2"); =&gt; will return value2
    */
   public static final String            CLIENT_ARGS                      = "clientJVMArgs";
 

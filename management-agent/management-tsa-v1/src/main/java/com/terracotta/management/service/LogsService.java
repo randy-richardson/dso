@@ -25,7 +25,7 @@ import java.util.Set;
 
 /**
  * An interface for service implementations providing TSA logs querying facilities.
- * <p/>
+ * <br>
  * The timestamp string describes a time since <i>now</i>.
  * The grammar for the timestamp string is as follows:
  * <pre>&lt;numeric value&gt;&lt;unit&gt;</pre>
@@ -36,7 +36,7 @@ import java.util.Set;
  * <li><b>m</b> for minutes</li>
  * <li><b>s</b> for seconds</li>
  * </ul>
- * <p/>
+ * <br>
  * For instance, these strings are valid:
  * <ul>
  * <li><b>2d</b> means in the last 2 days</li>

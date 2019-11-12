@@ -1065,7 +1065,7 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
   }
 
   /**
-   * @param o is either {@link SerializedClusterObject} or Literal
+   * @param index
    */
   public void internalRemove(int index) {
     localList.remove(index);

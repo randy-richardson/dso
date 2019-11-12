@@ -39,6 +39,11 @@ The Initial Developer of the Covered Software is
     <!-- Version and scope for each dependency is declared in the dependencyManagement 
       section of the parent POM. -->
     <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>org.terracotta</groupId>
       <artifactId>tc-messaging</artifactId>
     </dependency>      
@@ -49,10 +54,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-collections</groupId>
@@ -112,6 +113,7 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>hsqldb</groupId>
@@ -139,8 +141,12 @@ The Initial Developer of the Covered Software is
       <artifactId>gf.javax.mail</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.activation</groupId>
-      <artifactId>activation</artifactId>
+      <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.hk2</groupId>
+      <artifactId>osgi-resource-locator</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -175,9 +181,9 @@ The Initial Developer of the Covered Software is
       <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>org.jboss.byteman</groupId>
-        <artifactId>byteman</artifactId>
-        <version>${byteman.version}</version>
+      <groupId>org.jboss.byteman</groupId>
+      <artifactId>byteman</artifactId>
+      <version>${byteman.version}</version>
     </dependency>
     <dependency>
       <groupId>org.terracotta.internal</groupId>
@@ -205,14 +211,14 @@ The Initial Developer of the Covered Software is
       <plugin>
         <groupId>org.terracotta</groupId>
         <artifactId>maven-forge-plugin</artifactId>
-        <configuration>
-          <rootPath>${basedir}/..</rootPath>
-        </configuration>
         <executions>
           <execution>
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <rootPath>${basedir}/..</rootPath>
+            </configuration>
             <phase>generate-resources</phase>
           </execution>
         </executions>
@@ -220,7 +226,7 @@ The Initial Developer of the Covered Software is
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.8</version>
+        <version>3.1.1</version>
         <executions>
           <execution>
             <id>unpack-dependencies</id>
@@ -229,8 +235,7 @@ The Initial Developer of the Covered Software is
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <overwrite>false</overwrite>
-              <includeGroupIds>org.terracotta.internal,org.terracotta.test</includeGroupIds>
+             <includeGroupIds>org.terracotta.internal,org.terracotta.test</includeGroupIds>
               <classifier>tests</classifier>
               <includes>**/*.class</includes>
               <excludes>**/**TestApp*.class,**/**Test$*class</excludes>
@@ -245,7 +250,6 @@ The Initial Developer of the Covered Software is
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <overwrite>false</overwrite>
               <includeGroupIds>org.terracotta.internal,org.terracotta.test</includeGroupIds>
               <classifier>test-sources</classifier>
               <excludes>**/**TestApp.java</excludes>
@@ -267,16 +271,18 @@ The Initial Developer of the Covered Software is
               <goal>copy</goal>
             </goals>
             <configuration>
-              <resource>
-                <targetPath>${project.build.directory}/sources</targetPath>
-                <directory>${basedir}/src/main/java</directory>
-              </resource>
-              <resource>
-                <targetPath>${project.build.directory}/${project.artifactId}-${project.version}-sources.jar</targetPath>
-                <directory>${project.build.directory}/sources</directory>
-                <pack>true</pack>
-                <attachArtifact>false</attachArtifact>
-              </resource>
+              <resources>
+                <resource>
+                  <targetPath>${project.build.directory}/sources</targetPath>
+                  <directory>${basedir}/src/main/java</directory>
+                </resource>
+                <resource>
+                  <targetPath>${project.build.directory}/${project.artifactId}-${project.version}-sources.jar</targetPath>
+                  <directory>${project.build.directory}/sources</directory>
+                  <pack>true</pack>
+                  <attachArtifact>false</attachArtifact>
+                </resource>
+              </resources>
             </configuration>
           </execution>
         </executions>
@@ -284,7 +290,6 @@ The Initial Developer of the Covered Software is
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>2.3.2</version>
         <configuration>
           <archive>
             <manifestFile>${project.build.directory}/MANIFEST.MF</manifestFile>

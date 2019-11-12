@@ -85,7 +85,7 @@ public class NIOWorkarounds {
   /**
    * Force use of poll based NIO selector on Solaris 10 to work around Sun bug 6322825. This is done by setting the
    * System property java.nio.channels.spi.SelectorProvider to "sun.nio.ch.PollSelectorProvider". The workaround is only
-   * applied on Solaris 10, JDK < 1.6. See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6322825
+   * applied on Solaris 10, JDK &lt; 1.6. See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6322825
    */
   public static void solaris10Workaround() {
     boolean workaround = solaris10Workaround(System.getProperties());

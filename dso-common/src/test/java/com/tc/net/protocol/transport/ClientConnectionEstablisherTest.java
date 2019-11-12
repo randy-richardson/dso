@@ -188,7 +188,7 @@ public class ClientConnectionEstablisherTest {
   public void test_reconnect_calls_connect() throws MaxConnectionsExceededException, TCTimeoutException, IOException {
     Mockito.doReturn(cai).when(connAddressProvider).getIterator();
     Mockito.doReturn(logger).when(cmt).getLogger();
-    Mockito.stub(cai.hasNext()).toReturn(true).toReturn(false);
+    Mockito.when(cai.hasNext()).thenReturn(true).thenReturn(false);
     Mockito.doReturn(connInfo).when(cai).next();
     Mockito.doReturn(tcConnection).when(connManager).createConnection((TCProtocolAdaptor) Mockito.any());
     spyConnEstablisher.reconnect(cmt);
@@ -200,7 +200,7 @@ public class ClientConnectionEstablisherTest {
 
     Mockito.doReturn(cai).when(connAddressProvider).getIterator();
     Mockito.doReturn(logger).when(cmt).getLogger();
-    Mockito.stub(cai.hasNext()).toReturn(true).toReturn(false);
+    Mockito.when(cai.hasNext()).thenReturn(true).thenReturn(false);
     Mockito.doReturn(connInfo).when(cai).next();
     Mockito.doReturn(tcConnection).when(connManager).createConnection((TCProtocolAdaptor) Mockito.any());
     spyConnEstablisher.reconnect(cmt);
@@ -211,7 +211,7 @@ public class ClientConnectionEstablisherTest {
   public void test_restore_calls_connect() throws MaxConnectionsExceededException, TCTimeoutException, IOException {
     Mockito.doReturn(cai).when(connAddressProvider).getIterator();
     Mockito.doReturn(logger).when(cmt).getLogger();
-    Mockito.stub(cai.hasNext()).toReturn(true).toReturn(false);
+    Mockito.when(cai.hasNext()).thenReturn(true).thenReturn(false);
     Mockito.doReturn(connInfo).when(cai).next();
     Mockito.doReturn(tcConnection).when(connManager).createConnection((TCProtocolAdaptor) Mockito.any());
     spyConnEstablisher.restoreConnection(cmt, sa, 10 * 1000, callback);
@@ -222,7 +222,7 @@ public class ClientConnectionEstablisherTest {
   public void test_restore_tries_to_reconnect_client_message_transport() throws Exception {
     Mockito.doReturn(cai).when(connAddressProvider).getIterator();
     Mockito.doReturn(logger).when(cmt).getLogger();
-    Mockito.stub(cai.hasNext()).toReturn(true).toReturn(false);
+    Mockito.when(cai.hasNext()).thenReturn(true).thenReturn(false);
     Mockito.doReturn(connInfo).when(cai).next();
     Mockito.doReturn(tcConnection).when(connManager).createConnection((TCProtocolAdaptor) Mockito.any());
     spyConnEstablisher.restoreConnection(cmt, sa, 10 * 1000, callback);
@@ -248,7 +248,7 @@ public class ClientConnectionEstablisherTest {
   public void test_client_keeps_trying_for_reconnect_after_unknownHostException() throws Exception {
     Mockito.doReturn(cai).when(connAddressProvider).getIterator();
     Mockito.doReturn(logger).when(cmt).getLogger();
-    Mockito.stub(cai.hasNext()).toReturn(true).toReturn(false);
+    Mockito.when(cai.hasNext()).thenReturn(true).thenReturn(false);
 
     Mockito.doReturn(connInfo).when(cai).next();
     Mockito.doThrow(new UnknownHostException("Host can not be resolved!")).when(spyConnEstablisher)

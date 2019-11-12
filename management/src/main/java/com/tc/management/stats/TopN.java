@@ -43,7 +43,7 @@ public final class TopN {
   }
 
   /**
-   * Creates a top {@link N} list according to {@link comparator}.
+   * Creates a top {@link #N} list according to {@link Comparator}.
    */
   public TopN(final Comparator comparator, final int N) {
     data = new TreeSet(comparator != null ? new Comparator() {

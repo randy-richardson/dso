@@ -248,7 +248,7 @@ public class ExtraProcessServerControl extends ServerControlBase {
 
   protected void addProductKeyIfExists(List args) {
 
-    System.out.println("XXX Detecting edition: " + ProductInfo.getInstance().edition());
+    //System.out.println("XXX Detecting edition: " + ProductInfo.getInstance().edition());
 
     String propertyKey = TCPropertiesImpl.SYSTEM_PROP_PREFIX + TCPropertiesConsts.PRODUCTKEY_PATH;
     String productKeyPath = System.getProperty(propertyKey);

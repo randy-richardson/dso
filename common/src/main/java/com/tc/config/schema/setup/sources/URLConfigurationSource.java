@@ -28,8 +28,6 @@ import java.net.URLConnection;
 
 /**
  * A {@link ConfigurationSource} that reads from a URL.
- * 
- * @see URLConfigurationSourceTest
  */
 public class URLConfigurationSource implements ConfigurationSource {
 

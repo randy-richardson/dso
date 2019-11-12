@@ -117,7 +117,7 @@ class DevmodeClusteredStateLoader extends ClusteredStateLoader {
 
     // special case slf4j too. If the app already has it don't use the one that might have been included for embedded
     // ehcache (since the reward is a loader contstraint violation later down the road)
-    if (name.startsWith("org.slf4j")) {
+    if (name.startsWith("org.slf4j") || name.startsWith("ch.qos.logback")) {
       try {
         return returnAndLog(appLoader.loadClass(name), "appLoader");
       } catch (ClassNotFoundException cnfe) {

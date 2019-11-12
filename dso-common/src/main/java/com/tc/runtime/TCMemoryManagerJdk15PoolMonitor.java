@@ -34,7 +34,6 @@ class TCMemoryManagerJdk15PoolMonitor extends TCMemoryManagerJdk15Basic {
   // this pool is used when jdk is run with -client option
   private static final String          TENURED_GEN_NAME        = "TENURED GEN";
   private static final String          IBMJDK_TENURED_GEN_NAME = "Java heap";
-  private static final String          JROCKETJDK_OLD_GEN_NAME = "Old Space";
 
   private final boolean memoryPoolMonitoringSupported;
   private final MemoryPoolMXBean       oldGenBean;
@@ -90,8 +89,6 @@ class TCMemoryManagerJdk15PoolMonitor extends TCMemoryManagerJdk15Basic {
   private boolean isOldGen(String name) {
     if (Vm.isIBM()) {
       return (name.indexOf(IBMJDK_TENURED_GEN_NAME) > -1);
-    } else if (Vm.isJRockit()) {
-      return (name.indexOf(JROCKETJDK_OLD_GEN_NAME) > -1);
     } else {
       return (name.toUpperCase().indexOf(OLD_GEN_NAME) > -1 || name.toUpperCase().indexOf(TENURED_GEN_NAME) > -1);
     }

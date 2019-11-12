@@ -37,8 +37,6 @@ public final class ReplaceLine {
 
   /**
    * Replaces lines matching a token regular expression group.
-   * 
-   * @return true if all tokens found matches
    */
   @FindbugsSuppressWarnings("DM_DEFAULT_ENCODING")
   public static void parseFile(ReplaceLine.Token[] tokens, File file) throws FileNotFoundException, IOException {

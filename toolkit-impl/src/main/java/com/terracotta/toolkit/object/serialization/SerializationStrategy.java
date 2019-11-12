@@ -25,7 +25,8 @@ public interface SerializationStrategy {
   /**
    * Serialize the given value into byte array.
    * 
-   * @param value value to serialize
+   * @param serializable value to serialize
+   * @param compress
    * @return serialized form
    * @throws NotSerializableRuntimeException if serialization fails
    */
@@ -34,7 +35,9 @@ public interface SerializationStrategy {
   /**
    * Deserialize the serialized value returning a new representation.
    * 
-   * @param data serialized form
+   * @param fromBytes serialized form
+   * @param compress
+   * @param local
    * @return a new deserialized value
    * @throws IOException if deserialization fails
    * @throws ClassNotFoundException if a required class is not found

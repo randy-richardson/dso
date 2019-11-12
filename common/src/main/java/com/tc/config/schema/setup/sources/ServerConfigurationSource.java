@@ -29,8 +29,6 @@ import java.net.MalformedURLException;
 
 /**
  * A {@link ConfigurationSource} that reads from a URL.
- *
- * @see URLConfigurationSourceTest
  */
 public class ServerConfigurationSource implements ConfigurationSource {
 

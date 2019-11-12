@@ -25,7 +25,7 @@ public interface L1ServerMapLocalCacheStore<K, V> {
 
   /**
    * Put an entry in the backing map
-   * <p/>
+   * <br>
    * The behavior depends on the putType - the entry may be pinned on put, size may not increment even on put etc
    * 
    * @return the old value if present
@@ -76,9 +76,6 @@ public interface L1ServerMapLocalCacheStore<K, V> {
   public List getKeys();
 
   /**
-   * Size does not take into consideration for elements inserted with {@link PutType#incrementSizeOnPut()} returning
-   * false
-   * 
    * @return size of the map
    */
   public int size();

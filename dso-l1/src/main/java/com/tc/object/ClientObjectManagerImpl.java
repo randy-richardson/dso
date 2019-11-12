@@ -609,7 +609,6 @@ public class ClientObjectManagerImpl implements ClientObjectManager, ClientHands
    * Check to see if the root is already in existence on the server. If it is then get it if not then create it.
    * 
    * @throws ClassNotFoundException
-   * @throws AbortedOperationException
    */
   @Override
   public Object lookupOrCreateRoot(final String rootName, final Object root, final GroupID gid)

@@ -98,10 +98,6 @@ public class TestConfigObject {
   public static final String      L2_STARTUP_JAVA_HOME             = L2_STARTUP_PREFIX + "jvm";
   public static final String      L2_CLASSPATH                     = DYNAMIC_PROPERTIES_PREFIX + "l2.classpath";
 
-  private static final String     EMMA_LIB                         = DYNAMIC_PROPERTIES_PREFIX + "emma.lib";
-  private static final String     JAVA_HOME_15                     = DYNAMIC_PROPERTIES_PREFIX + "JAVA_HOME_15";
-  private static final String     JAVA_HOME_16                     = DYNAMIC_PROPERTIES_PREFIX + "JAVA_HOME_16";
-
   private static TestConfigObject INSTANCE;
 
   private final Properties        properties;
@@ -288,14 +284,6 @@ public class TestConfigObject {
    */
   public String jvmName() {
     return System.getProperty("java.vm.name");
-  }
-
-  public String javaHome15() {
-    return getProperty(JAVA_HOME_15);
-  }
-
-  public String javaHome16() {
-    return getProperty(JAVA_HOME_16);
   }
 
   public String osName() {

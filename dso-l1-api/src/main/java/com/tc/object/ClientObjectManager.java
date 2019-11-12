@@ -41,10 +41,10 @@ public interface ClientObjectManager extends TCObjectSelfCallback {
 
   /**
    * Check whether logical action is portable
-   * 
+   *
+   * @param method logical operation
    * @param params Method call parameters
    * @param paramIndex Parameter index
-   * @param methodName Method name
    * @param pojo Instance
    * @throws TCNonPortableObjectError If logical action is not portable
    */

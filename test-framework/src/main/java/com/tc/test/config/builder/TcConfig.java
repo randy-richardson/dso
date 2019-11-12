@@ -78,14 +78,16 @@ public class TcConfig {
 
   /**
    * Fills up the config object with missing bits:
-   *  <ul>Mirror groups name</ul>
-   *  <ul>TC servers name</ul>
-   *  <ul>TC servers host</ul>
-   *  <ul>TC servers index folder</ul>
-   *  <ul>TC servers log folder</ul>
-   *  <ul>TC servers data folder</ul>
-   *  <ul>TC servers TSA, JMX and TSA group ports</ul>
-   *  <ul>TC servers offheap if restartable is set to true</ul>
+   *  <ul>
+   *  <li>Mirror groups name</li>
+   *  <li>TC servers name</li>
+   *  <li>TC servers host</li>
+   *  <li>TC servers index folder</li>
+   *  <li>TC servers log folder</li>
+   *  <li>TC servers data folder</li>
+   *  <li>TC servers TSA, JMX and TSA group ports</li>
+   *  <li>TC servers offheap if restartable is set to true</li>
+   *  </ul>
    */
   public void fillUpConfig() {
     int tempGroupNameIdx = 0;

@@ -20,7 +20,6 @@ import java.io.IOException;
 
 /**
  * Util class to provide a readMethod to wait for a key pressed on enter to continue
- * <p/>
  */
 public class ReadUtil {
   private ReadUtil() { }

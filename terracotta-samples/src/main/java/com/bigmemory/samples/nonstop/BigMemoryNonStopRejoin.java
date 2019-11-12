@@ -36,9 +36,7 @@ import static com.bigmemory.commons.util.ReadUtil.waitForInput;
 import static net.sf.ehcache.config.PersistenceConfiguration.Strategy.DISTRIBUTED;
 
 /**
- * <p>Sample app briefly showing a working non stop use case.
- * BigMemory.
- * <p/>
+ * Sample app briefly showing a working non stop use case. BigMemory.
  */
 public class BigMemoryNonStopRejoin {
 

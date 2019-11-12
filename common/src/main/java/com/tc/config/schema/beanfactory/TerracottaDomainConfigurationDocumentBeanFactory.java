@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A {@link ConfigBeanFactory} that creates {@link TerracottaDomainConfigurationDocument} beans.
+ * A {@link ConfigBeanFactory} that creates {@link BeanWithErrors} beans.
  */
 public class TerracottaDomainConfigurationDocumentBeanFactory implements ConfigBeanFactory {
 
