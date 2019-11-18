@@ -37,6 +37,8 @@ The Initial Developer of the Covered Software is
   </scm>
   
   <properties>
+    <!-- Disable SAG Finder while we figure out what to do with it -->
+    <skipSagFinder>true</skipSagFinder>
     <build.edition>opensource</build.edition>
     <maven-forge-plugin.version>1.2.27</maven-forge-plugin.version>
     <tc-shader.version>1.2</tc-shader.version>
