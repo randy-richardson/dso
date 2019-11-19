@@ -137,13 +137,14 @@ The Initial Developer of the Covered Software is
       <artifactId>test-listeners</artifactId>
       <version>1.0.2</version>
     </dependency>
+    <!-- This isn't published and external things use this project as a parent
     <dependency>
       <groupId>org.terracotta.internal</groupId>
       <artifactId>common</artifactId>
       <version>${terracotta.core.version}</version>
       <scope>test</scope>
       <classifier>tests</classifier>
-    </dependency>
+    </dependency> -->
   </dependencies>
 
   <build>
