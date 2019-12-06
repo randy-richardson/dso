@@ -435,8 +435,8 @@ public class DistributedObjectServer implements TCDumper, LockInfoDumpHandler, S
 
   @Override
   public void dump() {
-//    this.dumpHandler.dump();
-//    this.serverBuilder.dump();
+    this.dumpHandler.dump();
+    this.serverBuilder.dump();
   }
 
   public synchronized void start() throws IOException, LocationNotCreatedException, FileNotCreatedException {
