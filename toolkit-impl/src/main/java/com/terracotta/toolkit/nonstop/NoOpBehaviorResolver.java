@@ -20,6 +20,8 @@ import java.lang.reflect.Proxy;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.terracotta.toolkit.util.ToolkitInstanceProxy.newToolkitProxy;
+
 public class NoOpBehaviorResolver {
   private final NoOpInvocationHandler        handler              = new NoOpInvocationHandler();
   private final ConcurrentMap<Class, Object> noOpTimeoutBehaviors = new ConcurrentHashMap<Class, Object>();
@@ -27,7 +29,7 @@ public class NoOpBehaviorResolver {
   public <E> E resolve(Class<E> klazz) {
     Object rv = noOpTimeoutBehaviors.get(klazz);
     if (rv == null) {
-      Object newProxyInstance = Proxy.newProxyInstance(klazz.getClassLoader(), new Class[] { klazz }, handler);
+      Object newProxyInstance = newToolkitProxy(klazz, handler);
       Object oldProxyInstance = noOpTimeoutBehaviors.putIfAbsent(klazz, newProxyInstance);
       rv = oldProxyInstance != null ? oldProxyInstance : newProxyInstance;
     }

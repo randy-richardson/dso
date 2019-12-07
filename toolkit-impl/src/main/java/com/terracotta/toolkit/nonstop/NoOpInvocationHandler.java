@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.terracotta.toolkit.util.ToolkitInstanceProxy.newToolkitProxy;
+
 class NoOpInvocationHandler implements InvocationHandler {
   private volatile NoOpQueryBuilder queryBuilder;
 
@@ -120,9 +122,7 @@ class NoOpInvocationHandler implements InvocationHandler {
 
     @Override
     public ToolkitSearchQuery build() {
-      return (ToolkitSearchQuery) Proxy.newProxyInstance(this.getClass().getClassLoader(),
-                                                         new Class[] { ToolkitSearchQuery.class },
-                                                         noOpInvocationHandler);
+      return newToolkitProxy(ToolkitSearchQuery.class, noOpInvocationHandler);
     }
 
   }

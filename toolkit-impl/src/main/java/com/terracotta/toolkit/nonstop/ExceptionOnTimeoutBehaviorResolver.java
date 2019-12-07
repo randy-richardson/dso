@@ -16,9 +16,13 @@
  */
 package com.terracotta.toolkit.nonstop;
 
+import com.terracotta.toolkit.util.ToolkitInstanceProxy;
+
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import static com.terracotta.toolkit.util.ToolkitInstanceProxy.newToolkitProxy;
 
 public class ExceptionOnTimeoutBehaviorResolver {
   private final ExceptionOnTimeoutInvocationHandler handler                     = new ExceptionOnTimeoutInvocationHandler();
@@ -27,7 +31,7 @@ public class ExceptionOnTimeoutBehaviorResolver {
   public <E> E resolve(Class<E> klazz) {
     Object rv = exceptionOnTimeoutBehaviors.get(klazz);
     if (rv == null) {
-      Object newProxyInstance = Proxy.newProxyInstance(klazz.getClassLoader(), new Class[] { klazz }, handler);
+      Object newProxyInstance = newToolkitProxy(klazz, handler);
       Object oldProxyInstance = exceptionOnTimeoutBehaviors.putIfAbsent(klazz, newProxyInstance);
       rv = oldProxyInstance != null ? oldProxyInstance : newProxyInstance;
     }

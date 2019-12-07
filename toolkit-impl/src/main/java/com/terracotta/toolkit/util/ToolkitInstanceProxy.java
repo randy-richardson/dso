@@ -60,8 +60,7 @@ public abstract class ToolkitInstanceProxy {
       }
     };
 
-    T proxy = (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
-    return proxy;
+    return newToolkitProxy(clazz, handler);
   }
 
   public static <T> T newRejoinInProgressProxy(final String name, final Class<T> clazz) {
@@ -73,8 +72,7 @@ public abstract class ToolkitInstanceProxy {
       }
     };
 
-    T proxy = (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
-    return proxy;
+    return newToolkitProxy(clazz, handler);
   }
 
   public static <T extends ToolkitObject> T newNonStopProxy(final String name,
@@ -87,8 +85,7 @@ public abstract class ToolkitInstanceProxy {
     InvocationHandler handler = new NonStopInvocationHandler<T>(context, nonStopConfigurationLookup,
                                                                 toolkitObjectLookup);
 
-    T proxy = (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
-    return proxy;
+    return newToolkitProxy(clazz, handler);
   }
 
 
@@ -100,8 +97,7 @@ public abstract class ToolkitInstanceProxy {
     InvocationHandler handler = new NonStopInvocationHandler<T>(context, nonStopConfigurationLookup,
                                                                 toolkitObjectLookup);
 
-    T proxy = (T) Proxy.newProxyInstance(clazz[0].getClassLoader(), clazz , handler);
-    return proxy;
+    return (T) newToolkitProxy(clazz, handler);
   }
 
 
@@ -125,8 +121,7 @@ public abstract class ToolkitInstanceProxy {
     InvocationHandler handler = new NonStopSubTypeInvocationHandler<T>(context, nonStopConfigurationLookup, delegate,
                                                                        clazz);
 
-    T proxy = (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
-    return proxy;
+    return newToolkitProxy(clazz, handler);
   }
 
   public static <T extends ToolkitFeature> T newFeatureNotSupportedProxy(final Class<T> clazz) {
@@ -137,7 +132,14 @@ public abstract class ToolkitInstanceProxy {
         throw new FeatureNotSupportedException("Feature specified by '" + clazz.getName() + "' is not supported!");
       }
     };
-    T proxy = (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
-    return proxy;
+    return newToolkitProxy(clazz, handler);
+  }
+
+  public static <T> T newToolkitProxy(Class<T> clazz, InvocationHandler handler) {
+    return clazz.cast(newToolkitProxy(new Class<?>[] { clazz }, handler));
+  }
+
+  public static Object newToolkitProxy(Class<?>[] clazzes, InvocationHandler handler) {
+    return Proxy.newProxyInstance(ToolkitInstanceProxy.class.getClassLoader(), clazzes, handler);
   }
 }
