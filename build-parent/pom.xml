@@ -42,21 +42,21 @@ The Initial Developer of the Covered Software is
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <core-storage-api.version>1.4</core-storage-api.version>
-    <heap-core-storage.version>1.2.0</heap-core-storage.version>
-    <bigmemory-core-storage.version>2.1.0</bigmemory-core-storage.version>
+    <heap-core-storage.version>1.2.1</heap-core-storage.version>
+    <bigmemory-core-storage.version>2.1.1</bigmemory-core-storage.version>
     <javax.servlet.version>3.0.0.v201112011016</javax.servlet.version>
     <search.version>1.5.11</search.version>
     <shiro.version>1.4.0</shiro.version>
-    <management-core-version>2.1.14</management-core-version>
+    <management-core-version>2.1.16</management-core-version>
     <session-management.version>4.3.9</session-management.version>
     <tc-messaging.version>1.1.5</tc-messaging.version>
-    <terracotta-license.version>1.2.2</terracotta-license.version>
-    <toolkit-api.version>2.9</toolkit-api.version>
-    <toolkit-api-internal.version>1.18</toolkit-api-internal.version>
+    <terracotta-license.version>1.2.3</terracotta-license.version>
+    <toolkit-api.version>2.10</toolkit-api.version>
+    <toolkit-api-internal.version>1.19</toolkit-api-internal.version>
     <!-- version of ehcache embedded inside toolkit -->
     <ehcache.version>2.10.9-SNAPSHOT</ehcache.version>
-    <tcconfig.version>9.4</tcconfig.version>
-    <linked-child-process.version>1.0.15</linked-child-process.version>
+    <tcconfig.version>9.5</tcconfig.version>
+    <linked-child-process.version>1.0.16</linked-child-process.version>
     <gmaven-plugin.version>1.4</gmaven-plugin.version>
     <copy-maven-plugin.version>0.2.3.8</copy-maven-plugin.version>
     <powermock.version>2.0.2</powermock.version>
@@ -144,7 +144,7 @@ The Initial Developer of the Covered Software is
       <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>jmxremote_optional-tc</artifactId>
-        <version>1.0.7</version>
+        <version>1.0.8</version>
       </dependency>
       <dependency>
         <groupId>org.apache.xmlbeans</groupId>

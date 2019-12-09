@@ -141,10 +141,6 @@ The Initial Developer of the Covered Software is
       <artifactId>gf.javax.mail</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.sun.activation</groupId>
-      <artifactId>javax.activation</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.glassfish.hk2</groupId>
       <artifactId>osgi-resource-locator</artifactId>
     </dependency>

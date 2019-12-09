@@ -22,7 +22,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent-ee</artifactId>
-    <version>4.11</version>
+    <version>4.12</version>
     <relativePath/>
   </parent>
 
@@ -37,10 +37,8 @@ The Initial Developer of the Covered Software is
   </scm>
   
   <properties>
-    <!-- Disable SAG Finder while we figure out what to do with it -->
-    <skipSagFinder>true</skipSagFinder>
     <build.edition>opensource</build.edition>
-    <maven-forge-plugin.version>1.2.27</maven-forge-plugin.version>
+    <maven-forge-plugin.version>1.2.28</maven-forge-plugin.version>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
   </properties>
