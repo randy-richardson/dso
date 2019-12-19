@@ -56,7 +56,7 @@ The Initial Developer of the Covered Software is
 
     <gmaven-plugin.version>1.5</gmaven-plugin.version>
     <cargo-maven2-plugin.version>1.0.3</cargo-maven2-plugin.version>
-    <tc.linked-child-process.version>1.0.16</tc.linked-child-process.version>
+    <tc.linked-child-process.version>1.0.17</tc.linked-child-process.version>
     <maven-appserver-plugin.version>1.0.5</maven-appserver-plugin.version>
     <gmavenProviderSelection>2.0</gmavenProviderSelection>
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
@@ -70,12 +70,11 @@ The Initial Developer of the Covered Software is
     <tc.tests.info.junit-test-timeout-inseconds>1800</tc.tests.info.junit-test-timeout-inseconds>
     <absolute-test-timeout-secs>${tc.tests.info.junit-test-timeout-inseconds}</absolute-test-timeout-secs><!-- use this to control the final timeout value for all unit tests -->
     <tc.tests.info.l2.startup.mode>internal</tc.tests.info.l2.startup.mode>
-    <jrockit-jvm-arguments/>
     <surefire.min-memory>64m</surefire.min-memory>
     <surefire.max-memory>1g</surefire.max-memory>
     <surefire.additional-jvm-args/>
     <surefire.additional-jvm-module-args/>
-    <surefire.argLine>-server -Xms${surefire.min-memory} -Xmx${surefire.max-memory} ${surefire.additional-jvm-module-args} ${surefire.additional-jvm-args} ${jrockit-jvm-arguments} -Dtc.base-dir=${tc.base-dir} ${tc.config} -Dtc.dso.globalmode=${tc.dso.globalmode} -Dtc.tests.info.property-files=${tc.tests.info.property-files} -Dcom.tc.properties=${tc.system.tests.properties} -Dcom.sun.management.jmxremote ${ee.license}</surefire.argLine>
+    <surefire.argLine>-server -Xms${surefire.min-memory} -Xmx${surefire.max-memory} ${surefire.additional-jvm-module-args} ${surefire.additional-jvm-args} -Dtc.base-dir=${tc.base-dir} ${tc.config} -Dtc.dso.globalmode=${tc.dso.globalmode} -Dtc.tests.info.property-files=${tc.tests.info.property-files} -Dcom.tc.properties=${tc.system.tests.properties} -Dcom.sun.management.jmxremote ${ee.license}</surefire.argLine>
     <skipTests>true</skipTests>
 
     <!--
@@ -176,23 +175,9 @@ The Initial Developer of the Covered Software is
           <version>${cargo-maven2-plugin.version}</version>
         </plugin>
         <plugin>
-          <!-- we include the surefire plugin to get a known version and to always tell
-               it to skip tests. The toolkit resolver plugin is the actual thing that runs
-               tests -->
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <skipTests>true</skipTests>
-          </configuration>
-        </plugin>
-
-        <plugin>
           <groupId>org.terracotta</groupId>
           <artifactId>maven-forge-plugin</artifactId>
           <version>${maven-forge-plugin.version}</version>
-          <configuration>
-            <skipTests>true</skipTests>
-          </configuration>
           <executions>
             <execution>
               <id>default-test</id>
@@ -366,16 +351,6 @@ The Initial Developer of the Covered Software is
   </build>
 
   <profiles>
-<!--    <profile>-->
-<!--      <id>surefire.additional-jvm-module-args</id>-->
-<!--      <activation>-->
-<!--        <jdk>[9,)</jdk>-->
-<!--      </activation>-->
-<!--      <properties>-->
-<!--        <surefire.additional-jvm-module-args>&#45;&#45;add-exports java.base/jdk.internal.misc=ALL-UNNAMED</surefire.additional-jvm-module-args>-->
-<!--      </properties>-->
-<!--    </profile>-->
-    
     <profile>
       <id>workaround-windows</id>
       <activation>
@@ -385,39 +360,6 @@ The Initial Developer of the Covered Software is
         <localMavenRepository>C:\DOCUME~1\${user.name}\.m2\repository</localMavenRepository>
         <os-classifier>windows</os-classifier>
       </properties>
-    </profile>
-
-    <profile>
-      <id>enable-system-gc-jrockit</id>
-      <activation>
-        <property>
-          <name>java.vm.name</name>
-          <value>Oracle JRockit(R)</value>
-        </property>
-      </activation>
-      <properties>
-        <jrockit-jvm-arguments>-XXfullSystemGC</jrockit-jvm-arguments>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>testVM</id>
-      <activation>
-        <property>
-          <name>testVM</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <jvm>${testVM}</jvm>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
 
     <profile>

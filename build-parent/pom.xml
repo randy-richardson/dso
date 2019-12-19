@@ -47,7 +47,7 @@ The Initial Developer of the Covered Software is
     <javax.servlet.version>3.0.0.v201112011016</javax.servlet.version>
     <search.version>1.5.11</search.version>
     <shiro.version>1.4.0</shiro.version>
-    <management-core-version>2.1.16</management-core-version>
+    <management-core.version>2.1.16</management-core.version>
     <session-management.version>4.3.9</session-management.version>
     <tc-messaging.version>1.1.5</tc-messaging.version>
     <terracotta-license.version>1.2.3</terracotta-license.version>
@@ -56,7 +56,7 @@ The Initial Developer of the Covered Software is
     <!-- version of ehcache embedded inside toolkit -->
     <ehcache.version>2.10.9-SNAPSHOT</ehcache.version>
     <tcconfig.version>9.5</tcconfig.version>
-    <linked-child-process.version>1.0.16</linked-child-process.version>
+    <linked-child-process.version>1.0.17</linked-child-process.version>
     <gmaven-plugin.version>1.4</gmaven-plugin.version>
     <copy-maven-plugin.version>0.2.3.8</copy-maven-plugin.version>
     <powermock.version>2.0.2</powermock.version>
@@ -223,12 +223,12 @@ The Initial Developer of the Covered Software is
       <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>management-core</artifactId>
-        <version>${management-core-version}</version>
+        <version>${management-core.version}</version>
       </dependency>      
       <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>management-core-resources</artifactId>
-        <version>${management-core-version}</version>
+        <version>${management-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.terracotta.license</groupId>
@@ -372,16 +372,6 @@ The Initial Developer of the Covered Software is
             </execution>
           </executions>
         </plugin>
-        <plugin>
-          <!-- we include the surefire plugin to get a known version and to always tell
-               it to skip tests. The toolkit resolver plugin is the actual thing that runs
-               tests -->
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <skipTests>true</skipTests>
-          </configuration>
-        </plugin>
 
         <plugin>
           <groupId>org.terracotta</groupId>
@@ -487,16 +477,6 @@ The Initial Developer of the Covered Software is
   </build>
 
   <profiles>
-<!--    <profile>-->
-<!--      <id>surefire.additional-jvm-module-args</id>-->
-<!--      <activation>-->
-<!--        <jdk>[9,)</jdk>-->
-<!--      </activation>-->
-<!--      <properties>-->
-<!--        <surefire.additional-jvm-module-args>&#45;&#45;add-exports java.base/jdk.internal.misc=ALL-UNNAMED</surefire.additional-jvm-module-args>-->
-<!--      </properties>-->
-<!--    </profile>-->
-
     <profile>
       <id>system-tests</id>
       <properties>
