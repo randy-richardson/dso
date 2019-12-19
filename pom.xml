@@ -22,7 +22,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent-ee</artifactId>
-    <version>4.12</version>
+    <version>4.13</version>
     <relativePath/>
   </parent>
 
@@ -38,7 +38,7 @@ The Initial Developer of the Covered Software is
   
   <properties>
     <build.edition>opensource</build.edition>
-    <maven-forge-plugin.version>1.2.28</maven-forge-plugin.version>
+    <maven-forge-plugin.version>1.2.30</maven-forge-plugin.version>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
   </properties>
@@ -587,18 +587,6 @@ The Initial Developer of the Covered Software is
       </modules>
     </profile>
 
-    <!--profile>
-      <id>bigmemory-max-code-samples-test</id>
-      <activation>
-        <file>
-          <exists>devwork/bigmemory-max/code-samples-test</exists>
-        </file>
-      </activation>
-      <modules>
-        <module>devwork/bigmemory-max/code-samples-test</module>
-      </modules>
-    </profile-->
-
     <profile>
       <id>bigmemory-go-code-samples</id>
       <activation>
@@ -611,37 +599,6 @@ The Initial Developer of the Covered Software is
       </modules>
     </profile>
 
-    <!--profile>
-      <id>bigmemory-go-code-samples-test</id>
-      <activation>
-        <file>
-          <exists>devwork/bigmemory-go/code-samples-test</exists>
-        </file>
-      </activation>
-      <modules>
-        <module>devwork/bigmemory-go/code-samples-test</module>
-      </modules>
-    </profile-->
-
-    <profile>
-      <id>testVM</id>
-      <activation>
-        <property>
-          <name>testVM</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.terracotta</groupId>
-            <artifactId>maven-forge-plugin</artifactId>
-            <configuration>
-              <jvm>${testVM}</jvm>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
   </profiles>
 
   <distributionManagement>
