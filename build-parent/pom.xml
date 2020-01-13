@@ -57,7 +57,8 @@ The Initial Developer of the Covered Software is
     <ehcache.version>2.10.9-SNAPSHOT</ehcache.version>
     <tcconfig.version>9.5</tcconfig.version>
     <linked-child-process.version>1.0.17</linked-child-process.version>
-    <gmaven-plugin.version>1.4</gmaven-plugin.version>
+    <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
+    <groovy.version>2.5.8</groovy.version>
     <copy-maven-plugin.version>0.2.3.8</copy-maven-plugin.version>
     <powermock.version>2.0.2</powermock.version>
     <skip.testjar>false</skip.testjar>
@@ -281,6 +282,21 @@ The Initial Developer of the Covered Software is
 
       <!-- tests -->
       <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy</artifactId>
+        <version>${groovy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy-json</artifactId>
+        <version>${groovy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy-xml</artifactId>
+        <version>${groovy.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.thoughtworks.xstream</groupId>
         <artifactId>xstream</artifactId>
         <version>1.4.4</version>
@@ -338,8 +354,8 @@ The Initial Developer of the Covered Software is
       <plugins>
         <plugin>
           <groupId>org.codehaus.gmaven</groupId>
-          <artifactId>gmaven-plugin</artifactId>
-          <version>${gmaven-plugin.version}</version>
+          <artifactId>groovy-maven-plugin</artifactId>
+          <version>${groovy-maven-plugin.version}</version>
           <executions>
             <execution>
               <id>generate-test-properties</id>
@@ -471,7 +487,7 @@ The Initial Developer of the Covered Software is
       </plugin>  
       <plugin>
         <groupId>org.codehaus.gmaven</groupId>
-        <artifactId>gmaven-plugin</artifactId>
+        <artifactId>groovy-maven-plugin</artifactId>
       </plugin>      
     </plugins>
   </build>
@@ -554,8 +570,8 @@ The Initial Developer of the Covered Software is
         <plugins>
           <plugin>
             <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>gmaven-plugin</artifactId>
-            <version>${gmaven-plugin.version}</version>
+            <artifactId>groovy-maven-plugin</artifactId>
+            <version>${groovy-maven-plugin.version}</version>
             <executions>
               <execution>
                 <id>decide-which-group-should-run-tests</id>

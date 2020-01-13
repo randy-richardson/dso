@@ -49,16 +49,17 @@ The Initial Developer of the Covered Software is
     <productKeyPath/>
     <ee.license>-Dcom.tc.productkey.path=${productKeyPath}</ee.license>
     <!-- must not be a SNAPSHOT, pipeline checks for that -->
-    <container-test-framework.version>3.0.2</container-test-framework.version>
+    <container-test-framework.version>3.0.3</container-test-framework.version>
 
     <tc.tests.configuration.properties.file>${project.build.testOutputDirectory}/tc.tests.properties</tc.tests.configuration.properties.file>
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
 
-    <gmaven-plugin.version>1.5</gmaven-plugin.version>
+    <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
+    <groovy.version>2.5.8</groovy.version>
+    <rest-assured.version>4.1.2</rest-assured.version>
     <cargo-maven2-plugin.version>1.0.3</cargo-maven2-plugin.version>
     <tc.linked-child-process.version>1.0.17</tc.linked-child-process.version>
     <maven-appserver-plugin.version>1.0.5</maven-appserver-plugin.version>
-    <gmavenProviderSelection>2.0</gmavenProviderSelection>
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
     <tc.base-dir>${project.build.directory}</tc.base-dir>
     <tc.dso.globalmode>false</tc.dso.globalmode>
@@ -113,6 +114,59 @@ The Initial Developer of the Covered Software is
         <groupId>org.terracotta.test</groupId>
         <artifactId>test-framework</artifactId>
         <version>${terracotta.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <version>${rest-assured.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-xml</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>json-path</artifactId>
+        <version>${rest-assured.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-json</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy</artifactId>
+        <version>${groovy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy-json</artifactId>
+        <version>${groovy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy-xml</artifactId>
+        <version>${groovy.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -216,12 +270,8 @@ The Initial Developer of the Covered Software is
         </plugin>
         <plugin>
           <groupId>org.codehaus.gmaven</groupId>
-          <artifactId>gmaven-plugin</artifactId>
-          <version>${gmaven-plugin.version}</version>
-          <configuration>
-            <providerSelection>${gmavenProviderSelection}</providerSelection>
-            <sourceEncoding>UTF-8</sourceEncoding>
-          </configuration>
+          <artifactId>groovy-maven-plugin</artifactId>
+          <version>${groovy-maven-plugin.version}</version>
           <executions>
             <execution>
               <id>generate-test-properties</id>
@@ -336,7 +386,7 @@ The Initial Developer of the Covered Software is
       </plugin>
       <plugin>
         <groupId>org.codehaus.gmaven</groupId>
-        <artifactId>gmaven-plugin</artifactId>
+        <artifactId>groovy-maven-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -512,8 +562,8 @@ The Initial Developer of the Covered Software is
           <!-- increase websphere test timeout to 2700 seconds (45 minutes) -->
           <plugin>
             <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>gmaven-plugin</artifactId>
-            <version>${gmaven-plugin.version}</version>
+            <artifactId>groovy-maven-plugin</artifactId>
+            <version>${groovy-maven-plugin.version}</version>
             <executions>
               <execution>
                 <id>modify-websphere-tests-timeout</id>
@@ -619,8 +669,8 @@ The Initial Developer of the Covered Software is
         <plugins>
           <plugin>
             <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>gmaven-plugin</artifactId>
-            <version>${gmaven-plugin.version}</version>
+            <artifactId>groovy-maven-plugin</artifactId>
+            <version>${groovy-maven-plugin.version}</version>
             <executions>
               <execution>
                 <id>decide-which-group-should-run-tests</id>

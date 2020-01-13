@@ -32,7 +32,7 @@ The Initial Developer of the Covered Software is
 
 	<properties>
 		<archive>${project.build.directory}/${project.artifactId}-${project.version}.jar</archive>
-		<gmaven-plugin.version>1.4</gmaven-plugin.version>
+		<groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
 		<toolkitContentFilename>toolkit-content.txt</toolkitContentFilename>
 		<skipToolkitPackaging>true</skipToolkitPackaging>
 		<packagingType>jar</packagingType>
@@ -403,7 +403,7 @@ The Initial Developer of the Covered Software is
 
 					<plugin>
 						<groupId>org.codehaus.gmaven</groupId>
-						<artifactId>gmaven-plugin</artifactId>
+						<artifactId>groovy-maven-plugin</artifactId>
 						<executions>
 							<execution>
 								<id>inject-correct-pom-to-jar</id>

@@ -23,15 +23,14 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minidev.json.JSONArray;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
+import org.json.JSONArray;
 import org.terracotta.management.cli.Command;
 import org.terracotta.management.cli.CommandInvocationException;
 
-import com.jayway.jsonpath.JsonPath;
+import io.restassured.path.json.JsonPath;
 
 /**
  * @author Ludovic Orban
@@ -88,14 +87,14 @@ public abstract class AbstractHttpCommand implements Command<Context> {
       throw new RuntimeException("Cannot execute JSON query on wrong content type. " + contentType);
     } else {
       for (String jsonQuery : jsonQueries) {
-        Object jsonOut = JsonPath.read(new String(bytes, encoding), jsonQuery);
+        Object jsonOut = new JsonPath(is).get(jsonQuery);
         jsonOutputs.add(jsonOut);
       }
 
 
       if (jsonOutputs.size() > 0 && jsonOutputs.get(0) instanceof JSONArray) {
         JSONArray jsonArray = (JSONArray)jsonOutputs.get(0);
-        for (int i = 0; i < jsonArray.size(); i++) {
+        for (int i = 0; i < jsonArray.length(); i++) {
           for (int j = 0; j < jsonOutputs.size(); j++) {
             Object output = jsonOutputs.get(j);
             JSONArray jsonArray2 = (JSONArray)output;
