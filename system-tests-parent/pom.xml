@@ -282,13 +282,13 @@ The Initial Developer of the Covered Software is
               <configuration>
                 <source><![CDATA[
                   Properties outputProperties = new Properties()
-                  project.properties.each { key, value ->
+                  properties.each { key, value ->
                     if (key.startsWith("tc.tests")) {
                       outputProperties.setProperty(key, value)
                     }
                   }
 
-                  String propertiesFileName = project.properties.getProperty(
+                  String propertiesFileName = properties.getProperty(
                       "tc.tests.configuration.properties.file")
                   File propertiesFile = new File(propertiesFileName)
                   assert !propertiesFile.isDirectory()
@@ -574,7 +574,7 @@ The Initial Developer of the Covered Software is
                 <configuration>
                   <source><![CDATA[
                     import org.apache.maven.artifact.Artifact
-                    if (project.properties['appserver'] =~ /websphere/) {
+                    if (properties['appserver'] =~ /websphere/) {
                       project.properties.setProperty('tc.tests.info.junit-test-timeout-inseconds', '2700')
                       project.properties.setProperty('absolute-test-timeout-secs', '2700')
                       def cacheDir = System.getProperty("user.home") + File.separator + ".tc"
@@ -680,7 +680,7 @@ The Initial Developer of the Covered Software is
                 </goals>
                 <configuration>
                   <source>
-                    def target = project.properties['target']
+                    def target = properties['target']
                     if (target == null) fail("-Dtarget needs to be set for this profile")
                     def targetSet = new HashSet(Arrays.asList(target.split(",")))
                     def projectGroups = new HashSet()

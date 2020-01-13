@@ -350,7 +350,7 @@ The Initial Developer of the Covered Software is
                   </scriptpath>
                   <source>
                     def ant = new AntBuilder()
-                    File kitDir = new File(project.properties["root.dir"], "${kit.name}")
+                    File kitDir = new File(properties["root.dir"], "${kit.name}")
                     def patchDefFile = new File(project.basedir, "src/packaging/patch/patch-def.xml")
                     def patchDef = new XmlSlurper().parse(patchDefFile)
                     def patchLevel = patchDef.level.text()
