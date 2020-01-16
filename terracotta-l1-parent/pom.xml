@@ -94,16 +94,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.apache.xmlbeans</groupId>
       <artifactId>xmlbeans</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>stax</groupId>
-          <artifactId>stax-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency> 
-    <dependency>
-      <groupId>org.apache.xmlbeans</groupId>
-      <artifactId>xmlbeans-jsr173-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

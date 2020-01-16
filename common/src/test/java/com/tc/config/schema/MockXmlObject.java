@@ -204,6 +204,9 @@ public class MockXmlObject implements XmlObject {
   }
 
   @Override
+  public XmlObject copy(XmlOptions xmlOptions) { return null; }
+
+  @Override
   public XmlObject[] execQuery(String arg0, XmlOptions arg1) {
     return null;
   }

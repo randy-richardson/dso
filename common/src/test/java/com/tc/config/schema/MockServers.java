@@ -157,6 +157,9 @@ public class MockServers implements Servers {
   }
 
   @Override
+  public XmlObject copy(XmlOptions xmlOptions) { return null; }
+
+  @Override
   public boolean valueEquals(XmlObject arg0) {
     throw new ImplementMe();
   }

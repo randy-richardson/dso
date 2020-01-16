@@ -78,16 +78,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.apache.xmlbeans</groupId>
       <artifactId>xmlbeans</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>stax</groupId>
-          <artifactId>stax-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.xmlbeans</groupId>
-      <artifactId>xmlbeans-jsr173-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -133,16 +123,8 @@ The Initial Developer of the Covered Software is
       <artifactId>gf.javax.security.auth.message</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>gf-3122</groupId>
       <artifactId>gf.javax.mail</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.hk2</groupId>
-      <artifactId>osgi-resource-locator</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

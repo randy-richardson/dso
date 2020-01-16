@@ -47,7 +47,7 @@ The Initial Developer of the Covered Software is
     <javax.servlet.version>3.0.0.v201112011016</javax.servlet.version>
     <search.version>1.5.11</search.version>
     <shiro.version>1.4.0</shiro.version>
-    <management-core.version>2.1.17</management-core.version>
+    <management-core.version>2.1.18</management-core.version>
     <session-management.version>4.3.9</session-management.version>
     <tc-messaging.version>1.1.5</tc-messaging.version>
     <terracotta-license.version>1.2.3</terracotta-license.version>
@@ -55,7 +55,7 @@ The Initial Developer of the Covered Software is
     <toolkit-api-internal.version>1.19</toolkit-api-internal.version>
     <!-- version of ehcache embedded inside toolkit -->
     <ehcache.version>2.10.9-SNAPSHOT</ehcache.version>
-    <tcconfig.version>9.5</tcconfig.version>
+    <tcconfig.version>9.6</tcconfig.version>
     <linked-child-process.version>1.0.17</linked-child-process.version>
     <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
     <groovy.version>2.5.8</groovy.version>
@@ -150,18 +150,7 @@ The Initial Developer of the Covered Software is
       <dependency>
         <groupId>org.apache.xmlbeans</groupId>
         <artifactId>xmlbeans</artifactId>
-        <version>2.4.0</version>
-        <exclusions>
-          <exclusion>
-            <groupId>stax</groupId>
-            <artifactId>stax-api</artifactId>
-          </exclusion>
-        </exclusions>        
-      </dependency>
-      <dependency>
-        <groupId>org.apache.xmlbeans</groupId>
-        <artifactId>xmlbeans-jsr173-api</artifactId>
-        <version>1.0</version>
+        <version>3.1.0</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -252,11 +241,6 @@ The Initial Developer of the Covered Software is
         <groupId>gf-3122</groupId>
         <artifactId>gf.javax.security.auth.message</artifactId>
         <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.annotation</groupId>
-        <artifactId>javax.annotation-api</artifactId>
-        <version>1.2</version>
       </dependency>
       <dependency>
         <groupId>gf-3122</groupId>

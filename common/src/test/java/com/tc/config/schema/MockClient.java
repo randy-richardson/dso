@@ -151,6 +151,9 @@ public class MockClient implements Client {
   }
 
   @Override
+  public XmlObject copy(XmlOptions xmlOptions) { return null; }
+
+  @Override
   public boolean valueEquals(XmlObject arg0) {
     throw new ImplementMe();
   }
