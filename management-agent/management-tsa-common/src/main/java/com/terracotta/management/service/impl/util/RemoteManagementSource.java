@@ -260,11 +260,11 @@ public class RemoteManagementSource {
 
   public Invocation.Builder resource(URI uri, boolean enableCompression) {
     WebTarget resource = client.target(uri);
-    if (enableCompression) {
+    if (enableCompression && Boolean.getBoolean("com.tc.management.jersey.compression.enabled")) {
       resource.register(EncodingFilter.class);
+      resource.register(GZipEncoder.class);
+      resource.register(DeflateEncoder.class);
     }
-    resource.register(GZipEncoder.class);
-    resource.register(DeflateEncoder.class);
     resource.property(ClientProperties.CONNECT_TIMEOUT, (int)timeoutService.getCallTimeout());
     resource.property(ClientProperties.READ_TIMEOUT, (int)timeoutService.getCallTimeout());
 
