@@ -1028,9 +1028,9 @@ public class TCServerImpl extends SEDA implements TCServer {
 
   @Override
   public void dump() {
-//    if (this.dsoServer != null) {
-//      this.dsoServer.dump();
-//    }
+    if (this.dsoServer != null) {
+      this.dsoServer.dump();
+    }
   }
 
   private void registerDSOServer() throws InstanceAlreadyExistsException, MBeanRegistrationException,
