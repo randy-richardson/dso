@@ -643,8 +643,11 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
                           MapOperationType mapOperation) {
     Object value = localCacheValue.getValueObject();
     boolean notifyServerForRemove = false;
+    // TAB-7806: if localCacheEnabled value changed to false after adding the value to tcObjectSelfStore but before
+    // adding the key to the cache, then the key will not be added to the cache
+    boolean addToLocalCache = localCacheEnabled;
     if (value instanceof TCObjectSelf) {
-      if (localCacheEnabled || mapOperation.isMutateOperation()) {
+      if (addToLocalCache || mapOperation.isMutateOperation()) {
         if (!this.tcObjectSelfStore.addTCObjectSelf(serverMapLocalStore, localCacheValue, value,
                                                     mapOperation.isMutateOperation())) { return; }
       } else {
@@ -652,7 +655,7 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
       }
     }
 
-    if (isCacheInitialized() && (localCacheEnabled || mapOperation.isMutateOperation())) {
+    if (isCacheInitialized() && (addToLocalCache || mapOperation.isMutateOperation())) {
       cache.addToCache(key, localCacheValue, mapOperation);
     }
 
