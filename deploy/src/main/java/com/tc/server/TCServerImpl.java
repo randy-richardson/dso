@@ -647,6 +647,7 @@ public class TCServerImpl extends SEDA implements TCServer {
       };
       HttpConfiguration httpConfig = new HttpConfiguration();
       httpConfig.setSendServerVersion(false);
+      httpConfig.setBlockingTimeout(0); // make same as idle timeout (defaults to 30s.)
       Consumer<Socket> socketConsumer = enableReclaimer ? (socket) -> sockets.put(new PhantomReference<>(socket, referenceQueue), ((PipeSocket) socket).getDelegate()) : null;
       TCServerImpl.this.terracottaConnector = new TerracottaConnector(httpServer, new HttpConnectionFactory(httpConfig), socketConsumer);
       // connectors are named so that webapps can respond only on a specific one
@@ -759,6 +760,7 @@ public class TCServerImpl extends SEDA implements TCServer {
     HttpConfiguration httpConfig = new HttpConfiguration();
     httpConfig.setSecureScheme("https");
     httpConfig.setSendServerVersion(false);
+    httpConfig.setBlockingTimeout(0); // make same as idle timeout (defaults to 30s.)
 
     if (commonL2Config.isSecure()) {
       SslContextFactory sslContextFactory = new SslContextFactory();
