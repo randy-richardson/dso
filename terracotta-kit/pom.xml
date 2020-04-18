@@ -260,24 +260,6 @@ The Initial Developer of the Covered Software is
       <build>
         <plugins>
           <plugin>
-            <groupId>org.terracotta</groupId>
-            <artifactId>maven-forge-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>finder-scan-kit</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sag-finder</goal>
-                </goals>
-                <configuration>
-                  <onlyRunWhenSagDepsIsTrue>true</onlyRunWhenSagDepsIsTrue>
-                  <scanDirectory>${project.build.directory}/terracotta-${project.version}</scanDirectory>
-                  <exclusionList>${basedir}/src/finder-exclusions.txt</exclusionList>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.terracotta.maven.plugins</groupId>
             <artifactId>escrow-maven-plugin</artifactId>
             <version>${escrow-maven-plugin.version}</version>
