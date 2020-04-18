@@ -174,8 +174,9 @@ The Initial Developer of the Covered Software is
             </executions>
           </plugin>
           <plugin>
-           <groupId>org.codehaus.gmaven</groupId>
-           <artifactId>gmaven-plugin</artifactId>
+            <groupId>org.codehaus.gmaven</groupId>
+            <artifactId>groovy-maven-plugin</artifactId>
+            <version>${groovy-maven-plugin.version}</version>
            <executions>
              <execution>
                <id>inject-correct-pom-to-jar</id>

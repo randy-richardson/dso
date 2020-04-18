@@ -33,11 +33,15 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.6</version>
+      <version>4.5.9</version>
       <exclusions>
         <exclusion>
           <groupId>commons-codec</groupId>
           <artifactId>commons-codec</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -47,9 +51,14 @@
       <version>1.11</version>
     </dependency>
     <dependency>
-      <groupId>com.jayway.jsonpath</groupId>
+      <groupId>io.rest-assured</groupId>
       <artifactId>json-path</artifactId>
-      <version>0.8.1</version>
+      <version>4.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

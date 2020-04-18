@@ -32,7 +32,6 @@ The Initial Developer of the Covered Software is
 
 	<properties>
 		<archive>${project.build.directory}/${project.artifactId}-${project.version}.jar</archive>
-		<gmaven-plugin.version>1.4</gmaven-plugin.version>
 		<toolkitContentFilename>toolkit-content.txt</toolkitContentFilename>
 		<skipToolkitPackaging>true</skipToolkitPackaging>
 		<packagingType>jar</packagingType>
@@ -87,36 +86,6 @@ The Initial Developer of the Covered Software is
 				<filtering>true</filtering>
 			</resource>
 		</resources>
-		<pluginManagement>
-			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings 
-					only. It has no influence on the Maven build itself. -->
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-dependency-plugin</artifactId>
-										<versionRange>[2.1,)</versionRange>
-										<goals>
-											<goal>list</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore/>
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
 	</build>
 
 	<profiles>
@@ -433,7 +402,8 @@ The Initial Developer of the Covered Software is
 
 					<plugin>
 						<groupId>org.codehaus.gmaven</groupId>
-						<artifactId>gmaven-plugin</artifactId>
+						<artifactId>groovy-maven-plugin</artifactId>
+						<version>${groovy-maven-plugin.version}</version>
 						<executions>
 							<execution>
 								<id>inject-correct-pom-to-jar</id>

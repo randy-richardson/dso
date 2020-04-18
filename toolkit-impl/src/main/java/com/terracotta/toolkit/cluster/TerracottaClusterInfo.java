@@ -16,6 +16,7 @@
  */
 package com.terracotta.toolkit.cluster;
 
+import com.google.common.base.MoreObjects;
 import org.terracotta.toolkit.cluster.ClusterEvent;
 import org.terracotta.toolkit.cluster.ClusterEvent.Type;
 import org.terracotta.toolkit.cluster.ClusterInfo;
@@ -24,7 +25,6 @@ import org.terracotta.toolkit.cluster.ClusterNode;
 import org.terracotta.toolkit.internal.cluster.OutOfBandClusterListener;
 import org.terracotta.toolkit.rejoin.RejoinException;
 
-import com.google.common.base.Objects;
 import com.tc.cluster.DsoCluster;
 import com.tc.cluster.DsoClusterEvent;
 import com.tc.cluster.DsoClusterTopology;
@@ -226,7 +226,7 @@ public class TerracottaClusterInfo implements ClusterInfo {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("listener", listener)
           .toString();
     }
