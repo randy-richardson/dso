@@ -651,7 +651,7 @@ The Initial Developer of the Covered Software is
                 </goals>
                 <configuration>
                   <source>
-                    def target = project.properties['target']
+                    def target = properties['target']
                     if (target == null) fail("-Dtarget needs to be set for this profile")
                     def targetSet = new HashSet(Arrays.asList(target.split(",")))
                     def projectGroups = new HashSet()
