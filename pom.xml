@@ -41,6 +41,7 @@ The Initial Developer of the Covered Software is
     <maven-forge-plugin.version>1.2.19</maven-forge-plugin.version>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
+    <skipSagFinder>true</skipSagFinder>
     <jetty.version>9.4.28.v20200408</jetty.version>
   </properties>
 
