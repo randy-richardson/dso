@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.json.simple.JSONArray;
+import net.minidev.json.JSONArray;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -31,7 +31,7 @@ import org.apache.http.client.HttpClient;
 import org.terracotta.management.cli.Command;
 import org.terracotta.management.cli.CommandInvocationException;
 
-import io.restassured.path.json.JsonPath;
+import com.jayway.jsonpath.JsonPath;
 
 /**
  * @author Ludovic Orban
@@ -79,6 +79,7 @@ public abstract class AbstractHttpCommand implements Command<Context> {
     List<String> jsonQueries = context.getJsonQueries();
     List<Object> jsonOutputs = new ArrayList<Object>();
 
+
     boolean containsResult = false;
     if (jsonQueries.isEmpty()) {
       DisplayServices.println(bytes, encoding, contentType.getValue());
@@ -86,11 +87,11 @@ public abstract class AbstractHttpCommand implements Command<Context> {
     } else if (contentType == null || !contentType.getValue().equals("application/json")) {
       throw new RuntimeException("Cannot execute JSON query on wrong content type. " + contentType);
     } else {
-      JsonPath jSonPath = new JsonPath(new String(bytes, encoding));
       for (String jsonQuery : jsonQueries) {
-        Object jsonOut = jSonPath.get(jsonQuery);
+        Object jsonOut = JsonPath.read(new String(bytes, encoding), jsonQuery);
         jsonOutputs.add(jsonOut);
       }
+
 
       if (jsonOutputs.size() > 0 && jsonOutputs.get(0) instanceof JSONArray) {
         JSONArray jsonArray = (JSONArray)jsonOutputs.get(0);
