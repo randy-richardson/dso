@@ -41,6 +41,7 @@ The Initial Developer of the Covered Software is
         <include>org.slf4j:slf4j-jdk14</include>
         <include>commons-lang:commons-lang</include>
         <include>com.google.guava:guava</include>
+        <include>com.google.guava:failureaccess</include>
       </includes>
     </dependencySet>
   </dependencySets>
