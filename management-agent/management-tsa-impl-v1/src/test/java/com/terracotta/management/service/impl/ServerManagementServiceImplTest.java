@@ -32,8 +32,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.hamcrest.MockitoHamcrest;
 
 import javax.ws.rs.WebApplicationException;
 import java.net.URI;
@@ -52,7 +50,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
