@@ -121,12 +121,9 @@ public class MavenArtifactFinder {
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(pomFile);
 
-        NodeList childNodes = doc.getDocumentElement().getChildNodes();
-        for (int i=0;i<childNodes.getLength();i++) {
-          Node node = childNodes.item(i);
-          if ("version".equals(node.getNodeName())) {
-            return node.getTextContent();
-          }
+        String result = findVersion(doc.getDocumentElement().getChildNodes());
+        if (result != null) {
+          return result;
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -135,4 +132,19 @@ public class MavenArtifactFinder {
     }
   }
 
+  private static String findVersion(NodeList nodeList) {
+    for (int i = 0; i < nodeList.getLength(); i++) {
+      Node node = nodeList.item(i);
+      if ("version".equals(node.getNodeName())) {
+        return node.getTextContent();
+      }
+      if (node.hasChildNodes()) {
+        String version = findVersion(node.getChildNodes());
+        if (version != null) {
+          return version;
+        }
+      }
+    }
+    return null;
+  }
 }
