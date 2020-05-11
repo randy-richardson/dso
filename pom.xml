@@ -22,7 +22,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent-ee</artifactId>
-    <version>4.14</version>
+    <version>4.16</version>
     <relativePath/>
   </parent>
 
@@ -38,7 +38,6 @@ The Initial Developer of the Covered Software is
   
   <properties>
     <build.edition>opensource</build.edition>
-    <maven-forge-plugin.version>1.2.30</maven-forge-plugin.version>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
     <jetty.version>9.4.28.v20200408</jetty.version>
