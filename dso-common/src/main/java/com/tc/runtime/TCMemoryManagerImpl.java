@@ -153,7 +153,7 @@ public class TCMemoryManagerImpl implements TCMemoryManager {
           long ts = System.currentTimeMillis();
           // has it been two hours since we nagged in the logs?
           if(ts - lastWarningTS > (2L * 60L * 60L * 1000L)) {
-            logger.error(t);
+            logger.warn(t);
             logger.warn("Memory Monitor unable to reliably watch memory usage and GC events due to JVM Internal errors.");
             lastWarningTS = ts;
           }
