@@ -139,6 +139,10 @@ public class TCMemoryManagerImpl implements TCMemoryManager {
     @Override
     public void run() {
       logger.debug("Starting Memory Monitor - sleep interval - " + sleepTime);
+
+      // Variable to help keep us from being "spammy" in the logs about problems getting mem pool info
+      long lastWarningTS = 0;
+
       while (run) {
         try {
           Thread.sleep(sleepTime);
@@ -146,12 +150,13 @@ public class TCMemoryManagerImpl implements TCMemoryManager {
           fireMemoryEvent(mu);
           adjust(mu);
         } catch (Throwable t) {
-          // for debugging purpose
-          StackTraceElement[] trace = t.getStackTrace();
-          for (StackTraceElement element : trace)
-            logger.warn(element.toString());
-          logger.error(t);
-          throw new TCRuntimeException(t);
+          long ts = System.currentTimeMillis();
+          // has it been two hours since we nagged in the logs?
+          if(ts - lastWarningTS > (2L * 60L * 60L * 1000L)) {
+            logger.error(t);
+            logger.warn("Memory Monitor unable to reliably watch memory usage and GC events due to JVM Internal errors.");
+            lastWarningTS = ts;
+          }
         }
       }
       logger.debug("Stopping Memory Monitor - sleep interval - " + sleepTime);
