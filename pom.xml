@@ -40,7 +40,8 @@ The Initial Developer of the Covered Software is
     <build.edition>opensource</build.edition>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
-    <jetty.version>9.4.28.v20200408</jetty.version>
+    <jetty.version>9.4.30.v20200611</jetty.version>
+    <jackson.version>2.11.1</jackson.version>
   </properties>
 
   <modules>
