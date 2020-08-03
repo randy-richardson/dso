@@ -30,6 +30,7 @@ import com.terracotta.management.service.impl.util.RemoteManagementSource;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author Ludovic Orban
@@ -45,8 +46,10 @@ public class SecuritySetup {
     return nullContextService;
   }
 
-  public RemoteManagementSource buildRemoteManagementSource(LocalManagementSource localManagementSource, TimeoutService timeoutService) {
-    return new RemoteManagementSource(localManagementSource, timeoutService);
+  public RemoteManagementSource buildRemoteManagementSource(LocalManagementSource localManagementSource,
+                                                            TimeoutService timeoutService,
+                                                            ExecutorService executorservice) {
+    return new RemoteManagementSource(localManagementSource, timeoutService, executorservice);
   }
 
   public RequestTicketMonitor getRequestTicketMonitor() {

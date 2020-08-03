@@ -121,7 +121,8 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
       /// Security Services ///
       SecuritySetup securitySetup = buildSecuritySetup(serviceLocator);
 
-      remoteManagementSource = securitySetup.buildRemoteManagementSource(localManagementSource, timeoutService);
+      remoteManagementSource = securitySetup.buildRemoteManagementSource(localManagementSource, timeoutService,
+          tsaExecutorService);
       serviceLocator.loadService(RemoteManagementSource.class, remoteManagementSource);
 
       ServiceLoader<ApplicationTsaService> loaders = ServiceLoader.load(ApplicationTsaService.class);
