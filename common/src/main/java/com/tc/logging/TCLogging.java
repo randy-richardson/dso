@@ -50,6 +50,7 @@ import java.lang.management.RuntimeMXBean;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -263,7 +264,7 @@ public class TCLogging {
             configurator.setContext(loggerContext);
             configurator.doConfigure(propFile.getAbsolutePath());
             devLogBackFilePresent = true;
-            devLoggingFile = new String(Files.readAllBytes(Paths.get(LOGBACK_DEV_FILENAME)));
+            devLoggingFile = new String(Files.readAllBytes(propFile.toPath()), Charset.forName("UTF-8"));
           }
         }
       }
@@ -294,7 +295,7 @@ public class TCLogging {
           JoranConfigurator configurator = new JoranConfigurator();
           configurator.setContext(loggerContext);
           configurator.doConfigure(propFile.getAbsolutePath());
-          String customLoggingFile = new String(Files.readAllBytes(Paths.get(LOGBACK_CUSTOM_FILENAME)));
+          String customLoggingFile = new String(Files.readAllBytes(propFile.toPath()), Charset.forName("UTF-8"));
           loggingProperties = customLoggingFile;
           return true;
         }
