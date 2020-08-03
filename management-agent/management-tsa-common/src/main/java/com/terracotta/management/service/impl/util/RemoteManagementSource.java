@@ -17,7 +17,6 @@
 package com.terracotta.management.service.impl.util;
 
 import com.terracotta.management.service.TimeoutService;
-import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.filter.EncodingFilter;
 import org.glassfish.jersey.media.sse.EventInput;
@@ -33,7 +32,6 @@ import org.terracotta.management.resource.SubGenericType;
 import org.terracotta.management.resource.exceptions.ExceptionUtils;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.AsyncInvoker;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -44,8 +42,6 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 import java.io.EOFException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,14 +50,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Ludovic Orban
@@ -72,16 +68,18 @@ public class RemoteManagementSource {
 
   private static final String CONNECTION_TIMEOUT_HEADER_NAME = "X-Terracotta-Connection-Timeout";
   private static final String READ_TIMEOUT_HEADER_NAME = "X-Terracotta-Read-Timeout";
-  private static final String CLEAN_ME_MARKER = "___CLEAN_ME___";
 
   private final LocalManagementSource localManagementSource;
   private final TimeoutService timeoutService;
+  private final ExecutorService executorService;
   private final ConcurrentMap<RemoteTSAEventListener, Collection<Future<EventInput>>> eventListenerFutures = new ConcurrentHashMap<RemoteTSAEventListener, Collection<Future<EventInput>>>();
   protected volatile Client client;
 
-  public RemoteManagementSource(LocalManagementSource localManagementSource, TimeoutService timeoutService) {
+  public RemoteManagementSource(LocalManagementSource localManagementSource, TimeoutService timeoutService,
+                                ExecutorService executorService) {
     this.localManagementSource = localManagementSource;
     this.timeoutService = timeoutService;
+    this.executorService = executorService;
 
     ClientBuilder clientBuilder = ClientBuilder.newBuilder();
 
@@ -92,9 +90,12 @@ public class RemoteManagementSource {
     client.register(SseFeature.class);
   }
 
-  protected RemoteManagementSource(LocalManagementSource localManagementSource, TimeoutService timeoutService, Client client) {
+  // For tests only
+  protected RemoteManagementSource(LocalManagementSource localManagementSource, TimeoutService timeoutService,
+                                   ExecutorService executorService, Client client) {
     this.localManagementSource = localManagementSource;
     this.timeoutService = timeoutService;
+    this.executorService = executorService;
     this.client = client;
   }
 
@@ -117,16 +118,11 @@ public class RemoteManagementSource {
     String serverUrl = localManagementSource.getRemoteServerUrls().get(serverName);
     URI fullUri = UriBuilder.fromUri(serverUrl).uri(uri).build();
     Builder resource = resource(fullUri);
-    AtomicBoolean flag = new AtomicBoolean(false);
-    client.property(CLEAN_ME_MARKER, flag);
     try {
       return (R) resource.get(new SubGenericType<T, S>(type, subType));
     } catch (WebApplicationException wae) {
       ErrorEntity errorEntity = createErrorEntity(wae);
       throw new ManagementSourceException("GET " + fullUri + " failed", errorEntity);
-    } finally {
-      flag.set(true);
-      cleanup(client, CLEAN_ME_MARKER);
     }
   }
 
@@ -138,16 +134,11 @@ public class RemoteManagementSource {
     String serverUrl = localManagementSource.getRemoteServerUrls().get(serverName);
     URI fullUri = UriBuilder.fromUri(serverUrl).uri(uri).build();
     Builder resource = resource(fullUri);
-    AtomicBoolean flag = new AtomicBoolean(false);
-    client.property(CLEAN_ME_MARKER, flag);
     try {
       resource.post(null);
     } catch (WebApplicationException wae) {
       ErrorEntity errorEntity = createErrorEntity(wae);
       throw new ManagementSourceException("POST(1) " + fullUri + " failed", errorEntity);
-    } finally {
-      flag.set(true);
-      cleanup(client, CLEAN_ME_MARKER);
     }
   }
 
@@ -159,16 +150,11 @@ public class RemoteManagementSource {
     String serverUrl = localManagementSource.getRemoteServerUrls().get(serverName);
     URI fullUri = UriBuilder.fromUri(serverUrl).uri(uri).build();
     Builder resource = resource(fullUri);
-    AtomicBoolean flag = new AtomicBoolean(false);
-    client.property(CLEAN_ME_MARKER, flag);
     try {
       return resource.post(Entity.entity(entities, MediaType.APPLICATION_JSON_TYPE), returnType);
     } catch (WebApplicationException wae) {
       ErrorEntity errorEntity = createErrorEntity(wae);
       throw new ManagementSourceException("POST(2) " + fullUri + " failed", errorEntity);
-    } finally {
-      flag.set(true);
-      cleanup(client, CLEAN_ME_MARKER);
     }
   }
 
@@ -180,59 +166,11 @@ public class RemoteManagementSource {
     String serverUrl = localManagementSource.getRemoteServerUrls().get(serverName);
     URI fullUri = UriBuilder.fromUri(serverUrl).uri(uri).build();
     Builder resource = resource(fullUri);
-    AtomicBoolean flag = new AtomicBoolean(false);
-    client.property(CLEAN_ME_MARKER, flag);
     try {
       return (R) resource.post(null, new SubGenericType<T, S>(returnType, returnSubType));
     } catch (WebApplicationException wae) {
       ErrorEntity errorEntity = createErrorEntity(wae);
       throw new ManagementSourceException("POST(3) " + fullUri + " failed", errorEntity);
-    } finally {
-      flag.set(true);
-      cleanup(client, CLEAN_ME_MARKER);
-    }
-  }
-
-  static final AtomicBoolean NOTIFICATION_LOGGED = new AtomicBoolean(false);
-
-  static void cleanup(Client client, String markerProperty) {
-    try {
-      Field listenersField = client.getClass().getDeclaredField("listeners");
-      listenersField.setAccessible(true);
-      LinkedBlockingDeque<?> lbdq = (LinkedBlockingDeque<?>) listenersField.get(client);
-
-      // Oh joy, the LinkedBlockingDeque's iterator is buggy in JDK 6 and can
-      // make the next() method run into an infinite loop while holding forever
-      // the lock other threads try to acquire to perform a dequeue.
-      // See: https://bugs.openjdk.java.net/browse/JDK-6993789
-      // Hence, the iteration of toArray() instead.
-      Object[] listeners = lbdq.toArray();
-      for (Object listener : listeners) {
-        try {
-          Field confRuntimeField = listener.getClass().getDeclaredField("val$crt");
-          confRuntimeField.setAccessible(true);
-          Object clientRuntime = confRuntimeField.get(listener);
-          Method getConfigMethod = clientRuntime.getClass().getMethod("getConfig");
-          getConfigMethod.setAccessible(true);
-          ClientConfig clientConfig = (ClientConfig) getConfigMethod.invoke(clientRuntime);
-
-          AtomicBoolean cleanme = (AtomicBoolean) clientConfig.getProperty(markerProperty);
-          // it is possible that the property was not set yet; for example if a new client request came in,
-          // and we clean up a listener on the same client at the same time
-          if (cleanme != null && cleanme.get()) {
-            lbdq.remove(listener);
-          }
-        } catch (Exception e) {
-          if (NOTIFICATION_LOGGED.compareAndSet(false, true)) {
-            LOG.error("Unable to cleanup Jersey 2.6 Client listeners, you may run into a memory leak!", e);
-            LOG.debug("Here is the number of listeners on this client : " + lbdq.size());
-          }
-        }
-      }
-    } catch (Exception e) {
-      if (NOTIFICATION_LOGGED.compareAndSet(false, true)) {
-        LOG.error("Unable to cleanup Jersey 2.6 Client listeners, you may run into a memory leak!", e);
-      }
     }
   }
 
@@ -281,15 +219,34 @@ public class RemoteManagementSource {
     void onError(Throwable throwable);
   }
 
+  /*
+   * Workaround for https://github.com/eclipse-ee4j/jersey/issues/3441
+   */
+  Future<EventInput> submit(Builder builder, InvocationCallback<EventInput> callback) {
+    return executorService.submit(new Callable<EventInput>() {
+      @Override
+      public EventInput call() throws Exception {
+        try {
+          EventInput result = builder.get(EventInput.class);
+          callback.completed(result);
+          return result;
+        } catch (Throwable throwable) {
+          callback.failed(throwable);
+          throw throwable;
+        }
+      }
+    });
+  }
+
   public void addTsaEventListener(final RemoteTSAEventListener listener) {
     Map<String, String> remoteServerUrls = localManagementSource.getRemoteServerUrls();
     for (String serverUrl : remoteServerUrls.values()) {
-      final AsyncInvoker async = sseResource(UriBuilder.fromUri(serverUrl)
+      final Builder builder = sseResource(UriBuilder.fromUri(serverUrl)
           .uri("/tc-management-api/v2/events")
           .queryParam("localOnly", "true")
-          .build()).async();
+          .build());
 
-      Future<EventInput> f = async.get(new InvocationCallback<EventInput>() {
+      Future<EventInput> f = submit(builder, new InvocationCallback<EventInput>() {
         @Override
         public void completed(EventInput eventInput) {
           while (true) {
@@ -342,7 +299,7 @@ public class RemoteManagementSource {
 
           // restart the request
           LOG.debug("Event listener still registered, restarting SSE client to other node");
-          Future<EventInput> newFuture = async.get(this);
+          Future<EventInput> newFuture = submit(builder, this);
           if (!addFutureIfListenerPresent(listener, newFuture)) {
             LOG.debug("Event listener racily unregistered, immediately cancel the future");
             newFuture.cancel(true);
