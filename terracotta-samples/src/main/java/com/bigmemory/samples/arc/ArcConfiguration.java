@@ -28,7 +28,7 @@ import java.io.IOException;
  * <p>Automatic Resource Control (ARC) is an intelligent approach to caching with fine-grained controls for tuning cache performance. ARC offers a wealth of benefits, including:
  * <ul>
  * <li>Sizing limitations on in-memory caches to avoid OutOfMemory errors</li>
- * <li>Pooled (CacheManager-level) sizing – no requirement to size caches individually</li>
+ * <li>Pooled (CacheManager-level) sizing - no requirement to size caches individually</li>
  * <li>Differentiated tier-based sizing for flexibility</li>
  * <li>Sizing by bytes, entries, or percentages for more flexibility</li>
  * <li>Keeping hot or eternal data where it can substantially boost performance</li>
