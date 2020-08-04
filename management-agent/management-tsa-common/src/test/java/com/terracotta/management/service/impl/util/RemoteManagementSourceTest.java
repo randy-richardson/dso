@@ -174,7 +174,7 @@ public class RemoteManagementSourceTest {
     when(builder.header(anyString(), any())).thenReturn(builder);
     when(client.target(any(URI.class))).thenReturn(webTarget);
 
-    when(builder.post(any(Entity.class))).thenThrow(WebApplicationException.class);
+    when(builder.post(any())).thenThrow(WebApplicationException.class);
 
     RemoteManagementSource remoteManagementSource = new RemoteManagementSource(localManagementSource,
         new TimeoutServiceImpl(1000L), executorService, client);
@@ -288,7 +288,7 @@ public class RemoteManagementSourceTest {
     when(builder.header(anyString(), any())).thenReturn(builder);
     when(client.target(any(URI.class))).thenReturn(webTarget);
 
-    when(builder.post(any(Entity.class), any(SubGenericType.class))).thenThrow(WebApplicationException.class);
+    when(builder.post(any(), any(SubGenericType.class))).thenThrow(WebApplicationException.class);
 
     RemoteManagementSource remoteManagementSource = new RemoteManagementSource(localManagementSource,
         new TimeoutServiceImpl(1000L), executorService, client);
