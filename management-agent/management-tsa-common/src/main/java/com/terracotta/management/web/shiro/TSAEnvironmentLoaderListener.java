@@ -84,7 +84,7 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
       l1BridgeExecutorService.setRejectedExecutionHandler(new RejectedExecutionHandler() {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
           try {
-            boolean accepted = l1BridgeExecutorService.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
+            boolean accepted = executor.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
             if (!accepted) {
               throw new RejectedExecutionException("L1 Management thread pool saturated, job rejected");
             }
@@ -100,7 +100,7 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
       tsaExecutorService.setRejectedExecutionHandler(new RejectedExecutionHandler() {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
           try {
-            boolean accepted = l1BridgeExecutorService.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
+            boolean accepted = executor.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
             if (!accepted) {
               throw new RejectedExecutionException("L2 Management thread pool saturated, job rejected");
             }
