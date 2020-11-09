@@ -16,6 +16,8 @@
  */
 package com.terracotta.toolkit.factory.impl;
 
+import com.tc.properties.TCPropertiesConsts;
+import com.terracotta.toolkit.util.collections.LoggingBlockingQueue;
 import org.terracotta.toolkit.ToolkitObjectType;
 import org.terracotta.toolkit.config.Configuration;
 import org.terracotta.toolkit.internal.ToolkitInternal;
@@ -34,6 +36,7 @@ import com.terracotta.toolkit.type.IsolatedToolkitTypeFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -73,10 +76,21 @@ public class ToolkitNotifierFactoryImpl extends
   }
 
   private ExecutorService createExecutorService(PlatformService platformService) {
-    int maxNotifierThreadCount = new TerracottaProperties(platformService).getInteger("maxToolkitNotifierThreadCount",
-                                                                                      20);
-    final ExecutorService notifierService = new ThreadPoolExecutor(0, maxNotifierThreadCount, 60L, TimeUnit.SECONDS,
-                                                                   new LinkedBlockingDeque<Runnable>(),
+    TerracottaProperties tcProperties = new TerracottaProperties(platformService);
+    int maxNotifierThreadCount = tcProperties.getInteger(TCPropertiesConsts.TOOLKIT_NOTIFIER_THREADS);
+    int maxNotifierQueueLength = tcProperties.getInteger(TCPropertiesConsts.TOOLKIT_NOTIFIER_QUEUE_SIZE);
+
+    RejectedExecutionHandler rejectedExecutionHandler = new RejectedExecutionHandler() {
+      @Override
+      public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+        LOGGER.warn("Toolkit notifier dropped incoming event (queue at capacity: " + maxNotifierQueueLength + ")");
+      }
+    };
+
+
+    final ThreadPoolExecutor notifierService = new ThreadPoolExecutor(maxNotifierThreadCount, maxNotifierThreadCount, 60L, TimeUnit.SECONDS,
+                                                                   new LoggingBlockingQueue<>(new LinkedBlockingDeque<Runnable>(maxNotifierQueueLength),
+                                                                           1000, LOGGER, "Toolkit notifier queue at capacity {}"),
                                                                    new ThreadFactory() {
                                                                      private final AtomicInteger count = new AtomicInteger();
 
@@ -90,7 +104,8 @@ public class ToolkitNotifierFactoryImpl extends
                                                                        thread.setDaemon(true);
                                                                        return thread;
                                                                      }
-                                                                   });
+                                                                   }, rejectedExecutionHandler);
+    notifierService.allowCoreThreadTimeOut(true);
     return notifierService;
   }
 
