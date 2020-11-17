@@ -41,12 +41,10 @@ public class InClusterServerEventBuffer implements ServerEventBuffer {
   @Override
   public final void storeEvent(final GlobalTransactionID gtxId, final ServerEvent serverEvent,
                                final Set<ClientID> clients) {
-    if (eventMap.get(gtxId) == null) {
-      eventMap.put(gtxId, ArrayListMultimap.<ClientID, ServerEvent> create(1, 1));
-    }
+    Multimap<ClientID,ServerEvent> multimap = eventMap.computeIfAbsent(gtxId, (g)->ArrayListMultimap.create(1,1));
 
     for (ClientID clientID : clients) {
-      eventMap.get(gtxId).put(clientID, serverEvent);
+      multimap.put(clientID, serverEvent);
     }
   }
 
@@ -66,11 +64,6 @@ public class InClusterServerEventBuffer implements ServerEventBuffer {
 
   @Override
   public void clearEventBufferBelowLowWaterMark(final GlobalTransactionID lowWatermark) {
-    for (GlobalTransactionID gtxID : eventMap.keySet()) {
-      if (gtxID.lessThan(lowWatermark)) {
-        eventMap.remove(gtxID);
-      }
-    }
+    eventMap.keySet().removeIf(k->k.lessThan(lowWatermark));
   }
-
 }

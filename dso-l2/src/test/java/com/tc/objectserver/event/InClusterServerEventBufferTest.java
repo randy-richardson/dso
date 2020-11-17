@@ -31,6 +31,8 @@ import com.tc.net.ClientID;
 import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.server.BasicServerEvent;
 import com.tc.server.ServerEvent;
+import com.tc.util.concurrent.ThreadUtil;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Eugene Shelestovich
@@ -111,6 +113,25 @@ public class InClusterServerEventBufferTest {
     Assert.assertTrue(eventsForGtxId3.size() == 3);
     Assert.assertTrue(eventsForGtxId3.get(clientId1).equals(Lists.newArrayList(event3)));
     Assert.assertTrue(eventsForGtxId3.get(clientId3).equals(Lists.newArrayList(event3, event33)));
+  }
+
+  @Test
+  public void testConcurrentStoreGC() throws Exception {
+    buffer.clearEventBufferBelowLowWaterMark(gtxId3);
+
+    new Thread(()->{
+      while (true) {
+        buffer.clearEventBufferBelowLowWaterMark(gtxId2);
+        ThreadUtil.reallySleep(10);
+      }
+    }).start();
+    long stop = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
+
+    while (System.currentTimeMillis() < stop) {
+      buffer.storeEvent(gtxId1, event1, Sets.newHashSet(clientId1));
+      ThreadUtil.reallySleep(1);
+    }
+    
   }
 
 }
