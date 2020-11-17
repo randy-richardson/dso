@@ -118,20 +118,23 @@ public class InClusterServerEventBufferTest {
   @Test
   public void testConcurrentStoreGC() throws Exception {
     buffer.clearEventBufferBelowLowWaterMark(gtxId3);
+    long stop = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
 
-    new Thread(()->{
-      while (true) {
+    Thread t = new Thread(()->{
+      while (System.currentTimeMillis() < stop) {
         buffer.clearEventBufferBelowLowWaterMark(gtxId2);
         ThreadUtil.reallySleep(10);
       }
-    }).start();
-    long stop = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
+    });
 
+    t.start();
+    
     while (System.currentTimeMillis() < stop) {
       buffer.storeEvent(gtxId1, event1, Sets.newHashSet(clientId1));
       ThreadUtil.reallySleep(1);
     }
-    
+
+    t.join();
   }
 
 }
