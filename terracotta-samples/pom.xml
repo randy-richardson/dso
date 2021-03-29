@@ -31,7 +31,7 @@ The Initial Developer of the Covered Software is
   <properties>
     <slf4j.version>1.7.25</slf4j.version>
     <commons-lang.version>2.6</commons-lang.version>
-    <guava.version>28.2-jre</guava.version>
+    <guava.version>30.1.1-jre</guava.version>
     <terracotta-nexus-staging-url>http://nexus.terracotta.eur.ad.sag/service/local/staging/deploy/maven2</terracotta-nexus-staging-url>
     <terracotta-snapshots-url>http://nexus.terracotta.eur.ad.sag/content/repositories/terracotta-snapshots</terracotta-snapshots-url>
     <skipDeploy>false</skipDeploy>
