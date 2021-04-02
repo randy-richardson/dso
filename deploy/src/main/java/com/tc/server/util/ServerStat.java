@@ -128,9 +128,8 @@ public class ServerStat {
     String usage = " server-stat -s host1,host2" + NEWLINE + "       server-stat -s host1:9540,host2:9540" + NEWLINE
                    + "       server-stat -f /path/to/tc-config.xml" + NEWLINE;
 
-    CommandLineBuilder commandLineBuilder = new CommandLineBuilder(ServerStat.class.getName(),
-        replaceServerArg(args));
-    ManagementToolUtil.addConnectionOptionsTo(commandLineBuilder);
+    CommandLineBuilder commandLineBuilder = new CommandLineBuilder(ServerStat.class.getName(), args);
+    ManagementToolUtil.addConnectionOptionsTo(commandLineBuilder, true);
     commandLineBuilder.addOption("h", "help", String.class, false);
     commandLineBuilder.setUsageMessage(usage);
     commandLineBuilder.parse();
@@ -142,20 +141,6 @@ public class ServerStat {
     for (WebTarget target : ManagementToolUtil.getTargets(commandLineBuilder, true)) {
       System.out.println(getStats(target));
     }
-  }
-
-  /**
-   * Handle the "-s" for list of servers in the usage. In ManagementToolUtil, "-s" means secured.
-   *
-   * @param args args from the commandline
-   * @return filtered args
-   */
-  private static String[] replaceServerArg(String[] args) {
-    String[] argCopy = new String[args.length];
-    for (int i = 0; i < args.length; i++) {
-      argCopy[i] = args[i].equals("-s") ? "-servers" : args[i];
-    }
-    return argCopy;
   }
 
   public static ServerStat getStats(WebTarget target) throws IOException {
