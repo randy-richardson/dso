@@ -1,3 +1,4 @@
+
 <?xml version="1.0"?>
 <!--
 The contents of this file are subject to the Terracotta Public License Version
@@ -12,7 +13,7 @@ the specific language governing rights and limitations under the License.
 
 The Covered Software is Terracotta Platform.
 
-The Initial Developer of the Covered Software is 
+The Initial Developer of the Covered Software is
      Terracotta, Inc., a Software AG company
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -510,24 +511,9 @@ The Initial Developer of the Covered Software is
       <build>
         <plugins>
           <plugin>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections-maven</artifactId>
-            <version>0.9.9-RC1</version>
-            <configuration>
-              <scanners>org.reflections.scanners.TypeAnnotationsScanner</scanners>
-              <destinations>${project.build.directory}/reflections.xml</destinations>
-              <tests>true</tests>
-              <parallel>true</parallel>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>reflections</goal>
-                </goals>
-                <phase>process-test-classes</phase>
-              </execution>
-            </executions>
-          </plugin>        
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
+          </plugin>
           <plugin>
             <groupId>org.terracotta</groupId>
             <artifactId>maven-forge-plugin</artifactId>
@@ -588,23 +574,8 @@ The Initial Developer of the Covered Software is
           </plugin>
 
           <plugin>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections-maven</artifactId>
-            <version>0.9.9-RC1</version>
-            <configuration>
-              <scanners>org.reflections.scanners.TypeAnnotationsScanner</scanners>
-              <destinations>${project.build.directory}/reflections.xml</destinations>
-              <tests>true</tests>
-              <parallel>true</parallel>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>reflections</goal>
-                </goals>
-                <phase>process-test-classes</phase>
-              </execution>
-            </executions>
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
           </plugin>
           <plugin>
             <groupId>org.terracotta</groupId>
@@ -800,48 +771,5 @@ The Initial Developer of the Covered Software is
       </build>
     </profile>    
   </profiles>
-
-  <repositories>
-    <repository>
-      <id>terracotta-snapshots</id>
-      <url>http://www.terracotta.org/download/reflector/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>terracotta-releases</id>
-      <url>http://www.terracotta.org/download/reflector/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jboss-public</id>
-      <url>http://repository.jboss.org/nexus/content/groups/public</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>terracotta-snapshots</id>
-      <url>http://www.terracotta.org/download/reflector/snapshots</url>
-    </pluginRepository>
-    <pluginRepository>
-      <id>terracotta-releases</id>
-      <url>http://www.terracotta.org/download/reflector/releases</url>
-    </pluginRepository>
-  </pluginRepositories>
 
 </project>
