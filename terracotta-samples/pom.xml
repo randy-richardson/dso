@@ -191,15 +191,4 @@ The Initial Developer of the Covered Software is
     </plugins>
   </build>
 
-  <repositories>
-    <repository>
-      <id>terracotta-repository</id>
-      <url>http://www.terracotta.org/download/reflector/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-    </repository>
-  </repositories>
-
-
 </project>

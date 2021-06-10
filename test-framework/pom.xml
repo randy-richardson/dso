@@ -31,7 +31,7 @@ The Initial Developer of the Covered Software is
   <name>test-framework</name>
   
   <properties>
-    <byteman.version>2.0.1</byteman.version>
+    <byteman.version>2.0.4</byteman.version>
     <skip.testjar>true</skip.testjar>
   </properties>
 
@@ -251,35 +251,20 @@ The Initial Developer of the Covered Software is
         </executions>
       </plugin>
       <plugin>
-        <groupId>com.github.goldin</groupId>
-        <artifactId>copy-maven-plugin</artifactId>
-        <version>${copy-maven-plugin.version}</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
         <executions>
           <execution>
-            <id>create-source-archive</id>
-            <phase>package</phase>
+            <id>attach-sources</id>
             <goals>
-              <goal>copy</goal>
+              <goal>jar</goal>
             </goals>
-            <configuration>
-              <resource>
-                <targetPath>${project.build.directory}/sources</targetPath>
-                <directory>${basedir}/src/main/java</directory>
-              </resource>
-              <resource>
-                <targetPath>${project.build.directory}/${project.artifactId}-${project.version}-sources.jar</targetPath>
-                <directory>${project.build.directory}/sources</directory>
-                <pack>true</pack>
-                <attachArtifact>false</attachArtifact>
-              </resource>
-            </configuration>
           </execution>
         </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>2.3.2</version>
         <configuration>
           <archive>
             <manifestFile>${project.build.directory}/MANIFEST.MF</manifestFile>
