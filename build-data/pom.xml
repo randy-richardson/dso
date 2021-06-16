@@ -46,10 +46,29 @@ The Initial Developer of the Covered Software is
             <configuration>
               <rootPath>${basedir}/..</rootPath>
               <eeRootPath>${basedir}/../..</eeRootPath>
+              <!-- with git, we can't rely on submodule branch to be authoritative -->
+              <skipBranchMatchingCheck>true</skipBranchMatchingCheck>
             </configuration>
           </execution>
         </executions>
-      </plugin>       
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>init-build-properties</id>
+            <goals>
+              <goal>hostname</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <hostnameProperty>build.host</hostnameProperty>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   
