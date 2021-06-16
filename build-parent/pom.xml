@@ -415,16 +415,6 @@ The Initial Developer of the Covered Software is
           </configuration>
           <executions>
             <execution>
-              <id>create-build-info</id>
-              <goals>
-                <goal>buildinfo</goal>
-              </goals>
-              <phase>generate-resources</phase>
-              <configuration>
-                <rootPath>${basedir}/..</rootPath>
-              </configuration>
-            </execution>          
-            <execution>
               <id>default-test</id>
               <phase>integration-test</phase>
               <goals>
