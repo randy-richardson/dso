@@ -54,6 +54,7 @@ public class RemoteServiceStubGeneratorV2Test {
 
 
   private ExecutorService executorService;
+  private final long defaultConnectionTimeout = 1_000;
 
   @Before
   public void setUp() throws Exception {
@@ -71,7 +72,7 @@ public class RemoteServiceStubGeneratorV2Test {
     RemoteRequestValidator remoteRequestValidator = mock(RemoteRequestValidator.class);
     RemoteAgentBridgeService remoteAgentBridgeService = mock(RemoteAgentBridgeService.class);
     L1MBeansSource l1MBeansSource = mock(L1MBeansSource.class);
-    RemoteServiceStubGenerator remoteServiceStubGenerator = new RemoteServiceStubGenerator(new NullRequestTicketMonitor(), new NullUserService(), new NullContextService(), remoteRequestValidator, remoteAgentBridgeService, executorService, new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteServiceStubGenerator remoteServiceStubGenerator = new RemoteServiceStubGenerator(new NullRequestTicketMonitor(), new NullUserService(), new NullContextService(), remoteRequestValidator, remoteAgentBridgeService, executorService, new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     when(l1MBeansSource.containsJmxMBeans()).thenReturn(false);
     when(l1MBeansSource.getActiveL2ContainingMBeansName()).thenReturn("host-1");
@@ -96,7 +97,7 @@ public class RemoteServiceStubGeneratorV2Test {
     RemoteRequestValidator remoteRequestValidator = mock(RemoteRequestValidator.class);
     RemoteAgentBridgeService remoteAgentBridgeService = mock(RemoteAgentBridgeService.class);
     L1MBeansSource l1MBeansSource = mock(L1MBeansSource.class);
-    RemoteServiceStubGeneratorV2 remoteServiceStubGenerator = new RemoteServiceStubGeneratorV2(new NullRequestTicketMonitor(), new NullUserService(), new NullContextService(), remoteRequestValidator, remoteAgentBridgeService, executorService, new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteServiceStubGeneratorV2 remoteServiceStubGenerator = new RemoteServiceStubGeneratorV2(new NullRequestTicketMonitor(), new NullUserService(), new NullContextService(), remoteRequestValidator, remoteAgentBridgeService, executorService, new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     when(l1MBeansSource.containsJmxMBeans()).thenReturn(true);
     when(remoteRequestValidator.getValidatedNodes()).thenReturn(new HashSet<String>(Arrays.asList("node_cache", "node1_session", "node2_session")));
@@ -129,7 +130,7 @@ public class RemoteServiceStubGeneratorV2Test {
     RemoteRequestValidator remoteRequestValidator = mock(RemoteRequestValidator.class);
     RemoteAgentBridgeService remoteAgentBridgeService = mock(RemoteAgentBridgeService.class);
     L1MBeansSource l1MBeansSource = mock(L1MBeansSource.class);
-    RemoteServiceStubGeneratorV2 remoteServiceStubGenerator = new RemoteServiceStubGeneratorV2(new NullRequestTicketMonitor(), new NullUserService(), new NullContextService(), remoteRequestValidator, remoteAgentBridgeService, executorService, new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteServiceStubGeneratorV2 remoteServiceStubGenerator = new RemoteServiceStubGeneratorV2(new NullRequestTicketMonitor(), new NullUserService(), new NullContextService(), remoteRequestValidator, remoteAgentBridgeService, executorService, new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     when(l1MBeansSource.containsJmxMBeans()).thenReturn(true);
     when(remoteRequestValidator.getValidatedNodes()).thenReturn(new HashSet<String>(Arrays.asList("node_cache")));

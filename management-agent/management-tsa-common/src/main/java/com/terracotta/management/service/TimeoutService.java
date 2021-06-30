@@ -29,6 +29,13 @@ public interface TimeoutService {
   long getCallTimeout();
 
   /**
+   * Get the connection timeout previously set. If none was set, the default one is returned.
+   *
+   * @return the connection timeout.
+   */
+  long getConnectionTimeout();
+
+  /**
    * Set the call timeout for the current thread.
    *
    * @param timeout the call timeout.

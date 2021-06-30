@@ -203,12 +203,12 @@ public class RemoteManagementSource {
       resource.register(GZipEncoder.class);
       resource.register(DeflateEncoder.class);
     }
-    resource.property(ClientProperties.CONNECT_TIMEOUT, (int)timeoutService.getCallTimeout());
+    resource.property(ClientProperties.CONNECT_TIMEOUT, (int)timeoutService.getConnectionTimeout());
     resource.property(ClientProperties.READ_TIMEOUT, (int)timeoutService.getCallTimeout());
 
     Builder builder = enhanceBuilder(resource.request());
 
-    builder = builder.header(CONNECTION_TIMEOUT_HEADER_NAME, timeoutService.getCallTimeout());
+    builder = builder.header(CONNECTION_TIMEOUT_HEADER_NAME, timeoutService.getConnectionTimeout());
     builder = builder.header(READ_TIMEOUT_HEADER_NAME, timeoutService.getCallTimeout());
 
     return builder;
