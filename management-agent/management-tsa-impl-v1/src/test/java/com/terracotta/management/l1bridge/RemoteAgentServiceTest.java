@@ -54,6 +54,7 @@ import static org.mockito.Mockito.when;
 public class RemoteAgentServiceTest {
 
   private ExecutorService executorService;
+  private final long defaultConnectionTimeout = 1_000;
 
   @Before
   public void setUp() throws Exception {
@@ -77,7 +78,7 @@ public class RemoteAgentServiceTest {
       put("Version", "1.2.3");
     }});
 
-    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     Collection<AgentEntity> agents = remoteAgentService.getAgents(Collections.<String>emptySet());
     assertThat(agents.size(), is(1));
@@ -94,7 +95,7 @@ public class RemoteAgentServiceTest {
     when(l1MBeansSource.containsJmxMBeans()).thenReturn(false);
     when(l1MBeansSource.getActiveL2ContainingMBeansName()).thenReturn("http://localhost:1234");
 
-    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     remoteAgentService.getAgents(Collections.<String>emptySet());
     verify(l1MBeansSource).proxyClientRequest();
@@ -108,7 +109,7 @@ public class RemoteAgentServiceTest {
     when(l1MBeansSource.containsJmxMBeans()).thenReturn(false);
     when(l1MBeansSource.getActiveL2ContainingMBeansName()).thenReturn(null);
 
-    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     remoteAgentService.getAgents(Collections.<String>emptySet());
 
@@ -132,7 +133,7 @@ public class RemoteAgentServiceTest {
     ame.setVersion("1.2.3");
     when(remoteAgentBridgeService.invokeRemoteMethod(anyString(), any(RemoteCallDescriptor.class))).thenReturn(serialize(Collections.singleton(ame)));
 
-    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     Collection<AgentMetadataEntity> agents = remoteAgentService.getAgentsMetadata(Collections.<String>emptySet());
     assertThat(agents.size(), is(1));
@@ -151,7 +152,7 @@ public class RemoteAgentServiceTest {
     when(l1MBeansSource.containsJmxMBeans()).thenReturn(false);
     when(l1MBeansSource.getActiveL2ContainingMBeansName()).thenReturn("http://localhost:1234");
 
-    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     remoteAgentService.getAgentsMetadata(Collections.<String>emptySet());
     verify(l1MBeansSource).proxyClientRequest();
@@ -165,7 +166,7 @@ public class RemoteAgentServiceTest {
     when(l1MBeansSource.containsJmxMBeans()).thenReturn(false);
     when(l1MBeansSource.getActiveL2ContainingMBeansName()).thenReturn(null);
 
-    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000), l1MBeansSource);
+    RemoteAgentService remoteAgentService = new RemoteAgentService(remoteAgentBridgeService, new NullContextService(), executorService, new NullRequestTicketMonitor(), new NullUserService(), new TimeoutServiceImpl(1000, defaultConnectionTimeout), l1MBeansSource);
 
     remoteAgentService.getAgentsMetadata(Collections.<String>emptySet());
     verify(l1MBeansSource).proxyClientRequest();
