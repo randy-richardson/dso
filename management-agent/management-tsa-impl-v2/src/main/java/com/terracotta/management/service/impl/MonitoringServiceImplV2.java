@@ -22,6 +22,7 @@ import org.terracotta.management.resource.ResponseEntityV2;
 import com.terracotta.management.resource.StatisticsEntityV2;
 import com.terracotta.management.service.MonitoringServiceV2;
 
+import java.net.URI;
 import java.util.Set;
 
 import static com.terracotta.management.resource.services.utils.ProductIdConverter.stringsToProductsIds;
@@ -48,6 +49,12 @@ public class MonitoringServiceImplV2 implements MonitoringServiceV2 {
 
   @Override
   public ResponseEntityV2<StatisticsEntityV2> getServerStatistics(Set<String> serverNames, Set<String> attributes) throws ServiceExecutionException {
+    return serverManagementService.getServersStatistics(serverNames, attributes);
+  }
+
+  @Override
+  public ResponseEntityV2<StatisticsEntityV2> getServerStatistics(Set<String> serverNames, Set<String> attributes, 
+                                                                  Set<String> agentIds, URI uri) throws ServiceExecutionException {
     return serverManagementService.getServersStatistics(serverNames, attributes);
   }
 
