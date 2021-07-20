@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-mavenBuildOSS(
+mavenBuildOSS.legacy4x(
     maven_params  : '-Ptc-publish,fullmode -Djenkins.publisher=true -Dsag-deps=true -DskipLocalStaging=true',
     maven_goal_pr : 'install -Pcheck-short', // this project requires install so using install instead of verify
     maven_goal    : 'deploy -Pcheck-short',
