@@ -39,6 +39,8 @@ The Initial Developer of the Covered Software is
         <configuration>
           <rootPath>${basedir}/..</rootPath>
           <eeRootPath>${basedir}/../..</eeRootPath>
+          <!-- with git, we can't rely on submodule branch to be authoritative -->
+          <skipBranchMatchingCheck>true</skipBranchMatchingCheck>
         </configuration>
         <executions>
           <execution>
