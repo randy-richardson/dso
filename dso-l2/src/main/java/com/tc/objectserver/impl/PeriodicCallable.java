@@ -7,6 +7,7 @@ import com.tc.object.ObjectID;
 import com.tc.objectserver.api.EvictionListener;
 import com.tc.objectserver.api.ObjectManager;
 import com.tc.stats.counter.sampled.derived.SampledRateCounter;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -68,14 +69,18 @@ public class PeriodicCallable implements Callable<SampledRateCounter>, CanCancel
           }
         }
       } finally {
+        boolean reschedule = false;
         synchronized (this) {
           workingSet.clear();
           current = null;
           if ( listeningSet.isEmpty() && !rollover.isEmpty() ) {
-            evictor.scheduleEvictionRun(rollover);
+            reschedule = true;
           } else {
             workingSet.addAll(rollover);
           }
+        }
+        if (reschedule) {
+          evictor.scheduleEvictionRun(rollover);
         }
       }
 
@@ -88,15 +93,24 @@ public class PeriodicCallable implements Callable<SampledRateCounter>, CanCancel
   }
 
   @Override
-  public synchronized boolean evictionCompleted(ObjectID oid) {
-    listeningSet.remove(oid);
-    if ( listeningSet.isEmpty() ) {
-      if ( current == null && !workingSet.isEmpty() ) {
-          evictor.scheduleEvictionRun(workingSet);
+  public boolean evictionCompleted(ObjectID oid) {
+    Set<ObjectID> newWorkingSet = null;
+    boolean complete, reschedule = false;
+    synchronized (this) {
+      listeningSet.remove(oid);
+      if ( listeningSet.isEmpty() ) {
+        if ( current == null && !workingSet.isEmpty() ) {
+          newWorkingSet = new BitSetObjectIDSet(workingSet);
+          reschedule = true;
+        }
+        complete = true;
+      } else {
+        complete = false;
       }
-      return true;
-    } else {
-      return false;
     }
+    if (reschedule) {
+      evictor.scheduleEvictionRun(newWorkingSet);
+    }
+    return complete;
   }
 }
