@@ -19,6 +19,8 @@ package com.tc.util;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.test.TCTestCase;
+import org.junit.experimental.categories.Category;
+import org.terracotta.test.categories.CheckShorts;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +30,7 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 
+@Category(CheckShorts.class)
 public class TCPropertiesConstsTest extends TCTestCase {
 
   // This file resides in src.resource/com/tc/properties directory
