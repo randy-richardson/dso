@@ -487,6 +487,7 @@ public interface TCPropertiesConsts {
    ********************************************************************************************************************/
   public static final String LOGGING_MAXBACKUPS                                             = "logging.maxBackups";
   public static final String LOGGING_MAX_LOGFILE_SIZE                                       = "logging.maxLogFileSize";
+  public static final String LOGGING_BACKUP_FILE_SUFFIX                                     = "logging.backupFileSuffix";
   public static final String LOGGING_LONG_GC_THRESHOLD                                      = "logging.longgc.threshold";
 
   /*********************************************************************************************************************
