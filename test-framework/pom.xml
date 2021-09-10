@@ -31,7 +31,6 @@ The Initial Developer of the Covered Software is
   <name>test-framework</name>
   
   <properties>
-    <byteman.version>2.0.4</byteman.version>
     <skip.testjar>true</skip.testjar>
   </properties>
 
@@ -90,7 +89,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>${jetty.version}</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
@@ -157,7 +155,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.jboss.byteman</groupId>
       <artifactId>byteman</artifactId>
-      <version>${byteman.version}</version>
     </dependency>
     <dependency>
       <groupId>org.terracotta.internal</groupId>
