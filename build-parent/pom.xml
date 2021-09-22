@@ -38,8 +38,6 @@ The Initial Developer of the Covered Software is
   </licenses>
 
   <properties>
-    <group>unit</group>
-
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <core-storage-api.version>1.4</core-storage-api.version>
@@ -78,7 +76,6 @@ The Initial Developer of the Covered Software is
     <surefire.max-memory>1g</surefire.max-memory>
     <surefire.additional-jvm-args/>
     <surefire.additional-jvm-module-args/>
-    <should_skip_tests>true</should_skip_tests>
     <surefire.jvm.mode>-server</surefire.jvm.mode>
     <surefire.argLine>${surefire.jvm.mode}
       -Xms${surefire.min-memory}
@@ -254,16 +251,13 @@ The Initial Developer of the Covered Software is
           <groupId>org.terracotta</groupId>
           <artifactId>maven-forge-plugin</artifactId>
           <version>${maven-forge-plugin.version}</version>
-          <configuration>
-            <skipTests>true</skipTests>
-          </configuration>
           <executions>
+            <!--
+            We do not bind phase/goals here so that behavior can be controlled by
+            definitions in forge-parent (-Psystem-tests will turn this off)
+            -->
             <execution>
               <id>default-test</id>
-              <phase>integration-test</phase>
-              <goals>
-                <goal>test</goal>
-              </goals>
               <configuration>
                 <properties>
                   <property>
@@ -277,7 +271,6 @@ The Initial Developer of the Covered Software is
                 <includes>
                   <include>**/*Test.java</include>
                 </includes>         
-                <skipTests>${should_skip_tests}</skipTests>
                 <forkCount>1</forkCount>
                 <reuseForks>false</reuseForks>
                 <forkedProcessTimeoutInSeconds>${tc.tests.info.junit-test-timeout-inseconds}</forkedProcessTimeoutInSeconds>
@@ -333,10 +326,6 @@ The Initial Developer of the Covered Software is
 
     <plugins>
       <plugin>
-        <groupId>org.terracotta</groupId>
-        <artifactId>maven-forge-plugin</artifactId>
-      </plugin>  
-      <plugin>
         <groupId>org.codehaus.gmaven</groupId>
         <artifactId>groovy-maven-plugin</artifactId>
       </plugin>      
@@ -344,13 +333,6 @@ The Initial Developer of the Covered Software is
   </build>
 
   <profiles>
-    <profile>
-      <id>system-tests</id>
-      <properties>
-        <should_skip_tests>false</should_skip_tests>
-      </properties>
-    </profile>
-
     <profile>
       <id>client-jvm</id>
       <properties>
@@ -378,9 +360,6 @@ The Initial Developer of the Covered Software is
 
     <profile>
       <id>check-short</id>
-      <properties>
-        <should_skip_tests>false</should_skip_tests>
-      </properties>     
       <build>
         <plugins>
           <plugin>
@@ -399,42 +378,6 @@ The Initial Developer of the Covered Software is
         </plugins>      
       </build>
     </profile>   
-
-    <profile>
-      <id>check</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>groovy-maven-plugin</artifactId>
-            <version>${groovy-maven-plugin.version}</version>
-            <executions>
-              <execution>
-                <id>decide-which-group-should-run-tests</id>
-                <phase>process-test-resources</phase>
-                <goals>
-                  <goal>execute</goal>
-                </goals>
-                <configuration>
-                  <source>
-                    def target = properties['target']
-                     if (target == null) fail("-Dtarget needs to be set for this profile")
-                    def targetSet = new HashSet(Arrays.asList(target.split(",")))
-                    def projectGroups = new HashSet()
-                    if (project.properties['group'] != null) {
-                      projectGroups.addAll(Arrays.asList(project.properties['group'].split(",")))
-                    }
-                    targetSet.retainAll(projectGroups)
-                    def shouldSkipTest = targetSet.size() == 0
-                    project.properties.should_skip_tests = String.valueOf(shouldSkipTest)
-                  </source>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>         
-        </plugins>          
-      </build>
-    </profile>
   </profiles>
 
 </project>
