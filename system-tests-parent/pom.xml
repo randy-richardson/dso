@@ -189,39 +189,33 @@ The Initial Developer of the Covered Software is
           <groupId>org.terracotta</groupId>
           <artifactId>maven-forge-plugin</artifactId>
           <version>${maven-forge-plugin.version}</version>
-          <executions>
-            <!--
+          <!--
             Only integration tests in this module.
             This should be run with -Psystem-tests to pick up forge-parent profile
             ITs must run after maven-appserver-plugin sets up in pre-integration-test
-            -->
-            <execution>
-              <id>default-integration-test</id>
-              <goals>
-                <goal>integration-test</goal>
-              </goals>
-              <configuration>
-                <forkCount>1</forkCount>
-                <reuseForks>false</reuseForks>
-                <printSummary>true</printSummary>
-                <forkedProcessTimeoutInSeconds>${absolute-test-timeout-secs}</forkedProcessTimeoutInSeconds>
-                <useSystemClassLoader>true</useSystemClassLoader>
-                <workingDirectory>${project.build.directory}</workingDirectory>
-                <argLine>${surefire.argLine}</argLine>
-                <excludes>
-                  <exclude>**/Abstract*.java</exclude>
-                </excludes>
-                <properties>
-                  <property>
-                    <name>listener</name>
-                    <value>net.sf.ehcache.SystemExitListener</value>
-                  </property>
-                </properties>
-              </configuration>
-            </execution>
+          -->
+          <configuration>
+            <forkCount>1</forkCount>
+            <reuseForks>false</reuseForks>
+            <printSummary>true</printSummary>
+            <forkedProcessTimeoutInSeconds>${absolute-test-timeout-secs}</forkedProcessTimeoutInSeconds>
+            <useSystemClassLoader>true</useSystemClassLoader>
+            <workingDirectory>${project.build.directory}</workingDirectory>
+            <argLine>${surefire.argLine}</argLine>
+            <excludes>
+              <exclude>**/Abstract*.java</exclude>
+            </excludes>
+            <properties>
+              <property>
+                <name>listener</name>
+                <value>net.sf.ehcache.SystemExitListener</value>
+              </property>
+            </properties>
+          </configuration>
+          <executions>
             <execution>
               <id>setl2classpath</id>
-              <phase>process-test-resources</phase>
+              <phase>generate-test-resources</phase>
               <goals>
                 <goal>setl2classpath</goal>
               </goals>
