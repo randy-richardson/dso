@@ -38,16 +38,12 @@ The Initial Developer of the Covered Software is
   </licenses>
 
   <properties>
-    <group>unit</group>
-
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <core-storage-api.version>1.4</core-storage-api.version>
     <heap-core-storage.version>1.2.1</heap-core-storage.version>
     <bigmemory-core-storage.version>2.1.1</bigmemory-core-storage.version>
-    <javax.servlet.version>3.0.0.v201112011016</javax.servlet.version>
     <search.version>1.5.14</search.version>
-    <shiro.version>1.7.1</shiro.version>
     <management-core.version>2.1.27</management-core.version>
     <session-management.version>4.3.9</session-management.version>
     <tc-messaging.version>1.1.6</tc-messaging.version>
@@ -60,7 +56,6 @@ The Initial Developer of the Covered Software is
     <linked-child-process.version>1.0.17</linked-child-process.version>
     <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
     <groovy.version>2.5.8</groovy.version>
-    <powermock.version>2.0.2</powermock.version>
     <skip.testjar>false</skip.testjar>
     <listName>checkshort.txt</listName>
     <localMavenRepository>${user.home}/.m2/repository</localMavenRepository>
@@ -81,7 +76,6 @@ The Initial Developer of the Covered Software is
     <surefire.max-memory>1g</surefire.max-memory>
     <surefire.additional-jvm-args/>
     <surefire.additional-jvm-module-args/>
-    <should_skip_tests>true</should_skip_tests>
     <surefire.jvm.mode>-server</surefire.jvm.mode>
     <surefire.argLine>${surefire.jvm.mode}
       -Xms${surefire.min-memory}
@@ -132,105 +126,9 @@ The Initial Developer of the Covered Software is
         <version>${linked-child-process.version}</version>
       </dependency>
       <dependency>
-        <groupId>commons-httpclient</groupId>
-        <artifactId>commons-httpclient</artifactId>
-        <version>3.1</version>
-        <exclusions>
-          <exclusion>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.terracotta</groupId>
         <artifactId>jmxremote_optional-tc</artifactId>
         <version>1.0.8</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.xmlbeans</groupId>
-        <artifactId>xmlbeans</artifactId>
-        <version>3.1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-util</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-security</artifactId>
-      <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-server</artifactId>
-        <version>${jetty.version}</version>
-        <!-- we exclude all flagged jars so we can switch them for Glassfish -->
-        <exclusions>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.security.auth.message</artifactId>
-        <version>1.0.0.v201108011116</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.annotation</artifactId>
-        <version>1.1.0.v201108011116</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.mail.glassfish</artifactId>
-        <version>1.4.1.v201005082020</version>
-      </dependency>
-      <dependency>
-        <groupId>jline</groupId>
-        <artifactId>jline</artifactId>
-        <version>0.9.94</version>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>        
-      </dependency>
-      <dependency>
-        <groupId>com.h2database</groupId>
-        <artifactId>h2</artifactId>
-        <version>1.0.67</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>30.1.1-jre</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.errorprone</groupId>
-            <artifactId>error_prone_annotations</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.guava</groupId>
-            <artifactId>listenablefuture</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.j2objc</groupId>
-            <artifactId>j2objc-annotations</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker-qual</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.terracotta</groupId>
@@ -247,28 +145,7 @@ The Initial Developer of the Covered Software is
         <artifactId>terracotta-license</artifactId>
         <version>${terracotta-license.version}</version>
       </dependency>
-      <dependency>
-        <groupId>hsqldb</groupId>
-        <artifactId>hsqldb</artifactId>
-        <version>1.7.2.2</version>
-      </dependency>
 
-      <!-- Glassfish substitutes -->
-      <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>javax.servlet-api</artifactId>
-        <version>3.1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>gf-3122</groupId>
-        <artifactId>gf.javax.security.auth.message</artifactId>
-        <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>gf-3122</groupId>
-        <artifactId>gf.javax.mail</artifactId>
-        <version>1.4.4</version>
-      </dependency>
       <!-- Dependencies for core Terracotta artifacts -->
       <dependency>
         <groupId>org.terracotta</groupId>
@@ -284,43 +161,6 @@ The Initial Developer of the Covered Software is
         <groupId>org.terracotta</groupId>
         <artifactId>tcstats</artifactId>
         <version>${tcconfig.version}</version>
-      </dependency>
-
-      <!-- tests -->
-      <dependency>
-        <groupId>org.codehaus.groovy</groupId>
-        <artifactId>groovy</artifactId>
-        <version>${groovy.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.groovy</groupId>
-        <artifactId>groovy-json</artifactId>
-        <version>${groovy.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.groovy</groupId>
-        <artifactId>groovy-xml</artifactId>
-        <version>${groovy.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.thoughtworks.xstream</groupId>
-        <artifactId>xstream</artifactId>
-        <version>1.4.4</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.ant</groupId>
-        <artifactId>ant</artifactId>
-        <version>1.7.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.powermock</groupId>
-        <artifactId>powermock-module-junit4</artifactId>
-        <version>${powermock.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.powermock</groupId>
-        <artifactId>powermock-api-mockito2</artifactId>
-        <version>${powermock.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -411,16 +251,13 @@ The Initial Developer of the Covered Software is
           <groupId>org.terracotta</groupId>
           <artifactId>maven-forge-plugin</artifactId>
           <version>${maven-forge-plugin.version}</version>
-          <configuration>
-            <skipTests>true</skipTests>
-          </configuration>
           <executions>
+            <!--
+            We do not bind phase/goals here so that behavior can be controlled by
+            definitions in forge-parent (-Psystem-tests will turn this off)
+            -->
             <execution>
               <id>default-test</id>
-              <phase>integration-test</phase>
-              <goals>
-                <goal>test</goal>
-              </goals>
               <configuration>
                 <properties>
                   <property>
@@ -434,7 +271,6 @@ The Initial Developer of the Covered Software is
                 <includes>
                   <include>**/*Test.java</include>
                 </includes>         
-                <skipTests>${should_skip_tests}</skipTests>
                 <forkCount>1</forkCount>
                 <reuseForks>false</reuseForks>
                 <forkedProcessTimeoutInSeconds>${tc.tests.info.junit-test-timeout-inseconds}</forkedProcessTimeoutInSeconds>
@@ -490,10 +326,6 @@ The Initial Developer of the Covered Software is
 
     <plugins>
       <plugin>
-        <groupId>org.terracotta</groupId>
-        <artifactId>maven-forge-plugin</artifactId>
-      </plugin>  
-      <plugin>
         <groupId>org.codehaus.gmaven</groupId>
         <artifactId>groovy-maven-plugin</artifactId>
       </plugin>      
@@ -501,13 +333,6 @@ The Initial Developer of the Covered Software is
   </build>
 
   <profiles>
-    <profile>
-      <id>system-tests</id>
-      <properties>
-        <should_skip_tests>false</should_skip_tests>
-      </properties>
-    </profile>
-
     <profile>
       <id>client-jvm</id>
       <properties>
@@ -535,9 +360,6 @@ The Initial Developer of the Covered Software is
 
     <profile>
       <id>check-short</id>
-      <properties>
-        <should_skip_tests>false</should_skip_tests>
-      </properties>     
       <build>
         <plugins>
           <plugin>
@@ -556,42 +378,6 @@ The Initial Developer of the Covered Software is
         </plugins>      
       </build>
     </profile>   
-
-    <profile>
-      <id>check</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>groovy-maven-plugin</artifactId>
-            <version>${groovy-maven-plugin.version}</version>
-            <executions>
-              <execution>
-                <id>decide-which-group-should-run-tests</id>
-                <phase>process-test-resources</phase>
-                <goals>
-                  <goal>execute</goal>
-                </goals>
-                <configuration>
-                  <source>
-                    def target = properties['target']
-                     if (target == null) fail("-Dtarget needs to be set for this profile")
-                    def targetSet = new HashSet(Arrays.asList(target.split(",")))
-                    def projectGroups = new HashSet()
-                    if (project.properties['group'] != null) {
-                      projectGroups.addAll(Arrays.asList(project.properties['group'].split(",")))
-                    }
-                    targetSet.retainAll(projectGroups)
-                    def shouldSkipTest = targetSet.size() == 0
-                    project.properties.should_skip_tests = String.valueOf(shouldSkipTest)
-                  </source>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>         
-        </plugins>          
-      </build>
-    </profile>
   </profiles>
 
 </project>

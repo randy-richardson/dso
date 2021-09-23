@@ -22,7 +22,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent</artifactId>
-    <version>4.20</version>
+    <version>5.5</version>
     <relativePath/>
   </parent>
 
@@ -40,9 +40,8 @@ The Initial Developer of the Covered Software is
     <build.edition>opensource</build.edition>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
-    <jetty.version>9.4.39.v20210325</jetty.version>
-    <jackson.version>2.11.1</jackson.version>
-    <commons-io.version>2.8.0</commons-io.version>
+    <!-- can't default to ${project.version}, breaks child projects like ehcache that use a different version -->
+    <thirdparty-bom.version>4.3.10-SNAPSHOT</thirdparty-bom.version>
   </properties>
 
   <modules>
@@ -77,22 +76,21 @@ The Initial Developer of the Covered Software is
     <module>management-cli-oss</module>
   </modules>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.terracotta</groupId>
+        <artifactId>thirdparty-bom-4.x</artifactId>
+        <version>${thirdparty-bom.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <build>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.sonatype.plugins</groupId>
-          <artifactId>nexus-staging-maven-plugin</artifactId>
-          <version>1.6.1</version>
-          <extensions>true</extensions>
-          <configuration>
-            <!-- The Base URL of Nexus instance where we want to stage -->
-            <nexusUrl>http://nexus.terracotta.eur.ad.sag</nexusUrl>
-            <!-- The server "id" element from settings to use authentication from -->
-            <serverId>terracotta-nexus-staging</serverId>
-            <skipNexusStagingDeployMojo>${skip.deploy}</skipNexusStagingDeployMojo>
-          </configuration>
-        </plugin>
         <plugin>
           <groupId>org.codehaus.gmavenplus</groupId>
           <artifactId>gmavenplus-plugin</artifactId>
