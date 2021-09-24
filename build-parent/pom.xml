@@ -191,7 +191,7 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.terracotta.junit</groupId>
       <artifactId>test-listeners</artifactId>
-      <version>1.0.2</version>
+      <version>1.0.3</version>
       <scope>test</scope>
     </dependency>         
   </dependencies>
