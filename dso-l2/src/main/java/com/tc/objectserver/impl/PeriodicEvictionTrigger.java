@@ -9,7 +9,6 @@ import com.tc.object.ObjectID;
 import com.tc.object.dna.api.DNA;
 import com.tc.objectserver.api.EvictableEntry;
 import com.tc.objectserver.api.EvictableMap;
-import com.tc.objectserver.api.ObjectManager;
 import com.tc.objectserver.context.ServerMapEvictionContext;
 import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.l1.api.ObjectReferenceAddListener;
@@ -53,7 +52,6 @@ public class PeriodicEvictionTrigger extends AbstractEvictionTrigger {
     private int ttl = 0;
     private boolean completed = false;
     private volatile boolean stop = false;
-    private final ObjectManager  mgr;
     private final ObjectIDSet exclusionList;
     private final ObjectIDSet passList = new ObjectIDSet();
     
@@ -123,12 +121,12 @@ public class PeriodicEvictionTrigger extends AbstractEvictionTrigger {
         }
     });
     
-    public PeriodicEvictionTrigger(ObjectManager mgr, ObjectID oid) {
-        this(mgr,oid,new ObjectIDSet(), true);
+    public PeriodicEvictionTrigger(ObjectID oid) {
+        this(oid,new ObjectIDSet(), true);
     }
     
     public PeriodicEvictionTrigger duplicate() {
-        PeriodicEvictionTrigger nt = new PeriodicEvictionTrigger(mgr,getId());
+        PeriodicEvictionTrigger nt = new PeriodicEvictionTrigger(getId());
         nt.sampleAmount = sampleAmount - 5;
         if ( nt.sampleAmount <= 0 ) {
             nt.sampleAmount = 1;
@@ -136,10 +134,9 @@ public class PeriodicEvictionTrigger extends AbstractEvictionTrigger {
         return nt;
     }
     
-    public PeriodicEvictionTrigger(ObjectManager mgr, ObjectID oid, ObjectIDSet exclude, boolean runAlways) {
+    public PeriodicEvictionTrigger(ObjectID oid, ObjectIDSet exclude, boolean runAlways) {
         super(oid);
         this.runAlways = runAlways;
-        this.mgr = mgr;
         this.exclusionList = exclude;
     }
     
@@ -150,10 +147,6 @@ public class PeriodicEvictionTrigger extends AbstractEvictionTrigger {
     @Override
     public int getCount() {
         return filtered;
-    }
-    
-    protected ObjectManager getObjectManager() {
-        return mgr;
     }
     
     public boolean isExpirationOnly() {

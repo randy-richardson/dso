@@ -62,9 +62,9 @@ public class PeriodicCallable implements Callable<SampledRateCounter>, CanCancel
       try {
         evictor.addEvictionListener(this);
         for (final ObjectID mapID : workingSet) {
-          PeriodicEvictionTrigger trigger = evictor.schedulePeriodicEviction(mapID);
-          if ( trigger != null ) {
-            setCurrent(trigger);
+          PeriodicEvictionTrigger trigger = new PeriodicEvictionTrigger(mapID);
+          setCurrent(trigger);
+          if (evictor.schedulePeriodicEviction(trigger)) {
             counter.increment(trigger.getCount(),trigger.getRuntimeInMillis());
             if ( trigger.filterRatio() > .66f ) {
               rollover.add(mapID);
