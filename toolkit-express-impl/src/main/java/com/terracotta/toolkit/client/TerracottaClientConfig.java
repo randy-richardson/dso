@@ -12,6 +12,8 @@ public class TerracottaClientConfig {
   private final Set<String> tunnelledMBeanDomains;
   private final boolean     rejoin;
   private final boolean     nonStop;
+  private final String      productId;
+  private final ClassLoader classLoader;
 
   TerracottaClientConfig(TerracottaClientConfigParams params) {
     this.tcConfigSnippetOrUrl = params.getTcConfigSnippetOrUrl();
@@ -19,6 +21,8 @@ public class TerracottaClientConfig {
     this.tunnelledMBeanDomains = params.getTunnelledMBeanDomains();
     this.rejoin = params.isRejoin();
     this.nonStop = params.isNonStop();
+    this.productId = params.getProductId();
+    this.classLoader = params.getClassLoader();
   }
 
   public String getTcConfigSnippetOrUrl() {
@@ -41,4 +45,11 @@ public class TerracottaClientConfig {
     return nonStop;
   }
 
+  public String getProductId() {
+    return productId;
+  }
+
+  public ClassLoader getClassLoader() {
+    return classLoader;
+  }
 }

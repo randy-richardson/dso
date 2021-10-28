@@ -3,15 +3,18 @@
  */
 package com.tc.objectserver.managedobject;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.SetMultimap;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
+import com.tc.net.ClientID;
 import com.tc.object.ObjectID;
 import com.tc.object.SerializationUtil;
-import com.tc.object.ServerEventType;
 import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.api.LogicalAction;
+import com.tc.object.dna.api.LogicalChangeResult;
 import com.tc.object.dna.api.PhysicalAction;
 import com.tc.object.dna.impl.UTF8ByteDataHolder;
 import com.tc.objectserver.api.EvictableEntry;
@@ -21,23 +24,31 @@ import com.tc.objectserver.l1.impl.ClientObjectReferenceSet;
 import com.tc.objectserver.persistence.PersistentObjectFactory;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
+import com.tc.server.ServerEventType;
 import com.tc.util.Events;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
 public class ConcurrentDistributedServerMapManagedObjectState extends PartialMapManagedObjectState implements
     EvictableMap {
 
+  private static final CDSMValue NULL_CDSM_VALUE = new CDSMValue(ObjectID.NULL_ID);
+
   private static final TCLogger LOGGER                         = TCLogging
                                                                    .getLogger(ConcurrentDistributedServerMapManagedObjectState.class);
+  private static final boolean  CAS_LOGGING                    = TCPropertiesImpl.getProperties()
+                                                                   .getBoolean(TCPropertiesConsts.CAS_LOGGING_ENABLED, false);
 
   public static final String    CACHE_NAME_FIELDNAME           = "cacheName";
   public static final String    INVALIDATE_ON_CHANGE_FIELDNAME = "invalidateOnChange";
@@ -58,20 +69,22 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     LOGGER.info("Eviction overshoot threshold is " + OVERSHOOT);
   }
 
-  private SamplingType samplingType = SamplingType.FOR_EVICTION;
-  private Iterator<Object> evictionIterator = null;
+  private SamplingType          samplingType                   = SamplingType.FOR_EVICTION;
+  private Iterator<Object>      evictionIterator               = null;
 
-  private boolean        invalidateOnChange;
-  private int            maxTTISeconds;
-  private int            maxTTLSeconds;
-  private int            targetMaxTotalCount;
-  private String         cacheName;
-  private boolean        evictionEnabled;
-  private boolean        localCacheEnabled;
-  private boolean        compressionEnabled;
-  private boolean        copyOnReadEnabled;
+  private boolean               invalidateOnChange;
+  private int                   maxTTISeconds;
+  private int                   maxTTLSeconds;
+  private int                   targetMaxTotalCount;
+  private String                cacheName;
+  private boolean               evictionEnabled;
+  private boolean               localCacheEnabled;
+  private boolean               compressionEnabled;
+  private boolean               copyOnReadEnabled;
+  private final SetMultimap<ServerEventType, ClientID> eventRegistry                  = HashMultimap.create();
 
-  protected ConcurrentDistributedServerMapManagedObjectState(final ObjectInput in, PersistentObjectFactory factory) throws IOException {
+  protected ConcurrentDistributedServerMapManagedObjectState(final ObjectInput in, PersistentObjectFactory factory)
+      throws IOException {
     super(in, factory);
     this.dsoLockType = in.readInt();
     this.maxTTISeconds = in.readInt();
@@ -85,7 +98,8 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     this.evictionEnabled = in.readBoolean();
   }
 
-  protected ConcurrentDistributedServerMapManagedObjectState(final long classId, ObjectID id, PersistentObjectFactory factory) {
+  protected ConcurrentDistributedServerMapManagedObjectState(final long classId, ObjectID id,
+                                                             PersistentObjectFactory factory) {
     super(classId, id, factory);
   }
 
@@ -103,19 +117,33 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
   public void dehydrate(final ObjectID objectID, final DNAWriter writer, final DNAType type) {
     if (type == DNAType.L2_SYNC) {
       // Write entire state info
-      dehydrateFields(objectID, writer);
+      dehydrateFields(writer);
       for (Object o : references.keySet()) {
         CDSMValue value = getValueForKey(o);
-        writer.addLogicalAction(SerializationUtil.PUT, new Object[] {o, value.getObjectID(), value.getCreationTime(),
-            value.getLastAccessedTime(), value.getTimeToIdle(), value.getTimeToLive()});
+        writer.addLogicalAction(SerializationUtil.PUT, new Object[] { o, value.getObjectID(), value.getCreationTime(),
+            value.getLastAccessedTime(), value.getTimeToIdle(), value.getTimeToLive() });
       }
+
+      dehydrateServerEventRegistrations(writer);// TODO: Should we do this for both DNAType???
     } else if (type == DNAType.L1_FAULT) {
       // Don't fault the references
-      dehydrateFields(objectID, writer);
+      dehydrateFields(writer);
     }
   }
 
-  protected void dehydrateFields(final ObjectID objectID, final DNAWriter writer) {
+  private void dehydrateServerEventRegistrations(DNAWriter writer) {
+    for (ServerEventType eventType : eventRegistry.keySet()) {
+      List<Object> params = new ArrayList<Object>();
+      params.add(eventType.ordinal());
+      for (ClientID clientID : eventRegistry.get(eventType)) {
+        params.add(clientID.toLong());
+
+        writer.addLogicalAction(SerializationUtil.REGISTER_SERVER_EVENT_LISTENER_PASSIVE, params.toArray());
+      }
+    }
+  }
+
+  protected void dehydrateFields(final DNAWriter writer) {
     writer.addPhysicalAction(LOCK_TYPE_FIELDNAME, this.dsoLockType);
     writer.addPhysicalAction(MAX_TTI_SECONDS_FIELDNAME, this.maxTTISeconds);
     writer.addPhysicalAction(MAX_TTL_SECONDS_FIELDNAME, this.maxTTLSeconds);
@@ -136,25 +164,34 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     while (cursor.next()) {
       final Object action = cursor.getAction();
       if (action instanceof PhysicalAction) {
-        applyPhysicalAction((PhysicalAction)action, objectID, applyInfo);
+        applyPhysicalAction((PhysicalAction) action, objectID, applyInfo);
       } else { // LogicalAction
         eventCount++;
 
-        final LogicalAction logicalAction = (LogicalAction)action;
+        final LogicalAction logicalAction = (LogicalAction) action;
         final int method = logicalAction.getMethod();
         final Object[] params = logicalAction.getParameters();
-        applyLogicalAction(objectID, applyInfo, method, params);
-
-        //TODO: requires refactoring, we should call super.apply() instead
-        if (method == SerializationUtil.CLEAR || method == SerializationUtil.CLEAR_LOCAL_CACHE
-            || method == SerializationUtil.DESTROY || method == SerializationUtil.SET_LAST_ACCESSED_TIME) {
+        LogicalChangeResult result = applyLogicalAction(objectID, applyInfo, method, params);
+        if (CAS_LOGGING && result == LogicalChangeResult.SUCCESS) {
+          LOGGER.info("SUCCESS returned for KEY: " + params[0] + "   for ServerTransactionID: "
+                      + applyInfo.getServerTransactionID() + "   ---   "
+                       + logicalAction.getLogicalChangeID());
+        }
+        applyInfo.getApplyResultRecorder().recordResult(logicalAction.getLogicalChangeID(), result);
+        // TODO: requires refactoring, we should call super.apply() instead
+        if (method == SerializationUtil.CLEAR) {
           // clear needs to be broadcasted so local caches can be cleared elsewhere
+          applyInfo.echoChangesFor(objectID); // Also echo the clear so that we don't need to clear local cache inline for
+                                              // quick clear (DEV-9793)
+          broadcast = true;
+        } else if (method == SerializationUtil.CLEAR_LOCAL_CACHE || method == SerializationUtil.DESTROY || method == SerializationUtil.SET_LAST_ACCESSED_TIME) {
           broadcast = true;
         }
       }
     }
     if (eventCount != 0) {
-      getOperationEventBus().post(Events.writeOperationCountChangeEvent(applyInfo.getServerTransactionID().getSourceID(), eventCount));
+      getOperationEventBus().post(Events.writeOperationCountChangeEvent(applyInfo.getServerTransactionID()
+                                      .getSourceID(), eventCount));
     }
     if (!broadcast) {
       applyInfo.ignoreBroadcastFor(objectID);
@@ -162,48 +199,50 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
   }
 
   @Override
-  protected void applyPhysicalAction(final PhysicalAction action, final ObjectID objectID, final ApplyTransactionInfo info) {
+  protected void applyPhysicalAction(final PhysicalAction action, final ObjectID objectID,
+                                     final ApplyTransactionInfo info) {
     final String fieldName = action.getFieldName();
     if (LOCK_TYPE_FIELDNAME.equals(fieldName)) {
-      this.dsoLockType = (Integer)action.getObject();
+      this.dsoLockType = (Integer) action.getObject();
     } else if (MAX_TTI_SECONDS_FIELDNAME.equals(fieldName)) {
-      this.maxTTISeconds = (Integer)action.getObject();
+      this.maxTTISeconds = (Integer) action.getObject();
     } else if (MAX_TTL_SECONDS_FIELDNAME.equals(fieldName)) {
-      this.maxTTLSeconds = (Integer)action.getObject();
+      this.maxTTLSeconds = (Integer) action.getObject();
     } else if (MAX_COUNT_IN_CLUSTER_FIELDNAME.equals(fieldName)) {
-      this.targetMaxTotalCount = (Integer)action.getObject();
+      this.targetMaxTotalCount = (Integer) action.getObject();
     } else if (INVALIDATE_ON_CHANGE_FIELDNAME.equals(fieldName)) {
-      this.invalidateOnChange = (Boolean)action.getObject();
+      this.invalidateOnChange = (Boolean) action.getObject();
     } else if (fieldName.equals(CACHE_NAME_FIELDNAME)) {
       Object value = action.getObject();
       this.cacheName = asString(value);
     } else if (LOCAL_CACHE_ENABLED_FIELDNAME.equals(fieldName)) {
-      this.localCacheEnabled = (Boolean)action.getObject();
+      this.localCacheEnabled = (Boolean) action.getObject();
     } else if (COMPRESSION_ENABLED_FIELDNAME.equals(fieldName)) {
-      this.compressionEnabled = (Boolean)action.getObject();
+      this.compressionEnabled = (Boolean) action.getObject();
     } else if (COPY_ON_READ_ENABLED_FIELDNAME.equals(fieldName)) {
-      this.copyOnReadEnabled = (Boolean)action.getObject();
+      this.copyOnReadEnabled = (Boolean) action.getObject();
     } else if (EVICTION_ENABLED_FIELDNAME.equals(fieldName)) {
-      this.evictionEnabled = (Boolean)action.getObject();
+      this.evictionEnabled = (Boolean) action.getObject();
     } else {
       throw new AssertionError("unexpected field name: " + fieldName);
     }
   }
 
   @Override
-  protected void applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final int method,
-                                    final Object[] params) {
+  protected LogicalChangeResult applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo,
+                                                   final int method,
+                                      final Object[] params) {
     switch (method) {
       case SerializationUtil.SET_LAST_ACCESSED_TIME:
-        applySetLastAccessedTime(applyInfo, params);
-        break;
+        applySetLastAccessedTime(params);
+        return LogicalChangeResult.SUCCESS;
       case SerializationUtil.FIELD_CHANGED:
         final String fieldName = asString(params[0]);
         final boolean boolValue = (Boolean) params[1];
         if (EVICTION_ENABLED_FIELDNAME.equals(fieldName)) {
           this.evictionEnabled = boolValue;
         }
-        break;
+        return LogicalChangeResult.SUCCESS;
       case SerializationUtil.INT_FIELD_CHANGED:
         final String intFieldName = asString(params[0]);
         final int intValue = (Integer) params[1];
@@ -214,33 +253,55 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
         } else if (MAX_COUNT_IN_CLUSTER_FIELDNAME.equals(intFieldName)) {
           this.targetMaxTotalCount = intValue;
         } else {
-          throw new AssertionError("Unknown int field changed for oid: " + objectID + " - name: " + intFieldName + ", value: "
-                                   + intValue);
+          throw new AssertionError("Unknown int field changed for oid: " + objectID + " - name: " + intFieldName
+                                   + ", value: " + intValue);
         }
-        break;
+        return LogicalChangeResult.SUCCESS;
       case SerializationUtil.REMOVE_IF_VALUE_EQUAL:
-        applyRemoveIfValueEqual(applyInfo, params);
-        break;
+        return applyRemoveIfValueEqual(applyInfo, params);
+
+      case SerializationUtil.EXPIRE_IF_VALUE_EQUAL:
+        return applyExpireIfValueEqual(applyInfo, params);
+
       case SerializationUtil.PUT_IF_ABSENT:
-        applyPutIfAbsent(applyInfo, params);
-        break;
+        return applyPutIfAbsent(applyInfo, params);
+      case SerializationUtil.PUT_IF_ABSENT_VERSIONED:
+        return applyPutIfAbsentVersioned(applyInfo, params);
+      case SerializationUtil.PUT_VERSIONED:
+        applyPutVersioned(applyInfo, params);
+        return LogicalChangeResult.SUCCESS;
+      case SerializationUtil.REMOVE_VERSIONED:
+        applyRemoveVersioned(applyInfo, params);
+        return LogicalChangeResult.SUCCESS;
       case SerializationUtil.REPLACE_IF_VALUE_EQUAL:
-        applyReplaceIfEqualWithExpiry(applyInfo, params);
-        break;
-      case SerializationUtil.REPLACE:
-        applyReplace(applyInfo, params);
-        break;
+        return applyReplaceIfEqualWithExpiry(applyInfo, params);
+
       case SerializationUtil.EVICTION_COMPLETED:
-        applyInfo.getServerEventRecorder().reconsiderRemovals(samplingType);
         evictionCompleted();
-//  make sure we don't need more capacity eviction to get to target
+        // make sure we don't need more capacity eviction to get to target
         startCapacityEvictionIfNeccessary(applyInfo);
-       break;
+        return LogicalChangeResult.SUCCESS;
       case SerializationUtil.CLEAR_LOCAL_CACHE:
-        break;
+        return LogicalChangeResult.SUCCESS;
+      case SerializationUtil.CLEAR_VERSIONED:
+        applyClearVersioned(applyInfo);
+        return LogicalChangeResult.SUCCESS;
+      case SerializationUtil.REGISTER_SERVER_EVENT_LISTENER:
+        applyRegisterServerEventListener(applyInfo, params);
+        return LogicalChangeResult.SUCCESS;
+      case SerializationUtil.UNREGISTER_SERVER_EVENT_LISTENER:
+        applyUnregisterServerEventListener(applyInfo, params);
+        return LogicalChangeResult.SUCCESS;
+      case SerializationUtil.REGISTER_SERVER_EVENT_LISTENER_PASSIVE:
+        applyRelayedRegisterServerEventListener(applyInfo, params);
+        return LogicalChangeResult.SUCCESS;
+      case SerializationUtil.REMOVE_EVENT_LISTENING_CLIENT:
+        applyRemoveEventListeningClient(applyInfo, params);
+        return LogicalChangeResult.SUCCESS;
       default:
-        super.applyLogicalAction(objectID, applyInfo, method, params);
+        return super.applyLogicalAction(objectID, applyInfo, method, params);
     }
+
   }
 
   private static String asString(final Object value) {
@@ -253,10 +314,14 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     return str;
   }
 
+  Set<ClientID> getRegisteredClients(ServerEventType eventType) {
+      return eventRegistry.get(eventType);
+  }
+
   @Override
   protected void addedReference(final ApplyTransactionInfo applyInfo, final Object o) {
     if (o instanceof CDSMValue) {
-      super.addedReference(applyInfo, ((CDSMValue)o).getObjectID());
+      super.addedReference(applyInfo, ((CDSMValue) o).getObjectID());
     } else {
       super.addedReference(applyInfo, o);
     }
@@ -266,7 +331,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
   protected void removedReference(final ApplyTransactionInfo applyInfo, final Object o) {
     Object ref = o;
     if (o instanceof CDSMValue) {
-      ref = ((CDSMValue)o).getObjectID();
+      ref = ((CDSMValue) o).getObjectID();
     }
     if (ref instanceof ObjectID) {
       applyInfo.deleteObject((ObjectID) ref);
@@ -277,13 +342,14 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
   }
 
   protected void addValue(ApplyTransactionInfo applyInfo, Object value, boolean keyExists) {
-    if (applyInfo.isSearchEnabled() && value instanceof ObjectID) applyInfo.recordValue((ObjectID)value, keyExists);
+    if (applyInfo.isSearchEnabled() && value instanceof ObjectID) applyInfo.recordValue((ObjectID) value, keyExists);
   }
 
   @Override
-  protected Object applyPut(final ApplyTransactionInfo applyInfo, Object[] params) {
+  protected Object applyPut(final ApplyTransactionInfo applyInfo, final Object[] params) {
     final Object key = params[0];
-    final ObjectID oid = (ObjectID)params[1];
+    final ObjectID oid = (ObjectID) params[1];
+
     final CDSMValue value;
     if (params.length == 6) {
       value = new CDSMValue(oid, (Long) params[2], (Long) params[3], (Long) params[4], (Long) params[5]);
@@ -291,71 +357,161 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
       value = new CDSMValue(oid, 0, 0, 0, 0);
     }
 
-    final CDSMValue old = (CDSMValue) super.applyPut(applyInfo, new Object[] { key, value });
-    addValue(applyInfo, params[1], old != null);
-    startCapacityEvictionIfNeccessary(applyInfo);
-    // collect PUT modifications for futher broadcasting
-    applyInfo.getServerEventRecorder().recordEvent(ServerEventType.PUT, key, oid, cacheName);
+    final CDSMValue old = (CDSMValue) references.get(key);
+    final long newVersion = (old == null) ? 0 // new key-value pair
+        : old.getVersion() + 1; // local put - increment version, if key already exists
+    value.setVersion(newVersion);
+
+    applyPutInternal(applyInfo, params, value, old);
+
+    // collect modifications for further broadcasting
+    applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.PUT_LOCAL),
+                                                       ServerEventType.PUT_LOCAL, key, value, cacheName);
     return old;
   }
-  
+
+  private Object applyPutVersioned(ApplyTransactionInfo applyInfo, Object[] params) {
+    final Object key = params[0];
+    final ObjectID oid = (ObjectID) params[1];
+    // put came from the WAN orchestrator - obediently apply new version
+    final CDSMValue value = new CDSMValue(oid, (Long) params[2], (Long) params[3], (Long) params[4], (Long) params[5],
+                                          (Long) params[6]);
+    final CDSMValue old = (CDSMValue) references.get(key);
+
+    applyPutInternal(applyInfo, params, value, old);
+    return old;
+  }
+
+  private LogicalChangeResult applyPutIfAbsentVersioned(ApplyTransactionInfo applyInfo, Object[] params) {
+    final Object key = params[0];
+    final ObjectID oid = (ObjectID) params[1];
+    final CDSMValue newValue = new CDSMValue(oid, (Long) params[2], (Long) params[3], (Long) params[4],
+                                             (Long) params[5], (Long) params[6]);
+    final CDSMValue oldValue = (CDSMValue) references.get(key);
+
+    if (oldValue == null) {
+      applyPutInternal(applyInfo, params, newValue, oldValue);
+      return LogicalChangeResult.SUCCESS;
+    } else {
+      removedReferences(applyInfo, newValue);
+      addValue(applyInfo, newValue, false);
+      return LogicalChangeResult.FAILURE;
+    }
+  }
+
+  private void applyPutInternal(final ApplyTransactionInfo applyInfo, final Object[] params, final CDSMValue value,
+                                final CDSMValue old) {
+    final Object key = params[0];
+    final ObjectID oid = (ObjectID) params[1];
+
+    references.put(key, value);
+    addedReferences(applyInfo, key, value);
+    removedReferences(applyInfo, old);
+
+    addValue(applyInfo, oid, old != null);
+    startCapacityEvictionIfNeccessary(applyInfo);
+
+    // collect modifications for futher broadcasting
+    applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.PUT), ServerEventType.PUT,
+                                                       key, new CDSMValue(oid), cacheName);
+  }
+
   private boolean startCapacityEvictionIfNeccessary(final ApplyTransactionInfo applyInfo) {
-    if (applyInfo.isActiveTxn()
-        && this.evictionEnabled  //  do not trigger if eviction is disabled
+    if (applyInfo.isActiveTxn() && this.evictionEnabled // do not trigger if eviction is disabled
         && this.targetMaxTotalCount >= 0 // do not trigger capacity eviction if totalMaxCount is negative
         && this.references.size() > this.targetMaxTotalCount * (1 + (OVERSHOOT / 100))) {
-        applyInfo.initiateEvictionFor(getId());
-        return true;
+      applyInfo.initiateEvictionFor(getId());
+      return true;
     }
     return false;
   }
 
-  private void applyPutIfAbsent(ApplyTransactionInfo applyInfo, Object[] params) {
+  private LogicalChangeResult applyPutIfAbsent(ApplyTransactionInfo applyInfo, Object[] params) {
     Object key = params[0];
     Object value = params[1];
     if (!references.containsKey(key)) {
       applyPut(applyInfo, params);
+      return LogicalChangeResult.SUCCESS;
     } else {
       removedReferences(applyInfo, value);
-      addValue(applyInfo, value, false);
+      addValue(applyInfo, value, true);
+      return LogicalChangeResult.FAILURE;
     }
   }
 
-  private void applyReplace(ApplyTransactionInfo applyInfo, Object[] params) {
+  private LogicalChangeResult applyReplace(ApplyTransactionInfo applyInfo, Object[] params) {
     Object key = params[0];
     Object value = params[1];
     if (references.containsKey(key)) {
       applyPut(applyInfo, params);
+      return LogicalChangeResult.SUCCESS;
     } else {
       removedReferences(applyInfo, value);
       addValue(applyInfo, value, false);
+      return LogicalChangeResult.FAILURE;
     }
   }
 
-  private void applyReplaceIfEqualWithExpiry(ApplyTransactionInfo applyInfo, Object[] params) {
+  private LogicalChangeResult applyReplaceIfEqualWithExpiry(ApplyTransactionInfo applyInfo, Object[] params) {
     Object key = params[0];
     Object currentValue = params[1];
     Object newValue = params[2];
     CDSMValue old = getValueForKey(key);
     if (old != null && old.getObjectID().equals(currentValue)) {
       if (params.length == 7) {
-        applyPut(applyInfo, new Object[] { key, newValue, params[3], params[4], params[5], params[6]});
+        applyPut(applyInfo, new Object[] { key, newValue, params[3], params[4], params[5], params[6] });
       } else {
-        applyPut(applyInfo, new Object[]{ key, newValue });
+        applyPut(applyInfo, new Object[] { key, newValue });
       }
+      return LogicalChangeResult.SUCCESS;
     } else {
       removedReferences(applyInfo, newValue);
+      addValue(applyInfo, newValue, false);
+      return LogicalChangeResult.FAILURE;
     }
   }
 
-  private void applyRemoveIfValueEqual(ApplyTransactionInfo applyInfo, Object[] params) {
-    Object key = params[0];
-    Object value = params[1];
-    CDSMValue valueInMap = getValueForKey(key);
+  private LogicalChangeResult applyRemoveIfValueEqual(ApplyTransactionInfo applyInfo, Object[] params) {
+    final Object key = params[0];
+    final Object value = params[1];
+    final CDSMValue valueInMap = getValueForKey(key);
     if (valueInMap != null && value.equals(valueInMap.getObjectID())) {
       references.remove(key);
       removedReferences(applyInfo, value);
-      applyInfo.getServerEventRecorder().recordEvent(ServerEventType.REMOVE, key, (ObjectID)value, cacheName);
+      final ObjectID objectId = (ObjectID) value;
+
+      if (applyInfo.isEviction() && samplingType == SamplingType.FOR_EVICTION) {
+        applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.EVICT),
+                                                           ServerEventType.EVICT, key, NULL_CDSM_VALUE, cacheName);
+      } else if (applyInfo.isEviction() && samplingType == SamplingType.FOR_EXPIRATION) {
+        applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.EXPIRE),
+                                                           ServerEventType.EXPIRE, key, NULL_CDSM_VALUE, cacheName);
+      } else {
+        applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE),
+                                                           ServerEventType.REMOVE, key, NULL_CDSM_VALUE, cacheName);
+      }
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE_LOCAL),
+                                                         ServerEventType.REMOVE_LOCAL,
+                                                         key,
+          new CDSMValue(ObjectID.NULL_ID, 0, 0, 0, 0, valueInMap.getVersion() + 1), cacheName);
+      return LogicalChangeResult.SUCCESS;
+    } else {
+      return LogicalChangeResult.FAILURE;
+    }
+  }
+
+  private LogicalChangeResult applyExpireIfValueEqual(ApplyTransactionInfo applyInfo, Object[] params) {
+    final Object key = params[0];
+    final Object value = params[1];
+    final CDSMValue valueInMap = getValueForKey(key);
+    if (valueInMap != null && value.equals(valueInMap.getObjectID())) {
+      references.remove(key);
+      removedReferences(applyInfo, value);
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.EXPIRE),
+                                                         ServerEventType.EXPIRE, key, NULL_CDSM_VALUE, cacheName);
+      return LogicalChangeResult.SUCCESS;
+    } else {
+      return LogicalChangeResult.FAILURE;
     }
   }
 
@@ -364,13 +520,33 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     final Object key = params[0];
     final Object old = super.applyRemove(applyInfo, params);
     if (old instanceof CDSMValue) {
-      final ObjectID objectId = ((CDSMValue)old).getObjectID();
-      applyInfo.getServerEventRecorder().recordEvent(ServerEventType.REMOVE, key, objectId, cacheName);
+      final CDSMValue oldValue = (CDSMValue) old;
+      final ObjectID objectId = oldValue.getObjectID();
+
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE),
+                                                         ServerEventType.REMOVE, key, NULL_CDSM_VALUE, cacheName);
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE_LOCAL),
+                                                         ServerEventType.REMOVE_LOCAL,
+                                                         key,
+          new CDSMValue(ObjectID.NULL_ID, 0, 0, 0, 0, oldValue.getVersion() + 1), cacheName);
     }
     return old;
   }
 
-  private void applySetLastAccessedTime(ApplyTransactionInfo applyInfo, Object[] params) {
+  private Object applyRemoveVersioned(final ApplyTransactionInfo applyInfo, final Object[] params) {
+    final Object key = params[0];
+    final long version = (Long) params[1]; // ignoring for the time being
+
+    final Object old = super.applyRemove(applyInfo, params);
+    if (old instanceof CDSMValue) {
+      final ObjectID objectId = ((CDSMValue) old).getObjectID();
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE),
+                                                         ServerEventType.REMOVE, key, NULL_CDSM_VALUE, cacheName);
+    }
+    return old;
+  }
+
+  private void applySetLastAccessedTime(Object[] params) {
     Object key = params[0];
     Object value = params[1];
     long lastAccessedTime = (Long) params[2];
@@ -383,8 +559,70 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
 
   @Override
   protected void applyClear(final ApplyTransactionInfo applyInfo) {
-    removedReferences(applyInfo, references.values());
+    for (Object key : references.keySet()) {
+      final CDSMValue value = getValueForKey(key);
+      removedReference(applyInfo, value);
+
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE),
+                                                         ServerEventType.REMOVE, key, NULL_CDSM_VALUE, cacheName);
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE_LOCAL),
+                                                         ServerEventType.REMOVE_LOCAL,
+                                                         key,
+                                                         new CDSMValue(ObjectID.NULL_ID,
+          0, 0, 0, 0, value.getVersion() + 1), cacheName);
+    }
     references.clear();
+  }
+
+  /**
+   * This method will be called by Orchestrator hence it should not generate REMOVE_LOCAL events
+   */
+  private void applyClearVersioned(ApplyTransactionInfo applyInfo) {
+    for (Object key : references.keySet()) {
+      CDSMValue value = getValueForKey(key);
+      removedReference(applyInfo, value);
+      applyInfo.getMutationEventPublisher().publishEvent(getRegisteredClients(ServerEventType.REMOVE),
+                                                         ServerEventType.REMOVE, key, NULL_CDSM_VALUE, cacheName);
+    }
+    this.references.clear();
+  }
+
+  private void applyRegisterServerEventListener(ApplyTransactionInfo applyInfo, Object[] params) {
+    ClientID clientID = (ClientID) applyInfo.getServerTransactionID().getSourceID();
+    for (Object eventTypeIndex : params) {
+      ServerEventType serverEventType = ServerEventType.values()[(Integer) eventTypeIndex];
+      eventRegistry.put(serverEventType, clientID);
+      applyInfo.getClientChannelMonitor().monitorClient(clientID, getId());
+    }
+  }
+
+  private void applyUnregisterServerEventListener(ApplyTransactionInfo applyInfo, Object[] params) {
+    ClientID clientID = (ClientID) applyInfo.getServerTransactionID().getSourceID();
+    for (Object eventTypeIndex : params) {
+      ServerEventType serverEventType = ServerEventType.values()[(Integer) eventTypeIndex];
+      eventRegistry.remove(serverEventType, clientID);
+    }
+  }
+
+  private void applyRelayedRegisterServerEventListener(ApplyTransactionInfo applyInfo, Object[] params) {
+    ServerEventType serverEventType = ServerEventType.values()[(Integer) params[0]];
+    for (int i = 1; i < params.length; i++) {
+      ClientID clientID = new ClientID((Long) params[i]);
+      eventRegistry.put(serverEventType, clientID);
+    }
+  }
+
+  private void applyRemoveEventListeningClient(ApplyTransactionInfo applyInfo, Object[] params) {
+    ClientID clientID = new ClientID((Long) params[0]);
+
+    // Remove all entries for the given client
+    Iterator<Entry<ServerEventType, ClientID>> iterator = eventRegistry.entries().iterator();
+    while (iterator.hasNext()) {
+      Entry<ServerEventType, ClientID> entry = iterator.next();
+      if (entry.getValue().equals(clientID)) {
+        iterator.remove();
+      }
+    }
   }
 
   @Override
@@ -437,7 +675,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
 
   @Override
   public int getSize() {
-    return (int)this.references.size();
+    return (int) this.references.size();
   }
 
   public Set getAllKeys() {
@@ -454,16 +692,14 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     return this.maxTTLSeconds;
   }
 
- //  locked by ManagedObject checkout
+  // locked by ManagedObject checkout
   @Override
   public boolean startEviction() {
-    if ( !this.evictionEnabled && this.maxTTISeconds == 0 && this.maxTTLSeconds == 0 ) {
-      return false;
-    }
+    if (!this.evictionEnabled && this.maxTTISeconds == 0 && this.maxTTLSeconds == 0) { return false; }
     return true;
   }
 
- //  locked by ManagedObject checkout
+  // locked by ManagedObject checkout
   @Override
   public void evictionCompleted() {
 
@@ -493,9 +729,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
         evictionIterator = references.keySet().iterator();
       }
       final Object k = evictionIterator.next();
-      if (k == null) {
-        throw new AssertionError("key is not null");
-      }
+      if (k == null) { throw new AssertionError("key is not null"); }
       if (r.nextInt(100) < chance) {
         CDSMValue value = getValueForKey(k);
         if (value == null || clientObjectRefSet.contains(value.getObjectID())) {
@@ -507,7 +741,7 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
       }
     }
     if (samples.size() < count) {
-      for (final Iterator<Object> i = ignored.iterator(); samples.size() < count && i.hasNext(); ) {
+      for (final Iterator<Object> i = ignored.iterator(); samples.size() < count && i.hasNext();) {
         final Object k = i.next();
         CDSMValue v = getValueForKey(k);
         if (v == null || clientObjectRefSet.contains(v.getObjectID())) {
@@ -551,11 +785,12 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     float propVal = TCPropertiesImpl.getProperties()
         .getFloat(TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_EVICTION_OVERSHOOT);
 
-    if (propVal < MIN || propVal > MAX) {
-      throw new IllegalArgumentException("Invalid value for ["
-                                         + TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_EVICTION_OVERSHOOT + "]: "
-                                         + propVal + " (must be between " + MIN + " and " + MAX + ")");
-    }
+    if (propVal < MIN || propVal > MAX) { throw new IllegalArgumentException(
+                                                                             "Invalid value for ["
+                                                                                 + TCPropertiesConsts.EHCACHE_STORAGESTRATEGY_DCV2_EVICTION_OVERSHOOT
+                                                                                 + "]: " + propVal
+                                                                                 + " (must be between " + MIN + " and "
+                                                                                 + MAX + ")"); }
 
     return propVal;
   }

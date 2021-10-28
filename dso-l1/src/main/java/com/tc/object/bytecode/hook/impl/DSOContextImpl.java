@@ -17,7 +17,7 @@ import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.FatalIllegalConfigurationChangeHandler;
 import com.tc.config.schema.setup.L1ConfigurationSetupManager;
 import com.tc.config.schema.setup.StandardConfigurationSetupManagerFactory;
-import com.tc.logging.TCLogger;
+import com.tc.license.ProductID;
 import com.tc.logging.TCLogging;
 import com.tc.net.core.SecurityInfo;
 import com.tc.net.core.security.TCSecurityManager;
@@ -29,16 +29,14 @@ import com.tc.object.config.StandardDSOClientConfigHelperImpl;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.platform.PlatformService;
 import com.tc.util.Assert;
+import com.terracotta.management.security.SecretProvider;
 
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.Map;
 
 public class DSOContextImpl implements DSOContext {
-  private static final TCLogger          logger = TCLogging.getLogger(DSOContextImpl.class);
-
   private final ManagerImpl              manager;
-  private final boolean                  expressRejoinClient;
   private final String                   configSpec;
   private final TCSecurityManager        securityManager;
   private final SecurityInfo             securityInfo;
@@ -46,11 +44,11 @@ public class DSOContextImpl implements DSOContext {
   private volatile DSOClientConfigHelper configHelper;
 
   public static DSOContext createStandaloneContext(String configSpec, ClassLoader loader, boolean expressRejoinClient,
-                                                   TCSecurityManager securityManager, SecurityInfo securityInfo) {
-    ManagerImpl manager = new ManagerImpl(true, null, null, null, null, null, null, true, loader,
-                                          expressRejoinClient, securityManager);
-    DSOContextImpl context = createContext(manager, expressRejoinClient, configSpec, securityManager, securityInfo);
-    return context;
+                                                   TCSecurityManager securityManager, SecurityInfo securityInfo,
+                                                   ProductID productId) {
+    ManagerImpl manager = new ManagerImpl(true, null, null, null, null, null, null, true, loader, expressRejoinClient,
+                                          securityManager, productId);
+    return createContext(manager, configSpec, securityManager, securityInfo);
   }
 
   public void init() throws ConfigurationSetupException {
@@ -91,6 +89,10 @@ public class DSOContextImpl implements DSOContext {
     return AbstractClientFactory.getFactory().createClientSecurityManager(env);
   }
 
+  public byte[] getSecret() {
+    return SecretProvider.getSecret();
+  }
+
   private void startToolkitConfigurator() throws Exception {
     Class toolkitConfiguratorClass = null;
     try {
@@ -104,22 +106,19 @@ public class DSOContextImpl implements DSOContext {
     start.invoke(toolkitConfigurator, configHelper);
   }
 
-  private static DSOContextImpl createContext(ManagerImpl manager, boolean expressRejoinClient, String configSpec,
+  private static DSOContextImpl createContext(ManagerImpl manager, String configSpec,
                                               TCSecurityManager securityManager, SecurityInfo securityInfo) {
-    return new DSOContextImpl(manager.getClassProvider(), manager, expressRejoinClient, configSpec, securityManager,
-                              securityInfo);
+    return new DSOContextImpl(manager.getClassProvider(), manager, configSpec, securityManager, securityInfo);
   }
 
-  private DSOContextImpl(ClassProvider classProvider, ManagerImpl manager, boolean expressRejoinClient,
-                         String configSpec, TCSecurityManager securityManager, SecurityInfo securityInfo) {
+  private DSOContextImpl(ClassProvider classProvider, ManagerImpl manager, String configSpec,
+                         TCSecurityManager securityManager, SecurityInfo securityInfo) {
     resolveClasses();
 
-    this.expressRejoinClient = expressRejoinClient;
     this.manager = manager;
     this.configSpec = configSpec;
     this.securityManager = securityManager;
     this.securityInfo = securityInfo;
-    logger.info("context created with expressRejoinClient=" + expressRejoinClient);
   }
 
   private void resolveClasses() {
@@ -155,10 +154,6 @@ public class DSOContextImpl implements DSOContext {
 
   @Override
   public void shutdown() {
-    if (expressRejoinClient) {
-      manager.stopImmediate();
-    } else {
-      manager.stop();
-    }
+    manager.stop();
   }
 }

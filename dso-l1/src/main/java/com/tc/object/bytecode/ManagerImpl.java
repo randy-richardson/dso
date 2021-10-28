@@ -15,9 +15,11 @@ import com.tc.lang.StartupHelper;
 import com.tc.lang.StartupHelper.StartupAction;
 import com.tc.lang.TCThreadGroup;
 import com.tc.license.LicenseManager;
+import com.tc.license.ProductID;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.management.TunneledDomainUpdater;
+import com.tc.net.ClientID;
 import com.tc.net.GroupID;
 import com.tc.net.core.security.TCSecurityManager;
 import com.tc.object.ClientObjectManager;
@@ -25,16 +27,13 @@ import com.tc.object.ClientShutdownManager;
 import com.tc.object.DistributedObjectClient;
 import com.tc.object.LiteralValues;
 import com.tc.object.ObjectID;
-import com.tc.object.Portability;
 import com.tc.object.RemoteSearchRequestManager;
 import com.tc.object.SerializationUtil;
 import com.tc.object.ServerEventDestination;
 import com.tc.object.ServerEventListenerManager;
-import com.tc.object.ServerEventType;
 import com.tc.object.TCObject;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.object.config.DSOClientConfigHelper;
-import com.tc.object.event.DmiManager;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.loaders.SingleLoaderClassProvider;
 import com.tc.object.locks.ClientLockManager;
@@ -49,6 +48,7 @@ import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.metadata.MetaDataDescriptorImpl;
 import com.tc.object.tx.ClientTransaction;
 import com.tc.object.tx.ClientTransactionManager;
+import com.tc.object.tx.ClusterEventListener;
 import com.tc.object.tx.OnCommitCallable;
 import com.tc.object.tx.TransactionCompleteListener;
 import com.tc.object.tx.UnlockedSharedObjectException;
@@ -65,13 +65,18 @@ import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.search.SearchQueryResults;
+import com.tc.search.SearchRequestID;
+import com.tc.server.ServerEventType;
 import com.tc.util.Assert;
 import com.tc.util.UUID;
 import com.tc.util.Util;
+import com.tc.util.concurrent.Runners;
 import com.tc.util.concurrent.SetOnceFlag;
+import com.tc.util.concurrent.TaskRunner;
 import com.tcclient.cluster.DsoClusterInternal;
 import com.terracottatech.search.AbstractNVPair;
 import com.terracottatech.search.NVPair;
+import com.terracottatech.search.SearchBuilder.Search;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -81,7 +86,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 
 import javax.management.MBeanServer;
 
@@ -101,11 +105,10 @@ public class ManagerImpl implements Manager {
   private ClientLockManager                           lockManager;
   private RemoteSearchRequestManager                  searchRequestManager;
   private DistributedObjectClient                     dso;
-  private DmiManager                                  methodCallManager;
 
-  private volatile Portability                        portability;
   private volatile DSOClientConfigHelper              config;
   private volatile PreparedComponentsFromL2Connection connectionComponents;
+  private final ProductID productId;
 
   private final SerializationUtil                     serializer                = new SerializationUtil();
 
@@ -114,12 +117,13 @@ public class ManagerImpl implements Manager {
   private final PlatformServiceImpl                   platformService;
   private final RejoinManagerInternal                 rejoinManager;
   private final UUID                                  uuid;
-  private ServerEventListenerManager serverEventListenerManager;
+  private ServerEventListenerManager                  serverEventListenerManager;
   private final String                                L1VMShutdownHookName      = "L1 VM Shutdown Hook";
+  private volatile TaskRunner                         taskRunner;
 
   public ManagerImpl(final DSOClientConfigHelper config, final PreparedComponentsFromL2Connection connectionComponents,
                      final TCSecurityManager securityManager) {
-    this(true, null, null, null, null, config, connectionComponents, true, null, false, securityManager);
+    this(true, null, null, null, null, config, connectionComponents, true, null, false, securityManager, null);
   }
 
   public ManagerImpl(final boolean startClient, final ClientObjectManager objectManager,
@@ -128,7 +132,7 @@ public class ManagerImpl implements Manager {
                      final PreparedComponentsFromL2Connection connectionComponents,
                      final TCSecurityManager securityManager) {
     this(startClient, objectManager, txManager, lockManager, searchRequestManager, config, connectionComponents, true,
-         null, false, securityManager);
+         null, false, securityManager, null);
   }
 
   public ManagerImpl(final boolean startClient, final ClientObjectManager objectManager,
@@ -136,20 +140,19 @@ public class ManagerImpl implements Manager {
                      final RemoteSearchRequestManager searchRequestManager, final DSOClientConfigHelper config,
                      final PreparedComponentsFromL2Connection connectionComponents,
                      final boolean shutdownActionRequired, final ClassLoader loader, final boolean isExpressRejoinMode,
-                     final TCSecurityManager securityManager) {
+                     final TCSecurityManager securityManager, final ProductID productId) {
     this.objectManager = objectManager;
     this.securityManager = securityManager;
-    this.portability = config == null ? null : config.getPortability();
     this.txManager = txManager;
     this.lockManager = lockManager;
     this.searchRequestManager = searchRequestManager;
     this.config = config;
     this.startClient = startClient;
     this.connectionComponents = connectionComponents;
+    this.productId = productId;
     this.rejoinManager = new RejoinManagerImpl(isExpressRejoinMode);
     this.dsoCluster = new DsoClusterImpl(rejoinManager);
     this.uuid = UUID.getUUID();
-
     if (shutdownActionRequired) {
       this.shutdownAction = new Thread(new ShutdownAction(), L1VMShutdownHookName);
       // Register a shutdown hook for the terracotta client
@@ -161,38 +164,39 @@ public class ManagerImpl implements Manager {
 
     this.lockIdFactory = new LockIdFactory(this);
     this.platformService = new PlatformServiceImpl(this, isExpressRejoinMode);
+
+    logger.info("manager created with rejoinEnabled=" + isExpressRejoinMode);
   }
 
   public void set(final DSOClientConfigHelper config, final PreparedComponentsFromL2Connection connectionComponents) {
-    this.portability = config.getPortability();
     this.config = config;
     this.connectionComponents = connectionComponents;
   }
 
   @Override
   public void init() {
-    init(false, null);
+    init(false);
   }
 
   @Override
-  public void initForTests(CountDownLatch latch) {
-    init(true, latch);
+  public void initForTests() {
+    init(true);
   }
 
-  private void init(final boolean forTests, final CountDownLatch testStartLatch) {
+  private void init(final boolean forTests) {
     resolveClasses(); // call this before starting any threads (SEDA, DistributedMethod call stuff, etc)
 
     if (this.startClient) {
       if (this.clientStarted.attemptSet()) {
-        startClient(forTests, testStartLatch);
+        startClient(forTests);
         this.platformService.init(rejoinManager, this.dso.getClientHandshakeManager());
       }
     }
   }
 
   @Override
-  public String getClientID() {
-    return Long.toString(this.dso.getChannel().getClientIDProvider().getClientID().toLong());
+  public ClientID getClientID() {
+    return this.dso.getChannel().getClientIDProvider().getClientID();
   }
 
   @Override
@@ -238,7 +242,7 @@ public class ManagerImpl implements Manager {
     logicalInvoke(new FakeManageableObject(), SerializationUtil.CLEAR_SIGNATURE, new Object[] {});
   }
 
-  private void startClient(final boolean forTests, final CountDownLatch testStartLatch) {
+  private void startClient(final boolean forTests) {
     L1ThrowableHandler throwableHandler = new L1ThrowableHandler(TCLogging.getLogger(DistributedObjectClient.class),
                                                                  new Callable<Void>() {
                                                                    @Override
@@ -248,7 +252,7 @@ public class ManagerImpl implements Manager {
                                                                    }
                                                                  });
     final TCThreadGroup group = new TCThreadGroup(throwableHandler);
-
+    this.taskRunner = Runners.newDefaultCachedScheduledTaskRunner(group);
     final StartupAction action = new StartupHelper.StartupAction() {
       @Override
       public void execute() throws Throwable {
@@ -259,17 +263,16 @@ public class ManagerImpl implements Manager {
                                                           ManagerImpl.this.dsoCluster,
                                                           ManagerImpl.this.securityManager,
                                                           ManagerImpl.this.abortableOperationManager,
-                                                          ManagerImpl.this.rejoinManager, uuid);
+                                                          ManagerImpl.this.rejoinManager, uuid, productId);
 
         if (forTests) {
           ManagerImpl.this.dso.setCreateDedicatedMBeanServer(true);
         }
-        ManagerImpl.this.dso.start(testStartLatch);
+        ManagerImpl.this.dso.start();
         ManagerImpl.this.objectManager = ManagerImpl.this.dso.getObjectManager();
         ManagerImpl.this.txManager = ManagerImpl.this.dso.getTransactionManager();
         ManagerImpl.this.lockManager = ManagerImpl.this.dso.getLockManager();
         ManagerImpl.this.searchRequestManager = ManagerImpl.this.dso.getSearchRequestManager();
-        ManagerImpl.this.methodCallManager = ManagerImpl.this.dso.getDmiManager();
         ManagerImpl.this.serverEventListenerManager = ManagerImpl.this.dso.getServerEventListenerManager();
 
         ManagerImpl.this.shutdownManager = new ClientShutdownManager(ManagerImpl.this.objectManager,
@@ -279,6 +282,8 @@ public class ManagerImpl implements Manager {
 
         ManagerImpl.this.dsoCluster.init(ManagerImpl.this.dso.getClusterMetaDataManager(),
                                          ManagerImpl.this.objectManager, ManagerImpl.this.dso.getClusterEventsStage());
+        ManagerImpl.this.dsoCluster.addClusterListener(new ClusterEventListener(ManagerImpl.this.shutdownManager
+            .getRemoteTransactionManager()));
       }
 
     };
@@ -291,6 +296,12 @@ public class ManagerImpl implements Manager {
   public void registerBeforeShutdownHook(final Runnable beforeShutdownHook) {
     if (this.shutdownManager != null) {
       this.shutdownManager.registerBeforeShutdownHook(beforeShutdownHook);
+    }
+  }
+  @Override
+  public void unregisterBeforeShutdownHook(final Runnable beforeShutdownHook) {
+    if (this.shutdownManager != null) {
+      this.shutdownManager.unregisterBeforeShutdownHook(beforeShutdownHook);
     }
   }
 
@@ -349,7 +360,6 @@ public class ManagerImpl implements Manager {
             logicalAddAllAtInvoke(this.serializer.methodToID(methodSignature), methodSignature,
                                   ((Integer) params[0]).intValue(), (Collection) params[1], tco);
           } else {
-            adjustForJava1ParametersIfNecessary(methodSignature, params);
             tco.logicalInvoke(this.serializer.methodToID(methodSignature), methodSignature, params);
           }
         }
@@ -368,18 +378,6 @@ public class ManagerImpl implements Manager {
       logicalInvoke(object, methodName, params);
     } finally {
       unlock(lock, LockLevel.WRITE);
-    }
-  }
-
-  private void adjustForJava1ParametersIfNecessary(final String methodName, final Object[] params) {
-    if ((params.length == 2) && (params[1] != null) && (params[1].getClass().equals(Integer.class))) {
-      if (SerializationUtil.SET_ELEMENT_SIGNATURE.equals(methodName)
-          || SerializationUtil.INSERT_ELEMENT_AT_SIGNATURE.equals(methodName)) {
-        // special case for reversing parameters
-        final Object tmp = params[0];
-        params[0] = params[1];
-        params[1] = tmp;
-      }
     }
   }
 
@@ -510,28 +508,6 @@ public class ManagerImpl implements Manager {
   }
 
   @Override
-  public boolean distributedMethodCall(final Object receiver, final String method, final Object[] params,
-                                       final boolean runOnAllNodes) {
-    final TCObject tco = lookupExistingOrNull(receiver);
-
-    try {
-      if (tco != null) {
-        return this.methodCallManager.distributedInvoke(receiver, method, params, runOnAllNodes);
-      } else {
-        return false;
-      }
-    } catch (final Throwable t) {
-      Util.printLogAndRethrowError(t, logger);
-      return false;
-    }
-  }
-
-  @Override
-  public void distributedMethodCallCommit() {
-    this.methodCallManager.distributedInvokeCommit();
-  }
-
-  @Override
   public void checkWriteAccess(final Object context) {
     // XXX: make sure that "context" is the ALWAYS the right object to check here, and then rename it
     if (isManaged(context)) {
@@ -599,17 +575,8 @@ public class ManagerImpl implements Manager {
   }
 
   @Override
-  public boolean isPhysicallyInstrumented(final Class clazz) {
-    return this.portability.isClassPhysicallyInstrumented(clazz);
-  }
-
-  @Override
   public TCLogger getLogger(final String loggerName) {
     return TCLogging.getLogger(loggerName);
-  }
-
-  public DmiManager getDmiManager() {
-    return this.methodCallManager;
   }
 
   @Override
@@ -847,13 +814,13 @@ public class ManagerImpl implements Manager {
   }
 
   @Override
-  public void pinLock(final LockID lock) {
-    this.lockManager.pinLock(lock);
+  public void pinLock(final LockID lock, long awardID) {
+    this.lockManager.pinLock(lock, awardID);
   }
 
   @Override
-  public void unpinLock(final LockID lock) {
-    this.lockManager.unpinLock(lock);
+  public void unpinLock(final LockID lock, long awardID) {
+    this.lockManager.unpinLock(lock, awardID);
   }
 
   private boolean clusteredLockingEnabled(final LockID lock) {
@@ -879,25 +846,30 @@ public class ManagerImpl implements Manager {
   @Override
   public SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys, boolean includeValues,
                                          Set<String> attributeSet, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn)
+                                         List<NVPair> aggregators, int maxResults, int batchSize, int resultPageSize,
+                                         boolean waitForTxn, SearchRequestID reqId)
       throws AbortedOperationException {
-    if (shouldWaitForTxn(waitForTxn)) {
+    // Paginated queries are already transactional wrt local changes
+    if (resultPageSize == Search.BATCH_SIZE_UNLIMITED && shouldWaitForTxn(waitForTxn)) {
       waitForAllCurrentTransactionsToComplete();
     }
     return searchRequestManager.query(cachename, queryStack, includeKeys, includeValues, attributeSet, sortAttributes,
-                                      aggregators, maxResults, batchSize);
+                                      aggregators,
+                                      maxResults, batchSize, reqId,
+                                      resultPageSize);
   }
 
   @Override
   public SearchQueryResults executeQuery(String cachename, List queryStack, Set<String> attributeSet,
                                          Set<String> groupByAttribues, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn)
+                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn,
+                                         SearchRequestID reqId)
       throws AbortedOperationException {
     if (shouldWaitForTxn(waitForTxn)) {
       waitForAllCurrentTransactionsToComplete();
     }
     return searchRequestManager.query(cachename, queryStack, attributeSet, groupByAttribues, sortAttributes,
-                                      aggregators, maxResults, batchSize);
+                                      aggregators, maxResults, batchSize, reqId);
   }
 
   private boolean shouldWaitForTxn(boolean userChoice) {
@@ -998,7 +970,32 @@ public class ManagerImpl implements Manager {
   }
 
   @Override
-  public void unregisterServerEventListener(final ServerEventDestination destination) {
-    serverEventListenerManager.unregisterListener(destination);
+  public void unregisterServerEventListener(final ServerEventDestination destination, final Set<ServerEventType> listenTo) {
+    serverEventListenerManager.unregisterListener(destination, listenTo);
+  }
+
+  @Override
+  public int getRejoinCount() {
+    return rejoinManager.getRejoinCount();
+  }
+
+  @Override
+  public boolean isRejoinInProgress() {
+    return rejoinManager.isRejoinInProgress();
+  }
+
+  @Override
+  public TaskRunner getTastRunner() {
+    return taskRunner;
+  }
+
+  @Override
+  public long getLockAwardIDFor(LockID lock) {
+    return lockManager.getAwardIDFor(lock);
+  }
+
+  @Override
+  public boolean isLockAwardValid(LockID lock, long awardID) {
+    return lockManager.isLockAwardValid(lock, awardID);
   }
 }

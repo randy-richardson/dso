@@ -6,7 +6,6 @@ package com.tc.objectserver.locks;
 import com.tc.async.api.Sink;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
-import com.tc.management.L2LockStatsManager;
 import com.tc.net.ClientID;
 import com.tc.object.locks.ClientServerExchangeLockContext;
 import com.tc.object.locks.LockID;
@@ -32,8 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * LockManager is responsible for holding locks (in a LockStore) and delegating requests from the handler to the
  * concerned lock. Each lock is checked out, worked upon and then finally checked in.
  */
-public class LockManagerImpl implements LockManager, PrettyPrintable, LockManagerMBean, L2LockStatisticsChangeListener,
-    TimerCallback {
+public class LockManagerImpl implements LockManager, PrettyPrintable, LockManagerMBean, TimerCallback {
   private enum RequestType {
     LOCK, TRY_LOCK, WAIT, UNLOCK
   }
@@ -54,7 +52,7 @@ public class LockManagerImpl implements LockManager, PrettyPrintable, LockManage
   public LockManagerImpl(Sink lockSink, DSOChannelManager channelManager, LockFactory factory) {
     this.lockStore = new LockStore(factory);
     this.channelManager = channelManager;
-    this.lockHelper = new LockHelper(L2LockStatsManager.UNSYNCHRONIZED_LOCK_STATS_MANAGER, lockSink, lockStore, this);
+    this.lockHelper = new LockHelper(lockSink, lockStore, this);
   }
 
   @Override
@@ -219,12 +217,6 @@ public class LockManagerImpl implements LockManager, PrettyPrintable, LockManage
       }
       lock = iter.getNextLock(lock);
     }
-    this.lockHelper.getLockStatsManager().clearAllStatsFor(cid);
-  }
-
-  @Override
-  public void enableLockStatsForNodeIfNeeded(ClientID cid) {
-    this.lockHelper.getLockStatsManager().enableStatsForNodeIfNeeded(cid);
   }
 
   @Override
@@ -290,15 +282,6 @@ public class LockManagerImpl implements LockManager, PrettyPrintable, LockManage
     }
   }
 
-  @Override
-  public void setLockStatisticsEnabled(boolean lockStatsEnabled, L2LockStatsManager manager) {
-    if (lockStatsEnabled) {
-      lockHelper.setLockStatsManager(manager);
-    } else {
-      lockHelper.setLockStatsManager(L2LockStatsManager.UNSYNCHRONIZED_LOCK_STATS_MANAGER);
-    }
-  }
-
   private void queueRequest(LockID lid, ClientID cid, ThreadID tid, ServerLockLevel level, RequestType type,
                             long timeout) {
     RequestLockContext context = new RequestLockContext(lid, cid, tid, level, type, timeout);
@@ -329,7 +312,7 @@ public class LockManagerImpl implements LockManager, PrettyPrintable, LockManage
 
   private boolean isClientAlive(ClientID cid) {
     if (!this.channelManager.isActiveID(cid)) {
-      logger.warn("Lock Manager ignoring message received from dead client");
+      logger.warn("Lock Manager ignoring message received from dead client:" + cid);
       return false;
     }
     return true;

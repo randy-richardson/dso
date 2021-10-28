@@ -5,9 +5,9 @@ package com.tc.object;
 
 import com.tc.abortable.AbortableOperationManager;
 import com.tc.async.api.Sink;
+import com.tc.license.ProductID;
 import com.tc.logging.ClientIDLogger;
 import com.tc.logging.TCLogger;
-import com.tc.management.ClientLockStatManager;
 import com.tc.management.L1Management;
 import com.tc.management.TCClient;
 import com.tc.management.remote.protocol.terracotta.TunneledDomainManager;
@@ -30,7 +30,6 @@ import com.tc.object.config.DSOMBeanConfig;
 import com.tc.object.dna.api.DNAEncoding;
 import com.tc.object.dna.api.DNAEncodingInternal;
 import com.tc.object.gtx.ClientGlobalTransactionManager;
-import com.tc.object.gtx.PreTransactionFlushCallback;
 import com.tc.object.handshakemanager.ClientHandshakeCallback;
 import com.tc.object.handshakemanager.ClientHandshakeManager;
 import com.tc.object.idprovider.api.ObjectIDProvider;
@@ -46,6 +45,7 @@ import com.tc.object.msg.NodeMetaDataMessageFactory;
 import com.tc.object.msg.NodesWithKeysMessageFactory;
 import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.net.DSOClientMessageChannel;
+import com.tc.object.search.SearchResultManager;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
 import com.tc.object.session.SessionManager;
 import com.tc.object.session.SessionProvider;
@@ -54,7 +54,6 @@ import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.TransactionIDGenerator;
 import com.tc.runtime.logging.LongGCLogger;
 import com.tc.stats.counter.sampled.derived.SampledRateCounter;
-import com.tc.util.ToggleableReferenceManager;
 import com.tc.util.UUID;
 import com.tc.util.concurrent.TaskRunner;
 import com.tc.util.runtime.ThreadIDManager;
@@ -81,22 +80,23 @@ public interface DSOClientBuilder {
                                                     Map<TCMessageType, Class> messageTypeClassMapping,
                                                     Map<TCMessageType, GeneratedMessageFactory> messageTypeFactoryMapping,
                                                     ReconnectionRejectedHandler reconnectionRejectedBehaviour,
-                                                    TCSecurityManager securityManager);
+                                                    TCSecurityManager securityManager, final ProductID productId);
 
   TunnelingEventHandler createTunnelingEventHandler(ClientMessageChannel ch, DSOMBeanConfig config, UUID uuid);
 
   TunneledDomainManager createTunneledDomainManager(final ClientMessageChannel ch, final DSOMBeanConfig config,
                                                     final TunnelingEventHandler teh);
 
-  ClientGlobalTransactionManager createClientGlobalTransactionManager(final RemoteTransactionManager remoteTxnMgr,
-                                                                      final PreTransactionFlushCallback preTransactionFlushCallback);
+  ClientGlobalTransactionManager createClientGlobalTransactionManager(final RemoteTransactionManager remoteTxnMgr);
 
   RemoteObjectManager createRemoteObjectManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
                                                 final int faultCount, final SessionManager sessionManager,
                                                 final AbortableOperationManager abortableOperationManager,
                                                 final TaskRunner taskRunner);
 
-  RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
+  RemoteServerMapManager createRemoteServerMapManager(final TCLogger logger,
+                                                      final RemoteObjectManager remote,
+                                                      final DSOClientMessageChannel dsoChannel,
                                                       final SessionManager sessionManager,
                                                       final L1ServerMapLocalCacheManager globalLocalCacheManager,
                                                       final AbortableOperationManager abortableOperationManager,
@@ -105,7 +105,11 @@ public interface DSOClientBuilder {
   RemoteSearchRequestManager createRemoteSearchRequestManager(final TCLogger logger,
                                                               final DSOClientMessageChannel dsoChannel,
                                                               final SessionManager sessionManager,
-                                                              final AbortableOperationManager abortableOperationManager);
+                                                              SearchResultManager resultManager, final AbortableOperationManager abortableOperationManager);
+
+  SearchResultManager createSearchResultManager(final TCLogger logger, final DSOClientMessageChannel dsoChannel,
+                                                final SessionManager sessionManager,
+                                                final AbortableOperationManager abortableOperationManager);
 
   ClusterMetaDataManager createClusterMetaDataManager(final DSOClientMessageChannel dsoChannel,
                                                       final DNAEncoding encoding,
@@ -116,26 +120,22 @@ public interface DSOClientBuilder {
                                                       final NodesWithKeysMessageFactory nwkmFactory);
 
   ClientObjectManagerImpl createObjectManager(final RemoteObjectManager remoteObjectManager,
-                                              final DSOClientConfigHelper dsoConfig, final ObjectIDProvider idProvider,
+                                              final ObjectIDProvider idProvider,
                                               final ClientIDProvider clientIDProvider,
                                               final ClassProvider classProviderLocal,
                                               final TCClassFactory classFactory, final TCObjectFactory objectFactory,
-                                              final Portability portability, final DSOClientMessageChannel dsoChannel,
-                                              final ToggleableReferenceManager toggleRefMgr,
+                                              final Portability portability,
                                               TCObjectSelfStore tcObjectSelfStore,
                                               AbortableOperationManager abortableOperationManager);
 
   ClientLockManager createLockManager(final DSOClientMessageChannel dsoChannel, final ClientIDLogger clientIDLogger,
-                                      final SessionManager sessionManager, final ClientLockStatManager lockStatManager,
+                                      final SessionManager sessionManager,
                                       final LockRequestMessageFactory lockRequestMessageFactory,
                                       final ThreadIDManager threadManager,
                                       final ClientGlobalTransactionManager clientGlobalTransactionManager,
                                       final ClientLockManagerConfig clientLockManagerConfig,
                                       final AbortableOperationManager abortableOperationManager,
                                       final TaskRunner taskRunner);
-
-  @Deprecated
-  ClientLockStatManager createLockStatsManager();
 
   RemoteTransactionManager createRemoteTransactionManager(final ClientIDProvider cidProvider,
                                                           final DNAEncodingInternal encoding,
@@ -176,7 +176,7 @@ public interface DSOClientBuilder {
 
   LongGCLogger createLongGCLogger(long gcTimeOut);
 
-  RemoteResourceManager createRemoteResourceManager(DSOClientMessageChannel dsoChannel,
+  RemoteResourceManager createRemoteResourceManager(RemoteTransactionManager mgr, DSOClientMessageChannel dsoChannel,
                                                     AbortableOperationManager abortableOperationManager);
 
   ServerEventListenerManager createServerEventListenerManager(DSOClientMessageChannel dsoChannel);

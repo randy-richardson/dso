@@ -7,7 +7,6 @@ package com.tc.object;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.object.applicator.ChangeApplicator;
-import com.tc.object.bytecode.NotClearable;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.dna.impl.ProxyInstance;
@@ -66,7 +65,6 @@ public class TCClassImpl implements TCClass {
   private final String                   logicalExtendingClassName;
   private final Class                    logicalSuperClass;
   private final boolean                  useResolveLockWhileClearing;
-  private final boolean                  isNotClearable;
   private final List<Method>             postCreateMethods;
   private final List<Method>             preCreateMethods;
   private Constructor                    constructor            = null;
@@ -96,11 +94,9 @@ public class TCClassImpl implements TCClass {
 
     introspectFields(peer, factory);
     this.portableFields = createPortableFields();
-    this.useNonDefaultConstructor = this.isProxyClass || ClassUtils.isPortableReflectionClass(peer)
-                                    || useNonDefaultConstructor;
+    this.useNonDefaultConstructor = this.isProxyClass || useNonDefaultConstructor;
     this.logicalSuperClass = logicalSuperClass;
     this.useResolveLockWhileClearing = useResolveLockWhileClearing;
-    this.isNotClearable = NotClearable.class.isAssignableFrom(peer);
     this.postCreateMethods = resolveCreateMethods(postCreateMethod, false);
     this.preCreateMethods = resolveCreateMethods(preCreateMethod, true);
   }
@@ -132,11 +128,6 @@ public class TCClassImpl implements TCClass {
   }
 
   @Override
-  public boolean isNotClearable() {
-    return this.isNotClearable;
-  }
-
-  @Override
   public boolean isNonStaticInner() {
     return this.isNonStaticInner;
   }
@@ -161,7 +152,7 @@ public class TCClassImpl implements TCClass {
   }
 
   private ChangeApplicator createApplicator() {
-    return this.clazzFactory.createApplicatorFor(this, this.indexed);
+    return this.clazzFactory.createApplicatorFor(this);
   }
 
   @Override

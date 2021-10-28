@@ -3,9 +3,7 @@
  */
 package com.tc.util.runtime;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -71,7 +69,7 @@ public final class VmVersion {
         final Matcher serviceReleaseMatcher = IBM_SERVICE_RELEASE_PATTERN.matcher(runtimeVersion);
         if (serviceReleaseMatcher.matches()) {
           String serviceRelease = serviceReleaseMatcher.groupCount() == 1 ? serviceReleaseMatcher.group(1)
-              .toLowerCase() : null;
+              .toLowerCase(Locale.ENGLISH) : null;
           if (null == version_patch && null == serviceRelease) {
             patch = null;
           } else if (null == version_patch) {
@@ -222,63 +220,27 @@ public final class VmVersion {
   }
 
   private static String runtimeVersion(Properties props) {
-    if (thisVMisIBM()) {
-      // It's not safe to read "java.runtime.version" from system properties
-      // until a certain point in startup
-      // Specifically there is a race to set this prop in
-      // com.ibm.misc.SystemIntialization.lastChanceHook() and the
-      // start of the management agent thread there (MNK-393)
-      return getIBMRuntimeVersion();
-    } else {
-      return props.getProperty("java.runtime.version", "<error: java.runtime.version not specified in properties>");
-    }
-  }
-
-  static boolean thisVMisIBM() {
-    return isIBM(System.getProperties());
-  }
-
-  private static String getIBMRuntimeVersion() {
-    Properties props = new Properties();
-    try {
-      InputStream is = Class.class.getResourceAsStream("/javasdkversion.properties");
-      if (is != null) {
-        props.load(is);
-        String version = props.getProperty("sdk.version");
-        if (version != null) { return version; }
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    try {
-      Class c = Class.forName("com.ibm.misc.JavaRuntimeVersion");
-      Method m = c.getDeclaredMethod("getValue", new Class[] {});
-      m.setAccessible(true);
-      return (String) m.invoke(c, new Object[] {});
-    } catch (Throwable t) {
-      throw new RuntimeException(t);
-    }
+    return props.getProperty("java.runtime.version", "<error: java.runtime.version not specified in properties>");
   }
 
   private static boolean isAzul(Properties props) {
-    return props.getProperty("java.vendor", "").toLowerCase().contains("azul");
+    return props.getProperty("java.vendor", "").toLowerCase(Locale.ENGLISH).contains("azul");
   }
 
   private static boolean isIBM(Properties props) {
-    return props.getProperty("java.vm.name", "").toLowerCase().contains("ibm");
+    return props.getProperty("java.vm.name", "").toLowerCase(Locale.ENGLISH).contains("ibm");
   }
 
   private static boolean isJRockit(Properties props) {
     return props.getProperty("jrockit.version") != null
-           || props.getProperty("java.vm.name", "").toLowerCase().indexOf("jrockit") >= 0;
+           || props.getProperty("java.vm.name", "").toLowerCase(Locale.ENGLISH).indexOf("jrockit") >= 0;
   }
 
   private static boolean isHotspot(Properties props) {
-    return props.getProperty("java.vm.name", "").toLowerCase().contains("hotspot");
+    return props.getProperty("java.vm.name", "").toLowerCase(Locale.ENGLISH).contains("hotspot");
   }
 
   private static boolean isOpenJdk(Properties props) {
-    return props.getProperty("java.vm.name", "").toLowerCase().contains("openjdk");
+    return props.getProperty("java.vm.name", "").toLowerCase(Locale.ENGLISH).contains("openjdk");
   }
 }

@@ -6,6 +6,7 @@ package com.tc.objectserver.l1.impl;
 
 import com.tc.invalidation.Invalidations;
 import com.tc.logging.TCLogger;
+import com.tc.logging.TCLogging;
 import com.tc.net.NodeID;
 import com.tc.object.ObjectID;
 import com.tc.object.dna.api.DNA;
@@ -15,6 +16,7 @@ import com.tc.objectserver.l1.api.ObjectReferenceAddListener;
 import com.tc.objectserver.managedobject.ApplyTransactionInfo;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 
 import java.util.Collection;
@@ -31,13 +33,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * Client State Manager maintains the list of objects that are faulted into each client.
  */
 public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintable {
+  private static final TCLogger logger = TCLogging.getLogger(ClientStateManagerImpl.class);
 
   private final ConcurrentHashMap<NodeID, ClientStateImpl>      clientStates;
-  private final TCLogger                                        logger;
   private final CopyOnWriteArraySet<ObjectReferenceAddListener> objectRefsAddListener;
 
-  public ClientStateManagerImpl(final TCLogger logger) {
-    this.logger = logger;
+  public ClientStateManagerImpl() {
     this.clientStates = new ConcurrentHashMap<NodeID, ClientStateImpl>();
     this.objectRefsAddListener = new CopyOnWriteArraySet<ObjectReferenceAddListener>();
   }
@@ -49,10 +50,12 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
                                                        final Invalidations invalidationsForClient) {
     final ClientStateImpl clientState = getClientState(id);
     if (clientState == null) {
-      this.logger.warn(": createPrunedChangesAndAddObjectIDTo : Client state is NULL (probably due to disconnect) : "
+      logger.warn(": createPrunedChangesAndAddObjectIDTo : Client state is NULL (probably due to disconnect) : "
                        + id);
       return Collections.emptyList();
     }
+
+    boolean isEcho = id.equals(applyInfo.getServerTransactionID().getSourceID());
 
     clientState.lock();
     try {
@@ -60,6 +63,9 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
 
       for (final DNA dna : changes) {
         final ObjectID oid = dna.getObjectID();
+        if (isEcho && !applyInfo.getObjectsToEchoChangesFor().contains(oid)) {
+          continue;
+        }
         if (clientState.containsReference(oid)) {
           if (dna.isDelta() && !applyInfo.isBroadcastIgnoredFor(oid)) {
             prunedChanges.add(dna);
@@ -75,7 +81,10 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
       clientState.addReferencedChildrenTo(lookupObjectIDs, applyInfo);
       clientState.removeReferencedObjectIDsFrom(lookupObjectIDs);
 
-      addInvalidateObjectIDsTo(clientState, invalidationsForClient, applyInfo.getObjectIDsToInvalidate());
+      if (!isEcho) {
+        // Don't need to echo invalidations
+        addInvalidateObjectIDsTo(clientState, invalidationsForClient, applyInfo.getObjectIDsToInvalidate());
+      }
 
       return prunedChanges;
     } finally {
@@ -111,7 +120,7 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
         listener.objectReferenceAdded(objectID);
       }
     } else {
-      this.logger.warn(": addReference : Client state is NULL (probably due to disconnect) : " + id);
+      logger.warn(": addReference : Client state is NULL (probably due to disconnect) : " + id);
     }
   }
 
@@ -136,7 +145,7 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
    * From the local state of the l1 named nodeID remove all the objectIDs that are references and also remove from the
    * requested list any refrence already present
    * 
-   * @param nodeID nodeID of the client requesting the objects
+   * @param id nodeID of the client requesting the objects
    * @param removed set of objects removed from the client
    * @param requested set of Objects requested, this set is mutated to remove any object that is already present in the
    *        client.
@@ -153,7 +162,7 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
         c.unlock();
       }
     } else {
-      this.logger.warn(": removeReferences : Client state is NULL (probably due to disconnect) : " + id);
+      logger.warn(": removeReferences : Client state is NULL (probably due to disconnect) : " + id);
     }
   }
 
@@ -168,7 +177,7 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
         c.unlock();
       }
     } else {
-      this.logger.warn(": hasReference : Client state is NULL (probably due to disconnect) : " + id);
+      logger.warn(": hasReference : Client state is NULL (probably due to disconnect) : " + id);
       return false;
     }
   }
@@ -288,7 +297,7 @@ public class ClientStateManagerImpl implements ClientStateManager, PrettyPrintab
 
   private static class ClientStateImpl implements PrettyPrintable, ClientState {
     private final NodeID        nodeID;
-    private final Set<ObjectID> managed = new ObjectIDSet();
+    private final Set<ObjectID> managed = new BitSetObjectIDSet();
     private final ReentrantLock lock    = new ReentrantLock();
 
     public ClientStateImpl(final NodeID nodeID) {

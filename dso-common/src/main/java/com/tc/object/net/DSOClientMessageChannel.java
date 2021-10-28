@@ -3,7 +3,6 @@
  */
 package com.tc.object.net;
 
-import com.tc.management.lock.stats.LockStatisticsReponseMessageFactory;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.GroupID;
 import com.tc.net.MaxConnectionsExceededException;
@@ -14,8 +13,6 @@ import com.tc.object.msg.AcknowledgeTransactionMessageFactory;
 import com.tc.object.msg.ClientHandshakeMessageFactory;
 import com.tc.object.msg.CommitTransactionMessageFactory;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessageFactory;
-import com.tc.object.msg.ServerEventListenerMessageFactory;
-import com.tc.object.msg.JMXMessage;
 import com.tc.object.msg.KeysForOrphanedValuesMessageFactory;
 import com.tc.object.msg.LockRequestMessageFactory;
 import com.tc.object.msg.NodeMetaDataMessageFactory;
@@ -74,11 +71,6 @@ public interface DSOClientMessageChannel {
 
   public NodesWithKeysMessageFactory getNodesWithKeysMessageFactory();
 
-  public LockStatisticsReponseMessageFactory getLockStatisticsReponseMessageFactory();
-
-  public JMXMessage getJMXMessage();
-
   public GroupID[] getGroupIDs();
 
-  ServerEventListenerMessageFactory getServerEventListenerMessageFactory();
 }

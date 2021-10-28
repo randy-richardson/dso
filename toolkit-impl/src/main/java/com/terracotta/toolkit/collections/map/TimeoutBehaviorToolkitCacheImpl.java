@@ -7,6 +7,9 @@ import org.terracotta.toolkit.cache.ToolkitCacheListener;
 import org.terracotta.toolkit.cluster.ClusterNode;
 import org.terracotta.toolkit.concurrent.locks.ToolkitReadWriteLock;
 import org.terracotta.toolkit.config.Configuration;
+import org.terracotta.toolkit.internal.cache.ToolkitValueComparator;
+import org.terracotta.toolkit.internal.cache.VersionUpdateListener;
+import org.terracotta.toolkit.internal.cache.VersionedValue;
 import org.terracotta.toolkit.search.QueryBuilder;
 import org.terracotta.toolkit.search.attribute.ToolkitAttributeExtractor;
 
@@ -176,6 +179,11 @@ public class TimeoutBehaviorToolkitCacheImpl<K, V> implements ToolkitCacheImplIn
   }
 
   @Override
+  public void clearVersioned() {
+    mutationBehaviourResolver.clearVersioned();
+  }
+
+  @Override
   public Set<K> keySet() {
     return immutationBehaviourResolver.keySet();
   }
@@ -201,8 +209,18 @@ public class TimeoutBehaviorToolkitCacheImpl<K, V> implements ToolkitCacheImplIn
   }
 
   @Override
+  public void unlockedPutNoReturnVersioned(final K k, final V v, final long version, final int createTime, final int customTTI, final int customTTL) {
+    mutationBehaviourResolver.unlockedPutNoReturnVersioned(k, v, version, createTime, customTTI, customTTL);
+  }
+
+  @Override
   public void unlockedRemoveNoReturn(Object k) {
     mutationBehaviourResolver.unlockedRemoveNoReturn(k);
+  }
+
+  @Override
+  public void unlockedRemoveNoReturnVersioned(final Object key, final long version) {
+    mutationBehaviourResolver.unlockedRemoveNoReturnVersioned(key, version);
   }
 
   @Override
@@ -271,6 +289,29 @@ public class TimeoutBehaviorToolkitCacheImpl<K, V> implements ToolkitCacheImplIn
   }
 
   @Override
+  public void putVersioned(final K key, final V value, final long version) {
+    mutationBehaviourResolver.putVersioned(key, value, version);
+  }
+
+  @Override
+  public void putVersioned(final K key, final V value, final long version, final int createTimeInSecs,
+                           final int customMaxTTISeconds, final int customMaxTTLSeconds) {
+    mutationBehaviourResolver.putVersioned(key, value, version, createTimeInSecs, customMaxTTISeconds, customMaxTTLSeconds);
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version) {
+    mutationBehaviourResolver.putIfAbsentVersioned(key, value, version);
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version, int createTimeInSecs, int customMaxTTISeconds,
+                                        int customMaxTTLSeconds) {
+    mutationBehaviourResolver.putIfAbsentVersioned(key, value, version, createTimeInSecs, customMaxTTISeconds,
+        customMaxTTLSeconds);
+  }
+
+  @Override
   public void disposeLocally() {
     // TODO: discuss
     mutationBehaviourResolver.disposeLocally();
@@ -279,6 +320,31 @@ public class TimeoutBehaviorToolkitCacheImpl<K, V> implements ToolkitCacheImplIn
   @Override
   public void removeAll(Set<K> keys) {
     mutationBehaviourResolver.removeAll(keys);
+  }
+
+  @Override
+  public void removeVersioned(final Object key, final long version) {
+    mutationBehaviourResolver.removeVersioned(key, version);
+  }
+
+  @Override
+  public void registerVersionUpdateListener(final VersionUpdateListener listener) {
+    mutationBehaviourResolver.registerVersionUpdateListener(listener);
+  }
+
+  @Override
+  public void unregisterVersionUpdateListener(final VersionUpdateListener listener) {
+    mutationBehaviourResolver.unregisterVersionUpdateListener(listener);
+  }
+
+  @Override
+  public Set<K> keySetForSegment(final int segmentIndex) {
+    return mutationBehaviourResolver.keySetForSegment(segmentIndex);
+  }
+
+  @Override
+  public VersionedValue<V> getVersionedValue(Object key) {
+    return mutationBehaviourResolver.getVersionedValue(key);
   }
 
   @Override
@@ -294,5 +360,67 @@ public class TimeoutBehaviorToolkitCacheImpl<K, V> implements ToolkitCacheImplIn
   @Override
   public Map<K, V> unlockedGetAll(Collection<K> keys, boolean quiet) {
     return immutationBehaviourResolver.unlockedGetAll(keys, quiet);
+  }
+
+  @Override
+  public boolean isBulkLoadEnabled() {
+    return immutationBehaviourResolver.isBulkLoadEnabled();
+  }
+
+  @Override
+  public boolean isNodeBulkLoadEnabled() {
+    return immutationBehaviourResolver.isNodeBulkLoadEnabled();
+  }
+
+  @Override
+  public void setNodeBulkLoadEnabled(boolean enabledBulkLoad) {
+    mutationBehaviourResolver.setNodeBulkLoadEnabled(enabledBulkLoad);
+
+  }
+
+  @Override
+  public void waitUntilBulkLoadComplete() throws InterruptedException {
+    immutationBehaviourResolver.waitUntilBulkLoadComplete();
+  }
+
+  @Override
+  public void quickClear() {
+    mutationBehaviourResolver.quickClear();
+    mutationBehaviourResolver.clearLocalCache();
+  }
+
+  @Override
+  public int quickSize() {
+    return immutationBehaviourResolver.quickSize();
+  }
+
+  @Override
+  public boolean remove(Object key, Object value, ToolkitValueComparator<V> comparator) {
+    return mutationBehaviourResolver.remove(key, value, comparator);
+  }
+
+  @Override
+  public boolean replace(K key, V oldValue, V newValue, ToolkitValueComparator<V> comparator) {
+    return mutationBehaviourResolver.replace(key, oldValue, newValue, comparator);
+  }
+
+  @Override
+  public void startBuffering() {
+    mutationBehaviourResolver.startBuffering();
+  }
+
+  @Override
+  public boolean isBuffering() {
+    return mutationBehaviourResolver.isBuffering();
+  }
+
+  @Override
+  public void stopBuffering() {
+    mutationBehaviourResolver.stopBuffering();
+  }
+
+  @Override
+  public void flushBuffer() {
+    mutationBehaviourResolver.flushBuffer();
   }
 }

@@ -5,12 +5,12 @@ package com.terracotta.management.service.impl;
 
 import org.terracotta.management.ServiceExecutionException;
 
+import com.tc.license.ProductID;
 import com.terracotta.management.resource.ThreadDumpEntity;
 import com.terracotta.management.resource.TopologyReloadStatusEntity;
 import com.terracotta.management.service.DiagnosticsService;
 import com.terracotta.management.service.TsaManagementClientService;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
@@ -26,8 +26,8 @@ public class DiagnosticsServiceImpl implements DiagnosticsService {
   }
 
   @Override
-  public Collection<ThreadDumpEntity> getClusterThreadDump() throws ServiceExecutionException {
-    return tsaManagementClientService.clusterThreadDump();
+  public Collection<ThreadDumpEntity> getClusterThreadDump(Set<ProductID> clientProductIds) throws ServiceExecutionException {
+    return tsaManagementClientService.clusterThreadDump(clientProductIds);
   }
 
   @Override
@@ -36,13 +36,18 @@ public class DiagnosticsServiceImpl implements DiagnosticsService {
   }
 
   @Override
-  public Collection<ThreadDumpEntity> getClientsThreadDump(Set<String> clientIds) throws ServiceExecutionException {
-    return tsaManagementClientService.clientsThreadDump(clientIds);
+  public Collection<ThreadDumpEntity> getClientsThreadDump(Set<String> clientIds, Set<ProductID> clientProductIds) throws ServiceExecutionException {
+    return tsaManagementClientService.clientsThreadDump(clientIds, clientProductIds);
   }
 
   @Override
   public boolean runDgc(Set<String> serverNames) throws ServiceExecutionException {
     return tsaManagementClientService.runDgc(serverNames);
+  }
+
+  @Override
+  public boolean dumpClusterState(Set<String> serverNames) throws ServiceExecutionException {
+    return tsaManagementClientService.dumpClusterState(serverNames);
   }
 
   @Override

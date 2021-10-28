@@ -3,9 +3,10 @@
  */
 package com.tc.object.servermap.localcache;
 
+import com.tc.invalidation.Invalidations;
 import com.tc.object.ObjectID;
-import com.tc.object.locks.LockID;
 import com.tc.object.servermap.localcache.impl.L1ServerMapLocalStoreTransactionCompletionListener;
+import com.tc.util.ObjectIDSet;
 
 import java.util.Set;
 
@@ -16,11 +17,6 @@ public interface ServerMapLocalCache {
    * Removes all entries associated with this objectId
    */
   boolean removeEntriesForObjectId(ObjectID objectId);
-
-  /**
-   * Remove all the entries associated with this lockId
-   */
-  void removeEntriesForLockId(LockID lockId);
 
   /**
    * Lets the cache handle eviction in server
@@ -123,10 +119,6 @@ public interface ServerMapLocalCache {
 
   void recalculateSize(Object key);
 
-  void checkInObject(Object key, Object value);
-
-  Object checkOutObject(Object key, Object value);
-
   boolean registerPinnedEntryInvalidationListener(PinnedEntryInvalidationListener listener);
 
   boolean unRegisterPinnedEntryInvalidationListener(PinnedEntryInvalidationListener listener);
@@ -134,5 +126,9 @@ public interface ServerMapLocalCache {
   void transactionAbortedCallback(Object key,
                                   AbstractLocalCacheStoreValue value,
                                   L1ServerMapLocalStoreTransactionCompletionListener l1ServerMapLocalStoreTransactionCompletionListener);
+
+  void handleObjectIDsToValidate(ObjectIDSet validations);
+
+  void addTxnInProgressKeys(Set<Object> addSet, Set<Object> removeSet);
 
 }

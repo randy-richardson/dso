@@ -1,6 +1,9 @@
 package com.tc.test.setup;
 
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.terracotta.license.util.IOUtils;
+import org.terracotta.test.util.TestBaseUtil;
 import org.terracotta.tests.base.AbstractTestBase;
 import org.terracotta.tests.base.TestFailureListener;
 
@@ -10,13 +13,19 @@ import com.tc.config.test.schema.PortConfigBuilder.PortType;
 import com.tc.stats.api.DGCMBean;
 import com.tc.stats.api.DSOMBean;
 import com.tc.test.config.model.TestConfig;
+import com.tc.text.Banner;
 import com.tc.util.PortChooser;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
@@ -27,6 +36,9 @@ public class TestServerManager {
   private final ConfigHelper         configHelper;
   private static final boolean       DEBUG = Boolean.getBoolean("test.framework.debug");
   private final File                 tcConfigFile;
+
+  private org.eclipse.jetty.server.Server server = null;
+  private int proxyJettyPort;
 
   public TestServerManager(TestConfig testConfig, File tempDir, File tcConfigFile, File javaHome,
                            TestFailureListener failureCallback) throws Exception {
@@ -56,7 +68,9 @@ public class TestServerManager {
         public void run() {
           try {
             serverManager.startAllServers();
-            serverManager.startCrasher();
+            if (testConfig.getCrashConfig().autoStartCrasher()) {
+              serverManager.startCrasher();
+            }
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
@@ -71,7 +85,11 @@ public class TestServerManager {
     }
 
     for (int i = 0; i < grpCount; i++) {
-      threads[i].join();
+      try {
+        threads[i].join();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
 
   }
@@ -96,14 +114,37 @@ public class TestServerManager {
   }
 
   public void stopAllServers() throws Exception {
-    debugPrintln("***** stoppig server crashers");
+    debugPrintln("***** stopping all servers");
     int grpCount = testConfig.getNumOfGroups();
+    Thread[] threads = new Thread[grpCount];
     for (int i = 0; i < grpCount; i++) {
-      groups[i].stopCrasher();
+      final GroupServerManager serverManager = groups[i];
+
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          try {
+            serverManager.stop();
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+
     }
 
     for (int i = 0; i < grpCount; i++) {
-      groups[i].stopAllServers();
+      threads[i].start();
+    }
+
+    for (int i = 0; i < grpCount; i++) {
+      threads[i].join();
+    }
+
+    synchronized (this) {
+      if (server != null) {
+        server.stop();
+      }
     }
   }
 
@@ -180,12 +221,20 @@ public class TestServerManager {
     return groups[groupIndex].isActivePresent();
   }
 
+  public int getActiveServerIndex(int groupIndex) {
+    return groups[groupIndex].getActiveServerIndex();
+  }
+
   public boolean isPassiveStandBy(int groupIndex) {
     return groups[groupIndex].isPassiveStandBy();
   }
 
   public boolean isServerRunning(int groupIndex, int serverIndex) {
     return groups[groupIndex].isServerRunning(serverIndex);
+  }
+
+  public boolean isPassiveUninitialized(int groupIndex, int serverIndex) {
+    return groups[groupIndex].isPassiveUninitialized(serverIndex);
   }
 
   public void waitUntilPassiveStandBy(int groupIndex) throws Exception {
@@ -275,5 +324,57 @@ public class TestServerManager {
       if (file.exists()) { return file; }
     }
     return null;
+  }
+
+  public void startServerCrasher() {
+    for (GroupServerManager groupServerManager : groups) {
+      groupServerManager.startCrasher();
+    }
+
+  }
+
+  public void pauseServer(int groupIndex, int serverIndex, long pauseTimeMillis) throws InterruptedException {
+    groups[groupIndex].pauseServer(serverIndex, pauseTimeMillis); // need to see how this will work out
+  }
+
+  public void pauseServer(int groupIndex, int serverIndex) throws InterruptedException {
+    groups[groupIndex].pauseServer(serverIndex);
+  }
+
+  public void unpauseServer(int groupIndex, int serverIndex) throws InterruptedException {
+    groups[groupIndex].unpauseServer(serverIndex);
+  }
+
+  public synchronized String getTerracottaUrl() throws Exception {
+    // If we're not proxying, just return the plain old URL
+    if (!testConfig.getL2Config().isProxyTsaPorts()) {
+      return TestBaseUtil.getTerracottaURL(getGroupsData(), false);
+    }
+
+    // If we're proxying, make sure our jetty server for serving up the proxy tc-config is started then return
+    // the url to the jetty server
+    if (server == null) {
+      proxyJettyPort = portChooser.chooseRandomPort();
+      server = new org.eclipse.jetty.server.Server(proxyJettyPort);
+      server.setHandler(new ProxyConfigHandler());
+      server.start();
+      Banner.infoBanner("Started Jetty server for proxied tc-config on port " + proxyJettyPort);
+    }
+    return "localhost:" + proxyJettyPort;
+  }
+
+  private class ProxyConfigHandler extends AbstractHandler {
+    @Override
+    public void handle(final String target, final Request baseRequest, final HttpServletRequest request,
+                       final HttpServletResponse response) throws IOException, ServletException {
+      response.setContentType("text/xml;charset=utf-8");
+      response.setStatus(HttpServletResponse.SC_OK);
+      baseRequest.setHandled(true);
+      try {
+        response.getWriter().println(getTsaProxyConfig());
+      } catch (Exception e) {
+        throw new ServletException(e);
+      }
+    }
   }
 }

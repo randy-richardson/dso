@@ -21,6 +21,7 @@ import com.tc.test.setup.TestJMXServerManager;
 import com.tc.test.setup.TestServerManager;
 import com.tc.text.Banner;
 import com.tc.util.PortChooser;
+import com.tc.util.runtime.Os;
 import com.tc.util.runtime.Vm;
 
 import java.io.BufferedReader;
@@ -30,21 +31,23 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.management.MBeanServerConnection;
 
 @RunWith(value = TcTestRunner.class)
-public abstract class AbstractTestBase extends TCTestCase {
+public abstract class AbstractTestBase extends TCTestCase implements TestFailureListener {
+  private static final String              TC_TESTS_INFO_STANDALONE  = "tc.tests.info.standalone";
   private static final String              DEFAULT_CONFIG            = "default-config";
   public static final String               TC_CONFIG_PROXY_FILE_NAME = "tc-config-proxy.xml";
   protected static final String            SEP                       = File.pathSeparator;
@@ -55,19 +58,20 @@ public abstract class AbstractTestBase extends TCTestCase {
   protected TestServerManager              testServerManager;
   protected final File                     tempDir;
   protected File                           javaHome;
-  private TestClientManager                clientRunner;
-  protected TestJMXServerManager           jmxServerManager;
-  private Thread                           duringRunningClusterThread;
-  private volatile Thread                  testExecutionThread;
+  protected TestClientManager              clientRunner;
+  private volatile TestJMXServerManager    jmxServerManager;
+  protected volatile Thread                duringRunningClusterThread;
+  protected volatile Thread                testExecutionThread;
   private static final String              log4jPrefix               = "log4j.logger.";
   private final Map<String, LogLevel>      tcLoggingConfigs          = new HashMap<String, LogLevel>();
-  private final AtomicReference<Throwable> testException             = new AtomicReference<Throwable>();
+  protected final AtomicReference<Throwable> testException             = new AtomicReference<Throwable>();
+  protected volatile PauseManager                     pauseManager;
 
   public AbstractTestBase(TestConfig testConfig) {
     this.testConfig = testConfig;
     try {
       this.tempDir = getTempDirectory();
-      tempDir.mkdir();
+      FileUtils.forceMkdir(tempDir);
       FileUtils.cleanDirectory(tempDir);
       tcConfigFile = getTempFile(TC_CONFIG_FILE_NAME);
       tcConfigProxyFile = getTempFile(TC_CONFIG_PROXY_FILE_NAME);
@@ -81,10 +85,23 @@ public abstract class AbstractTestBase extends TCTestCase {
     if (Boolean.getBoolean("com.tc.test.toolkit.devmode")) {
       testConfig.getClientConfig().addExtraClientJvmArg("-Dcom.tc.test.toolkit.devmode=true");
     }
+
+    if (Boolean.parseBoolean(TestConfigObject.getInstance().getProperty(TC_TESTS_INFO_STANDALONE))) {
+      testConfig.setStandAloneTest(true);
+      testConfig.getClientConfig().addExtraClientJvmArg("-D" + TC_TESTS_INFO_STANDALONE + "=true");
+      String tsaPort = TestConfigObject.getInstance().getProperty("tc.tests.info.tsa.port");
+      testConfig.getClientConfig().addExtraClientJvmArg("-Dtc.tests.info.tsa.port=" + tsaPort);
+    }
+    // disable java awt pop-up for mac os x
+    testConfig.getClientConfig().addExtraClientJvmArg("-Djava.awt.headless=true");
+    testConfig.getL2Config().addExtraServerJvmArg("-Djava.awt.headless=true");
+    // testConfig.getClientConfig().addExtraClientJvmArg("-Dapple.awt.UIElement=true");
+    // testConfig.getL2Config().addExtraServerJvmArg("-Dapple.awt.UIElement=true");
   }
 
   /**
-   * Returns the list of testconfigs the test has to run with Overwrite this method to run the same test with multiple
+   * Returns the list of test configs the test has to run with.
+   * Override this method to run the same test with multiple
    * configs
    */
   @Configs
@@ -98,6 +115,9 @@ public abstract class AbstractTestBase extends TCTestCase {
   @Override
   @Before
   public void setUp() throws Exception {
+    if (testConfig.isPauseFeatureEnabled() && !Os.isUnix()) {
+      disableTest();
+    }
     if (!"".equals(System.getProperty("com.tc.productkey.path"))) {
       if (!testConfig.getL2Config().isOffHeapEnabled() && testConfig.getL2Config().isAutoOffHeapEnable()) {
         System.out.println("============= Offheap is turned off, switching it on to avoid OOMEs! ==============");
@@ -108,7 +128,7 @@ public abstract class AbstractTestBase extends TCTestCase {
         } else {
           boolean isRestartable = testConfig.getRestartable();
           // reduce memory settings for AA tests until RAM is increased on MNK machines.
-          TestBaseUtil.configureOffHeap(testConfig, 512, 300);
+          TestBaseUtil.configureOffHeap(testConfig, 1024, 300);
           testConfig.setRestartable(isRestartable);
         }
       } else {
@@ -125,19 +145,25 @@ public abstract class AbstractTestBase extends TCTestCase {
 
     if (testWillRun) {
       try {
-        System.out.println("*************** Starting Test with Test Profile : " + testConfig.getConfigName()
-                           + " **************************");
+        System.out.println("***************" + Calendar.getInstance().getTime() + " Starting Test with Test Profile : "
+                           + testConfig.getConfigName() + " **************************");
+
+        jmxServerManager = new TestJMXServerManager(new PortChooser().chooseRandomPort());
+        jmxServerManager.startJMXServer();
+
         setJavaHome();
-        clientRunner = new TestClientManager(tempDir, this, this.testConfig);
+        pauseManager = setupPauseManager();
+        clientRunner = setupTestClientManager();
+        pauseManager.setClientManager(clientRunner); // Adds a circular dependency
         if (!testConfig.isStandAloneTest()) {
-          testServerManager = new TestServerManager(this.testConfig, this.tempDir, this.tcConfigFile, this.javaHome,
-                                                    new FailTestCallback());
+          testServerManager = setupTestServerManager();
+          pauseManager.setTestServerManager(testServerManager);
           writeProxyTcConfigFile();
           startServers();
         }
-        TestHandler testHandlerMBean = new TestHandler(testServerManager, clientRunner, testConfig);
-        jmxServerManager = new TestJMXServerManager(new PortChooser().chooseRandomPort(), testHandlerMBean);
-        jmxServerManager.startJMXServer();
+
+        TestHandler testHandlerMBean = new TestHandler(testServerManager, clientRunner, testConfig, pauseManager);
+        jmxServerManager.registerMBean(testHandlerMBean, TestHandler.TEST_SERVER_CONTROL_MBEAN);
         configureTestHandlerMBean(testHandlerMBean);
         executeDuringRunningCluster();
       } catch (Throwable e) {
@@ -145,6 +171,18 @@ public abstract class AbstractTestBase extends TCTestCase {
         throw new AssertionError(e);
       }
     }
+  }
+
+  protected TestServerManager setupTestServerManager() throws Exception {
+    return new TestServerManager(testConfig, tempDir, tcConfigFile, javaHome, this);
+  }
+
+  protected PauseManager setupPauseManager() {
+    return new PauseManager(testConfig);
+  }
+
+  protected TestClientManager setupTestClientManager() throws IOException {
+    return new TestClientManager(tempDir, this, testConfig, pauseManager);
   }
 
   private void writeProxyTcConfigFile() throws Exception {
@@ -176,7 +214,7 @@ public abstract class AbstractTestBase extends TCTestCase {
 
   @Override
   @Test
-  final public void runTest() throws Throwable {
+  public void runTest() throws Throwable {
     if (!testWillRun) return;
 
     testExecutionThread = new Thread(new Runnable() {
@@ -193,6 +231,7 @@ public abstract class AbstractTestBase extends TCTestCase {
     testExecutionThread.setDaemon(true);
     testExecutionThread.start();
     try {
+      pauseManager.startServerPauseTasks();
       testExecutionThread.join();
     } catch (InterruptedException e) {
       testExecutionThread.interrupt(); // stop the test execution thread.
@@ -202,14 +241,12 @@ public abstract class AbstractTestBase extends TCTestCase {
     tcTestCaseTearDown(testException.get());
   }
 
-  private class FailTestCallback implements TestFailureListener {
-    @Override
-    public void testFailed(String reason) {
-      if (testExecutionThread != null) {
-        doDumpServerDetails();
-        testException.compareAndSet(null, new Throwable(reason));
-        testExecutionThread.interrupt();
-      }
+  @Override
+  public void testFailed(String reason) {
+    if (testExecutionThread != null) {
+      doDumpServerDetails();
+      testException.compareAndSet(null, new Throwable(reason));
+      testExecutionThread.interrupt();
     }
   }
 
@@ -274,27 +311,18 @@ public abstract class AbstractTestBase extends TCTestCase {
   }
 
   protected String makeClasspath(String... jars) {
-    Set<String> uniqueJars = new LinkedHashSet<String>();
-    for (String jar : jars) {
-      uniqueJars.add(jar);
-    }
-
-    String cp = "";
-    for (String jar : uniqueJars) {
-      cp += SEP + jar;
-    }
+    String cp = TestBaseUtil.constructClassPath(jars);
 
     if (!tcLoggingConfigs.isEmpty()) {
-      cp += SEP + getTCLoggingFilePath();
+      return addToClasspath(cp, getTCLoggingFilePath());
+    } else {
+      return cp;
     }
-    return cp;
   }
 
   protected String makeClasspath(List<String> list, String... jars) {
     List<String> fullList = new ArrayList<String>(list);
-    for (String jar : jars) {
-      fullList.add(jar);
-    }
+    Collections.addAll(fullList, jars);
     return makeClasspath(fullList.toArray(new String[0]));
   }
 
@@ -341,11 +369,17 @@ public abstract class AbstractTestBase extends TCTestCase {
     if (testWillRun) {
       System.out.println("Waiting for During Cluster running thread to finish");
       duringRunningClusterThread.join();
-      if (!testConfig.isStandAloneTest()) this.testServerManager.stopAllServers();
-      this.jmxServerManager.stopJmxServer();
-      System.out.println("*************** Stopped Test with Test Profile : " + testConfig.getConfigName()
-                         + " **************************");
+      if (!testConfig.isStandAloneTest()) {
+        stopServers();
+      }
+      jmxServerManager.stopJmxServer();
+      System.out.println("***************" + Calendar.getInstance().getTime() + " Stopped Test with Test Profile : "
+                         + testConfig.getConfigName() + " **************************");
     }
+  }
+
+  protected void stopServers() throws Exception {
+    this.testServerManager.stopAllServers();
   }
 
   @Override
@@ -468,18 +502,33 @@ public abstract class AbstractTestBase extends TCTestCase {
   @SuppressWarnings("restriction")
   protected void disableIfMemoryLowerThan(int physicalMemory) {
     try {
-      long gb = 1024 * 1024 * 1024;
-      MBeanServerConnection mbsc = ManagementFactory.getPlatformMBeanServer();
-      com.sun.management.OperatingSystemMXBean osMBean = ManagementFactory
-          .newPlatformMXBeanProxy(mbsc, ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
-                                  com.sun.management.OperatingSystemMXBean.class);
-      if (osMBean.getTotalPhysicalMemorySize() < physicalMemory * gb) {
+      if (getTotalPhysicalMemory() < physicalMemory) {
         disableTest();
       }
     } catch (Exception e) {
-      throw new AssertionError(e);
+      System.out
+          .println("WARNING: test may fail because we are not able to determine the system memory and it may be < "
+                   + physicalMemory + " GB");
+      e.printStackTrace();
     }
 
+  }
+
+  /**
+   * returns Total physical Memory in GB or throws Exception if it not able to determine the physical memory
+   */
+  public long getTotalPhysicalMemory() throws Exception {
+    long gb = 1024 * 1024 * 1024;
+    long totalAvailableMem = -1l;
+    Class clazz = Class.forName("com.sun.management.OperatingSystemMXBean");
+    MBeanServerConnection mbsc = ManagementFactory.getPlatformMBeanServer();
+    OperatingSystemMXBean osMBean = (OperatingSystemMXBean) ManagementFactory
+        .newPlatformMXBeanProxy(mbsc, ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME, clazz);
+    Method method = osMBean.getClass().getMethod("getTotalPhysicalMemorySize", new Class[] {});
+    long totalBytes = (Long) method.invoke(osMBean, (Object[]) null);
+    System.out.println("XXXXX total mem: " + totalBytes);
+    totalAvailableMem = totalBytes / gb;
+    return totalAvailableMem;
   }
 
   public File getTcConfigFile() {
@@ -494,4 +543,7 @@ public abstract class AbstractTestBase extends TCTestCase {
     return tcConfigProxyFile;
   }
 
+  public TestJMXServerManager getJmxServerManager() {
+    return jmxServerManager;
+  }
 }

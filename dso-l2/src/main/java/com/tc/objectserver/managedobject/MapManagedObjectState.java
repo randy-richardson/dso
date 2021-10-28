@@ -10,12 +10,14 @@ import com.tc.object.ObjectID;
 import com.tc.object.SerializationUtil;
 import com.tc.object.dna.api.DNA.DNAType;
 import com.tc.object.dna.api.DNAWriter;
+import com.tc.object.dna.api.LogicalChangeResult;
 import com.tc.objectserver.api.Destroyable;
 import com.tc.objectserver.mgmt.FacadeUtil;
 import com.tc.objectserver.mgmt.LogicalManagedObjectFacade;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.mgmt.MapEntryFacade;
 import com.tc.objectserver.mgmt.MapEntryFacadeImpl;
+import com.tc.objectserver.persistence.ObjectNotFoundException;
 import com.tc.objectserver.persistence.PersistentObjectFactory;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
@@ -40,7 +42,11 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
     super(classID);
     this.factory = factory;
     this.id = id;
-    this.references = factory.getKeyValueStorage(id, true);
+    try {
+      this.references = factory.getKeyValueStorage(id, true);
+    } catch (ObjectNotFoundException e) {
+      throw new AssertionError(e);
+    }
   }
 
   protected MapManagedObjectState(final ObjectInput in, PersistentObjectFactory factory) throws IOException {
@@ -55,19 +61,22 @@ public class MapManagedObjectState extends LogicalManagedObjectState implements 
   }
 
   @Override
-  protected void applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final int method,
+  protected LogicalChangeResult applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo,
+                                                   final int method,
                                     final Object[] params) {
     switch (method) {
       case SerializationUtil.PUT:
         applyPut(applyInfo, params);
-        break;
+        return LogicalChangeResult.SUCCESS;
       case SerializationUtil.REMOVE:
         applyRemove(applyInfo, params);
-        break;
+        return LogicalChangeResult.SUCCESS;
       case SerializationUtil.CLEAR:
       case SerializationUtil.DESTROY:
         applyClear(applyInfo);
-        break;
+        return LogicalChangeResult.SUCCESS;
+      case SerializationUtil.NO_OP:
+        return LogicalChangeResult.SUCCESS;
       default:
         throw new AssertionError("Invalid action:" + method);
     }

@@ -6,6 +6,7 @@ package com.tc.object.tx;
 
 import com.tc.object.ObjectID;
 import com.tc.object.TCObject;
+import com.tc.object.dna.api.LogicalChangeID;
 import com.tc.object.locks.LockID;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.util.Assert;
@@ -103,8 +104,8 @@ abstract class AbstractClientTransaction implements ClientTransaction {
 
   @Override
   public final void fieldChanged(TCObject source, String classname, String fieldname, Object newValue, int index) {
-    if (source.getTCClass().isEnum()) { throw new AssertionError("fieldChanged() on an enum type "
-                                                                 + source.getTCClass().getPeerClass().getName()); }
+    if (source.isEnum()) { throw new AssertionError("fieldChanged() on an enum type "
+                                                                 + source.getPeerClass().getName()); }
 
     alreadyCommittedCheck();
     basicFieldChanged(source, classname, fieldname, newValue, index);
@@ -123,9 +124,10 @@ abstract class AbstractClientTransaction implements ClientTransaction {
   }
 
   @Override
-  public final void logicalInvoke(TCObject source, int method, Object[] parameters, String methodName) {
+  public final void logicalInvoke(TCObject source, int method, Object[] parameters, String methodName,
+                                  LogicalChangeID id) {
     alreadyCommittedCheck();
-    basicLogicalInvoke(source, method, parameters);
+    basicLogicalInvoke(source, method, parameters, id);
   }
 
   @Override
@@ -205,7 +207,7 @@ abstract class AbstractClientTransaction implements ClientTransaction {
 
   abstract protected void basicArrayChanged(TCObject source, int startPos, Object array, int length);
 
-  abstract protected void basicLogicalInvoke(TCObject source, int method, Object[] parameters);
+  abstract protected void basicLogicalInvoke(TCObject source, int method, Object[] parameters, LogicalChangeID id);
 
   abstract protected void basicAddMetaDataDescriptor(TCObject tco, MetaDataDescriptorInternal md);
 

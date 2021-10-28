@@ -7,9 +7,11 @@ import org.terracotta.toolkit.concurrent.ToolkitBarrier;
 import org.terracotta.toolkit.concurrent.locks.ToolkitLock;
 import org.terracotta.toolkit.store.ToolkitStore;
 
+import com.tc.logging.TCLogger;
+import com.tc.logging.TCLogging;
 import com.terracotta.toolkit.rejoin.RejoinCallback;
 import com.terracotta.toolkit.util.ToolkitIDGenerator;
-import com.terracotta.toolkit.util.ToolkitSubtypeStatusImpl;
+import com.terracotta.toolkit.util.ToolkitObjectStatusImpl;
 
 import java.io.Serializable;
 import java.util.concurrent.BrokenBarrierException;
@@ -25,8 +27,10 @@ public class ToolkitBarrierImpl implements ToolkitBarrier, RejoinCallback {
   private final ToolkitLock                               lock;
   private final long                                      uid;
   private final ToolkitIDGenerator                        longIdGenerator;
-  private final ToolkitSubtypeStatusImpl                  status;
+  private final ToolkitObjectStatusImpl                   status;
   private final AtomicInteger                             currentRejoinCount = new AtomicInteger();
+  private final static TCLogger                           LOGGER             = TCLogging
+                                                                                 .getLogger(ToolkitBarrierImpl.class);
 
   public ToolkitBarrierImpl(String name, int parties, ToolkitStore<String, ToolkitBarrierState> clusteredMap,
                             ToolkitIDGenerator barrierIdGenerator) {
@@ -34,11 +38,11 @@ public class ToolkitBarrierImpl implements ToolkitBarrier, RejoinCallback {
     this.name = name;
     this.parties = parties;
     lock = barriers.createLockForKey(name).writeLock();
-    ToolkitBarrierState state = clusteredMap.get(name);
+    ToolkitBarrierState state = barriers.get(name);
     if (state == null) {
       long tmpUid = barrierIdGenerator.getId();
       ToolkitBarrierState tmpState = new ToolkitBarrierState(name, parties, 0, false, tmpUid);
-      state = clusteredMap.putIfAbsent(name, tmpState);
+      state = barriers.putIfAbsent(name, tmpState);
       if (state == null) {
         state = tmpState;
       }
@@ -51,7 +55,7 @@ public class ToolkitBarrierImpl implements ToolkitBarrier, RejoinCallback {
                                                                                 + state.getParties()); }
     this.uid = state.getUid();
     this.longIdGenerator = barrierIdGenerator;
-    status = new ToolkitSubtypeStatusImpl();
+    status = new ToolkitObjectStatusImpl();
     currentRejoinCount.set(status.getCurrentRejoinCount());
   }
 
@@ -63,7 +67,7 @@ public class ToolkitBarrierImpl implements ToolkitBarrier, RejoinCallback {
   private ToolkitBarrierState getInternalStateOrNullIfDestroyed() {
     ToolkitBarrierState state = barriers.get(name);
     if (state != null && state.getUid() != uid) {
-      // state found, but created with different uid -> destroyed
+      LOGGER.info("barrier found with different UID, expectedUID: " + uid + " foundUID: " + state.getUid());
       return null;
     } else {
       return state;
@@ -84,7 +88,7 @@ public class ToolkitBarrierImpl implements ToolkitBarrier, RejoinCallback {
 
   @Override
   public void rejoinCompleted() {
-    status.incrementRejoinCount();
+    //
   }
 
   @Override

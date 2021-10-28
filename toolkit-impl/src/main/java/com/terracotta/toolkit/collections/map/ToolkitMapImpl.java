@@ -67,8 +67,11 @@ public class ToolkitMapImpl<K, V> extends AbstractTCToolkitObject implements Too
 
   private void logicalInvoke(String signature, Object[] params) {
     concurrentLock.lock();
-    platformService.logicalInvoke(ToolkitMapImpl.this, signature, params);
-    concurrentLock.unlock();
+    try {
+      platformService.logicalInvoke(ToolkitMapImpl.this, signature, params);
+    } finally {
+      concurrentLock.unlock();
+    }
   }
 
   protected void applyPendingChanges() {
@@ -1206,9 +1209,7 @@ public class ToolkitMapImpl<K, V> extends AbstractTCToolkitObject implements Too
 
   public void internalRemove(Object key) {
     MutateOperation mutateOperation = new MutateOperation(MutateOperation.METHOD.REMOVE, key, null);
-    if (!this.pendingChanges.remove(mutateOperation)) {
-      pendingChanges.add(mutateOperation);
-    }
+    pendingChanges.add(mutateOperation);
   }
 
   public void internalClear() {

@@ -7,6 +7,7 @@ package com.tc.test.process;
 import org.apache.commons.io.IOUtils;
 
 import com.tc.config.Loader;
+import com.tc.config.schema.defaults.SchemaDefaultValueProvider;
 import com.tc.config.test.schema.L2ConfigBuilder;
 import com.tc.config.test.schema.L2SConfigBuilder;
 import com.tc.config.test.schema.TerracottaConfigBuilder;
@@ -36,6 +37,7 @@ import junit.framework.Assert;
  */
 public class ExternalDsoServer {
   private static final String       SERVER_CONFIG_FILENAME = "server-config.xml";
+  private static final String       DEFAULT_MAX_DIRECT_MEMORY = "-XX:MaxDirectMemorySize=1g";
 
   private ExtraProcessServerControl serverProc;
   private final File                serverLog;
@@ -43,6 +45,7 @@ public class ExternalDsoServer {
   private boolean                   persistentMode;
   private int                       tsaPort;
   private int                       jmxPort;
+  private int                       tsaGroupPort;
   private final List                jvmArgs                = new ArrayList();
   private final File                workingDir;
   private String                    serverName;
@@ -67,6 +70,7 @@ public class ExternalDsoServer {
 
       TcConfigDocument tcConfigDocument = new Loader().parse(new FileInputStream(configFile));
       TcConfig tcConfig = tcConfigDocument.getTcConfig();
+      L2DSOConfigObject.initializeServers(tcConfig, new SchemaDefaultValueProvider(), workingDir);
       Server[] servers = L2DSOConfigObject.getServers(tcConfig.getServers());
 
       if (serverName != null) {
@@ -76,6 +80,7 @@ public class ExternalDsoServer {
             foundServer = true;
             jmxPort = server.getJmxPort().getIntValue();
             tsaPort = server.getTsaPort().getIntValue();
+            tsaGroupPort = server.getTsaGroupPort().getIntValue();
             break;
           }
         }
@@ -83,6 +88,7 @@ public class ExternalDsoServer {
       } else {
         jmxPort = servers[0].getJmxPort().getIntValue();
         tsaPort = servers[0].getTsaPort().getIntValue();
+        tsaGroupPort = servers[0].getTsaGroupPort().getIntValue();
       }
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -105,6 +111,7 @@ public class ExternalDsoServer {
     PortChooser portChooser = new PortChooser();
     this.workingDir = workingDir;
     this.tsaPort = portChooser.chooseRandomPort();
+    this.tsaGroupPort = portChooser.chooseRandomPort();
     this.jmxPort = portChooser.chooseRandomPort();
     this.serverLog = new File(workingDir, "dso-server.log");
     try {
@@ -131,11 +138,27 @@ public class ExternalDsoServer {
 
   private void initStart() throws FileNotFoundException {
     logOutputStream = new FileOutputStream(serverLog);
-    serverProc = new ExtraProcessServerControl("localhost", tsaPort, jmxPort, configFile.getAbsolutePath(), false);
+    addDirectMemoryIfNeeded();
+    serverProc = new ExtraProcessServerControl(new ExtraProcessServerControl.DebugParams(),"localhost", tsaPort, jmxPort, configFile.getAbsolutePath(), false, jvmArgs);
+    serverProc.setRunningDirectory(workingDir);
     serverProc.setServerName(serverName);
     serverProc.writeOutputTo(logOutputStream);
-    serverProc.getJvmArgs().addAll(jvmArgs);
     inited = true;
+  }
+  
+  private void addDirectMemoryIfNeeded() {
+    boolean hasOffheap = false;
+
+    for (Object arg : jvmArgs) {
+      String sarg = arg.toString().trim();
+      if (sarg.startsWith("-XX:MaxDirectMemorySize")) {
+        hasOffheap = true;
+      }
+    }
+    
+    if (!hasOffheap) {
+      jvmArgs.add(DEFAULT_MAX_DIRECT_MEMORY);
+    }
   }
 
   public void stop() throws Exception {
@@ -192,6 +215,7 @@ public class ExternalDsoServer {
     L2ConfigBuilder l2 = servers.getL2s()[0];
 
     l2.setTSAPort(tsaPort);
+    l2.setTSAGroupPort(tsaGroupPort);
     l2.setJMXPort(jmxPort);
     l2.setData(workingDir + File.separator + "data");
     l2.setLogs(workingDir + File.separator + "logs");
@@ -212,6 +236,10 @@ public class ExternalDsoServer {
 
   public int getServerPort() {
     return tsaPort;
+  }
+
+  public int getServerGroupPort() {
+    return tsaGroupPort;
   }
 
   public int getAdminPort() {
@@ -240,5 +268,9 @@ public class ExternalDsoServer {
 
   public int waitForExit() throws Exception {
     return serverProc.waitFor();
+  }
+
+  public ExtraProcessServerControl getServerProc() {
+    return serverProc;
   }
 }

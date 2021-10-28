@@ -25,22 +25,24 @@ import org.terracotta.toolkit.feature.NonStopFeature;
 import org.terracotta.toolkit.internal.ToolkitInternal;
 import org.terracotta.toolkit.internal.ToolkitLogger;
 import org.terracotta.toolkit.internal.ToolkitProperties;
-import org.terracotta.toolkit.internal.cache.ToolkitCacheInternal;
 import org.terracotta.toolkit.internal.collections.ToolkitListInternal;
 import org.terracotta.toolkit.internal.concurrent.locks.ToolkitLockTypeInternal;
+import org.terracotta.toolkit.internal.feature.NonStopInternalFeature;
 import org.terracotta.toolkit.monitoring.OperatorEventLevel;
 import org.terracotta.toolkit.nonstop.NonStopConfiguration;
 import org.terracotta.toolkit.nonstop.NonStopConfigurationRegistry;
+import org.terracotta.toolkit.nonstop.NonStopException;
+import org.terracotta.toolkit.object.ToolkitObject;
 import org.terracotta.toolkit.store.ToolkitStore;
 
 import com.tc.abortable.AbortableOperationManager;
 import com.tc.platform.PlatformService;
-import com.terracotta.toolkit.nonstop.AbstractToolkitObjectLookup;
+import com.terracotta.toolkit.abortable.ToolkitAbortableOperationException;
+import com.terracotta.toolkit.collections.map.ToolkitCacheImpl;
 import com.terracotta.toolkit.nonstop.AbstractToolkitObjectLookupAsync;
 import com.terracotta.toolkit.nonstop.NonStopClusterListener;
 import com.terracotta.toolkit.nonstop.NonStopConfigRegistryImpl;
 import com.terracotta.toolkit.nonstop.NonStopConfigurationLookup;
-import com.terracotta.toolkit.nonstop.NonStopContext;
 import com.terracotta.toolkit.nonstop.NonStopContextImpl;
 import com.terracotta.toolkit.nonstop.NonStopLockImpl;
 import com.terracotta.toolkit.nonstop.NonStopManagerImpl;
@@ -57,9 +59,10 @@ public class NonStopToolkitImpl implements ToolkitInternal {
 
   private final AbortableOperationManager      abortableOperationManager;
   protected final NonStopClusterListener       nonStopClusterListener;
-  private final NonStopFeature                        nonStopFeature;
+  private final NonStopFeature                 nonStopFeature;
+  private final NonStopInternalFeature         nonStopInternalFeature;
   private final AsyncToolkitInitializer        asyncToolkitInitializer;
-  private final NonStopContext                 context;
+  private final NonStopContextImpl             context;
   private final NonStopClusterInfo             nonStopClusterInfo;
   private final PlatformService                platformService;
   private final NonStopInitializationService   nonStopInitiailzationService;
@@ -74,11 +77,11 @@ public class NonStopToolkitImpl implements ToolkitInternal {
     this.nonStopFeature = new NonStopFeatureImpl(this, abortableOperationManager);
     this.asyncToolkitInitializer = new AsyncToolkitInitializer(toolkitDelegateFutureTask, abortableOperationManager);
     this.nonStopClusterInfo = new NonStopClusterInfo(asyncToolkitInitializer);
-    this.nonStopClusterListener = new NonStopClusterListener(abortableOperationManager);
-    this.nonStopClusterInfo.addClusterListener(nonStopClusterListener);
+    this.nonStopClusterListener = new NonStopClusterListener(abortableOperationManager, nonStopClusterInfo);
     this.context = new NonStopContextImpl(nonStopManager, nonStopConfigManager, abortableOperationManager,
                                           nonstopTimeoutBehaviorFactory, asyncToolkitInitializer,
                                           nonStopClusterListener);
+    this.nonStopInternalFeature = new NonStopInternalFeatureImpl(context);
 
     this.nonStopInitiailzationService = new NonStopInitializationService(context);
   }
@@ -89,42 +92,40 @@ public class NonStopToolkitImpl implements ToolkitInternal {
 
   @Override
   public <E> ToolkitList<E> getList(final String name, final Class<E> klazz) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.LIST, context, ToolkitListInternal.class,
-                                                new AbstractToolkitObjectLookup<ToolkitList<E>>(
-                                                    abortableOperationManager) {
-
-                                                  @Override
-                                                  public ToolkitList<E> lookupObject() {
-                                                    return getInitializedToolkit().getList(name, klazz);
-                                                  }
-                                                });
+    final AbstractToolkitObjectLookupAsync<ToolkitList<E>> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitList<E>>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitList<E> lookupObject() {
+        return getInitializedToolkit().getList(name, klazz);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.LIST, ToolkitListInternal.class);
   }
-
 
   @Override
   public <K, V> ToolkitMap<K, V> getMap(final String name, final Class<K> keyKlazz, final Class<V> valueKlazz) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.MAP, context, ToolkitMap.class,
-                                                new AbstractToolkitObjectLookup<ToolkitMap>(abortableOperationManager) {
-                                                  @Override
-                                                  public ToolkitMap<K, V> lookupObject() {
-                                                    return getInitializedToolkit().getMap(name, keyKlazz, valueKlazz);
-                                                  }
-                                                });
+    final AbstractToolkitObjectLookupAsync<ToolkitMap> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitMap>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitMap<K, V> lookupObject() {
+        return getInitializedToolkit().getMap(name, keyKlazz, valueKlazz);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.MAP, ToolkitMap.class);
   }
 
   @Override
   public <K extends Comparable<? super K>, V> ToolkitSortedMap<K, V> getSortedMap(final String name,
                                                                                   final Class<K> keyKlazz,
                                                                                   final Class<V> valueKlazz) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.SORTED_MAP, context, ToolkitSortedMap.class,
-                                                new AbstractToolkitObjectLookup<ToolkitSortedMap>(
-                                                    abortableOperationManager) {
-                                                  @Override
-                                                  public ToolkitSortedMap<K, V> lookupObject() {
-                                                    return getInitializedToolkit().getSortedMap(name, keyKlazz,
-                                                                                                valueKlazz);
-                                                  }
-                                                });
+    final AbstractToolkitObjectLookupAsync<ToolkitSortedMap> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitSortedMap>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitSortedMap<K, V> lookupObject() {
+        return getInitializedToolkit().getSortedMap(name, keyKlazz, valueKlazz);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.SORTED_MAP, ToolkitSortedMap.class);
   }
 
   @Override
@@ -149,39 +150,38 @@ public class NonStopToolkitImpl implements ToolkitInternal {
 
   @Override
   public ToolkitReadWriteLock getReadWriteLock(final String name) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.READ_WRITE_LOCK, context,
-                                                ToolkitReadWriteLock.class,
-                                                new AbstractToolkitObjectLookup<ToolkitReadWriteLock>(
-                                                    abortableOperationManager) {
-                                                  @Override
-                                                  public ToolkitReadWriteLock lookupObject() {
-                                                    return getInitializedToolkit().getReadWriteLock(name);
-                                                  }
-                                                });
+    final AbstractToolkitObjectLookupAsync<ToolkitReadWriteLock> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitReadWriteLock>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitReadWriteLock lookupObject() {
+        return getInitializedToolkit().getReadWriteLock(name);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.READ_WRITE_LOCK, ToolkitReadWriteLock.class);
   }
 
   @Override
   public <E> ToolkitNotifier<E> getNotifier(final String name, final Class<E> klazz) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.NOTIFIER, context, ToolkitNotifier.class,
-                                                new AbstractToolkitObjectLookup<ToolkitNotifier<E>>(
-                                                    abortableOperationManager) {
-                                                  @Override
-                                                  public ToolkitNotifier<E> lookupObject() {
-                                                    return getInitializedToolkit().getNotifier(name, klazz);
-                                                  }
-                                                });
+    final AbstractToolkitObjectLookupAsync<ToolkitNotifier<E>> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitNotifier<E>>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitNotifier<E> lookupObject() {
+        return getInitializedToolkit().getNotifier(name, klazz);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.NOTIFIER, ToolkitNotifier.class);
   }
 
   @Override
   public ToolkitAtomicLong getAtomicLong(final String name) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.ATOMIC_LONG, context, ToolkitAtomicLong.class,
-                                                new AbstractToolkitObjectLookup<ToolkitAtomicLong>(
-                                                    abortableOperationManager) {
-                                                  @Override
-                                                  public ToolkitAtomicLong lookupObject() {
-                                                    return getInitializedToolkit().getAtomicLong(name);
-                                                  }
-                                                });
+    final AbstractToolkitObjectLookupAsync<ToolkitAtomicLong> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitAtomicLong>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitAtomicLong lookupObject() {
+        return getInitializedToolkit().getAtomicLong(name);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.ATOMIC_LONG, ToolkitAtomicLong.class);
   }
 
   @Override
@@ -196,28 +196,28 @@ public class NonStopToolkitImpl implements ToolkitInternal {
 
   @Override
   public <E extends Comparable<? super E>> ToolkitSortedSet<E> getSortedSet(final String name, final Class<E> klazz) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.SORTED_SET, context, ToolkitSortedSet.class,
-                                                new AbstractToolkitObjectLookup<ToolkitSortedSet<E>>(
-                                                    abortableOperationManager) {
-                                                  @Override
-                                                  public ToolkitSortedSet<E> lookupObject() {
-                                                    return getInitializedToolkit().getSortedSet(name, klazz);
-                                                  }
-                                                });
+
+    final AbstractToolkitObjectLookupAsync<ToolkitSortedSet<E>> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitSortedSet<E>>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitSortedSet<E> lookupObject() {
+        return getInitializedToolkit().getSortedSet(name, klazz);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.SORTED_SET, ToolkitSortedSet.class);
   }
 
   @Override
   public <E> ToolkitSet<E> getSet(final String name, final Class<E> klazz) {
-    return ToolkitInstanceProxy.newNonStopProxy(name, ToolkitObjectType.SET, context, ToolkitSet.class,
-                                                new AbstractToolkitObjectLookup<ToolkitSet<E>>(
-                                                    abortableOperationManager) {
-                                                  @Override
-                                                  public ToolkitSet<E> lookupObject() {
-                                                    return getInitializedToolkit().getSet(name, klazz);
-                                                  }
-                                                });
+    final AbstractToolkitObjectLookupAsync<ToolkitSet<E>> toolkitObjectLookup = new AbstractToolkitObjectLookupAsync<ToolkitSet<E>>(
+        name, abortableOperationManager) {
+      @Override
+      public ToolkitSet<E> lookupObject() {
+        return getInitializedToolkit().getSet(name, klazz);
+      }
+    };
+    return getNonStopProxy(name, toolkitObjectLookup, ToolkitObjectType.SET, ToolkitSet.class);
   }
-
 
   @Override
   public <V> ToolkitCache<String, V> getCache(final String name, final Configuration configuration, final Class<V> klazz) {
@@ -230,20 +230,17 @@ public class NonStopToolkitImpl implements ToolkitInternal {
         return getInitializedToolkit().getCache(name, configuration, klazz);
       }
     };
-    
-    nonStopInitiailzationService.initialize(toolkitObjectLookup,
-                                                nonStopConfigurationLookup.getNonStopConfiguration());
 
-    return ToolkitInstanceProxy.newNonStopProxy(nonStopConfigurationLookup, context, ToolkitCacheInternal.class,
-                                                toolkitObjectLookup);
+    nonStopInitiailzationService.initialize(toolkitObjectLookup, nonStopConfigurationLookup.getNonStopConfiguration());
+
+    return ToolkitInstanceProxy.newNonStopProxy(nonStopConfigurationLookup, context, toolkitObjectLookup,
+                                                ToolkitCacheImpl.class.getInterfaces());
   }
-
 
   @Override
   public <V> ToolkitCache<String, V> getCache(String name, Class<V> klazz) {
     return getCache(name, null, klazz);
   }
-
 
   @Override
   public <V> ToolkitStore<String, V> getStore(final String name, final Configuration configuration, final Class<V> klazz) {
@@ -256,14 +253,12 @@ public class NonStopToolkitImpl implements ToolkitInternal {
         return getInitializedToolkit().getStore(name, configuration, klazz);
       }
     };
-    
-    nonStopInitiailzationService.initialize(toolkitObjectLookup,
-                                                nonStopConfigurationLookup.getNonStopConfiguration());
 
-    return ToolkitInstanceProxy.newNonStopProxy(nonStopConfigurationLookup, context, ToolkitStore.class,
-                                                toolkitObjectLookup);
+    nonStopInitiailzationService.initialize(toolkitObjectLookup, nonStopConfigurationLookup.getNonStopConfiguration());
+
+    return ToolkitInstanceProxy.newNonStopProxy(nonStopConfigurationLookup, context, toolkitObjectLookup,
+                                                ToolkitStore.class);
   }
-  
 
   @Override
   public <V> ToolkitStore<String, V> getStore(String name, Class<V> klazz) {
@@ -300,7 +295,7 @@ public class NonStopToolkitImpl implements ToolkitInternal {
   @Override
   public ToolkitLock getLock(final String name, final ToolkitLockTypeInternal lockType) {
     NonStopConfigurationLookup nonStopConfigurationLookup = getNonStopConfigurationLookup(name, ToolkitObjectType.LOCK);
-    
+
     ToolkitLockLookup toolkitObjectLookup = new ToolkitLockLookup(asyncToolkitInitializer, name, lockType);
     return new NonStopLockImpl(context, nonStopConfigurationLookup, toolkitObjectLookup);
   }
@@ -312,7 +307,11 @@ public class NonStopToolkitImpl implements ToolkitInternal {
 
   @Override
   public void waitUntilAllTransactionsComplete() {
-    getInitializedToolkit().waitUntilAllTransactionsComplete();
+    try {
+      getInitializedToolkit().waitUntilAllTransactionsComplete();
+    } catch (ToolkitAbortableOperationException e) {
+      throw new NonStopException(e);
+    }
   }
 
   @Override
@@ -338,10 +337,21 @@ public class NonStopToolkitImpl implements ToolkitInternal {
 
   @Override
   public <T extends ToolkitFeature> T getFeature(ToolkitFeatureTypeInternal<T> type) {
+    if (type == ToolkitFeatureTypeInternal.NONSTOP) { return (T) nonStopInternalFeature; }
     return getInitializedToolkit().getFeature(type);
   }
 
   private NonStopConfigurationLookup getNonStopConfigurationLookup(final String name, final ToolkitObjectType objectType) {
     return new NonStopConfigurationLookup(context, objectType, name);
+  }
+
+  private <T extends ToolkitObject> T getNonStopProxy(final String name,
+                                                         final AbstractToolkitObjectLookupAsync<T> toolkitObjectLookup,
+                                                         final ToolkitObjectType objectType, Class clazz) {
+    NonStopConfigurationLookup nonStopConfigurationLookup = getNonStopConfigurationLookup(name, objectType);
+
+    nonStopInitiailzationService.initialize(toolkitObjectLookup, nonStopConfigurationLookup.getNonStopConfiguration());
+
+    return ToolkitInstanceProxy.newNonStopProxy(nonStopConfigurationLookup, context, toolkitObjectLookup, clazz);
   }
 }

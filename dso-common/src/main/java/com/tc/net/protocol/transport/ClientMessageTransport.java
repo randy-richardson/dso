@@ -5,12 +5,16 @@ package com.tc.net.protocol.transport;
 
 import com.tc.exception.TCInternalError;
 import com.tc.exception.TCRuntimeException;
+import com.tc.logging.ConnectionIdLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.MaxConnectionsExceededException;
 import com.tc.net.ReconnectionRejectedException;
+import com.tc.net.core.ConnectionAddressProvider;
+import com.tc.net.core.ConnectionInfo;
 import com.tc.net.core.TCConnection;
 import com.tc.net.core.event.TCConnectionEvent;
+import com.tc.net.core.security.TCSecurityManager;
 import com.tc.net.protocol.NetworkLayer;
 import com.tc.net.protocol.NetworkStackID;
 import com.tc.net.protocol.TCNetworkMessage;
@@ -42,32 +46,38 @@ public class ClientMessageTransport extends MessageTransportBase {
   private final WireProtocolAdaptorFactory  wireProtocolAdaptorFactory;
   private final AtomicBoolean               isOpening                          = new AtomicBoolean(false);
   private final int                         callbackPort;
+  private final TCSecurityManager           securityManager;
+  private final ConnectionAddressProvider   addressProvider;
 
   public ClientMessageTransport(ClientConnectionEstablisher clientConnectionEstablisher,
                                 TransportHandshakeErrorHandler handshakeErrorHandler,
                                 TransportHandshakeMessageFactory messageFactory,
                                 WireProtocolAdaptorFactory wireProtocolAdaptorFactory, int callbackPort) {
     this(clientConnectionEstablisher, handshakeErrorHandler, messageFactory, wireProtocolAdaptorFactory, callbackPort,
-         ReconnectionRejectedHandlerL1.SINGLETON);
+         ReconnectionRejectedHandlerL1.SINGLETON, null, null);
   }
 
   /**
    * Constructor for when you want a transport that isn't connected yet (e.g., in a client). This constructor will
    * create an unopened MessageTransport.
    * 
-   * @param commsManager CommmunicationsManager
+   * @param securityManager
+   * @param addressProvider
    */
   public ClientMessageTransport(ClientConnectionEstablisher clientConnectionEstablisher,
                                 TransportHandshakeErrorHandler handshakeErrorHandler,
                                 TransportHandshakeMessageFactory messageFactory,
                                 WireProtocolAdaptorFactory wireProtocolAdaptorFactory, int callbackPort,
-                                ReconnectionRejectedHandler reconnectionRejectedHandler) {
+                                ReconnectionRejectedHandler reconnectionRejectedHandler,
+                                final TCSecurityManager securityManager, final ConnectionAddressProvider addressProvider) {
 
     super(MessageTransportState.STATE_START, handshakeErrorHandler, messageFactory, false, TCLogging
         .getLogger(ClientMessageTransport.class));
+    this.addressProvider = addressProvider;
     this.wireProtocolAdaptorFactory = wireProtocolAdaptorFactory;
     this.connectionEstablisher = clientConnectionEstablisher;
     this.callbackPort = callbackPort;
+    this.securityManager = securityManager;
   }
 
   /**
@@ -75,7 +85,6 @@ public class ClientMessageTransport extends MessageTransportBase {
    * 
    * @throws TCTimeoutException
    * @throws IOException
-   * @throws TCTimeoutException
    * @throws MaxConnectionsExceededException
    */
   @Override
@@ -101,14 +110,14 @@ public class ClientMessageTransport extends MessageTransportBase {
   @Override
   public void reset() {
     synchronized (this.isOpen) {
-      logger.info("Resetting connection " + connectionId);
+      getLogger().info("Resetting connection " + connectionId);
       this.isOpen.set(false);
       this.connectionEstablisher.reset();
       this.connectionId = new ConnectionID(JvmIDUtil.getJvmID(), ChannelID.NULL_ID.toLong());
     }
   }
 
-  private void handleHandshakeError(HandshakeResult result) throws IOException, MaxConnectionsExceededException,
+  private void handleHandshakeError(HandshakeResult result) throws TransportHandshakeException, MaxConnectionsExceededException,
       CommStackMismatchException, ReconnectionRejectedException {
     if (result.hasErrorContext()) {
       switch (result.getErrorType()) {
@@ -124,7 +133,7 @@ public class ClientMessageTransport extends MessageTransportBase {
           throw new ReconnectionRejectedException(
                                                   "Reconnection rejected by L2 due to stack not found. Client will be unable to join the cluster again unless rejoin is enabled.");
         default:
-          throw new IOException("Disconnected due to transport handshake error");
+          throw new TransportHandshakeException("Disconnected due to transport handshake error");
       }
     }
   }
@@ -170,7 +179,7 @@ public class ClientMessageTransport extends MessageTransportBase {
       }
 
       if (!this.status.isEstablished()) {
-        this.logger.warn("Ignoring the message received for an Un-Established Connection; " + message.getSource()
+        this.getLogger().warn("Ignoring the message received for an Un-Established Connection; " + message.getSource()
                          + "; " + message);
         message.recycle();
         return;
@@ -211,7 +220,6 @@ public class ClientMessageTransport extends MessageTransportBase {
       this.waitForSynAckResult.set(synAck);
       setRemoteCallbackPort(synAck.getCallbackPort());
     }
-    return;
   }
 
   /**
@@ -223,10 +231,10 @@ public class ClientMessageTransport extends MessageTransportBase {
     errorMessage += getCommunicationStackNames(this);
     errorMessage = "\nTHERE IS A MISMATCH IN THE COMMUNICATION STACKS\n" + synAck.getErrorContext() + errorMessage;
     if ((getCommunicationStackFlags(this) & NetworkLayer.TYPE_OOO_LAYER) != 0) {
-      this.logger.error(NetworkLayer.ERROR_OOO_IN_CLIENT_NOT_IN_SERVER);
+      this.getLogger().error(NetworkLayer.ERROR_OOO_IN_CLIENT_NOT_IN_SERVER);
       errorMessage = "\n\n" + NetworkLayer.ERROR_OOO_IN_CLIENT_NOT_IN_SERVER + errorMessage;
     } else {
-      this.logger.error(NetworkLayer.ERROR_OOO_IN_SERVER_NOT_IN_CLIENT);
+      this.getLogger().error(NetworkLayer.ERROR_OOO_IN_SERVER_NOT_IN_CLIENT);
       errorMessage = "\n\n" + NetworkLayer.ERROR_OOO_IN_SERVER_NOT_IN_CLIENT + errorMessage;
     }
     return errorMessage;
@@ -241,8 +249,6 @@ public class ClientMessageTransport extends MessageTransportBase {
    * Builds a protocol stack and tries to make a connection. This is a blocking call.
    * 
    * @throws TCTimeoutException
-   * @throws MaxConnectionsExceededException
-   * @throws IOException
    */
   HandshakeResult handShake() throws TCTimeoutException {
     sendSyn();
@@ -269,6 +275,13 @@ public class ClientMessageTransport extends MessageTransportBase {
       this.waitForSynAckResult = new TCFuture(this.status);
       // get the stack layer list and pass it in
       short stackLayerFlags = getCommunicationStackFlags(this);
+      if (connectionId.isSecured() && connectionId.getPassword() == null) {
+        // Re-init the password
+        ConnectionInfo connectionInfo = addressProvider.getIterator().next();
+        connectionId.setPassword(securityManager.getPasswordForTC(connectionId.getUsername(),
+                                                                  connectionInfo.getHostname(),
+                                                                  connectionInfo.getPort()));
+      }
       TransportHandshakeMessage syn = this.messageFactory.createSyn(this.connectionId, getConnection(),
                                                                     stackLayerFlags, this.callbackPort);
       // send syn message
@@ -277,10 +290,13 @@ public class ClientMessageTransport extends MessageTransportBase {
     }
   }
 
-  private void sendAck() throws IOException {
+  private void sendAck() throws TransportHandshakeException {
     synchronized (this.status) {
       // DEV-1364 : Connection close might have happened
-      if (!this.status.isSynSent()) { throw new IOException(); }
+      if (!this.status.isSynSent()) {
+        throw new TransportHandshakeException("Transport is not " + MessageTransportState.STATE_SYN_SENT
+                                              + ". Status: " + status);
+      }
       TransportHandshakeMessage ack = this.messageFactory.createAck(this.connectionId, getConnection());
       // send ack message
       this.sendToConnection(ack);
@@ -289,7 +305,7 @@ public class ClientMessageTransport extends MessageTransportBase {
     fireTransportConnectedEvent();
   }
 
-  protected void openConnection(TCConnection connection) throws TCTimeoutException, IOException,
+  protected void openConnection(TCConnection connection) throws TCTimeoutException, TransportHandshakeException,
       MaxConnectionsExceededException, CommStackMismatchException {
     Assert.eval(!isConnected());
     wireNewConnection(connection);
@@ -301,7 +317,7 @@ public class ClientMessageTransport extends MessageTransportBase {
       throw e;
     } catch (ReconnectionRejectedException e) {
       throw new TCRuntimeException("Should not happen here: " + e);
-    } catch (IOException e) {
+    } catch (TransportHandshakeException e) {
       clearConnection();
       this.status.reset();
       throw e;
@@ -312,7 +328,7 @@ public class ClientMessageTransport extends MessageTransportBase {
 
     // don't do reconnect if open is still going on
     if (!wasOpened()) {
-      this.logger.warn("Transport was opened already. Skip reconnect " + connection);
+      this.getLogger().warn("Transport was opened already. Skip reconnect " + connection);
       return;
     }
 
@@ -327,7 +343,7 @@ public class ClientMessageTransport extends MessageTransportBase {
   }
 
   private void handshakeConnection(TCConnection connection) throws TCTimeoutException, MaxConnectionsExceededException,
-      IOException, CommStackMismatchException, ReconnectionRejectedException {
+      TransportHandshakeException, CommStackMismatchException, ReconnectionRejectedException {
     HandshakeResult result = handShake();
     handleHandshakeError(result);
     sendAck();
@@ -372,7 +388,23 @@ public class ClientMessageTransport extends MessageTransportBase {
 
   }
 
+  @Override
+  protected void fireTransportConnectAttemptEvent() {
+    super.fireTransportConnectAttemptEvent();
+  }
+
+  @Override
+  public boolean isConnected() {
+    return super.isConnected();
+  }
+
   public ClientConnectionEstablisher getConnectionEstablisher() {
     return this.connectionEstablisher;
   }
+
+  // method used for testing
+  public void switchLoggerForTesting(ConnectionIdLogger tmpLogger) {
+    this.logger = tmpLogger;
+  }
+
 }

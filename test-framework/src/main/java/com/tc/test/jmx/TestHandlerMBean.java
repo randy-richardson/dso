@@ -2,6 +2,7 @@ package com.tc.test.jmx;
 
 import com.tc.test.setup.GroupsData;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 
@@ -75,6 +76,15 @@ public interface TestHandlerMBean {
    * @throws Exception
    */
   public boolean isPassiveStandBy(int groupIndex) throws Exception;
+
+  /**
+   * Check if the given server is passive uninitialized.
+   *
+   * @param groupIndex group number
+   * @param serverIndex server number
+   * @return true if the server is passive uninitialized
+   */
+  public boolean isPassiveUninitialized(int groupIndex, int serverIndex);
 
   /**
    * Waits until a passive standby comes up in the mirror group
@@ -176,6 +186,14 @@ public interface TestHandlerMBean {
   public void startTsaProxy(int groupIndex) throws Exception;
 
   /**
+   * Closes the connections between the clients and server for the given group
+   *
+   * @param groupIndex group to close connections on
+   * @throws Exception
+   */
+  public void closeTsaProxyConnections(int groupIndex) throws Exception;
+
+  /**
    * Execute custom command
    */
   public Serializable executeCustomCommand(String cmd, Serializable[] params);
@@ -210,4 +228,23 @@ public interface TestHandlerMBean {
    * @param extraMainClassArgs
    */
   void runClient(Class<? extends Runnable> client, final String clientName, final List<String> extraMainClassArgs) throws Throwable;
+
+  /**
+   * starts server crasher, can be used in the tests that wants to start the crasher after doing some initialization
+   * tasks
+   */
+  void startCrasher();
+
+  int getActiveServerIndex(int groupIndex);
+
+  void pauseClient(int clientIndex) throws Exception;
+
+  void unpauseClient(int clientIndex) throws Exception;
+
+  void pauseServer(int groupIndex, int serverIndex) throws Exception;
+
+  void unpauseServer(int groupIndex, int serverIndex) throws Exception;
+
+  File getTempDir();
+
 }

@@ -6,7 +6,6 @@ package com.tc.cluster;
 
 import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
-import com.tc.cluster.exceptions.UnclusteredObjectException;
 import com.tc.exception.TCNotRunningException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
@@ -24,6 +23,7 @@ import com.tc.util.Assert;
 import com.tc.util.Util;
 import com.tcclient.cluster.ClusterInternalEventsContext;
 import com.tcclient.cluster.ClusterNodeStatus;
+import com.tcclient.cluster.ClusterNodeStatus.ClusterNodeStateType;
 import com.tcclient.cluster.DsoClusterInternal;
 import com.tcclient.cluster.DsoClusterInternalEventsGun;
 import com.tcclient.cluster.DsoNode;
@@ -92,14 +92,16 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
     boolean added = listeners.addIfAbsent(listener);
 
     if (added) {
-      if (nodeStatus.getState().isNodeLeft()) {
-        fireEvent(DsoClusterEventType.NODE_LEFT, new DsoClusterEventImpl(currentNode), listener);
+      DsoClusterEvent event = new DsoClusterEventImpl(currentNode);
+      ClusterNodeStateType state = nodeStatus.getState();
+      if (state.isNodeLeft()) {
+        fireEvent(DsoClusterEventType.NODE_LEFT, event, listener);
       } else {
-        if (nodeStatus.getState().isNodeJoined()) {
-          fireNodeJoinedInternal(currentNode, new DsoClusterEventImpl(currentNode), listener);
+        if (state.isNodeJoined()) {
+          fireEvent(DsoClusterEventType.NODE_JOIN, event, listener);
         }
-        if (nodeStatus.getState().areOperationsEnabled()) {
-          fireEvent(DsoClusterEventType.OPERATIONS_ENABLED, new DsoClusterEventImpl(currentNode), listener);
+        if (state.areOperationsEnabled()) {
+          fireEvent(DsoClusterEventType.OPERATIONS_ENABLED, event, listener);
         }
       }
     }
@@ -126,8 +128,7 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
   }
 
   @Override
-  public <K> Map<K, Set<DsoNode>> getNodesWithKeys(final Map<K, ?> map, final Collection<? extends K> keys)
-      throws UnclusteredObjectException {
+  public <K> Map<K, Set<DsoNode>> getNodesWithKeys(final Map<K, ?> map, final Collection<? extends K> keys) {
     Assert.assertNotNull(clusterMetaDataManager);
 
     if (null == keys || 0 == keys.size() || null == map) { return Collections.emptyMap(); }
@@ -208,14 +209,12 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
 
   @Override
   public void fireThisNodeJoined(final ClientID nodeId, final ClientID[] clusterMembers) {
+    final ClientID newNodeId = nodeId;
+    final boolean rejoinHappened = rejoinManager.thisNodeJoined(newNodeId);
     stateWriteLock.lock();
-    boolean rejoinHappened = false;
     boolean fireThisNodeJoined = false;
     DsoNodeInternal oldNode = currentNode;
     try {
-      ClientID newNodeId = nodeId;
-      rejoinHappened = rejoinManager.thisNodeJoined(newNodeId);
-
       if (rejoinHappened) {
         // node rejoined, update current node
         currentClientID = newNodeId;
@@ -234,8 +233,7 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
         }
       }
       nodeStatus.operationsEnabled();
-      LOGGER.info("NODE_JOINED " + currentClientID + " rejoinHappened " + rejoinHappened + " nodeStatus "
-                  + nodeStatus.getState());
+      LOGGER.info("NODE_JOINED " + currentClientID + " rejoinHappened " + rejoinHappened);
     } finally {
       stateWriteLock.unlock();
 
@@ -312,17 +310,11 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
     if (node != null && clusterMetaDataManager != null) {
       retrieveMetaDataForDsoNode(node);
     }
-    for (DsoClusterListener listener : listeners) {
-      fireNodeJoinedInternal(node, event, listener);
-    }
-  }
-
-  private void fireNodeJoinedInternal(final DsoNodeInternal node, final DsoClusterEvent event,
-                                      final DsoClusterListener listener) {
-    fireEvent(DsoClusterEventType.NODE_JOIN, event, listener);
+    fireEventToAllListeners(DsoClusterEventType.NODE_JOIN, event);
   }
 
   private void fireEventToAllListeners(final DsoClusterEventType eventType, final DsoClusterEvent event) {
+    LOGGER.debug("event fired |" + eventType + "|" + event.getNode());
     for (DsoClusterListener l : listeners) {
       fireEvent(eventType, event, l);
     }
@@ -333,19 +325,13 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
     DsoNodeInternal node = topology.getAndRemoveDsoNode(nodeId);
     if (node == null) { return; }
     final DsoClusterEvent event = new DsoClusterEventImpl(node);
-
-    for (DsoClusterListener listener : listeners) {
-      fireEvent(DsoClusterEventType.NODE_LEFT, event, listener);
-    }
+    fireEventToAllListeners(DsoClusterEventType.NODE_LEFT, event);
   }
 
   @Override
-  public void fireRejoinRejected() {
+  public void fireNodeError() {
     final DsoClusterEvent event = new DsoClusterEventImpl(currentNode);
-
-    for (DsoClusterListener listener : listeners) {
-      fireEvent(DsoClusterEventType.REJOIN_REJECTED, event, listener);
-    }
+    fireEventToAllListeners(DsoClusterEventType.NODE_ERROR, event);
   }
 
   @Override
@@ -364,9 +350,7 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
       }
 
       final DsoClusterEvent event = new DsoClusterEventImpl(currentNode);
-      for (DsoClusterListener listener : listeners) {
-        fireEvent(DsoClusterEventType.OPERATIONS_ENABLED, event, listener);
-      }
+      fireEventToAllListeners(DsoClusterEventType.OPERATIONS_ENABLED, event);
       firedEventsStatus.operationsEnabledFired();
     }
   }
@@ -389,9 +373,7 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
 
   private void fireOperationsDisabledNoCheck() {
     final DsoClusterEvent event = new DsoClusterEventImpl(currentNode);
-    for (DsoClusterListener listener : listeners) {
-      fireEvent(DsoClusterEventType.OPERATIONS_DISABLED, event, listener);
-    }
+    fireEventToAllListeners(DsoClusterEventType.OPERATIONS_DISABLED, event);
     firedEventsStatus.operationsDisabledFired();
   }
 
@@ -402,7 +384,6 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
      * process the cluster event.
      */
     boolean useOOB = useOOBNotification(eventType, event, listener);
-    LOGGER.info("event fired |" + eventType + "|" + event.getNode() + "|OOB Notification " + useOOB);
     if (useOOB) {
       outOfBandNotifier.submit(new Runnable() {
         @Override
@@ -429,22 +410,24 @@ public class DsoClusterImpl implements DsoClusterInternal, DsoClusterInternalEve
       switch (eventType) {
         case NODE_JOIN:
           listener.nodeJoined(event);
-          break;
+          return;
         case NODE_LEFT:
           listener.nodeLeft(event);
-          break;
+          return;
         case OPERATIONS_ENABLED:
           listener.operationsEnabled(event);
-          break;
+          return;
         case OPERATIONS_DISABLED:
           listener.operationsDisabled(event);
-          break;
+          return;
         case NODE_REJOINED:
           listener.nodeRejoined(event);
-          break;
-        case REJOIN_REJECTED:
-          listener.nodeRejoinRejected(event);
+          return;
+        case NODE_ERROR:
+          listener.nodeError(event);
+          return;
       }
+      throw new AssertionError("Unhandled event type: " + eventType);
     } catch (TCNotRunningException tcnre) {
       LOGGER.error("Ignoring TCNotRunningException when notifying " + event + " : " + eventType);
     } catch (Throwable t) {

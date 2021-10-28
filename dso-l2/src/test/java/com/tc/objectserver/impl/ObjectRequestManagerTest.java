@@ -4,14 +4,16 @@
  */
 package com.tc.objectserver.impl;
 
-import org.apache.commons.lang.NotImplementedException;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
-import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
+import org.apache.commons.lang.NotImplementedException;
 
 import com.tc.async.api.Sink;
 import com.tc.bytes.TCByteBuffer;
 import com.tc.exception.ImplementMe;
 import com.tc.invalidation.Invalidations;
+import com.tc.license.ProductID;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
 import com.tc.net.TCSocketAddress;
@@ -66,6 +68,7 @@ import com.tc.objectserver.persistence.HeapStorageManagerFactory;
 import com.tc.objectserver.persistence.ManagedObjectPersistor;
 import com.tc.objectserver.persistence.Persistor;
 import com.tc.util.Assert;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.TCCollections;
 import com.tc.util.concurrent.NoExceptionLinkedQueue;
@@ -83,11 +86,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CyclicBarrier;
 
 import junit.framework.TestCase;
-
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
 public class ObjectRequestManagerTest extends TestCase {
 
@@ -128,7 +129,7 @@ public class ObjectRequestManagerTest extends TestCase {
     final int numOfObjects = 100;
     final Set ids = createObjectSet(numOfObjects);
 
-    final ObjectIDSet oidSet = new ObjectIDSet(ids);
+    final ObjectIDSet oidSet = new BitSetObjectIDSet(ids);
 
     final Iterator<ObjectID> iter = oidSet.iterator();
     ObjectID oid1 = iter.next();
@@ -311,7 +312,7 @@ public class ObjectRequestManagerTest extends TestCase {
 
         final Set ids = responseContext.getLookupIDs();
         final Map<ObjectID, ManagedObject> resultsMap = new HashMap<ObjectID, ManagedObject>();
-        final ObjectIDSet missing = new ObjectIDSet(ids);
+        final ObjectIDSet missing = new BitSetObjectIDSet(ids);
 
         final ObjectManagerLookupResults results = new ObjectManagerLookupResultsImpl(
                                                                                       resultsMap,
@@ -508,7 +509,7 @@ public class ObjectRequestManagerTest extends TestCase {
     final ClientID clientID = new ClientID(1);
     final ObjectRequestID objectRequestID = new ObjectRequestID(1);
     final ObjectIDSet ids = createObjectIDSet(100);
-    final ObjectIDSet missingIds = new ObjectIDSet();
+    final ObjectIDSet missingIds = new BitSetObjectIDSet();
     final TestSink requestSink = new TestSink();
     final Sink respondSink = new TestSink();
     final Collection objs = null;
@@ -585,7 +586,7 @@ public class ObjectRequestManagerTest extends TestCase {
 
   private ObjectIDSet createObjectIDSet(final int len) {
     final Random ran = new Random();
-    final ObjectIDSet oidSet = new ObjectIDSet();
+    final ObjectIDSet oidSet = new BitSetObjectIDSet();
 
     for (int i = 0; i < len; i++) {
       oidSet.add(new ObjectID(ran.nextInt(Integer.MAX_VALUE)));
@@ -624,7 +625,7 @@ public class ObjectRequestManagerTest extends TestCase {
     @Override
     public void run() {
       try {
-        this.barrier.barrier();
+        this.barrier.await();
       } catch (final Exception e) {
         throw new AssertionError(e);
       }
@@ -650,7 +651,7 @@ public class ObjectRequestManagerTest extends TestCase {
     @Override
     public void run() {
       try {
-        this.barrier.barrier();
+        this.barrier.await();
       } catch (final Exception e) {
         throw new AssertionError(e);
       }
@@ -1017,7 +1018,7 @@ public class ObjectRequestManagerTest extends TestCase {
     }
 
     @Override
-    public Set<ObjectID> tryDeleteObjects(final Set<ObjectID> objectsToDelete) {
+    public Set<ObjectID> tryDeleteObjects(final Set<ObjectID> objectsToDelete, final Set<ObjectID> checkedOutObjects) {
       return Collections.EMPTY_SET;
     }
   }
@@ -1125,6 +1126,11 @@ public class ObjectRequestManagerTest extends TestCase {
     @Override
     public void setLocalNodeID(final NodeID source) {
       //
+    }
+
+    @Override
+    public ProductID getProductId() {
+      return null;
     }
   }
 

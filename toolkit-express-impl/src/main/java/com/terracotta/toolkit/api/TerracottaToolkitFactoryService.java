@@ -19,12 +19,14 @@ import java.util.Set;
 
 public class TerracottaToolkitFactoryService implements ToolkitFactoryService {
 
-  private final static String       TERRACOTTA_TOOLKIT_TYPE          = "terracotta";
-  private final static String       NON_STOP_TERRACOTTA_TOOLKIT_TYPE = "nonstop-terracotta";
-  private static final String       TUNNELLED_MBEAN_DOMAINS_KEY      = "tunnelledMBeanDomains";
-  private static final String       TC_CONFIG_SNIPPET_KEY            = "tcConfigSnippet";
-  private static final String       REJOIN_KEY                       = "rejoin";
-  private static final Properties   EMPTY_PROPERTIES                 = new Properties();
+  private final static String     TERRACOTTA_TOOLKIT_TYPE          = "terracotta";
+  private final static String     NON_STOP_TERRACOTTA_TOOLKIT_TYPE = "nonstop-terracotta";
+  private static final String     TUNNELLED_MBEAN_DOMAINS_KEY      = "tunnelledMBeanDomains";
+  private static final String     TC_CONFIG_SNIPPET_KEY            = "tcConfigSnippet";
+  private static final String     REJOIN_KEY                       = "rejoin";
+  private static final String     PRODUCT_ID_KEY                   = "productId";
+  private static final String     CLASSLOADER                      = "classloader";
+  private static final Properties EMPTY_PROPERTIES                 = new Properties();
 
   @Override
   public boolean canHandleToolkitType(String type, String subName) {
@@ -39,7 +41,7 @@ public class TerracottaToolkitFactoryService implements ToolkitFactoryService {
       throw new ToolkitInstantiationException("Cannot handle toolkit of type: " + type + ", subName: " + subName);
     }
     try {
-      return createToolkit(createTerracottaClientConfig(type, subName, properties));
+      return createToolkit(createTerracottaClientConfig(type, subName, properties), properties);
     } catch (Throwable t) {
       if (t instanceof ToolkitInstantiationException) {
         throw (ToolkitInstantiationException) t;
@@ -52,28 +54,34 @@ public class TerracottaToolkitFactoryService implements ToolkitFactoryService {
   /**
    * Overridden by enterprise to create enterprise toolkit
    */
-  protected Toolkit createToolkit(TerracottaClientConfig config) {
-    return new TerracottaToolkitCreator(config, false).createToolkit();
+  protected Toolkit createToolkit(TerracottaClientConfig config, Properties properties) {
+    return new TerracottaToolkitCreator(config, properties, false).createToolkit();
   }
 
   private TerracottaClientConfig createTerracottaClientConfig(String type, String subName, Properties properties)
       throws ToolkitInstantiationException {
+    TerracottaClientConfigParams terracottaClientConfigParams = new TerracottaClientConfigParams()
+        .rejoin(isRejoinEnabled(properties)).nonStopEnabled(isNonStopEnabled(type))
+        .classLoader(getClassLoader(properties));
     String tcConfigSnippet = properties.getProperty(TC_CONFIG_SNIPPET_KEY, "");
-    final String terracottaUrlOrConfig;
-    final boolean isUrl;
     if (tcConfigSnippet == null || tcConfigSnippet.trim().equals("")) {
       // if no tcConfigSnippet, assume url
-      terracottaUrlOrConfig = getTerracottaUrlFromSubName(subName);
-      isUrl = true;
+      terracottaClientConfigParams.tcConfigSnippetOrUrl(getTerracottaUrlFromSubName(subName)).isUrl(true);
     } else {
-      terracottaUrlOrConfig = tcConfigSnippet;
-      isUrl = false;
+      terracottaClientConfigParams.tcConfigSnippetOrUrl(tcConfigSnippet).isUrl(false);
     }
-    Set<String> tunnelledMBeanDomains = getTunnelledMBeanDomains(properties);
+    terracottaClientConfigParams.tunnelledMBeanDomains(getTunnelledMBeanDomains(properties));
 
-    return new TerracottaClientConfigParams().tcConfigSnippetOrUrl(terracottaUrlOrConfig).isUrl(isUrl)
-        .tunnelledMBeanDomains(tunnelledMBeanDomains).rejoin(isRejoinEnabled(properties))
-        .nonStopEnabled(isNonStopEnabled(type)).newTerracottaClientConfig();
+    if (properties.containsKey(PRODUCT_ID_KEY)) {
+      terracottaClientConfigParams.productId(properties.getProperty(PRODUCT_ID_KEY));
+    }
+
+    return terracottaClientConfigParams.newTerracottaClientConfig();
+  }
+
+  private ClassLoader getClassLoader(Properties properties) {
+    if (properties == null) { return null; }
+    return (ClassLoader) properties.get(CLASSLOADER);
   }
 
   private boolean isNonStopEnabled(String type) {

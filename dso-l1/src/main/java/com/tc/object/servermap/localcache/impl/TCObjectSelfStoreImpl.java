@@ -3,8 +3,8 @@
  */
 package com.tc.object.servermap.localcache.impl;
 
+import com.tc.exception.PlatformRejoinException;
 import com.tc.exception.TCNotRunningException;
-import com.tc.invalidation.Invalidations;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.GroupID;
@@ -18,6 +18,7 @@ import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.PinnedEntryFaultCallback;
 import com.tc.object.servermap.localcache.ServerMapLocalCache;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 
 import java.util.HashMap;
@@ -27,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
-  private final TCObjectSelfStoreObjectIDSet                                           tcObjectSelfStoreOids = new TCObjectSelfStoreObjectIDSet();
+  private final TCObjectSelfStoreObjectIDSet                                     tcObjectSelfStoreOids = new TCObjectSelfStoreObjectIDSet();
   private final ReentrantReadWriteLock                                           tcObjectStoreLock     = new ReentrantReadWriteLock();
   private volatile TCObjectSelfCallback                                          tcObjectSelfRemovedFromStoreCallback;
-  private final Map<ObjectID, TCObjectSelf>                                            tcObjectSelfTempCache = new HashMap<ObjectID, TCObjectSelf>();
+  private final Map<ObjectID, TCObjectSelf>                                      tcObjectSelfTempCache = new HashMap<ObjectID, TCObjectSelf>();
 
   private final ConcurrentHashMap<ServerMapLocalCache, PinnedEntryFaultCallback> localCaches;
 
@@ -38,6 +39,7 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
                                                                                                            .getLogger(TCObjectSelfStoreImpl.class);
 
   private volatile boolean                                                       isShutdown            = false;
+  private volatile boolean                                                       isRejoinInProgress    = false;
 
   public TCObjectSelfStoreImpl(ConcurrentHashMap<ServerMapLocalCache, PinnedEntryFaultCallback> localCaches) {
     this.localCaches = localCaches;
@@ -45,26 +47,29 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public void cleanup() {
-    tcObjectStoreLock.writeLock().lock();
-    try {
-      tcObjectSelfStoreOids.clear();
-      tcObjectSelfTempCache.clear();
-    } finally {
-      tcObjectStoreLock.writeLock().unlock();
+    synchronized (tcObjectSelfRemovedFromStoreCallback) {
+      tcObjectSelfRemovedFromStoreCallback.notifyAll();
+      tcObjectStoreLock.writeLock().lock();
+      try {
+        tcObjectSelfStoreOids.clear();
+        tcObjectSelfTempCache.clear();
+      } finally {
+        tcObjectStoreLock.writeLock().unlock();
+      }
     }
   }
 
-  private void isShutdownThenException() {
+  private void throwExceptionIfNecessary() {
     if (isShutdown) { throw new TCNotRunningException("TCObjectSelfStore already shutdown"); }
+    if (isRejoinInProgress) { throw new PlatformRejoinException(); }
   }
 
   @Override
   public void removeObjectById(ObjectID oid) {
-    isShutdownThenException();
-
     synchronized (tcObjectSelfRemovedFromStoreCallback) {
       tcObjectStoreLock.writeLock().lock();
       try {
+        throwExceptionIfNecessary();
         if (!tcObjectSelfStoreOids.contains(oid)) { return; }
       } finally {
         tcObjectStoreLock.writeLock().unlock();
@@ -78,78 +83,81 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public Object getById(ObjectID oid) {
-    isShutdownThenException();
-
     long timePrev = System.currentTimeMillis();
     long startTime = timePrev;
-    while (true) {
-      Object rv = null;
-      tcObjectStoreLock.readLock().lock();
-      try {
-        TCObjectSelf self = tcObjectSelfTempCache.get(oid);
-        if (self != null) { return self; }
+    boolean interrupted = false;
+    try {
+      while (true) {
+        Object rv = null;
+        tcObjectStoreLock.readLock().lock();
+        try {
+          throwExceptionIfNecessary();
+          TCObjectSelf self = tcObjectSelfTempCache.get(oid);
+          if (self != null) { return self; }
 
-        if (!tcObjectSelfStoreOids.contains(oid)) {
+          if (!tcObjectSelfStoreOids.contains(oid)) {
+            if (logger.isDebugEnabled()) {
+              logger.debug("XXX GetById failed at TCObjectSelfStoreIDs, ObjectID=" + oid);
+            }
+            return null;
+          }
+
+          for (ServerMapLocalCache localCache : this.localCaches.keySet()) {
+            Object key = localCache.getMappingUnlocked(oid);
+            if (key == null) {
+              continue;
+            }
+
+            AbstractLocalCacheStoreValue localCacheStoreValue = (AbstractLocalCacheStoreValue) localCache
+                .getMappingUnlocked(key);
+            rv = localCacheStoreValue == null ? null : localCacheStoreValue.getValueObject();
+            initTCObjectSelfIfRequired(rv);
+
+            if (rv == null && logger.isDebugEnabled()) {
+              logger.debug("XXX GetById failed when localCacheStoreValue was null for eventual, ObjectID=" + oid);
+            }
+            break;
+          }
+
           if (logger.isDebugEnabled()) {
-            logger.debug("XXX GetById failed at TCObjectSelfStoreIDs, ObjectID=" + oid);
+            logger.debug("XXX GetById failed when it couldn't find in any stores, ObjectID=" + oid);
           }
-          return null;
+        } finally {
+          tcObjectStoreLock.readLock().unlock();
         }
 
-        for (ServerMapLocalCache localCache : this.localCaches.keySet()) {
-          Object key = localCache.getMappingUnlocked(oid);
-          if (key == null) {
-            continue;
-          }
+        if (rv != null) { return rv; }
 
-          AbstractLocalCacheStoreValue localCacheStoreValue = (AbstractLocalCacheStoreValue) localCache
-              .getMappingUnlocked(key);
-          rv = localCacheStoreValue == null ? null : localCacheStoreValue.getValueObject();
-          initTCObjectSelfIfRequired(rv);
-
-          if (rv == null && logger.isDebugEnabled()) {
-            logger.debug("XXX GetById failed when localCacheStoreValue was null for eventual, ObjectID=" + oid);
-          }
-          break;
+        long currTime = System.currentTimeMillis();
+        if ((currTime - timePrev) > (15 * 1000)) {
+          timePrev = currTime;
+          logger.warn("Still waiting to get the Object from local cache, ObjectID=" + oid + " , times spent="
+                      + ((currTime - startTime) / 1000) + "seconds");
         }
-
-        if (logger.isDebugEnabled()) {
-          logger.debug("XXX GetById failed when it couldn't find in any stores, ObjectID=" + oid);
+        try {
+          waitUntilNotified();
+        } catch (InterruptedException e) {
+          interrupted = true;
         }
-      } finally {
-        tcObjectStoreLock.readLock().unlock();
+        // Retry to get the object id.
+        // interrupt outside while loop for ENG-263, for not entering a tight loop.
       }
-
-      if (rv != null) { return rv; }
-
-      long currTime = System.currentTimeMillis();
-      if ((currTime - timePrev) > (15 * 1000)) {
-        timePrev = currTime;
-        logger.warn("Still waiting to get the Object from local cache, ObjectID=" + oid + " , times spent="
-                    + ((currTime - startTime) / 1000) + "seconds");
+    } finally {
+      if (interrupted) {
+        Thread.currentThread().interrupt();
       }
-      waitUntilNotified();
-      // Retry to get the object id
     }
   }
 
-  private void waitUntilNotified() {
-    isShutdownThenException();
-
-    boolean isInterrupted = false;
+  private void waitUntilNotified() throws InterruptedException {
+    throwExceptionIfNecessary();
     try {
       // since i know I am going to wait, let me wait on client lock manager instead of this condition
-      synchronized (this.tcObjectSelfRemovedFromStoreCallback) {
-        this.tcObjectSelfRemovedFromStoreCallback.wait(1000);
+      synchronized (tcObjectSelfRemovedFromStoreCallback) {
+        tcObjectSelfRemovedFromStoreCallback.wait(1000);
       }
-    } catch (InterruptedException e) {
-      isInterrupted = true;
     } finally {
-      isShutdownThenException();
-
-      if (isInterrupted) {
-        Thread.currentThread().interrupt();
-      }
+      throwExceptionIfNecessary();
     }
   }
 
@@ -161,8 +169,7 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public void initializeTCObjectSelfIfRequired(TCObjectSelf tcoSelf) {
-    isShutdownThenException();
-
+    if (isShutdown) { throw new TCNotRunningException("TCObjectSelfStore already shutdown"); }
     if (tcoSelf != null) {
       tcObjectSelfRemovedFromStoreCallback.initializeTCClazzIfRequired(tcoSelf);
     }
@@ -170,12 +177,11 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public void addTCObjectSelfTemp(TCObjectSelf tcObjectSelf) {
-    isShutdownThenException();
-
     tcObjectStoreLock.writeLock().lock();
     try {
+      throwExceptionIfNecessary();
       if (logger.isDebugEnabled()) {
-        logger.debug("XXX Adding TCObjectSelf to temp cache, ObjectID=" + tcObjectSelf.getObjectID());
+        logger.debug("XXX Adding TCObjectSelf temp cache " + tcObjectSelf.getObjectID());
       }
       this.tcObjectSelfTempCache.put(tcObjectSelf.getObjectID(), tcObjectSelf);
     } finally {
@@ -186,19 +192,17 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
   @Override
   public boolean addTCObjectSelf(L1ServerMapLocalCacheStore store, AbstractLocalCacheStoreValue localStoreValue,
                                  Object tcoself, final boolean isNew) {
-    isShutdownThenException();
-
     synchronized (tcObjectSelfRemovedFromStoreCallback) {
       tcObjectStoreLock.writeLock().lock();
       try {
+        throwExceptionIfNecessary();
         if (tcoself instanceof TCObject) {
           // no need of instanceof check if tcoself is declared as TCObject only... skipping for tests.. refactor later
           ObjectID oid = ((TCObject) tcoself).getObjectID();
-          if (logger.isDebugEnabled()) {
-            logger.debug("XXX Adding TCObjectSelf to Store if necessary, ObjectID=" + oid);
-          }
-
-          if (isNew || (tcObjectSelfTempCache.containsKey(oid) && !tcObjectSelfStoreOids.contains(oid))) {
+          if (isNew || existOnlyInTempCache(oid)) {
+            if (logger.isDebugEnabled()) {
+              logger.debug("XXX Adding TCObjectSelfStore " + oid);
+            }
             tcObjectSelfStoreOids.add(localStoreValue.isEventualConsistentValue(), oid);
             removeTCObjectSelfTemp((TCObjectSelf) tcoself, false);
             return true;
@@ -214,15 +218,17 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
     return true;
   }
 
+  private boolean existOnlyInTempCache(ObjectID oid) {
+    return tcObjectSelfTempCache.containsKey(oid) && !tcObjectSelfStoreOids.contains(oid);
+  }
+
   @Override
   public void removeTCObjectSelfTemp(TCObjectSelf objectSelf, boolean notifyServer) {
-    isShutdownThenException();
-
     if (objectSelf == null) { return; }
-
     synchronized (tcObjectSelfRemovedFromStoreCallback) {
       tcObjectStoreLock.writeLock().lock();
       try {
+        throwExceptionIfNecessary();
         Object removedValue = tcObjectSelfTempCache.remove(objectSelf.getObjectID());
         if (removedValue != null) {
           if (notifyServer) {
@@ -241,20 +247,18 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public void removeTCObjectSelf(AbstractLocalCacheStoreValue localStoreValue) {
-    isShutdownThenException();
-
     synchronized (tcObjectSelfRemovedFromStoreCallback) {
       tcObjectStoreLock.writeLock().lock();
-
       try {
+        throwExceptionIfNecessary();
         if (!(localStoreValue.getValueObject() instanceof TCObjectSelf)) { return; }
         TCObjectSelf self = (TCObjectSelf) localStoreValue.getValueObject();
         ObjectID valueOid = self.getObjectID();
 
         if (ObjectID.NULL_ID.equals(valueOid) || !tcObjectSelfStoreOids.contains(valueOid)) {
           if (logger.isDebugEnabled()) {
-            logger.debug("XXX Removing TCObjectSelf from Store Failed, ObjectID=" + valueOid
-                         + " , TCObjectSelfStore contains it = " + tcObjectSelfStoreOids.contains(valueOid));
+            logger.debug("XXX Removing from TCObjectSelfStore failed " + valueOid
+                         + " , TCObjectSelfStoreOids contains it " + tcObjectSelfStoreOids.contains(valueOid));
           }
           return;
         }
@@ -270,18 +274,16 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public void removeTCObjectSelf(TCObjectSelf self) {
-    isShutdownThenException();
-
     synchronized (tcObjectSelfRemovedFromStoreCallback) {
       tcObjectStoreLock.writeLock().lock();
-
       try {
+        throwExceptionIfNecessary();
         ObjectID valueOid = self.getObjectID();
 
         if (ObjectID.NULL_ID.equals(valueOid) || !tcObjectSelfStoreOids.contains(valueOid)) {
           if (logger.isDebugEnabled()) {
-            logger.debug("XXX Removing TCObjectSelf from Store Failed, ObjectID=" + valueOid
-                         + " , TCObjectSelfStore contains it = " + tcObjectSelfStoreOids.contains(valueOid));
+            logger.debug("XXX Removing from TCObjectSelfStore failed " + valueOid
+                         + " , TCObjectSelfStoreOids contains it " + tcObjectSelfStoreOids.contains(valueOid));
           }
           return;
         }
@@ -296,18 +298,19 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
   }
 
   @Override
-  public void addAllObjectIDsToValidate(Invalidations invalidations, NodeID remoteNode) {
-    isShutdownThenException();
-
+  public ObjectIDSet getObjectIDsToValidate(NodeID remoteNode) {
     tcObjectStoreLock.writeLock().lock();
     try {
-      tcObjectSelfStoreOids.addAllObjectIDsToValidate(invalidations, remoteNode);
+      throwExceptionIfNecessary();
+      ObjectIDSet validations = new BitSetObjectIDSet();
+      tcObjectSelfStoreOids.addAllObjectIDsToValidate(validations, remoteNode);
       int grpID = ((GroupID) remoteNode).toInt();
       for (ObjectID id : tcObjectSelfTempCache.keySet()) {
         if (id.getGroupID() == grpID) {
-          invalidations.add(ObjectID.NULL_ID, id);
+          validations.add(id);
         }
       }
+      return validations;
     } finally {
       tcObjectStoreLock.writeLock().unlock();
     }
@@ -315,10 +318,9 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public int size() {
-    isShutdownThenException();
-
     tcObjectStoreLock.readLock().lock();
     try {
+      throwExceptionIfNecessary();
       return tcObjectSelfStoreOids.size();
     } finally {
       tcObjectStoreLock.readLock().unlock();
@@ -327,10 +329,9 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public void addAllObjectIDs(Set oids) {
-    isShutdownThenException();
-
     tcObjectStoreLock.readLock().lock();
     try {
+      throwExceptionIfNecessary();
       tcObjectSelfStoreOids.addAll(oids);
       oids.addAll(tcObjectSelfTempCache.keySet());
     } finally {
@@ -340,10 +341,9 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
 
   @Override
   public boolean contains(ObjectID objectID) {
-    isShutdownThenException();
-
     tcObjectStoreLock.readLock().lock();
     try {
+      throwExceptionIfNecessary();
       return this.tcObjectSelfTempCache.containsKey(objectID) || this.tcObjectSelfStoreOids.contains(objectID);
     } finally {
       tcObjectStoreLock.readLock().unlock();
@@ -356,13 +356,18 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
   }
 
   @Override
+  public void rejoinInProgress(boolean rejoinInProgress) {
+    this.isRejoinInProgress = rejoinInProgress;
+  }
+
+  @Override
   public void shutdown(boolean fromShutdownHook) {
     this.isShutdown = true;
   }
 
   private static class TCObjectSelfStoreObjectIDSet {
-    private final ObjectIDSet nonEventualIds = new ObjectIDSet();
-    private final ObjectIDSet eventualIds    = new ObjectIDSet();
+    private final ObjectIDSet nonEventualIds = new BitSetObjectIDSet();
+    private final ObjectIDSet eventualIds    = new BitSetObjectIDSet();
 
     public void clear() {
       nonEventualIds.clear();
@@ -399,11 +404,11 @@ public class TCObjectSelfStoreImpl implements TCObjectSelfStore {
       return eventualIds.contains(id) || nonEventualIds.contains(id);
     }
 
-    public void addAllObjectIDsToValidate(Invalidations invalidations, NodeID remoteNode) {
+    public void addAllObjectIDsToValidate(ObjectIDSet validations, NodeID remoteNode) {
       int grpID = ((GroupID) remoteNode).toInt();
       for (ObjectID id : eventualIds) {
         if (id.getGroupID() == grpID) {
-          invalidations.add(ObjectID.NULL_ID, id);
+          validations.add(id);
         }
       }
     }

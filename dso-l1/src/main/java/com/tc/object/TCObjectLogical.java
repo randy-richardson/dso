@@ -4,8 +4,7 @@
  */
 package com.tc.object;
 
-import com.tc.object.bytecode.Clearable;
-import com.tc.util.Assert;
+import com.tc.abortable.AbortedOperationException;
 
 public class TCObjectLogical extends TCObjectImpl {
 
@@ -18,24 +17,9 @@ public class TCObjectLogical extends TCObjectImpl {
     getObjectManager().getTransactionManager().logicalInvoke(this, method, methodName, parameters);
   }
 
-  @Override
-  protected boolean isEvictable() {
-    Object peer;
-    if ((peer = getPeerObject()) instanceof Clearable) {
-      return ((Clearable) peer).isEvictionEnabled();
-    } else {
-      return false;
-    }
-  }
-
-  @Override
-  protected int clearReferences(final Object pojo, final int toClear) {
-    if (!(pojo instanceof Clearable)) {
-      Assert.fail("TCObjectLogical.clearReferences expected Clearable but got "
-                  + (pojo == null ? "null" : pojo.getClass().getName()));
-    }
-    final Clearable clearable = (Clearable) pojo;
-    return clearable.__tc_clearReferences(toClear);
+  public boolean logicalInvokeWithResult(final int method, final String methodName, final Object[] parameters)
+      throws AbortedOperationException {
+    return getObjectManager().getTransactionManager().logicalInvokeWithResult(this, method, methodName, parameters);
   }
 
   @Override

@@ -26,6 +26,7 @@ import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.AbortedOperationUtil;
 import com.tc.util.Assert;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.TCCollections;
 import com.tc.util.Util;
@@ -95,7 +96,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   private final TCLogger                           logger;
 
   private State                                    state                    = State.RUNNING;
-  private ObjectIDSet                              removeObjects            = new ObjectIDSet();
+  private ObjectIDSet                              removeObjects            = new BitSetObjectIDSet();
   private boolean                                  pendingSendTaskScheduled = false;
   private RemovedObjectsSendState                  removeTaskScheduled      = RemovedObjectsSendState.NOT_SCHEDULED;
   private long                                     objectRequestIDCounter   = 0;
@@ -130,7 +131,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
     dnaCache.clear();
     objectLookupStates.clear();
     lru.clear();
-    removeObjects = new ObjectIDSet();
+    removeObjects = new BitSetObjectIDSet();
     pendingSendTaskScheduled = false;
     removeTaskScheduled = RemovedObjectsSendState.NOT_SCHEDULED;
   }
@@ -253,10 +254,12 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
   }
 
   synchronized void requestOutstanding() {
-    this.logger.info("Sending Pending LookUp Requests");
+    int lookupCount = 0;
+    int rootCount = 0;
     for (final ObjectLookupState ols : this.objectLookupStates.values()) {
       if (!ols.isMissing() && !ols.isPending()) {
         sendRequestNow(ols);
+        ++lookupCount;
       }
     }
     for (final Entry<String, ObjectID> e : this.rootRequests.entrySet()) {
@@ -264,8 +267,10 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
       if (e.getValue().isNull()) {
         final RequestRootMessage rrm = createRootMessage(rootName);
         rrm.send();
+        ++rootCount;
       }
     }
+    this.logger.info("Sending Pending LookUp Requests lookups " + lookupCount + " roots " + rootCount);
   }
 
   @Override
@@ -413,7 +418,7 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
         final Integer key = ols.getRequestDepth();
         ObjectIDSet oids = segregatedPending.get(key);
         if (oids == null) {
-          oids = new ObjectIDSet();
+          oids = new BitSetObjectIDSet();
           segregatedPending.put(key, oids);
         }
         addRequestedObjectIDsTo(ols, oids);
@@ -446,10 +451,10 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
                                                                         final Set<ObjectID> oids, final int requestDepth) {
     final RequestManagedObjectMessage rmom = this.rmomFactory.newRequestManagedObjectMessage(this.groupID);
     if (this.removeObjects.isEmpty()) {
-      rmom.initialize(requestID, oids, requestDepth, TCCollections.EMPTY_OBJECT_ID_SET);
+      rmom.initialize(requestID, new BitSetObjectIDSet(oids), requestDepth, TCCollections.EMPTY_OBJECT_ID_SET);
     } else {
-      rmom.initialize(requestID, oids, requestDepth, this.removeObjects);
-      this.removeObjects = new ObjectIDSet();
+      rmom.initialize(requestID, new BitSetObjectIDSet(oids), requestDepth, this.removeObjects);
+      this.removeObjects = new BitSetObjectIDSet();
     }
     return rmom;
   }
@@ -558,6 +563,11 @@ public class RemoteObjectManagerImpl implements RemoteObjectManager, PrettyPrint
       basicAddObject(dna);
     }
     notifyAll();
+  }
+
+  @Override
+  public synchronized void cleanOutObject(final DNA dna) {
+    removed(dna.getObjectID());
   }
 
   // Used only for testing

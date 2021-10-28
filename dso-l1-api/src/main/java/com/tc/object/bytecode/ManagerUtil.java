@@ -103,22 +103,12 @@ public class ManagerUtil {
   }
 
   /**
-   * Determine whether this class is physically instrumented
-   *
-   * @param clazz Class
-   * @return True if physically instrumented
-   */
-  protected static boolean isPhysicallyInstrumented(final Class clazz) {
-    return getManager().isPhysicallyInstrumented(clazz);
-  }
-
-  /**
    * Get JVM Client identifier
    *
    * @return Client identifier
    */
   protected static String getClientID() {
-    return getManager().getClientID();
+    return getManager().getClientID().toString();
   }
 
   /**
@@ -253,16 +243,16 @@ public class ManagerUtil {
   }
 
 
-  protected static void pinLock0(final String lockID) {
+  protected static void pinLock0(final String lockID, long awardID) {
     Manager mgr = getManager();
     LockID lock = mgr.generateLockIdentifier(lockID);
-    mgr.pinLock(lock);
+    mgr.pinLock(lock, awardID);
   }
 
-  protected static void unpinLock0(final String lockID) {
+  protected static void unpinLock0(final String lockID, long awardID) {
     Manager mgr = getManager();
     LockID lock = mgr.generateLockIdentifier(lockID);
-    mgr.unpinLock(lock);
+    mgr.unpinLock(lock, awardID);
   }
 
   /**
@@ -299,35 +289,6 @@ public class ManagerUtil {
                                                      final String methodName, final Object[] params)
       throws AbortedOperationException {
     getManager().logicalInvokeWithTransaction(object, lockObject, methodName, params);
-  }
-
-  /**
-   * Commit DMI call
-   */
-  protected static void distributedMethodCallCommit() {
-    getManager().distributedMethodCallCommit();
-  }
-
-  /**
-   * Perform distributed method call on just this node
-   *
-   * @param receiver The receiver object
-   * @param method The method to call
-   * @param params The parameter values
-   */
-  protected static boolean prunedDistributedMethodCall(final Object receiver, final String method, final Object[] params) {
-    return getManager().distributedMethodCall(receiver, method, params, false);
-  }
-
-  /**
-   * Perform distributed method call on all nodes
-   *
-   * @param receiver The receiver object
-   * @param method The method to call
-   * @param params The parameter values
-   */
-  protected static boolean distributedMethodCall(final Object receiver, final String method, final Object[] params) {
-    return getManager().distributedMethodCall(receiver, method, params, true);
   }
 
   /**
@@ -681,16 +642,16 @@ public class ManagerUtil {
   }
 
 
-  protected static void pinLock0(final long lockID) {
+  protected static void pinLock0(final long lockID, long awardID) {
     Manager mgr = getManager();
     LockID lock = mgr.generateLockIdentifier(lockID);
-    mgr.pinLock(lock);
+    mgr.pinLock(lock, awardID);
   }
 
-  protected static void unpinLock0(final long lockID) {
+  protected static void unpinLock0(final long lockID, long awardID) {
     Manager mgr = getManager();
     LockID lock = mgr.generateLockIdentifier(lockID);
-    mgr.unpinLock(lock);
+    mgr.unpinLock(lock, awardID);
   }
 
   /**

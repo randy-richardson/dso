@@ -8,7 +8,7 @@ import com.tc.io.TCByteBufferInputStream;
 import com.tc.io.TCByteBufferOutputStream;
 import com.tc.l2.state.StateManager;
 import com.tc.object.ObjectID;
-import com.tc.util.ObjectIDSet;
+import com.tc.util.BitSetObjectIDSet;
 
 import java.util.Set;
 
@@ -16,12 +16,12 @@ import junit.framework.TestCase;
 
 public class ObjectListSyncMessageTest extends TestCase {
   private ObjectListSyncMessage objectListSyncMessage;
-  private Set                   oids;
+  private Set<ObjectID>         oids;
 
   @Override
   public void setUp() {
     objectListSyncMessage = new ObjectListSyncMessage();
-    oids = new ObjectIDSet();
+    oids = new BitSetObjectIDSet();
     oids.add(new ObjectID(1234));
     oids.add(new ObjectID(456));
     oids.add(new ObjectID(9068));
@@ -41,6 +41,8 @@ public class ObjectListSyncMessageTest extends TestCase {
 
     if (olsm.getType() == ObjectListSyncMessage.RESPONSE) {
       assertEquals(olsm.isSyncAllowed(), olsm1.isSyncAllowed());
+      assertEquals(olsm.getOffheapSize(), olsm1.getOffheapSize());
+      assertEquals(olsm.getDataStorageSize(), olsm1.getDataStorageSize());
     } else {
       assertEquals(olsm.toString(), olsm1.toString());
     }
@@ -64,7 +66,7 @@ public class ObjectListSyncMessageTest extends TestCase {
     validate(olsm, olsm1);
 
     olsm = ObjectListSyncMessageFactory
-        .createObjectListSyncResponseMessage(objectListSyncMessage, StateManager.PASSIVE_UNINITIALIZED, true, true, true, 1L );
+        .createObjectListSyncResponseMessage(objectListSyncMessage, StateManager.PASSIVE_UNINITIALIZED, true, 1L, 1L);
     olsm1 = writeAndRead(olsm);
     validate(olsm, olsm1);
   }

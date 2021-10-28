@@ -5,16 +5,15 @@
 package com.tc.object.bytecode;
 
 import com.tc.abortable.AbortableOperationManager;
-import com.tc.abortable.AbortedOperationException;
 import com.tc.cluster.DsoCluster;
 import com.tc.exception.ImplementMe;
 import com.tc.logging.NullTCLogger;
 import com.tc.logging.TCLogger;
 import com.tc.management.TunneledDomainUpdater;
+import com.tc.net.ClientID;
 import com.tc.net.GroupID;
-import com.tc.object.ServerEventDestination;
-import com.tc.object.ServerEventType;
 import com.tc.object.ObjectID;
+import com.tc.object.ServerEventDestination;
 import com.tc.object.TCObject;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.locks.LockID;
@@ -29,12 +28,15 @@ import com.tc.platform.PlatformService;
 import com.tc.properties.NullTCProperties;
 import com.tc.properties.TCProperties;
 import com.tc.search.SearchQueryResults;
+import com.tc.search.SearchRequestID;
+import com.tc.server.ServerEventType;
+import com.tc.util.concurrent.Runners;
+import com.tc.util.concurrent.TaskRunner;
 import com.terracottatech.search.NVPair;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 import javax.management.MBeanServer;
 
@@ -67,7 +69,7 @@ public class NullManager implements Manager {
   }
 
   @Override
-  public void initForTests(CountDownLatch latch) {
+  public void initForTests() {
     //
   }
 
@@ -98,16 +100,6 @@ public class NullManager implements Manager {
 
   @Override
   public void logicalInvoke(Object object, String methodName, Object[] params) {
-    //
-  }
-
-  @Override
-  public boolean distributedMethodCall(Object receiver, String method, Object[] params, boolean runOnAllNodes) {
-    return true;
-  }
-
-  @Override
-  public void distributedMethodCallCommit() {
     //
   }
 
@@ -152,12 +144,7 @@ public class NullManager implements Manager {
   }
 
   @Override
-  public boolean isPhysicallyInstrumented(Class clazz) {
-    return false;
-  }
-
-  @Override
-  public String getClientID() {
+  public ClientID getClientID() {
     throw new UnsupportedOperationException();
   }
 
@@ -327,12 +314,12 @@ public class NullManager implements Manager {
   }
 
   @Override
-  public void pinLock(LockID lock) {
+  public void pinLock(LockID lock, long awardID) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void unpinLock(LockID lock) {
+  public void unpinLock(LockID lock, long awardID) {
     throw new UnsupportedOperationException();
   }
 
@@ -357,6 +344,11 @@ public class NullManager implements Manager {
   }
 
   @Override
+  public void unregisterBeforeShutdownHook(Runnable beforeShutdownHook) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public MetaDataDescriptor createMetaDataDescriptor(String category) {
     throw new UnsupportedOperationException();
   }
@@ -364,14 +356,16 @@ public class NullManager implements Manager {
   @Override
   public SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys, boolean includeValues,
                                          Set<String> attributeSet, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn) {
+                                         List<NVPair> aggregators, int maxResults, int batchSize, int resultPageSize,
+                                         boolean waitForTxn, SearchRequestID reqId) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public SearchQueryResults executeQuery(String cachename, List queryStack, Set<String> attributeSet,
                                          Set<String> groupByAttribues, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn) {
+                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn,
+                                         SearchRequestID reqId) {
     throw new UnsupportedOperationException();
   }
 
@@ -432,11 +426,6 @@ public class NullManager implements Manager {
   }
 
   @Override
-  public Object registerObjectByNameIfAbsent(String name, Object object) {
-    throw new ImplementMe();
-  }
-
-  @Override
   public <T> T lookupRegisteredObjectByName(String name, Class<T> expectedType) {
     throw new ImplementMe();
   }
@@ -464,7 +453,7 @@ public class NullManager implements Manager {
 
 
   @Override
-  public void beginAtomicTransaction(LockID lock, LockLevel level) throws AbortedOperationException {
+  public void beginAtomicTransaction(LockID lock, LockLevel level) {
     //
   }
 
@@ -479,7 +468,37 @@ public class NullManager implements Manager {
   }
 
   @Override
-  public void unregisterServerEventListener(final ServerEventDestination destination) {
+  public void unregisterServerEventListener(final ServerEventDestination destination, final Set<ServerEventType> listenTo) {
     //
+  }
+
+  @Override
+  public int getRejoinCount() {
+    return 0;
+  }
+
+  @Override
+  public <T> T registerObjectByNameIfAbsent(String name, T object) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean isRejoinInProgress() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public TaskRunner getTastRunner() {
+    return Runners.newDefaultCachedScheduledTaskRunner();
+  }
+
+  @Override
+  public long getLockAwardIDFor(LockID lock) {
+    throw new ImplementMe();
+  }
+
+  @Override
+  public boolean isLockAwardValid(LockID lock, long awardID) {
+    throw new ImplementMe();
   }
 }

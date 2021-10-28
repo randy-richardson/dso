@@ -3,15 +3,15 @@
  */
 package com.tc.platform;
 
+import com.google.common.base.Preconditions;
 import com.tc.abortable.AbortableOperationManager;
 import com.tc.abortable.AbortedOperationException;
 import com.tc.cluster.DsoCluster;
 import com.tc.exception.TCClassNotFoundException;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
-import com.tc.object.ServerEventDestination;
-import com.tc.object.ServerEventType;
 import com.tc.object.ObjectID;
+import com.tc.object.ServerEventDestination;
 import com.tc.object.TCObject;
 import com.tc.object.bytecode.Manager;
 import com.tc.object.bytecode.ManagerUtil;
@@ -26,10 +26,15 @@ import com.tc.platform.rejoin.RejoinLifecycleListener;
 import com.tc.platform.rejoin.RejoinManager;
 import com.tc.properties.TCProperties;
 import com.tc.search.SearchQueryResults;
+import com.tc.search.SearchRequestID;
+import com.tc.server.ServerEventType;
 import com.tc.util.VicariousThreadLocal;
+import com.tc.util.concurrent.TaskRunner;
 import com.tcclient.cluster.DsoNode;
 import com.terracottatech.search.NVPair;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,10 +46,10 @@ public class PlatformServiceImpl implements PlatformService {
   private volatile RejoinLifecycleEventController rejoinEventsController;
   private final boolean                           rejoinEnabled;
   private static final int                               BASE_COUNT  = 1;
-  private static final ThreadLocal<Map<Object, Integer>> lockIdToCount = new VicariousThreadLocal<Map<Object, Integer>>() {
+  private static final ThreadLocal<Map<LockInfo, Integer>> lockIdToCount = new VicariousThreadLocal<Map<LockInfo, Integer>>() {
                                                                          @Override
-                                                                         protected Map<Object, Integer> initialValue() {
-                                                                           return new HashMap<Object, Integer>();
+                                                                           protected Map<LockInfo, Integer> initialValue() {
+                                                                             return new HashMap<LockInfo, Integer>();
                                                                          }
                                                                        };
 
@@ -53,21 +58,21 @@ public class PlatformServiceImpl implements PlatformService {
     this.rejoinEnabled = rejoinEnabled;
   }
 
-  private void addContext(Object lockId) {
-    Map<Object, Integer> threadLocal = lockIdToCount.get();
-    Integer count = threadLocal.get(lockId);
+  private void addContext(LockInfo lockInfo) {
+    Map<LockInfo, Integer> threadLocal = lockIdToCount.get();
+    Integer count = threadLocal.get(lockInfo);
     Integer lockCount = count != null ? new Integer(count.intValue() + BASE_COUNT) : new Integer(BASE_COUNT);
-    threadLocal.put(lockId, lockCount);
+    threadLocal.put(lockInfo, lockCount);
   }
 
-  private void removeContext(Object lockId) {
-    Map<Object, Integer> threadLocal = lockIdToCount.get();
-    Integer count = threadLocal.get(lockId);
+  private void removeContext(LockInfo lockInfo) {
+    Map<LockInfo, Integer> threadLocal = lockIdToCount.get();
+    Integer count = threadLocal.get(lockInfo);
     if(count != null) {
       if (count.intValue() == BASE_COUNT) {
-        threadLocal.remove(lockId);
+        threadLocal.remove(lockInfo);
       } else {
-        threadLocal.put(lockId, new Integer(count.intValue() - BASE_COUNT));
+        threadLocal.put(lockInfo, new Integer(count.intValue() - BASE_COUNT));
       }
     }
   }
@@ -136,7 +141,7 @@ public class PlatformServiceImpl implements PlatformService {
   public void beginLock(final Object lockID, final LockLevel level) throws AbortedOperationException {
     LockID lock = manager.generateLockIdentifier(lockID);
     manager.lock(lock, level);
-    addContext(lockID);
+    addContext(new LockInfo(lockID, level));
   }
 
   @Override
@@ -144,7 +149,7 @@ public class PlatformServiceImpl implements PlatformService {
       AbortedOperationException {
     LockID lock = manager.generateLockIdentifier(lockID);
     manager.lockInterruptibly(lock, level);
-    addContext(lockID);
+    addContext(new LockInfo(lockID, level));
   }
 
   @Override
@@ -152,7 +157,7 @@ public class PlatformServiceImpl implements PlatformService {
     LockID lock = manager.generateLockIdentifier(lockID);
     boolean granted = manager.tryLock(lock, level);
     if (granted) {
-      addContext(lockID);
+      addContext(new LockInfo(lockID, level));
     }
     return granted;
   }
@@ -163,7 +168,7 @@ public class PlatformServiceImpl implements PlatformService {
     LockID lock = manager.generateLockIdentifier(lockID);
     boolean granted = manager.tryLock(lock, level, timeUnit.toMillis(timeout));
     if (granted) {
-      addContext(lockID);
+      addContext(new LockInfo(lockID, level));
     }
     return granted;
   }
@@ -174,7 +179,7 @@ public class PlatformServiceImpl implements PlatformService {
     try {
       manager.unlock(lock, level);
     } finally {
-      removeContext(lockID);
+      removeContext(new LockInfo(lockID, level));
     }
   }
 
@@ -267,6 +272,11 @@ public class PlatformServiceImpl implements PlatformService {
   }
 
   @Override
+  public void unregisterBeforeShutdownHook(Runnable hook) {
+    manager.unregisterBeforeShutdownHook(hook);
+  }
+
+  @Override
   public String getUUID() {
     return manager.getUUID();
   }
@@ -274,19 +284,20 @@ public class PlatformServiceImpl implements PlatformService {
   @Override
   public SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys, boolean includeValues,
                                          Set<String> attributeSet, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn)
+                                         List<NVPair> aggregators, int maxResults, int batchSize, int resultPageSize,
+                                         boolean waitForTxn, SearchRequestID queryId)
       throws AbortedOperationException {
     return manager.executeQuery(cachename, queryStack, includeKeys, includeValues, attributeSet, sortAttributes,
-                                aggregators, maxResults, batchSize, waitForTxn);
+                                aggregators, maxResults, batchSize, resultPageSize, waitForTxn, queryId);
   }
 
   @Override
   public SearchQueryResults executeQuery(String cachename, List queryStack, Set<String> attributeSet,
                                          Set<String> groupByAttributes, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn)
+                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn, SearchRequestID queryId)
       throws AbortedOperationException {
     return manager.executeQuery(cachename, queryStack, attributeSet, groupByAttributes, sortAttributes, aggregators,
-                                maxResults, batchSize, waitForTxn);
+                                maxResults, batchSize, waitForTxn, queryId);
   }
 
   @Override
@@ -316,11 +327,92 @@ public class PlatformServiceImpl implements PlatformService {
 
   @Override
   public void registerServerEventListener(final ServerEventDestination destination, final Set<ServerEventType> listenTo) {
+    Preconditions.checkNotNull(destination);
+    Preconditions.checkArgument(listenTo != null && !listenTo.isEmpty());
     manager.registerServerEventListener(destination, listenTo);
   }
 
   @Override
-  public void unregisterServerEventListener(final ServerEventDestination destination) {
-    manager.unregisterServerEventListener(destination);
+  public void registerServerEventListener(final ServerEventDestination destination, final ServerEventType... listenTo) {
+    Preconditions.checkNotNull(destination);
+    Preconditions.checkArgument(listenTo != null && listenTo.length > 0);
+    registerServerEventListener(destination, EnumSet.copyOf(Arrays.asList(listenTo)));
+  }
+
+  @Override
+  public void unregisterServerEventListener(final ServerEventDestination destination, final Set<ServerEventType> listenTo) {
+    Preconditions.checkNotNull(destination);
+    Preconditions.checkArgument(listenTo != null && !listenTo.isEmpty());
+    manager.unregisterServerEventListener(destination, listenTo);
+  }
+
+  @Override
+  public void unregisterServerEventListener(final ServerEventDestination destination, final ServerEventType... listenTo) {
+    Preconditions.checkNotNull(destination);
+    Preconditions.checkArgument(listenTo != null && listenTo.length > 0);
+    unregisterServerEventListener(destination, EnumSet.copyOf(Arrays.asList(listenTo)));
+  }
+
+  @Override
+  public int getRejoinCount() {
+    return manager.getRejoinCount();
+  }
+
+  @Override
+  public boolean isRejoinInProgress() {
+    return manager.isRejoinInProgress();
+  }
+
+  @Override
+  public TaskRunner getTaskRunner() {
+    return this.manager.getTastRunner();
+  }
+
+  @Override
+  public boolean isExplicitlyLocked(Object lockID, LockLevel level) {
+    return lockIdToCount.get().containsKey(new LockInfo(lockID, level));
+  }
+
+  @Override
+  public boolean isLockedBeforeRejoin(Object lockID, LockLevel level) {
+    return false;
+  }
+
+  @Override
+  public long getClientId() {
+    return manager.getClientID().toLong();
+  }
+
+  private static class LockInfo {
+    private final Object    lockId;
+    private final LockLevel lockLevel;
+
+    public LockInfo(Object lockId, LockLevel lockLevel) {
+      this.lockId = lockId;
+      this.lockLevel = lockLevel;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((lockId == null) ? 0 : lockId.hashCode());
+      result = prime * result + ((lockLevel == null) ? 0 : lockLevel.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      LockInfo other = (LockInfo) obj;
+      if (lockId == null) {
+        if (other.lockId != null) return false;
+      } else if (!lockId.equals(other.lockId)) return false;
+      if (lockLevel != other.lockLevel) return false;
+      return true;
+    }
+
   }
 }

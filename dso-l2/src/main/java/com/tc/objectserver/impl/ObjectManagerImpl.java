@@ -30,6 +30,7 @@ import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.Assert;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.TCCollections;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
@@ -292,13 +293,29 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
     }
     return rv;
   }
-
-  private ManagedObjectReference addNewReference(final ManagedObject obj, final boolean isRemoveOnRelease) {
-    return addNewReference(obj.getReference(), isRemoveOnRelease);
+  
+  private ManagedObjectReference markReferenceForDelete(ObjectID oid) {
+    DeleteReference delete = new DeleteReference(oid);
+    final ManagedObjectReference ref = this.references.putIfAbsent(oid, delete);
+    if ( ref == null ) {
+//  deletes are self marked    
+      this.checkedOutCount.incrementAndGet();
+      return delete;
+    } else {
+      if ( ref.isNew() ) {
+        return null;
+      }
+      if ( !markReferenced(ref) ) {
+        return null;
+      }
+      ref.setRemoveOnRelease(true);
+      return ref;
+    }
   }
 
-  private ManagedObjectReference addNewReference(final ManagedObjectReference newReference,
+  private ManagedObjectReference addNewReference(final ManagedObject object,
                                                  final boolean removeOnRelease) {
+    final ManagedObjectReference newReference = object.getReference();
     final ManagedObjectReference ref = this.references.putIfAbsent(newReference.getObjectID(), newReference);
     if (removeOnRelease) {
       newReference.setRemoveOnRelease(removeOnRelease);
@@ -494,25 +511,18 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   }
 
   private ObjectIDSet removeAllObjectsByID(final Set<ObjectID> toDelete) {
-    ObjectIDSet missingObjects = new ObjectIDSet();
+    ObjectIDSet missingObjects = new BitSetObjectIDSet();
     while(!toDelete.isEmpty()) {
       Iterator<ObjectID> i = toDelete.iterator();
       while (i.hasNext()) {
         ObjectID id = i.next();
-        ManagedObjectReference ref = getOrLookupReference(id);
-        if (ref == null) {
-          missingObjects.add(id);
-          i.remove();
-          continue;
-        }
-        if (markReferenced(ref)) {
-          if (!ref.isNew()) {
+        ManagedObjectReference ref = markReferenceForDelete(id);
+        if ( ref != null ) {
             i.remove();
             objectStore.removeAllObjectsByID(Collections.singleton(id));
             removeReferenceAndDestroyIfNecessary(id);
-          }
-          unmarkReferenced(ref);
-          makeUnBlocked(id);
+            unmarkReferenced(ref);
+            makeUnBlocked(id);
         }
       }
       processPendingLookups();
@@ -521,23 +531,26 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   }
 
   @Override
-  public Set<ObjectID> tryDeleteObjects(final Set<ObjectID> objectsToDelete) {
-    Set<ObjectID> retry = new ObjectIDSet();
+  public Set<ObjectID> tryDeleteObjects(final Set<ObjectID> objectsToDelete, final Set<ObjectID> checkedOutObjects) {
+    Set<ObjectID> retry = new BitSetObjectIDSet();
     for (ObjectID objectID : objectsToDelete) {
-      ManagedObjectReference ref = getOrLookupReference(objectID);
-      if (ref == null || !markReferenced(ref)) {
+      ManagedObjectReference deleteable = markReferenceForDelete(objectID);
+      if (checkedOutObjects.contains(objectID)) {
+        // If the object is already checked out by this operation, just delete it.
+        objectStore.removeAllObjectsByID(Collections.singleton(objectID));
+        if ( deleteable == null ) {
+          continue;
+        }
+      } else if (deleteable == null) {
         // The object either doesn't exist or we failed to mark it, drop it into the retry set.
         retry.add(objectID);
         continue;
-      } else if (ref.isNew()) {
-        // Don't delete new objects as they haven't been created yet. Fall through since we still need to unmark the object
-        retry.add(objectID);
       } else {
         // The object exists and is deletable, delete it.
         objectStore.removeAllObjectsByID(Collections.singleton(objectID));
         removeReferenceAndDestroyIfNecessary(objectID);
       }
-      unmarkReferenced(ref);
+      unmarkReferenced(deleteable);
       makeUnBlocked(objectID);
     }
     processPendingLookups();
@@ -570,7 +583,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   @Override
   public ObjectIDSet getObjectIDsInCache() {
-    final ObjectIDSet ids = new ObjectIDSet();
+    final ObjectIDSet ids = new BitSetObjectIDSet();
     ids.addAll(this.references.keySet()); // CDM doesn't throw ConcurrentModificationException
     return ids;
   }
@@ -713,7 +726,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
 
   @Override
   public Set<ObjectID> deleteObjects(Set<ObjectID> toDelete) {
-    return removeAllObjectsByID(new ObjectIDSet(toDelete));
+    return removeAllObjectsByID(new BitSetObjectIDSet(toDelete));
   }
   
   private void flushAllAndCommit(final Transaction persistenceTransaction, final Collection managedObjects) {
@@ -796,7 +809,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private static class ObjectManagerLookupContext implements ObjectManagerResultsContext {
 
     private final ObjectManagerResultsContext responseContext;
-    private final ObjectIDSet                 missing        = new ObjectIDSet();
+    private final ObjectIDSet missing        = new BitSetObjectIDSet();
     private final AccessLevel                 accessLevel;
     private int                               processedCount = 0;
 
@@ -856,7 +869,7 @@ public class ObjectManagerImpl implements ObjectManager, ManagedObjectChangeList
   private class WaitForLookupContext implements ObjectManagerResultsContext {
 
     private final ObjectID       lookupID;
-    private final ObjectIDSet    lookupIDs = new ObjectIDSet();
+    private final ObjectIDSet lookupIDs = new BitSetObjectIDSet();
     private boolean              resultSet = false;
     private ManagedObject        result;
     private final MissingObjects missingObjects;

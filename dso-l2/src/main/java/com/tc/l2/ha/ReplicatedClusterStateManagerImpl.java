@@ -167,6 +167,9 @@ public class ReplicatedClusterStateManagerImpl implements ReplicatedClusterState
       // XXX:: Is it a good idea to check if the message we are receiving is from the active server that we think is
       // active ? There is a race between publishing active and pushing cluster state and hence we don't do the check.
       // May be someday these two messages will merge into one.
+      if (msg.isSplitBrainMessage()) {
+        return; // About to get zapped no need to actually do anything with the split brain message.
+      }
       msg.initState(state);
       state.syncSequenceState();
       sendChannelLifeCycleEventsIfNecessary(msg);
@@ -178,7 +181,7 @@ public class ReplicatedClusterStateManagerImpl implements ReplicatedClusterState
     if (msg.getType() == ClusterStateMessage.NEW_CONNECTION_CREATED) {
       // Not really needed, but just in case
       channelLifeCycleSink.add(new NodeStateEventContext(NodeStateEventContext.CREATE, new ClientID(msg
-          .getConnectionID().getChannelID())));
+          .getConnectionID().getChannelID()), msg.getConnectionID().getProductId()));
     } else if (msg.getType() == ClusterStateMessage.CONNECTION_DESTROYED) {
       // this is needed to clean up some data structures internally
       // NOTE :: It is ok to add this event context directly to the channel life cycle handler (and not wrap around a
@@ -187,7 +190,7 @@ public class ReplicatedClusterStateManagerImpl implements ReplicatedClusterState
       // XXX::FIXME:: The above statement is true only when this event is fixed to be fired from active after all txns
       // are acked in the active.
       channelLifeCycleSink.add(new NodeStateEventContext(NodeStateEventContext.REMOVE, new ClientID(msg
-          .getConnectionID().getChannelID())));
+          .getConnectionID().getChannelID()), msg.getConnectionID().getProductId()));
     }
   }
 
@@ -210,7 +213,7 @@ public class ReplicatedClusterStateManagerImpl implements ReplicatedClusterState
   @Override
   public void fireNodeLeftEvent(NodeID nodeID) {
     // this is needed to clean up some data structures internally
-    channelLifeCycleSink.add(new NodeStateEventContext(NodeStateEventContext.REMOVE, nodeID));
+    channelLifeCycleSink.add(new NodeStateEventContext(NodeStateEventContext.REMOVE, nodeID, null));
   }
 
   @Override

@@ -29,9 +29,11 @@ public class CapacityEvictionTrigger extends AbstractEvictionTrigger implements 
   private int                      max            = 0;
   private int                      size           = 0;
   private ClientObjectReferenceSet clientSet;
-  private boolean                  repeat         = false;
+  private boolean                  valid         = true;
   private final ServerMapEvictionManager    evictor;
-  private boolean                   completed = false;
+  private boolean                   completed = true;
+  private int                      count = 0;
+  private final java.util.UUID           id = java.util.UUID.randomUUID();
 
   public CapacityEvictionTrigger(ServerMapEvictionManager engine, ObjectID oid) {
     super(oid);
@@ -40,21 +42,29 @@ public class CapacityEvictionTrigger extends AbstractEvictionTrigger implements 
 
   @Override
   public boolean startEviction(EvictableMap map) {
+    start();
+
+    try {
+      if ( !valid ) {
+  // job has already been performed on previous iteration
+        return false;
+      }
+    } finally {
+      reset();
+    }
+    
     max = map.getMaxTotalCount();
     size = map.getSize();
-    if ( repeat == true ) {
-      waitForCompletion();
-    }
-    completed = false;
+    count += 1;
     // ignore return value, capacity needs to make an independent decision on whether to run
     if (max >= 0 && size > max) {
       return super.startEviction(map);
-    } 
+    }
     aboveCapacity = false;
     return false;
   }
   
-  private synchronized void waitForCompletion() {
+  private synchronized void start() {
     while ( !completed ) {
       try {
         this.wait();
@@ -62,13 +72,14 @@ public class CapacityEvictionTrigger extends AbstractEvictionTrigger implements 
         throw new AssertionError("no interruptions");
       }
     }
+    completed = false;
   }
 
   @Override
   public synchronized void completeEviction(EvictableMap map) {
-    if ( !repeat ) {
+    if ( !valid ) {
       super.completeEviction(map);
-    }  
+    }
     completed = true;
     this.notify();
   }
@@ -77,7 +88,6 @@ public class CapacityEvictionTrigger extends AbstractEvictionTrigger implements 
   public ServerMapEvictionContext collectEvictionCandidates(final int maxParam, String className,
                                                             final EvictableMap map,
                                                             final ClientObjectReferenceSet clients) {
-
     // lets try and get smarter about this in the future but for now, just bring it back to capacity
     final int sample = boundsCheckSampleSize(size - maxParam);
     Map<Object, EvictableEntry> samples = (sample > 0) ? map.getRandomSamples(sample, clients, SamplingType.FOR_EVICTION)
@@ -86,12 +96,11 @@ public class CapacityEvictionTrigger extends AbstractEvictionTrigger implements 
     try {
       return createEvictionContext(className, samples);
     } finally {
-      int count = getCount();
-      if (count == 0) {
-        repeat = true;
+      if (getCount() == 0) {
+        valid = true;
         registerForUpdates(clients);
       } else {
-        repeat = false;
+        valid = false;
       }
     }
   }
@@ -107,15 +116,20 @@ public class CapacityEvictionTrigger extends AbstractEvictionTrigger implements 
   }
     
   private synchronized void clientUpdated() {
+    if ( clientSet == null ) {
+      return;
+    }
     clientSet.removeReferenceSetChangeListener(this);
     clientSet = null;
-    reset();
+    if ( !valid || getCount() > 0 ) {
+      throw new AssertionError("capacity trigger in illegal state");
+    }
     evictor.doEvictionOn(this);
   }
   
   @Override
   public synchronized boolean isValid() {
-    return repeat;
+    return valid;
   }
 
   @Override
@@ -130,7 +144,7 @@ public class CapacityEvictionTrigger extends AbstractEvictionTrigger implements 
 
   @Override
   public String toString() {
-    return "CapacityEvictionTrigger{" + ", size=" + size + ", max=" + max + ", repeat=" + repeat
+    return "CapacityEvictionTrigger{id=" + id + ", count=" + count +", size=" + size + ", max=" + max + ", valid=" + valid
            + ", was above capacity=" + aboveCapacity + ", client set=" + clientSetCount + ", parent="
            + super.toString() + '}';
   }

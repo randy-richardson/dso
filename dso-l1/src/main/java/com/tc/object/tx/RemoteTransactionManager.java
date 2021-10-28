@@ -35,6 +35,8 @@ public interface RemoteTransactionManager extends ClientHandshakeCallback, Prett
   public void receivedBatchAcknowledgement(TxnBatchID batchID, NodeID nodeID);
 
   public void stopProcessing();
+  
+  public void throttleProcessing(boolean processing);
 
   public void waitForAllCurrentTransactionsToComplete() throws AbortedOperationException;
 
@@ -42,4 +44,12 @@ public interface RemoteTransactionManager extends ClientHandshakeCallback, Prett
 
   public void batchReceived(TxnBatchID batchId, Set<TransactionID> set, NodeID nid);
   
+  /**
+   * This will mark state as REJOIN_IN_PROGRESS and throw threads out which are waiting in TransactionSequencer and
+   * LockAccounting
+   */
+  public void preCleanup();
+
+  public void requestImmediateShutdown();
+
 }

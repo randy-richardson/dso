@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
+    <version>4.2.0-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
 
@@ -30,13 +30,13 @@
     </dependency>
     <dependency>
       <groupId>org.terracotta.toolkit</groupId>
-      <artifactId>terracotta-toolkit-api</artifactId>
-      <version>${toolkit-api.version}</version>
+      <artifactId>terracotta-toolkit-api-internal</artifactId>
+      <version>${toolkit-api-internal.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.terracotta.toolkit</groupId>
-      <artifactId>terracotta-toolkit-api-internal</artifactId>
-      <version>${toolkit-api.version}</version>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>provided</scope>
     </dependency>
     <!-- Use ehcache-core to avoid a dependency cycle with 'ehcache' -->
     <dependency>
@@ -44,6 +44,18 @@
       <artifactId>ehcache-core</artifactId>
       <version>${ehcache.version}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.terracotta.internal</groupId>
+      <artifactId>common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

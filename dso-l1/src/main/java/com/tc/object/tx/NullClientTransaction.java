@@ -6,7 +6,7 @@ package com.tc.object.tx;
 
 import com.tc.object.ObjectID;
 import com.tc.object.TCObject;
-import com.tc.object.dmi.DmiDescriptor;
+import com.tc.object.dna.api.LogicalChangeID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 
@@ -52,7 +52,7 @@ public class NullClientTransaction extends AbstractClientTransaction {
   }
 
   @Override
-  protected void basicLogicalInvoke(TCObject source, int method, Object[] parameters) {
+  protected void basicLogicalInvoke(TCObject source, int method, Object[] parameters, LogicalChangeID id) {
     // null do nothing
   }
 
@@ -97,16 +97,6 @@ public class NullClientTransaction extends AbstractClientTransaction {
   }
 
   @Override
-  public void addDmiDescriptor(DmiDescriptor dd) {
-    return;
-  }
-
-  @Override
-  public List getDmiDescriptors() {
-    return Collections.EMPTY_LIST;
-  }
-
-  @Override
   public List getNotifies() {
     return Collections.EMPTY_LIST;
   }
@@ -115,4 +105,10 @@ public class NullClientTransaction extends AbstractClientTransaction {
   protected void basicAddMetaDataDescriptor(TCObject tco, MetaDataDescriptorInternal md) {
     // do nothing
   }
+
+  @Override
+  public int getSession() {
+    return 0;
+  }
+
 }

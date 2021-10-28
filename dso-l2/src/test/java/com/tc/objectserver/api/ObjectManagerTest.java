@@ -46,6 +46,8 @@ import com.tc.stats.counter.sampled.SampledCounterConfig;
 import com.tc.stats.counter.sampled.SampledCounterImpl;
 import com.tc.test.TCTestCase;
 import com.tc.util.Assert;
+import com.tc.util.BitSetObjectIDSet;
+import com.tc.util.ObjectIDSet;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.ThreadUtil;
 
@@ -97,7 +99,7 @@ public class ObjectManagerTest extends TCTestCase {
     persistor.start();
     this.logger = TCLogging.getLogger(getClass());
     this.config = new TestObjectManagerConfig();
-    this.clientStateManager = new ClientStateManagerImpl(TCLogging.getLogger(ClientStateManager.class));
+    this.clientStateManager = new ClientStateManagerImpl();
     ManagedObjectStateFactory.disableSingleton(true);
     ManagedObjectStateFactory.createInstance(new NullManagedObjectChangeListenerProvider(), persistor);
     this.newObjectCounter = new SampledCounterImpl(new SampledCounterConfig(1, 1, true, 0L));
@@ -230,7 +232,7 @@ public class ObjectManagerTest extends TCTestCase {
     // evict cache is not done. So, all objects reside in cache
 
     ObjectIDSet ids = makeObjectIDSet(0, 10);
-    TestResultsContext results = new TestResultsContext(ids, new ObjectIDSet());
+    TestResultsContext results = new TestResultsContext(ids, new BitSetObjectIDSet());
 
     final ClientID c1 = new ClientID(1);
     // fetch 10 objects and with fault-count -1
@@ -257,7 +259,7 @@ public class ObjectManagerTest extends TCTestCase {
     createObjects(10, 11, createObjects(11000, 18000, new HashSet<ObjectID>()));
 
     ids = makeObjectIDSet(10, 11);
-    results = new TestResultsContext(ids, new ObjectIDSet());
+    results = new TestResultsContext(ids, new BitSetObjectIDSet());
 
     // fetch 1 object and with fault-count 5K. but, object can reach 7K
     this.objectManager.lookupObjectsAndSubObjectsFor(c1, results, 5000);
@@ -274,14 +276,14 @@ public class ObjectManagerTest extends TCTestCase {
 
     // Look up two existing objects
     final ObjectIDSet ids = makeObjectIDSet(1, 2);
-    final TestResultsContext result1 = new TestResultsContext(ids, new ObjectIDSet());
+    final TestResultsContext result1 = new TestResultsContext(ids, new BitSetObjectIDSet());
 
     this.objectManager.lookupObjectsAndSubObjectsFor(null, result1, -1);
     result1.waitTillComplete();
 
     // Now look two missing objects
     final ObjectIDSet missingids = makeObjectIDSet(20, 22);
-    final TestResultsContext result2 = new TestResultsContext(missingids, new ObjectIDSet());
+    final TestResultsContext result2 = new TestResultsContext(missingids, new BitSetObjectIDSet());
 
     this.objectManager.lookupObjectsAndSubObjectsFor(null, result2, -1);
     result2.waitTillComplete();
@@ -296,7 +298,7 @@ public class ObjectManagerTest extends TCTestCase {
     // accurate in the lookup results
     initObjectManager();
 
-    final ObjectIDSet ids = new ObjectIDSet(); // important to use a Set here
+    final ObjectIDSet ids = new BitSetObjectIDSet(); // important to use a Set here
 
     ObjectID id1;
     ids.add((id1 = new ObjectID(1)));
@@ -326,7 +328,7 @@ public class ObjectManagerTest extends TCTestCase {
 
     ids.add(new ObjectID(3));
     ids.add(new ObjectID(4));
-    final ObjectIDSet newIDs = new ObjectIDSet();
+    final ObjectIDSet newIDs = new BitSetObjectIDSet();
     newIDs.add(new ObjectID(3));
     newIDs.add(new ObjectID(4));
 
@@ -358,7 +360,7 @@ public class ObjectManagerTest extends TCTestCase {
     final ObjectID mapID = new ObjectID(1);
     final ObjectID setID = new ObjectID(3);
 
-    final ObjectIDSet ids = new ObjectIDSet();
+    final ObjectIDSet ids = new BitSetObjectIDSet();
     ids.add(mapID);
     ids.add(setID);
 
@@ -491,7 +493,7 @@ public class ObjectManagerTest extends TCTestCase {
     final ObjectID id = new ObjectID(0);
     final ObjectID id1 = new ObjectID(1);
 
-    final ObjectIDSet objectIDs = new ObjectIDSet();
+    final ObjectIDSet objectIDs = new BitSetObjectIDSet();
 
     final ManagedObject mo = new TestManagedObject(id, new ArrayList<ObjectID>());
     final ManagedObject mo1 = new TestManagedObject(id1, new ArrayList<ObjectID>());
@@ -548,7 +550,7 @@ public class ObjectManagerTest extends TCTestCase {
   }
 
   private ObjectIDSet makeObjectIDSet(final int begin, final int end) {
-    final ObjectIDSet rv = new ObjectIDSet();
+    final ObjectIDSet rv = new BitSetObjectIDSet();
 
     if (begin > end) {
       for (int i = begin; i > end; i--) {
@@ -715,7 +717,7 @@ public class ObjectManagerTest extends TCTestCase {
         try {
           for (ObjectID oid : oids) {
             logger.info("Deleting " + oid);
-            DGCResultContext dgcResultContext = new DGCResultContext(new ObjectIDSet(Collections.singleton(oid)), null);
+            DGCResultContext dgcResultContext = new DGCResultContext(new BitSetObjectIDSet(Collections.singleton(oid)), null);
             barrier.await(5, TimeUnit.SECONDS);
             objectManager.notifyGCComplete(dgcResultContext);
             objectManager.getGarbageCollector().notifyGCComplete();
@@ -801,7 +803,7 @@ public class ObjectManagerTest extends TCTestCase {
       // Expected, since the object is new, it'll block the delete.
     }
 
-    ObjectIDSet oids = new ObjectIDSet(Collections.singleton(id));
+    ObjectIDSet oids = new BitSetObjectIDSet(Collections.singleton(id));
     TestResultsContext context = new TestResultsContext(oids, oids);
     objectManager.lookupObjectsFor(new ClientID(1), context);
     context.waitTillComplete();
@@ -1065,106 +1067,12 @@ public class ObjectManagerTest extends TCTestCase {
     }
   }
 
-  public static class TestDateDNA implements DNA {
-
-    final ObjectID setID;
-    final String   className;
-
-    public TestDateDNA(final String className, final ObjectID setID) {
-      this.className = className;
-      this.setID = setID;
-    }
-
-    @Override
-    public long getVersion() {
-      return 0;
-    }
-
-    @Override
-    public boolean hasLength() {
-      return false;
-    }
-
-    @Override
-    public int getArraySize() {
-      return -1;
-    }
-
-    @Override
-    public String getTypeName() {
-      return this.className;
-    }
-
-    @Override
-    public ObjectID getObjectID() throws DNAException {
-      return this.setID;
-    }
-
-    @Override
-    public ObjectID getParentObjectID() throws DNAException {
-      return ObjectID.NULL_ID;
-    }
-
-    @Override
-    public DNACursor getCursor() {
-      return new DNACursor() {
-        int count;
-
-        @Override
-        public boolean next() {
-          this.count++;
-          return this.count <= 1;
-        }
-
-        @Override
-        public LogicalAction getLogicalAction() {
-          switch (this.count) {
-            case 1:
-              return new LogicalAction(SerializationUtil.SET_TIME, new Object[] { System.currentTimeMillis() });
-            default:
-              throw new RuntimeException("bad count: " + this.count);
-          }
-        }
-
-        @Override
-        public PhysicalAction getPhysicalAction() {
-          throw new ImplementMe();
-        }
-
-        @Override
-        public boolean next(final DNAEncoding encoding) {
-          throw new ImplementMe();
-        }
-
-        @Override
-        public Object getAction() {
-          throw new ImplementMe();
-        }
-
-        @Override
-        public int getActionCount() {
-          return 1;
-        }
-
-        @Override
-        public void reset() throws UnsupportedOperationException {
-          throw new ImplementMe();
-        }
-      };
-    }
-
-    @Override
-    public boolean isDelta() {
-      return false;
-    }
-  }
-
   private static class TestResultsContext implements ObjectManagerResultsContext {
     public Map<ObjectID, ManagedObject> objects  = new HashMap<ObjectID, ManagedObject>();
     public Set<ObjectID>                missing  = new HashSet<ObjectID>();
     boolean                             complete = false;
-    private final ObjectIDSet           ids;
-    private final ObjectIDSet           newIDS;
+    private final ObjectIDSet ids;
+    private final ObjectIDSet newIDS;
 
     public TestResultsContext(final ObjectIDSet ids, final ObjectIDSet newIDS) {
       this.ids = ids;

@@ -1,12 +1,14 @@
 package com.tc.test.jmx;
 
 import org.terracotta.test.util.TestBaseUtil;
+import org.terracotta.tests.base.PauseManager;
 import org.terracotta.tests.base.TestClientManager;
 
 import com.tc.test.config.model.TestConfig;
 import com.tc.test.setup.GroupsData;
 import com.tc.test.setup.TestServerManager;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
@@ -30,16 +32,24 @@ public class TestHandler implements TestHandlerMBean {
   private final TestServerManager        testServerManager;
   private final TestClientManager        testClientManager;
   private final TestConfig               testConfig;
+  private final PauseManager             pauseManager;
   private volatile CustomCommandExecutor executor;
 
-  public TestHandler(TestServerManager manager, final TestClientManager testClientManager, TestConfig testConfig) {
+  public TestHandler(TestServerManager manager, final TestClientManager testClientManager, TestConfig testConfig,
+                     PauseManager pauseManager) {
     this.testServerManager = manager;
     this.testClientManager = testClientManager;
     this.testConfig = testConfig;
+    this.pauseManager = pauseManager;
   }
 
   public int getNumberOfGroups() {
     return testServerManager.getNumberOfGroups();
+  }
+
+  @Override
+  public File getTempDir() {
+    return testClientManager.getTempDir();
   }
 
   @Override
@@ -85,6 +95,11 @@ public class TestHandler implements TestHandlerMBean {
   @Override
   public boolean isPassiveStandBy(int groupIndex) throws Exception {
     return testServerManager.isPassiveStandBy(groupIndex);
+  }
+
+  @Override
+  public boolean isPassiveUninitialized(final int groupIndex, final int serverIndex) {
+    return testServerManager.isPassiveUninitialized(groupIndex, serverIndex);
   }
 
   @Override
@@ -155,6 +170,11 @@ public class TestHandler implements TestHandlerMBean {
   }
 
   @Override
+  public void closeTsaProxyConnections(final int groupIndex) throws Exception {
+    testServerManager.closeTsaProxy(groupIndex);
+  }
+
+  @Override
   public void startTsaProxy(int groupIndex) throws Exception {
     testServerManager.startTsaProxy(groupIndex);
   }
@@ -182,4 +202,36 @@ public class TestHandler implements TestHandlerMBean {
   public void runClient(final Class<? extends Runnable> client, final String clientName, final List<String> extraMainClassArgs) throws Throwable {
     testClientManager.runClient(client, clientName, extraMainClassArgs);
   }
+
+  @Override
+  public void startCrasher() {
+    testServerManager.startServerCrasher();
+
+  }
+
+  @Override
+  public void pauseClient(int clientIndex) throws Exception {
+    pauseManager.pauseClient(clientIndex);
+  }
+
+  @Override
+  public void unpauseClient(int clientIndex) throws Exception {
+    pauseManager.unpauseClient(clientIndex);
+  }
+
+  @Override
+  public void pauseServer(int groupIndex, int serverIndex) throws Exception {
+    pauseManager.pauseServer(groupIndex, serverIndex);
+  }
+
+  @Override
+  public void unpauseServer(int groupIndex, int serverIndex) throws Exception {
+    pauseManager.unpauseServer(groupIndex, serverIndex);
+  }
+
+  @Override
+  public int getActiveServerIndex(int groupIndex) {
+    return testServerManager.getActiveServerIndex(groupIndex);
+  }
+
 }

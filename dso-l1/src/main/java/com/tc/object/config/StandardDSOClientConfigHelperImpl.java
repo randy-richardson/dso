@@ -21,11 +21,19 @@ import com.tc.object.PortabilityImpl;
 import com.tc.object.bytecode.hook.impl.PreparedComponentsFromL2Connection;
 import com.tc.properties.L1ReconnectConfigImpl;
 import com.tc.properties.ReconnectConfig;
+import com.tc.properties.TCPropertiesConsts;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.security.PwProvider;
 import com.tc.util.Assert;
+import com.tc.util.ProductInfo;
+import com.tc.util.concurrent.ThreadUtil;
+import com.tc.util.io.ServerURL;
+import com.tc.util.version.Version;
 import com.terracottatech.config.L1ReconnectPropertiesDocument;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,30 +44,35 @@ import java.util.Set;
 
 public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper {
 
-  private static final TCLogger                              logger                             = CustomerLogging
-                                                                                                    .getDSOGenericLogger();
-  private final L1ConfigurationSetupManager                  configSetupManager;
+  private static final TCLogger             logger                      = CustomerLogging.getDSOGenericLogger();
+  private final L1ConfigurationSetupManager configSetupManager;
 
   // ====================================================================================================================
   /**
    * The lock for both {@link #userDefinedBootSpecs} and {@link #classSpecs} Maps
    */
-  private final Object                                       specLock                           = new Object();
-
+  private final Object                      specLock                    = new Object();
 
   /**
    * A map of class names to TransparencyClassSpec for individual classes
    * 
    * @GuardedBy {@link #specLock}
    */
-  private final Map                                          classSpecs                         = new HashMap();
+  private final Map                         classSpecs                  = new HashMap();
   // ====================================================================================================================
 
-  private final Portability                                  portability;
-  private int                                                faultCount                         = -1;
-  private final Set<String>                                  tunneledMBeanDomains               = Collections
-                                                                                                    .synchronizedSet(new HashSet<String>());
-  private ReconnectConfig                                    l1ReconnectConfig                  = null;
+  private final Portability                 portability;
+  private int                               faultCount                  = -1;
+  private final Set<String>                 tunneledMBeanDomains        = Collections
+                                                                            .synchronizedSet(new HashSet<String>());
+  private ReconnectConfig                   l1ReconnectConfig           = null;
+  private static final long                 CONFIGURATION_TOTAL_TIMEOUT = TCPropertiesImpl
+                                                                            .getProperties()
+                                                                            .getLong(TCPropertiesConsts.TC_CONFIG_TOTAL_TIMEOUT);
+  private static final long                 GET_CONFIGURATION_ONE_SOURCE_TIMEOUT = TCPropertiesImpl
+                                                                                     .getProperties()
+                                                                                     .getLong(TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT,
+                                                                                              30000);
 
   public StandardDSOClientConfigHelperImpl(final boolean initializedModulesOnlyOnce,
                                            final L1ConfigurationSetupManager configSetupManager)
@@ -90,10 +103,6 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     return this.portability;
   }
 
-  public LockDefinition createLockDefinition(final String name, final ConfigLockLevel level) {
-    return new LockDefinitionImpl(name, level);
-  }
-
   @Override
   public CommonL1Config getNewCommonL1Config() {
     return configSetupManager.commonL1Config();
@@ -105,10 +114,7 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   }
 
   private void doAutoconfig() throws Exception {
-    TransparencyClassSpec spec;
-
-    spec = getOrCreateSpec("java.lang.Object");
-    spec.setCallConstructorOnLoad(true);
+    getOrCreateSpec("java.lang.Object");
   }
 
   @Override
@@ -269,7 +275,9 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
 
   @Override
   public void validateGroupInfo(final PwProvider pwProvider) throws ConfigurationSetupException {
-    PreparedComponentsFromL2Connection connectionComponents = new PreparedComponentsFromL2Connection(configSetupManager, pwProvider);
+    PreparedComponentsFromL2Connection connectionComponents = new PreparedComponentsFromL2Connection(
+                                                                                                     configSetupManager,
+                                                                                                     pwProvider);
     ServerGroups serverGroupsFromL2 = new ConfigInfoFromL2Impl(configSetupManager, pwProvider).getServerGroupsFromL2()
         .getServerGroups();
 
@@ -280,7 +288,8 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
       for (int j = 0; j < connectionInfo.length; j++) {
         ConnectionInfo connectionIn = new ConnectionInfo(getIpAddressOfServer(connectionInfo[j].getHostname()),
                                                          connectionInfo[j].getPort(), i * j + j,
-                                                         connectionInfo[j].getGroupName()); // We don't care about security info here
+                                                         connectionInfo[j].getGroupName()); // We don't care about
+                                                                                            // security info here
         connInfoFromL1.add(connectionIn);
       }
     }
@@ -328,6 +337,106 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
     if (!connInfoFromL1.containsAll(connInfoFromL2)) {
       logConfigMismatchAndThrowException(connInfoFromL1, connInfoFromL2, errMsg);
     }
+  }
+
+  @Override
+  public void validateClientServerCompatibility(PwProvider pwProvider, SecurityInfo securityInfo)
+      throws ConfigurationSetupException {
+    PreparedComponentsFromL2Connection connectionComponents = new PreparedComponentsFromL2Connection(
+                                                                                                     configSetupManager,
+                                                                                                     pwProvider);
+    ConnectionInfoConfig[] connectionInfoItems = connectionComponents.createConnectionInfoConfigItemByGroup();
+    for (int stripeNumber = 0; stripeNumber < connectionInfoItems.length; stripeNumber++) {
+      ConnectionInfo[] connectionInfo = connectionInfoItems[stripeNumber].getConnectionInfos();
+      boolean foundCompactibleActive = false;
+      boolean activeDown = false;
+      int serverNumberInStripe = 0;
+      long startTime = System.currentTimeMillis();
+      long endTime = System.currentTimeMillis();
+      // keep looping till we find version of an active server
+      // or the timeout occurs
+      while ((endTime - startTime) < CONFIGURATION_TOTAL_TIMEOUT) {
+
+        ConnectionInfo connectionIn = new ConnectionInfo(connectionInfo[serverNumberInStripe].getHostname(),
+                                                         connectionInfo[serverNumberInStripe].getPort(),
+                                                         stripeNumber * serverNumberInStripe + serverNumberInStripe,
+                                                         connectionInfo[serverNumberInStripe].getGroupName(),
+                                                         connectionInfo[serverNumberInStripe].getSecurityInfo());
+
+        ServerURL serverUrl = null;
+        try {
+          serverUrl = new ServerURL(connectionIn.getHostname(), connectionIn.getPort(), "/version",
+                                    (int) GET_CONFIGURATION_ONE_SOURCE_TIMEOUT, connectionIn.getSecurityInfo());
+        } catch (MalformedURLException e) {
+          throw new ConfigurationSetupException("Error while trying to verify Client-Server version Compatibility ");
+        }
+
+        String strServerVersion = null;
+        try {
+          strServerVersion = serverUrl.getHeaderField("Version", pwProvider);
+          activeDown = false;
+          logger.info("Server: " + serverUrl + " returned server version = " + strServerVersion);
+        } catch (IOException e) {
+          // server that we pinged was not up
+          // we should try other servers in stripe
+          activeDown = true;
+          logger.info("Server seems to be down.." + serverUrl + ", retrying next available in stripe");
+        }
+        if (strServerVersion == null) {
+          if (serverNumberInStripe == (connectionInfo.length - 1)) {
+            if (activeDown) {
+              // active was down and we have reached the end of connectionInfo Array
+              // so we need to start checking from 0th index again
+              ThreadUtil.reallySleep(500); // sleep for 500 ms before trying again
+              serverNumberInStripe = 0;
+            } else {
+              // active was not down and we have reached end of array
+              // we didn't find any compatible active
+              foundCompactibleActive = false;
+              break;
+            }
+          } else {
+            // we found serverNumberInStripe = null
+            // but there are some server left in stripe we should try to get version from them
+            serverNumberInStripe++;
+          }
+          endTime = System.currentTimeMillis();
+          continue;
+        } else {
+          Version serverVersion = new Version(strServerVersion);
+          foundCompactibleActive = matchServerClientVersion(serverVersion, serverUrl);
+          break;
+        }
+      }
+      if ((endTime - startTime) > CONFIGURATION_TOTAL_TIMEOUT) { throw new ConfigurationSetupException(
+                                                                                                       "Timeout occured while trying to get Server Version, No Active server Found for : "
+                                                                                                           + CONFIGURATION_TOTAL_TIMEOUT); }
+      if (!foundCompactibleActive) {
+        if (activeDown) {
+          throw new IllegalStateException(
+                                          "At least one of the stripes is down, couldn't get the server version for compatibility check!");
+        } else {
+          throw new IllegalStateException("client Server Version mismatch occured: client version : "
+                                          + getClientVersion()
+                                          + " is not compatible with a server of Terracotta version: 4.0 or before");
+        }
+      }
+    }
+  }
+
+  private boolean matchServerClientVersion(Version serverVersion, ServerURL serverUrl) {
+    Version clientVersion = getClientVersion();
+    if (!clientVersion.equals(serverVersion)) {
+      throw new IllegalStateException("Client-Server Version mismatch occured: client version : " + clientVersion
+                                      + " is not compatible with serverVersion : " + serverVersion);
+    } else {
+      logger.debug("Found Compatible active Server = " + serverUrl);
+      return true;
+    }
+  }
+
+  private Version getClientVersion() {
+    return new Version(ProductInfo.getInstance().version());
   }
 
   private void dumpConnInfo(StringBuilder builder, String mesg, HashSet<ConnectionInfo> connInfo) {
@@ -386,7 +495,8 @@ public class StandardDSOClientConfigHelperImpl implements DSOClientConfigHelper 
   }
 
   @Override
-  public synchronized ReconnectConfig getL1ReconnectProperties(final PwProvider securityManager) throws ConfigurationSetupException {
+  public synchronized ReconnectConfig getL1ReconnectProperties(final PwProvider securityManager)
+      throws ConfigurationSetupException {
     if (l1ReconnectConfig == null) {
       setupL1ReconnectProperties(securityManager);
     }

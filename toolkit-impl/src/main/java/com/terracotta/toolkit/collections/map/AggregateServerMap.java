@@ -3,6 +3,10 @@
  */
 package com.terracotta.toolkit.collections.map;
 
+import static com.tc.server.ServerEventType.EVICT;
+import static com.tc.server.ServerEventType.EXPIRE;
+import static com.tc.server.ServerEventType.PUT_LOCAL;
+import static com.tc.server.ServerEventType.REMOVE_LOCAL;
 import static com.terracotta.toolkit.config.ConfigUtil.distributeInStripes;
 
 import org.terracotta.toolkit.ToolkitObjectType;
@@ -10,20 +14,31 @@ import org.terracotta.toolkit.ToolkitRuntimeException;
 import org.terracotta.toolkit.cache.ToolkitCacheListener;
 import org.terracotta.toolkit.cluster.ClusterNode;
 import org.terracotta.toolkit.collections.ToolkitMap;
+import org.terracotta.toolkit.concurrent.locks.ToolkitLock;
 import org.terracotta.toolkit.concurrent.locks.ToolkitReadWriteLock;
 import org.terracotta.toolkit.config.Configuration;
+import org.terracotta.toolkit.internal.cache.ToolkitCacheInternal;
+import org.terracotta.toolkit.internal.cache.ToolkitValueComparator;
+import org.terracotta.toolkit.internal.cache.VersionUpdateListener;
+import org.terracotta.toolkit.internal.cache.VersionedValue;
 import org.terracotta.toolkit.internal.concurrent.locks.ToolkitLockTypeInternal;
+import org.terracotta.toolkit.internal.search.ToolkitAttributeExtractorInternal;
 import org.terracotta.toolkit.internal.store.ConfigFieldsInternal;
 import org.terracotta.toolkit.internal.store.ConfigFieldsInternal.LOCK_STRATEGY;
 import org.terracotta.toolkit.rejoin.RejoinException;
 import org.terracotta.toolkit.search.QueryBuilder;
+import org.terracotta.toolkit.search.SearchException;
 import org.terracotta.toolkit.search.SearchQueryResultSet;
 import org.terracotta.toolkit.search.ToolkitSearchQuery;
 import org.terracotta.toolkit.search.attribute.ToolkitAttributeExtractor;
+import org.terracotta.toolkit.search.attribute.ToolkitAttributeType;
 import org.terracotta.toolkit.store.ToolkitConfigFields;
 import org.terracotta.toolkit.store.ToolkitConfigFields.Consistency;
+import org.terracotta.toolkit.store.ToolkitStore;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.tc.abortable.AbortedOperationException;
 import com.tc.exception.PlatformRejoinException;
 import com.tc.exception.TCNotRunningException;
@@ -32,13 +47,23 @@ import com.tc.logging.TCLogging;
 import com.tc.object.LiteralValues;
 import com.tc.object.ObjectID;
 import com.tc.object.ServerEventDestination;
-import com.tc.object.ServerEventType;
 import com.tc.object.TCObject;
 import com.tc.object.TCObjectServerMap;
+import com.tc.object.search.SearchRequestIDGenerator;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.PinnedEntryFaultCallback;
+import com.tc.object.tx.TransactionCompleteListener;
+import com.tc.object.tx.TransactionID;
 import com.tc.platform.PlatformService;
+import com.tc.search.SearchRequestID;
+import com.tc.server.CustomLifespanVersionedServerEvent;
+import com.tc.server.ServerEvent;
+import com.tc.server.ServerEventType;
+import com.tc.server.VersionedServerEvent;
+import com.terracotta.toolkit.TerracottaToolkit;
 import com.terracotta.toolkit.abortable.ToolkitAbortableOperationException;
+import com.terracotta.toolkit.bulkload.BufferBackend;
+import com.terracotta.toolkit.bulkload.BufferedOperation;
 import com.terracotta.toolkit.cluster.TerracottaClusterInfo;
 import com.terracotta.toolkit.collections.map.ServerMap.GetType;
 import com.terracotta.toolkit.collections.map.ToolkitMapAggregateSet.ClusteredMapAggregateEntrySet;
@@ -56,11 +81,16 @@ import com.terracotta.toolkit.config.UnclusteredConfiguration;
 import com.terracotta.toolkit.config.cache.InternalCacheConfigurationType;
 import com.terracotta.toolkit.object.DestroyApplicator;
 import com.terracotta.toolkit.object.ToolkitObjectStripe;
+import com.terracotta.toolkit.object.serialization.SerializationStrategy;
+import com.terracotta.toolkit.object.serialization.SerializedMapValue;
+import com.terracotta.toolkit.object.serialization.SerializedMapValueParameters;
 import com.terracotta.toolkit.search.SearchFactory;
 import com.terracotta.toolkit.search.SearchableEntity;
 import com.terracotta.toolkit.type.DistributedClusteredObjectLookup;
 import com.terracotta.toolkit.type.DistributedToolkitType;
+import com.terracottatech.search.SearchBuilder.Search;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -77,22 +107,24 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class AggregateServerMap<K, V> implements DistributedToolkitType<InternalToolkitMap<K, V>>,
-    ToolkitCacheImplInterface<K, V>, ConfigChangeListener, ValuesResolver<K, V>, SearchableEntity,
-    ServerEventDestination, LocalExpirationCallback {
-  private static final TCLogger                                            LOGGER                               = TCLogging
-                                                                                                                    .getLogger(AggregateServerMap.class);
+    ToolkitCacheInternal<K,V>, ToolkitStore<K,V>, ConfigChangeListener, ValuesResolver<K, V>, SearchableEntity,
+    BufferBackend<K, V>, ServerEventDestination {
+  private static final TCLogger                                            LOGGER                             = TCLogging
+                                                                                                                  .getLogger(AggregateServerMap.class);
 
-  public static final int                                                  DEFAULT_MAX_SIZEOF_DEPTH             = 1000;
+  public static final int                                                  DEFAULT_MAX_SIZEOF_DEPTH           = 1000;
 
-  private static final String                                              EHCACHE_GETALL_BATCH_SIZE_PROPERTY   = "ehcache.getAll.batchSize";
-  private static final int                                                 DEFAULT_GETALL_BATCH_SIZE            = 1000;
-  private final static String                                              CONFIG_CHANGE_LOCK_ID                = "__tc_config_change_lock";
-  private final static List<ToolkitObjectType>                             VALID_TYPES                          = Arrays
-                                                                                                                    .asList(ToolkitObjectType.STORE,
-                                                                                                                            ToolkitObjectType.CACHE);
+  private static final String                                              EHCACHE_GETALL_BATCH_SIZE_PROPERTY = "ehcache.getAll.batchSize";
+  private static final int                                                 DEFAULT_GETALL_BATCH_SIZE          = 1000;
+  private final static String                                              SNAPSHOT_TXN_LOCK_ID               = "snapshot_txn_lock";
+  private final static List<ToolkitObjectType>                             VALID_TYPES                        = Arrays
+                                                                                                                  .asList(ToolkitObjectType.STORE,
+                                                                                                                      ToolkitObjectType.CACHE);
 
   private final int                                                        getAllBatchSize;
 
@@ -107,17 +139,21 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   private final ServerMapLocalStoreFactory                                 serverMapLocalStoreFactory;
   private final TerracottaClusterInfo                                      clusterInfo;
   private final PlatformService                                            platformService;
+  private final SearchRequestIDGenerator                                   searchReqIdGenerator;
+  private final ToolkitLock configMutationLock;
   private final Callable<ToolkitMap<String, String>>                       schemaCreator;
   private final DistributedClusteredObjectLookup<InternalToolkitMap<K, V>> lookup;
   private final ToolkitObjectType                                          toolkitObjectType;
   private final L1ServerMapLocalCacheStore<K, V>                           localCacheStore;
   private final PinnedEntryFaultCallback                                   pinnedEntryFaultCallback;
   private volatile boolean                                                 lookupSuccessfulAfterRejoin;
-  private final AtomicReference<ToolkitMap<String, String>>                attrSchema                           = new AtomicReference<ToolkitMap<String, String>>();
+  private final AtomicReference<ToolkitMap<String, String>>                attrSchema                         = new AtomicReference<ToolkitMap<String, String>>();
   private final LOCK_STRATEGY                                              lockStrategy;
-  private ToolkitAttributeExtractor                                        attributeExtractor                 = null;
+  private volatile ToolkitAttributeExtractor                               attributeExtractor;
+  private final CopyOnWriteArraySet<VersionUpdateListener<K, V>>           versionUpdateListeners;
+  private final ToolkitLock                                                concurrentLock;
 
-  private int getTerracottaProperty(String propName, int defaultValue) {
+  protected int getTerracottaProperty(String propName, int defaultValue) {
     try {
       return platformService.getTCProperties().getInt(propName, defaultValue);
     } catch (UnsupportedOperationException e) {
@@ -130,11 +166,13 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
                             DistributedClusteredObjectLookup<InternalToolkitMap<K, V>> lookup, String name,
                             ToolkitObjectStripe<InternalToolkitMap<K, V>>[] stripeObjects, Configuration config,
                             Callable<ToolkitMap<String, String>> schemaCreator,
-                            ServerMapLocalStoreFactory serverMapLocalStoreFactory, PlatformService platformService) {
+                            ServerMapLocalStoreFactory serverMapLocalStoreFactory, PlatformService platformService,
+                            ToolkitLock configMutationLock) {
     this.toolkitObjectType = type;
     this.searchBuilderFactory = searchBuilderFactory;
     this.lookup = lookup;
     this.platformService = platformService;
+    this.configMutationLock = configMutationLock;
     this.clusterInfo = new TerracottaClusterInfo(platformService);
     this.getAllBatchSize = getTerracottaProperty(EHCACHE_GETALL_BATCH_SIZE_PROPERTY, DEFAULT_GETALL_BATCH_SIZE);
     this.serverMapLocalStoreFactory = serverMapLocalStoreFactory;
@@ -144,15 +182,18 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     Preconditions.checkNotNull(schemaCreator);
     this.schemaCreator = schemaCreator;
     this.listeners = new CopyOnWriteArrayList<ToolkitCacheListener<K>>();
+    this.versionUpdateListeners = new CopyOnWriteArraySet<VersionUpdateListener<K, V>>();
 
     this.config = new UnclusteredConfiguration(config);
     this.consistency = Consistency.valueOf((String) InternalCacheConfigurationType.CONSISTENCY
         .getExistingValueOrException(config));
     localCacheStore = createLocalCacheStore();
     pinnedEntryFaultCallback = new PinnedEntryFaultCallbackImpl(this);
+    searchReqIdGenerator = new SearchRequestIDGenerator();
     this.timeSource = new SystemTimeSource();
     this.lockStrategy = getLockStrategyFromConfig(config);
     setupStripeObjects(stripeObjects);
+    concurrentLock = ToolkitLockingApi.createConcurrentTransactionLock("CONCURRENT_LOCK_FOR_BULKLOAD", platformService);
   }
 
   private void setupStripeObjects(ToolkitObjectStripe<InternalToolkitMap<K, V>>[] stripeObjects) {
@@ -193,7 +234,6 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
         .getValueIfExistsOrDefault(config);
     for (InternalToolkitMap<K, V> serverMap : serverMapsParam) {
       serverMap.initializeLocalCache(localCacheStore, pinnedEntryFaultCallback, localCacheEnabled);
-      serverMap.setExpirationCallback(this);
     }
   }
 
@@ -220,12 +260,21 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     }
 
     // handles re-join scenario by re-registering server event listener if needed
-    if (!listeners.isEmpty()) {
-      registerServerEventListener();
-    }
+    resendEventRegistrations();
 
     if (attributeExtractor != null) {
-      registerServerMapAttributeExtractor(attributeExtractor);
+      registerServerMapAttributeExtractor();
+    }
+  }
+
+  @Override
+  public void resendEventRegistrations() {
+    if (!listeners.isEmpty()) {
+      registerServerEventListener(EnumSet.of(EVICT, EXPIRE), true);
+    }
+
+    if (!versionUpdateListeners.isEmpty()) {
+      registerServerEventListener(EnumSet.of(PUT_LOCAL, REMOVE_LOCAL), true);
     }
   }
 
@@ -233,7 +282,7 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     return lookupSuccessfulAfterRejoin;
   }
 
-  private L1ServerMapLocalCacheStore<K, V> createLocalCacheStore() {
+  protected L1ServerMapLocalCacheStore<K, V> createLocalCacheStore() {
     ServerMapLocalStore<K, V> smLocalStore = serverMapLocalStoreFactory
         .getOrCreateServerMapLocalStore(getLocalStoreConfig());
     return new L1ServerMapLocalCacheStoreImpl<K, V>(smLocalStore);
@@ -243,16 +292,20 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     return new ServerMapLocalStoreConfigParameters().populateFrom(config, this.name).buildConfig();
   }
 
+  protected int getServerMapIndexForKey(Object key) {
+    return Math.abs(key.hashCode() % serverMaps.length);
+  }
+
   protected InternalToolkitMap<K, V> getServerMapForKey(Object key) {
     Preconditions.checkNotNull(key, "Key cannot be null");
-    return serverMaps[Math.abs(key.hashCode() % serverMaps.length)];
+    return serverMaps[getServerMapIndexForKey(key)];
   }
 
   protected InternalToolkitMap<K, V> getAnyServerMap() {
     return serverMaps[0];
   }
 
-  private TCObjectServerMap getAnyTCObjectServerMap() {
+  protected TCObjectServerMap getAnyTCObjectServerMap() {
     final InternalToolkitMap<K, V> e = getAnyServerMap();
     if (e == null || e.__tc_managed() == null) { throw new UnsupportedOperationException("Map is not shared ServerMap"); }
     return (TCObjectServerMap) e.__tc_managed();
@@ -266,11 +319,19 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   @Override
   public int size() {
     // wait and then tell me more accurate size
+    waitForAllCurrentTransactionsToComplete();
+    return getSize();
+  }
+
+  protected void waitForAllCurrentTransactionsToComplete() {
     try {
       platformService.waitForAllCurrentTransactionsToComplete();
     } catch (AbortedOperationException e) {
       throw new ToolkitAbortableOperationException(e);
     }
+  }
+
+  private int getSize() {
     long sum;
     try {
       sum = getAnyTCObjectServerMap().getAllSize(serverMaps);
@@ -319,14 +380,22 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
 
   @Override
   public void clear() {
+    doClear();
+    waitForAllCurrentTransactionsToComplete();
+  }
+
+  private void doClear() {
     for (InternalToolkitMap<K, V> map : serverMaps) {
       map.clear();
     }
-    try {
-      platformService.waitForAllCurrentTransactionsToComplete();
-    } catch (AbortedOperationException e) {
-      throw new ToolkitAbortableOperationException(e);
+  }
+
+  @Override
+  public void clearVersioned() {
+    for (InternalToolkitMap<K, V> map : serverMaps) {
+      map.clearVersioned();
     }
+    waitForAllCurrentTransactionsToComplete();
     clearLocalCache();
   }
 
@@ -366,13 +435,18 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   }
 
   @Override
+  public void removeVersioned(final Object key, final long version) {
+    getServerMapForKey(key).removeNoReturnVersioned(key, version);
+  }
+
+  @Override
   public V unsafeLocalGet(Object key) {
     return getServerMapForKey(key).unsafeLocalGet(key);
   }
 
   @Override
   public V unlockedGet(Object key, boolean quiet) {
-    return getServerMapForKey(key).unlockedGet((K)key, quiet);
+    return getServerMapForKey(key).unlockedGet((K) key, quiet);
   }
 
   @Override
@@ -402,7 +476,7 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     synchronized (listeners) {
       if (!listeners.contains(listener)) {
         if (listeners.isEmpty()) {
-          registerServerEventListener();
+          registerServerEventListener(EnumSet.of(EVICT, EXPIRE), false);
         }
         listeners.add(listener);
       }
@@ -414,27 +488,40 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     synchronized (listeners) {
       if (listeners.contains(listener)) {
         if (listeners.size() == 1) {
-          unregisterServerEventListener();
+          unregisterServerEventListener(EnumSet.of(EVICT, EXPIRE));
         }
         listeners.remove(listener);
       }
     }
   }
 
-  private void registerServerEventListener() {
-    final EnumSet<ServerEventType> types = EnumSet.of(ServerEventType.EVICT, ServerEventType.EXPIRE);
-    platformService.registerServerEventListener(this, types);
+  private void registerServerEventListener(Set<ServerEventType> eventTypes, boolean skipRejoinChecks) {
+    // For routing incoming events
+    platformService.registerServerEventListener(this, eventTypes);
+
+    // Send registrations to server
+    for (InternalToolkitMap<K, V> serverMap : serverMaps) {
+      serverMap.registerListener(eventTypes, skipRejoinChecks);
+    }
+
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Server event listener has been registered for cache: "
-                  + getName() + ". Notification types: " + types);
+                   + getName() + ". Notification types: " + eventTypes);
     }
   }
 
-  private void unregisterServerEventListener() {
-    platformService.unregisterServerEventListener(this);
+  private void unregisterServerEventListener(Set<ServerEventType> eventTypes) {
+    // For routing incoming events
+    platformService.unregisterServerEventListener(this, eventTypes);
+
+    // Send registrations to server
+    for (InternalToolkitMap<K, V> serverMap : serverMaps) {
+      serverMap.unregisterListener(eventTypes);
+    }
+
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Server event listener has been unregistered for cache: "
-                  + getName());
+                   + getName() + ". Notification types: " + eventTypes);
     }
   }
 
@@ -456,9 +543,28 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
 
   @Override
   public SearchQueryResultSet executeQuery(ToolkitSearchQuery query) {
-    return searchBuilderFactory.createSearchExecutor(getName(), getToolkitObjectType(), this,
-                                                     getAnyServerMap().isEventual(), platformService)
-        .executeQuery(query);
+    SearchQueryResultSet results = null;
+    SearchRequestID reqId = searchReqIdGenerator.getNextRequestID();
+    boolean doSnapshot = Search.BATCH_SIZE_UNLIMITED != query.getResultPageSize();
+    try {
+      if (doSnapshot) takeSnapshotForSearchQuery(reqId);
+      results = searchBuilderFactory.createSearchExecutor(getName(), getToolkitObjectType(), this,
+          getAnyServerMap().isEventual(), platformService)
+          .executeQuery(query, reqId);
+      
+    } finally {
+      if (results == null && doSnapshot) closeResultSet(reqId);
+    }
+    return results;
+  }
+
+  @Override
+  public void closeResultSet(SearchRequestID queryId) {
+    for (ToolkitObjectStripe<InternalToolkitMap<K, V>> stripe : stripeObjects) {
+      Iterator<InternalToolkitMap<K, V>> itr = stripe.iterator();
+      InternalToolkitMap<K, V> svrMap = itr.next();
+      svrMap.releaseSnapshot(queryId);
+    }
   }
 
   public void setApplyDestroyCallback(DestroyApplicator destroyCallback) {
@@ -467,11 +573,14 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
 
   @Override
   public void destroy() {
+    // Wait due to search index destroy working globally across all segments only once,
+    // therefore allowing for races between pending txns and index destroy
+    if (attributeExtractor != null) waitForAllCurrentTransactionsToComplete();
     for (InternalToolkitMap serverMap : serverMaps) {
       serverMap.destroy();
     }
     try {
-      schemaCreator.call().destroy();
+      getSearchSchema().destroy();
     } catch (Exception e) {
       throw new ToolkitRuntimeException(e);
     }
@@ -482,12 +591,10 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     // Need to wait for all transactions to complete since there could still be in-flight transactions dependent on the
     // local cache.
     try {
-      platformService.waitForAllCurrentTransactionsToComplete();
+      waitForAllCurrentTransactionsToComplete();
     } catch (TCNotRunningException e) {
       LOGGER.info("Ignoring " + TCNotRunningException.class.getName()
                   + " while waiting for all current txns to complete");
-    } catch (AbortedOperationException e) {
-      throw new ToolkitAbortableOperationException(e);
     } finally {
       try {
         getAnyServerMap().disposeLocally();
@@ -507,11 +614,38 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     return doGetAll(keys, true);
   }
 
+  private Multimap<Integer, Entry> createBatchsForServerMap(Map map) {
+    Multimap<Integer, Entry> batches = ArrayListMultimap.create();
+    for (Object o : map.entrySet()) {
+      Entry entry = (Entry)o;
+      batches.put(getServerMapIndexForKey(entry.getKey()), entry);
+    }
+    return batches;
+  }
+
   @Override
   public void putAll(Map<? extends K, ? extends V> map) {
     if (map == null || map.isEmpty()) { return; }
-    for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
-      putNoReturn(entry.getKey(), entry.getValue());
+    if (getAnyServerMap().isEventual()) {
+      Multimap<Integer, Entry> batchsForServerMap = createBatchsForServerMap(map);
+      for (Entry<Integer, Collection<Entry>> batch : batchsForServerMap.asMap().entrySet()) {
+        concurrentLock.lock();
+        try {
+          // for single serverMap
+          for (Entry e : batch.getValue()) {
+            serverMaps[batch.getKey()].unlockedPutNoReturn((K) e.getKey(), (V) e.getValue(), timeSource.nowInSeconds(),
+                ToolkitConfigFields.DEFAULT_MAX_TTI_SECONDS,
+                ToolkitConfigFields.DEFAULT_MAX_TTL_SECONDS);
+          }
+        } finally {
+          concurrentLock.unlock();
+        }
+
+      }
+    } else {
+      for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
+        putNoReturn(entry.getKey(), entry.getValue());
+      }
     }
   }
 
@@ -520,6 +654,26 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     if (keys == null || keys.isEmpty()) { return; }
     for (K key : keys) {
       removeNoReturn(key);
+    }
+  }
+
+  @Override
+  public void registerVersionUpdateListener(final VersionUpdateListener listener) {
+    synchronized (versionUpdateListeners) {
+      if (versionUpdateListeners.isEmpty()) {
+        registerServerEventListener(EnumSet.of(PUT_LOCAL, REMOVE_LOCAL), false);
+      }
+      versionUpdateListeners.add(listener);
+    }
+  }
+
+  @Override
+  public void unregisterVersionUpdateListener(final VersionUpdateListener listener) {
+    synchronized (versionUpdateListeners) {
+      versionUpdateListeners.remove(listener);
+      if (versionUpdateListeners.isEmpty()) {
+        unregisterServerEventListener(EnumSet.of(PUT_LOCAL, REMOVE_LOCAL));
+      }
     }
   }
 
@@ -585,6 +739,52 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
     }
   }
 
+  private void takeSnapshotForSearchQuery(SearchRequestID reqId) {
+    if (platformService.isExplicitlyLocked()) throw new SearchException(
+                                                                        "Paged search queries inside explicit lock scope not supported");
+
+    final CountDownLatch complete = new CountDownLatch(stripeObjects.length);
+    for (ToolkitObjectStripe<InternalToolkitMap<K, V>> stripe : stripeObjects) {
+      Iterator<InternalToolkitMap<K, V>> itr = stripe.iterator();
+      InternalToolkitMap<K, V> svrMap = itr.next();
+
+      ToolkitLockingApi.lock(SNAPSHOT_TXN_LOCK_ID, ToolkitLockTypeInternal.CONCURRENT, platformService);
+      platformService.addTransactionCompleteListener(new TransactionCompleteListener() {
+
+        @Override
+        public void transactionComplete(TransactionID txnID) {
+          complete.countDown();
+        }
+
+        @Override
+        public void transactionAborted(TransactionID txnID) {
+          complete.countDown();
+
+        }
+      });
+      try {
+        svrMap.takeSnapshot(reqId);
+        while (itr.hasNext()) {
+          svrMap = itr.next();
+          svrMap.addSelfToTxn();
+        }
+      } finally {
+        try {
+          ToolkitLockingApi.unlock(SNAPSHOT_TXN_LOCK_ID, ToolkitLockTypeInternal.CONCURRENT, platformService);
+        } catch (PlatformRejoinException e) {
+          throw new RejoinException(e);
+        }
+      }
+
+    }
+
+    try {
+      complete.await();
+    } catch (InterruptedException e) {
+      throw new ToolkitRuntimeException(e);
+    }
+  }
+
   public void assertKeyLiteral(K key) {
     if (!LiteralValues.isLiteralInstance(key)) {
       //
@@ -626,7 +826,7 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
 
   @Override
   public void setConfigField(final String fieldChanged, final Serializable changedValue) {
-    ToolkitLockingApi.lock(CONFIG_CHANGE_LOCK_ID, ToolkitLockTypeInternal.CONCURRENT, platformService);
+    configMutationLock.lock();
     try {
       // to prevent user from manually setting a wrong configuration option
       validateField(fieldChanged);
@@ -656,7 +856,7 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
         stripe.setConfigField(fieldChanged, newValue);
       }
     } finally {
-      ToolkitLockingApi.unlock(CONFIG_CHANGE_LOCK_ID, ToolkitLockTypeInternal.CONCURRENT, platformService);
+      configMutationLock.unlock();
     }
   }
 
@@ -683,8 +883,20 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   }
 
   @Override
+  public void unlockedPutNoReturnVersioned(final K key, final V value, final long version, final int createTimeInSecs,
+                                           final int customTTISeconds, final int customTTLSeconds) {
+    getServerMapForKey(key).unlockedPutNoReturnVersioned(key, value, version, createTimeInSecs, customTTISeconds,
+                                                         customTTLSeconds);
+  }
+
+  @Override
   public void unlockedRemoveNoReturn(Object key) {
     getServerMapForKey(key).unlockedRemoveNoReturn(key);
+  }
+
+  @Override
+  public void unlockedRemoveNoReturnVersioned(final Object key, final long version) {
+    getServerMapForKey(key).unlockedRemoveNoReturnVersioned(key, version);
   }
 
   public void unlockedClear() {
@@ -729,9 +941,35 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   }
 
   @Override
+  public void putVersioned(K key, V value, long version) {
+    putVersioned(key, value, version, timeSource.nowInSeconds(), ToolkitConfigFields.NO_MAX_TTI_SECONDS,
+        ToolkitConfigFields.NO_MAX_TTL_SECONDS);
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version) {
+    getServerMapForKey(key).putIfAbsentVersioned(key, value, version, timeSource.nowInSeconds(),
+                 ToolkitConfigFields.NO_MAX_TTI_SECONDS, ToolkitConfigFields.NO_MAX_TTL_SECONDS);
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version, int createTimeInSecs, int customMaxTTISeconds,
+                                        int customMaxTTLSeconds) {
+    getServerMapForKey(key).putIfAbsentVersioned(key, value, version, createTimeInSecs, customMaxTTISeconds,
+                                                      customMaxTTLSeconds);
+  }
+
+  @Override
+  public void putVersioned(K key, V value, long version, int createTimeInSecs, int customMaxTTISeconds,
+                           int customMaxTTLSeconds) {
+    getServerMapForKey(key).putVersioned(key, value, version, createTimeInSecs, customMaxTTISeconds,
+        customMaxTTLSeconds);
+  }
+
+  @Override
   public V put(K key, V value) {
     return put(key, value, timeSource.nowInSeconds(), ToolkitConfigFields.NO_MAX_TTI_SECONDS,
-               ToolkitConfigFields.NO_MAX_TTL_SECONDS);
+        ToolkitConfigFields.NO_MAX_TTL_SECONDS);
   }
 
   @Override
@@ -767,34 +1005,80 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   }
 
   @Override
-  public void handleServerEvent(final ServerEventType type, final Object key) {
-    doHandleServerEvent(type, key);
+  public void handleServerEvent(final ServerEvent event) {
+    final ServerEventType type = event.getType();
+    if (type == EVICT || type == EXPIRE) {
+      doHandleEvictions(event);
+    } else if (type == PUT_LOCAL || type == REMOVE_LOCAL) {
+      doHandleVersionUpdates((VersionedServerEvent) event);
+    }
   }
 
-  private void doHandleServerEvent(final ServerEventType type, final Object key) {
+  private void doHandleEvictions(final ServerEvent event) {
     for (final ToolkitCacheListener listener : listeners) {
       try {
-        switch (type) {
+        switch (event.getType()) {
           case EVICT:
-            listener.onEviction(key);
+            listener.onEviction(event.getKey());
             break;
           case EXPIRE:
-            listener.onExpiration(key);
+            listener.onExpiration(event.getKey());
             break;
+          default:
+            throw new IllegalStateException("unexpected ServerEvent in doHandleEvictions " + event.getType());
         }
       } catch (Throwable t) {
         // Catch throwable here since the eviction listener will ultimately call user code.
         // That way we do not cause an unhandled exception to be thrown in a stage thread, bringing
         // down the L1.
-        LOGGER.error("Cache listener threw an exception.", t);
+        LOGGER.error("Cache listener threw an exception", t);
       }
     }
   }
 
-  @Override
-  public void expiredLocally(final Object key) {
-    // transform to regular server expiration to correctly notify listeners
-    doHandleServerEvent(ServerEventType.EXPIRE, key);
+  private void doHandleVersionUpdates(final VersionedServerEvent event) {
+    final Object key = event.getKey();
+    final long version = event.getVersion();
+    final ServerEventType type = event.getType();
+    switch (type) {
+      case PUT_LOCAL:
+        CustomLifespanVersionedServerEvent customLifespanEvent = (CustomLifespanVersionedServerEvent) event;
+        final int creationTimeInSeconds = customLifespanEvent.getCreationTimeInSeconds();
+        final int timeToIdle = customLifespanEvent.getTimeToIdle();
+        final int timeToLive = customLifespanEvent.getTimeToLive();
+        V value;
+
+        try {
+          value = deserializeValue(key, event.getValue());
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        for (final VersionUpdateListener<K, V> listener : versionUpdateListeners) {
+          listener.onLocalPut((K) key, value, version, creationTimeInSeconds, timeToIdle, timeToLive,
+                              getServerMapIndexForKey(key));
+        }
+        break;
+      case REMOVE_LOCAL:
+        for (final VersionUpdateListener<K, V> listener : versionUpdateListeners) {
+          listener.onLocalRemove((K) key, version, getServerMapIndexForKey(key));
+        }
+        break;
+      default:
+        throw new IllegalStateException("unexpected ServerEvent in doHandleVersionUpdates " + type);
+    }
+  }
+
+  private V deserializeValue(final Object key, final byte[] value) throws IOException, ClassNotFoundException {
+    final int now = new SystemTimeSource().nowInSeconds();
+    final SerializedMapValueParameters<V> params = new SerializedMapValueParameters<V>()
+        .createTime(now).lastAccessedTime(now).serialized(value);
+    final SerializationStrategy serializationStrategy = platformService
+        .lookupRegisteredObjectByName(TerracottaToolkit.TOOLKIT_SERIALIZER_REGISTRATION_NAME,
+            SerializationStrategy.class);
+    final boolean compressionEnabled = serverMaps[0].isCompressionEnabled();
+
+    return (V) new SerializedMapValue(params).getDeserializedValue(
+        serializationStrategy, compressionEnabled, localCacheStore, key, false);
   }
 
   private static class AggregateServerMapIterator<E> implements Iterator<E> {
@@ -825,22 +1109,50 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   }
 
   @Override
-  public void setAttributeExtractor(ToolkitAttributeExtractor attrExtractor) {
+  public void setAttributeExtractor(ToolkitAttributeExtractor<K, V> attrExtractor) {
     // This race is okay to have, the only reason for the conditional is to avoid calling call() below
     attributeExtractor = attrExtractor;
     if (attrSchema.get() == null) {
       try {
-        attrSchema.compareAndSet(null, schemaCreator.call());
+        attrSchema.compareAndSet(null, getSearchSchema());
       } catch (Exception e) {
         throw new ToolkitRuntimeException(e);
       }
     }
-    registerServerMapAttributeExtractor(attrExtractor);
+    registerServerMapAttributeExtractor();
   }
 
-  private void registerServerMapAttributeExtractor(ToolkitAttributeExtractor attrExtractor) {
+  private ToolkitMap<String, String> getSearchSchema() throws Exception {
+    ToolkitMap<String, String> schema;
+    if (attributeExtractor instanceof ToolkitAttributeExtractorInternal) {
+      schema = ((ToolkitAttributeExtractorInternal) attributeExtractor).createAttributeMap();
+    } else {
+      schema = schemaCreator.call();
+    }
+    return schema;
+  }
+
+  private void registerServerMapAttributeExtractor() {
+    if (attributeExtractor instanceof ToolkitAttributeExtractorInternal) {
+      ToolkitAttributeExtractorInternal<K, V> intExtr = (ToolkitAttributeExtractorInternal<K, V>) attributeExtractor;
+      Map<String, Class<?>> initialSchema = intExtr.getInitialTypeSchema();
+      Map<String, String> configSchema = new HashMap<String, String>(initialSchema.size());
+
+      for (Map.Entry<String, Class<?>> attrType : initialSchema.entrySet()) {
+        ToolkitAttributeType t = ToolkitAttributeType.typeFor(attrType.getValue());
+        if (t == null) throw new ToolkitRuntimeException(
+                                                         String.format("Attribute %s is of unknown type %s",
+                                                                       attrType.getKey(), attrType.getValue().getName()));
+        String typeName = (t == ToolkitAttributeType.ENUM ? attrType.getValue().getName() : t.name());
+        configSchema.put(attrType.getKey(), typeName);
+      }
+      ToolkitMap<String, String> schema = attrSchema.get();
+      if (schema.isEmpty()) schema.putAll(configSchema);
+      // Attempt to prevent classloader leaks by clearing the initial schema map
+      initialSchema.clear();
+    }
     for (InternalToolkitMap serverMap : this.serverMaps) {
-      serverMap.registerAttributeExtractor(attrExtractor);
+      serverMap.registerAttributeExtractor(attributeExtractor);
       ((ServerMap) serverMap).setSearchAttributeTypes(attrSchema.get());
     }
   }
@@ -883,5 +1195,108 @@ public class AggregateServerMap<K, V> implements DistributedToolkitType<Internal
   @Override
   public Map<K, V> unlockedGetAll(Collection<K> keys, boolean quiet) {
     return Collections.unmodifiableMap(new GetAllCustomMap(keys, this, quiet, getAllBatchSize));
+  }
+
+  @Override
+  public boolean isBulkLoadEnabled() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean isNodeBulkLoadEnabled() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void setNodeBulkLoadEnabled(boolean enabledBulkLoad) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void waitUntilBulkLoadComplete() throws InterruptedException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void drain(final Map<K, BufferedOperation<V>> buffer) {
+    Multimap<Integer, Entry> batches = createBatchsForServerMap(buffer);
+    for (Entry<Integer, Collection<Entry>> batch : batches.asMap().entrySet()) {
+      int serverMapIndex = batch.getKey();
+      concurrentLock.lock();
+      try {
+        // for single serverMap
+        for (Entry e : batch.getValue()) {
+          BufferedOperation operation = (BufferedOperation) e.getValue();
+          if (!operation.isVersioned()) {
+            switch (operation.getType()) {
+              case PUT:
+                serverMaps[serverMapIndex].unlockedPutNoReturn((K) e.getKey(), (V) operation.getValue(), operation.getCreateTimeInSecs(),
+                    operation.getCustomMaxTTISeconds(), operation.getCustomMaxTTLSeconds());
+                break;
+              case PUT_IF_ABSENT:
+                // putIfAbsent returns by default, so a buffered up putIfAbsent doesn't really work...
+                throw new UnsupportedOperationException("Can't do buffered putIfAbsent");
+              case REMOVE:
+                serverMaps[serverMapIndex].unlockedRemoveNoReturn(e.getKey());
+                break;
+            }
+          } else {
+            switch (operation.getType()) {
+              case PUT:
+                serverMaps[serverMapIndex].unlockedPutNoReturnVersioned((K)e.getKey(), (V)operation.getValue(), operation
+                    .getVersion(),
+                    operation.getCreateTimeInSecs(), operation.getCustomMaxTTISeconds(),
+                    operation.getCustomMaxTTLSeconds());
+                break;
+              case PUT_IF_ABSENT:
+                // "versioned" variant of putIfAbsent does not return
+                serverMaps[serverMapIndex].unlockedPutIfAbsentNoReturnVersioned((K)e.getKey(), (V)operation.getValue(),
+                    operation.getVersion(), operation.getCreateTimeInSecs(), operation.getCustomMaxTTISeconds(),
+                    operation.getCustomMaxTTLSeconds());
+                break;
+              case REMOVE:
+                serverMaps[serverMapIndex].unlockedRemoveNoReturnVersioned(e.getKey(), operation.getVersion());
+                break;
+            }
+          }
+        }
+      } finally {
+        concurrentLock.unlock();
+      }
+    }
+  }
+
+  @Override
+  public Set<K> keySetForSegment(int segmentIndex) {
+    final int segmentCount = serverMaps.length;
+    Preconditions.checkArgument(segmentIndex >= 0 && segmentIndex < segmentCount,
+                                "Segment index must be in the range [0..%s)", segmentCount);
+
+    return serverMaps[segmentIndex].keySet();
+  }
+
+  @Override
+  public VersionedValue<V> getVersionedValue(Object key) {
+    return getServerMapForKey(key).getVersionedValue(key);
+  }
+
+  @Override
+  public void quickClear() {
+    doClear();
+  }
+
+  @Override
+  public int quickSize() {
+    return getSize();
+  }
+
+  @Override
+  public boolean remove(Object key, Object value, ToolkitValueComparator<V> comparator) {
+    return getServerMapForKey(key).remove(key, value, comparator);
+  }
+
+  @Override
+  public boolean replace(K key, V oldValue, V newValue, ToolkitValueComparator<V> comparator) {
+    return getServerMapForKey(key).replace(key, oldValue, newValue, comparator);
   }
 }

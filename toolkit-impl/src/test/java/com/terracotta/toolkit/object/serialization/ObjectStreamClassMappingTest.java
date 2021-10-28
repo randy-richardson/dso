@@ -11,9 +11,8 @@ import com.tc.cluster.DsoCluster;
 import com.tc.exception.ImplementMe;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
-import com.tc.object.ServerEventDestination;
-import com.tc.object.ServerEventType;
 import com.tc.object.ObjectID;
+import com.tc.object.ServerEventDestination;
 import com.tc.object.TCObject;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
@@ -25,6 +24,9 @@ import com.tc.platform.PlatformService;
 import com.tc.platform.rejoin.RejoinLifecycleListener;
 import com.tc.properties.TCProperties;
 import com.tc.search.SearchQueryResults;
+import com.tc.search.SearchRequestID;
+import com.tc.server.ServerEventType;
+import com.tc.util.concurrent.TaskRunner;
 import com.tcclient.cluster.DsoNode;
 import com.terracottatech.search.NVPair;
 
@@ -275,14 +277,14 @@ public class ObjectStreamClassMappingTest {
     public SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys,
                                            boolean includeValues, Set<String> attributeSet,
                                            List<NVPair> sortAttributes, List<NVPair> aggregators, int maxResults,
-                                           int batchSize, boolean waitForTxn) {
+                                           int batchSize, int pageSize, boolean waitForTxn, SearchRequestID queryId) {
       return null;
     }
 
     @Override
     public SearchQueryResults executeQuery(String cachename, List queryStack, Set<String> attributeSet,
                                            Set<String> groupByAttributes, List<NVPair> sortAttributes,
-                                           List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn) {
+                                           List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn, SearchRequestID queryId) {
       return null;
     }
 
@@ -333,10 +335,54 @@ public class ObjectStreamClassMappingTest {
     }
 
     @Override
-    public void unregisterServerEventListener(final ServerEventDestination destination) {
+    public void registerServerEventListener(final ServerEventDestination destination, final ServerEventType... listenTo) {
       //
     }
 
+    @Override
+    public void unregisterServerEventListener(final ServerEventDestination destination, final Set<ServerEventType> listenTo) {
+      //
+    }
+
+    @Override
+    public void unregisterServerEventListener(final ServerEventDestination destination, final ServerEventType... listenTo) {
+      //
+    }
+
+    @Override
+    public int getRejoinCount() {
+      return 0;
+    }
+
+    @Override
+    public boolean isRejoinInProgress() {
+      return false;
+    }
+
+    @Override
+    public void unregisterBeforeShutdownHook(Runnable hook) {
+      //
+    }
+
+    @Override
+    public TaskRunner getTaskRunner() {
+      return null;
+    }
+
+    @Override
+    public boolean isExplicitlyLocked(Object lockID, LockLevel level) {
+      throw new ImplementMe();
+    }
+
+    @Override
+    public boolean isLockedBeforeRejoin(Object lockID, LockLevel level) {
+      return false;
+    }
+
+    @Override
+    public long getClientId() {
+      return -1;
+    }
   }
 
 }

@@ -11,8 +11,6 @@ import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAException;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.field.TCField;
-import com.tc.object.util.ToggleableStrongReference;
-import com.tc.util.Assert;
 import com.tc.util.Conversion;
 import com.tc.util.Util;
 
@@ -35,8 +33,8 @@ public abstract class TCObjectImpl implements TCObject {
   // This initial negative version number is important since GID is assigned in the server from 0.
   private long                  version                   = -1;
 
-  protected final ObjectID      objectID;
-  protected final TCClass       tcClazz;
+  private final ObjectID      objectID;
+  private final TCClass         tcClazz;
   private WeakReference         peerObject;
   private byte                  flags                     = 0;
 
@@ -65,7 +63,7 @@ public abstract class TCObjectImpl implements TCObject {
   }
 
   protected ClientObjectManager getObjectManager() {
-    return this.tcClazz.getObjectManager();
+    return getTCClass().getObjectManager();
   }
 
   @Override
@@ -77,14 +75,13 @@ public abstract class TCObjectImpl implements TCObject {
     this.peerObject = pojo;
   }
 
-  @Override
-  public TCClass getTCClass() {
+  protected TCClass getTCClass() {
     return this.tcClazz;
   }
 
   @Override
   public void dehydrate(final DNAWriter writer) {
-    this.tcClazz.dehydrate(this, writer, getPeerObject());
+    getTCClass().dehydrate(this, writer, getPeerObject());
   }
 
   /**
@@ -105,7 +102,7 @@ public abstract class TCObjectImpl implements TCObject {
       final Object po = getPeerObject();
       if (po == null) { return; }
       try {
-        this.tcClazz.hydrate(this, from, po, force);
+        getTCClass().hydrate(this, from, po, force);
       } catch (final ClassNotFoundException e) {
         logger.warn("Re-throwing Exception: ", e);
         throw e;
@@ -190,26 +187,6 @@ public abstract class TCObjectImpl implements TCObject {
   }
 
   @Override
-  public final int clearReferences(final int toClear) {
-    if (this.tcClazz.useResolveLockWhileClearing()) {
-      synchronized (getResolveLock()) {
-        return basicClearReferences(toClear);
-      }
-    } else {
-      return basicClearReferences(toClear);
-    }
-  }
-
-  private int basicClearReferences(final int toClear) {
-    final Object po = getPeerObject();
-    Assert.assertFalse(isNew()); // Shouldn't clear new Objects
-    if (po == null) { return 0; }
-    return clearReferences(po, toClear);
-  }
-
-  protected abstract int clearReferences(Object pojo, int toClear);
-
-  @Override
   public final Object getResolveLock() {
     return this.objectID; // Save a field by using this one as the lock
   }
@@ -261,7 +238,7 @@ public abstract class TCObjectImpl implements TCObject {
   @Override
   public String toString() {
     return getClass().getName() + "@" + System.identityHashCode(this) + "[objectID=" + this.objectID + ", TCClass="
-           + this.tcClazz + "]";
+           + getTCClass() + "]";
   }
 
   @Override
@@ -287,7 +264,7 @@ public abstract class TCObjectImpl implements TCObject {
   }
 
   public boolean isFieldPortableByOffset(final long fieldOffset) {
-    return this.tcClazz.isPortableField(fieldOffset);
+    return getTCClass().isPortableField(fieldOffset);
   }
 
   @Override
@@ -397,23 +374,32 @@ public abstract class TCObjectImpl implements TCObject {
   }
 
   @Override
-  public final synchronized boolean canEvict() {
-    return isEvictable() && !this.tcClazz.isNotClearable() && !isNew();
+  public String getExtendingClassName() {
+    return getTCClass().getExtendingClassName();
   }
 
   @Override
-  public boolean isCacheManaged() {
-    return !this.tcClazz.isNotClearable();
+  public String getClassName() {
+    return getTCClass().getName();
   }
-
-  protected abstract boolean isEvictable();
 
   @Override
-  public ToggleableStrongReference getOrCreateToggleRef() {
-    final Object peer = getPeerObject();
-    if (peer == null) { throw new AssertionError("cannot create a toggle reference if peer object is gone"); }
-
-    return getObjectManager().getOrCreateToggleRef(this.objectID, peer);
+  public Class<?> getPeerClass() {
+    return getTCClass().getPeerClass();
   }
 
+  @Override
+  public boolean isIndexed() {
+    return getTCClass().isIndexed();
+  }
+
+  @Override
+  public boolean isLogical() {
+    return getTCClass().isLogical();
+  }
+
+  @Override
+  public boolean isEnum() {
+    return getTCClass().isEnum();
+  }
 }

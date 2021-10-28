@@ -10,17 +10,6 @@ package com.tc.object.config;
  */
 public interface TransparencyClassSpec {
 
-  public static final byte NOT_SET       = 0x00;
-
-  public static final byte NOT_ADAPTABLE = 0x01;
-
-  // For classes are not PORTABLE by themselves, but logical classes subclasses them.
-  // We dont want them to get tc fields, TransparentAccess interfaces etc. but we do want them
-  // to be instrumented for Array manipulations, clone(), wait(), notify() calls etc.
-  public static final byte ADAPTABLE     = 0x02;
-
-  public static final byte PORTABLE      = 0x03;
-
   /**
    * Mark method as not instrumented
    * 
@@ -64,22 +53,6 @@ public interface TransparencyClassSpec {
   public boolean isForeign();
 
   /**
-   * Examine lock definitions to find the the one that makes the method autolocked
-   * 
-   * @param lds Lock defs
-   * @return null if no LockDefinitions exists that makes the method autolocked.
-   */
-  public LockDefinition getAutoLockDefinition(LockDefinition lds[]);
-
-  /**
-   * Find lock definition that makes method not autolocked
-   * 
-   * @param lds Lock defs
-   * @return Lock def or null if none
-   */
-  public LockDefinition getNonAutoLockDefinition(LockDefinition lds[]);
-
-  /**
    * Get the class name for this spec
    * 
    * @return Name
@@ -107,15 +80,6 @@ public interface TransparencyClassSpec {
    * @return True if ignoreRewrite
    */
   public boolean isIgnoreRewrite();
-
-  /**
-   * Get lock definition for locked method
-   * 
-   * @param access Access modifiers
-   * @param lds Lock defs
-   * @return Lock definition
-   */
-  public LockDefinition getLockMethodLockDefinition(int access, LockDefinition lds[]);
 
   /**
    * @return Change applicator specification
@@ -191,30 +155,6 @@ public interface TransparencyClassSpec {
   public TransparencyClassSpec setHonorTransient(boolean b);
 
   /**
-   * Set call constructor on load flag
-   * 
-   * @param b New value
-   * @return this
-   */
-  public TransparencyClassSpec setCallConstructorOnLoad(boolean b);
-
-  /**
-   * Set execute script on load flag
-   * 
-   * @param script Script to load
-   * @return this
-   */
-  public TransparencyClassSpec setExecuteScriptOnLoad(String script);
-
-  /**
-   * Set method to call on load
-   * 
-   * @param method Method name
-   * @return this
-   */
-  public TransparencyClassSpec setCallMethodOnLoad(String method);
-
-  /**
    * Sets whether injection should happen on load
    * 
    * @param flag true or false
@@ -223,19 +163,9 @@ public interface TransparencyClassSpec {
   public TransparencyClassSpec setHasOnLoadInjection(boolean flag);
 
   /**
-   * @return True if call constructor flag is set
-   */
-  public boolean isCallConstructorSet();
-
-  /**
    * @return True if should honor transient
    */
   public boolean isHonorJavaTransient();
-
-  /**
-   * @return Get value of call constructor on load flag
-   */
-  public boolean isCallConstructorOnLoad();
 
   /**
    * @return True if is honor transient flag is set
@@ -253,26 +183,6 @@ public interface TransparencyClassSpec {
   public TransparencyCodeSpec getCodeSpec(String methodName, String description, boolean isAutolock);
 
   /**
-   * @return True if execute script on load flag is set
-   */
-  public boolean isExecuteScriptOnLoadSet();
-
-  /**
-   * @return True if call method on load flag is set
-   */
-  public boolean isCallMethodOnLoadSet();
-
-  /**
-   * @return Get on load method to call
-   */
-  public String getOnLoadMethod();
-
-  /**
-   * @return Get on load execute script to execute
-   */
-  public String getOnLoadExecuteScript();
-
-  /**
    * @return True of injection should occur on class load
    */
   public boolean hasOnLoadInjection();
@@ -288,20 +198,6 @@ public interface TransparencyClassSpec {
    * @param useNonDefaultConstructor True to use non-default
    */
   public void setUseNonDefaultConstructor(boolean useNonDefaultConstructor);
-
-  /**
-   * Set instrumentation action
-   * 
-   * @param action Action constants defined in TransparencyClassSpecImpl
-   */
-  public void setInstrumentationAction(byte action);
-
-  /**
-   * Get instrumentation action
-   * 
-   * @return Action code ADAPTABLE, etc
-   */
-  public byte getInstrumentationAction();
 
   /**
    * Get method to call prior to create

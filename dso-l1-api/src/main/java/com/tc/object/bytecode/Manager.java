@@ -10,10 +10,10 @@ import com.tc.cluster.DsoCluster;
 import com.tc.exception.TCClassNotFoundException;
 import com.tc.logging.TCLogger;
 import com.tc.management.TunneledDomainUpdater;
+import com.tc.net.ClientID;
 import com.tc.net.GroupID;
-import com.tc.object.ServerEventDestination;
-import com.tc.object.ServerEventType;
 import com.tc.object.ObjectID;
+import com.tc.object.ServerEventDestination;
 import com.tc.object.TCObject;
 import com.tc.object.loaders.ClassProvider;
 import com.tc.object.locks.LockID;
@@ -26,12 +26,14 @@ import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
 import com.tc.platform.PlatformService;
 import com.tc.properties.TCProperties;
 import com.tc.search.SearchQueryResults;
+import com.tc.search.SearchRequestID;
+import com.tc.server.ServerEventType;
+import com.tc.util.concurrent.TaskRunner;
 import com.terracottatech.search.NVPair;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 import javax.management.MBeanServer;
 
@@ -39,19 +41,6 @@ import javax.management.MBeanServer;
  * The Manager interface
  */
 public interface Manager extends TerracottaLocking {
-
-  /** This class's class path: com/tc/object/bytecode/Manager */
-  public static final String CLASS = "com/tc/object/bytecode/Manager";
-  /** Bytecode type definition for this class */
-  public static final String TYPE  = "L" + CLASS + ";";
-
-  /**
-   * Determine whether this class is physically instrumented
-   * 
-   * @param clazz Class
-   * @return True if physically instrumented
-   */
-  public boolean isPhysicallyInstrumented(Class clazz);
 
   /**
    * Initialize the Manager
@@ -185,21 +174,6 @@ public interface Manager extends TerracottaLocking {
       throws AbortedOperationException;
 
   /**
-   * Perform distributed method call
-   * 
-   * @param receiver The receiver object
-   * @param method The method to call
-   * @param params The parameter values
-   * @param runOnAllNodes True if should run on all nodes, false just for this node
-   */
-  public boolean distributedMethodCall(Object receiver, String method, Object[] params, boolean runOnAllNodes);
-
-  /**
-   * Commit DMI call
-   */
-  public void distributedMethodCallCommit();
-
-  /**
    * Lookup root by name
    * 
    * @param name Name of root
@@ -266,7 +240,7 @@ public interface Manager extends TerracottaLocking {
    * 
    * @return Client identifier
    */
-  public String getClientID();
+  public ClientID getClientID();
 
   /**
    * Get unique Client identifier
@@ -333,16 +307,20 @@ public interface Manager extends TerracottaLocking {
    */
   public void registerBeforeShutdownHook(Runnable beforeShutdownHook);
 
+  public void unregisterBeforeShutdownHook(Runnable beforeShutdownHook);
+
   MetaDataDescriptor createMetaDataDescriptor(String category);
 
   public SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys, boolean includeValues,
                                          Set<String> attributeSet, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn)
+                                         List<NVPair> aggregators, int maxResults, int batchSize, int resultPageSize,
+                                         boolean waitForTxn, SearchRequestID reqId)
       throws AbortedOperationException;
 
   public SearchQueryResults executeQuery(String cachename, List queryStack, Set<String> attributeSet,
                                          Set<String> groupByAttribues, List<NVPair> sortAttributes,
-                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn)
+                                         List<NVPair> aggregators, int maxResults, int batchSize, boolean waitForTxn,
+                                         SearchRequestID reqId)
       throws AbortedOperationException;
 
   public NVPair createNVPair(String name, Object value);
@@ -353,7 +331,7 @@ public interface Manager extends TerracottaLocking {
 
   void stopImmediate();
 
-  void initForTests(CountDownLatch latch);
+  void initForTests();
 
   public GroupID[] getGroupIDs();
 
@@ -395,5 +373,15 @@ public interface Manager extends TerracottaLocking {
 
   void registerServerEventListener(ServerEventDestination destination, Set<ServerEventType> listenTo);
 
-  void unregisterServerEventListener(ServerEventDestination destination);
+  void unregisterServerEventListener(ServerEventDestination destination, final Set<ServerEventType> listenTo);
+
+  int getRejoinCount();
+
+  boolean isRejoinInProgress();
+
+  TaskRunner getTastRunner();
+
+  public long getLockAwardIDFor(LockID lock);
+
+  public boolean isLockAwardValid(LockID lock, long awardID);
 }

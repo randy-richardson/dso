@@ -2,10 +2,10 @@
  */
 package com.tc.object;
 
-import com.tc.invalidation.Invalidations;
 import com.tc.net.NodeID;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
+import com.tc.util.ObjectIDSet;
 
 import java.util.Set;
 
@@ -35,12 +35,14 @@ public interface TCObjectSelfStore extends ClearableCallback {
 
   /**
    * Handshake manager tries to get hold of all the objects present in the local caches
-   * 
+   *
    * @param remoteNode
    */
-  public void addAllObjectIDsToValidate(Invalidations invalidations, NodeID remoteNode);
+  public ObjectIDSet getObjectIDsToValidate(NodeID remoteNode);
 
   void shutdown(boolean fromShutdownHook);
+
+  void rejoinInProgress(boolean rejoinInProgress);
 
   void removeTCObjectSelf(TCObjectSelf self);
 }

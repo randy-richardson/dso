@@ -30,12 +30,10 @@ public class TransactionRecordTest extends TestCase {
     
     assertFalse(record.isComplete());
     
+    record.addWaitee(clientID);  
+    
     record.processMetaDataCompleted();
-    
-    assertTrue(record.isComplete());
-  
-    record.addWaitee(clientID);
-    
+      
     assertFalse(record.isComplete());
     
     assertFalse(record.isEmpty());
@@ -43,6 +41,18 @@ public class TransactionRecordTest extends TestCase {
     record.remove(clientID);
     
     assertTrue(record.isEmpty());
+    
+    assertTrue(record.isComplete());
+  }
+  
+  public void testObjectSync() {
+    final ClientID clientID = new ClientID(1);
+    final TransactionRecord record = new TransactionRecord(clientID);
+    
+    assertFalse(record.isComplete());
+    assertTrue(!record.isEmpty());
+    
+    assertTrue(record.remove(clientID));
     
     assertTrue(record.isComplete());
   }

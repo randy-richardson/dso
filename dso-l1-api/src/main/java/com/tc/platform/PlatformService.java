@@ -8,9 +8,8 @@ import com.tc.abortable.AbortedOperationException;
 import com.tc.cluster.DsoCluster;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
-import com.tc.object.ServerEventDestination;
-import com.tc.object.ServerEventType;
 import com.tc.object.ObjectID;
+import com.tc.object.ServerEventDestination;
 import com.tc.object.TCObject;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
@@ -21,6 +20,9 @@ import com.tc.operatorevent.TerracottaOperatorEvent.EventType;
 import com.tc.platform.rejoin.RejoinLifecycleListener;
 import com.tc.properties.TCProperties;
 import com.tc.search.SearchQueryResults;
+import com.tc.search.SearchRequestID;
+import com.tc.server.ServerEventType;
+import com.tc.util.concurrent.TaskRunner;
 import com.tcclient.cluster.DsoNode;
 import com.terracottatech.search.NVPair;
 
@@ -84,15 +86,18 @@ public interface PlatformService {
 
   void registerBeforeShutdownHook(Runnable hook);
 
+  void unregisterBeforeShutdownHook(Runnable hook);
+
   String getUUID();
 
   SearchQueryResults executeQuery(String cachename, List queryStack, boolean includeKeys, boolean includeValues,
                                   Set<String> attributeSet, List<NVPair> sortAttributes, List<NVPair> aggregators,
-                                  int maxResults, int batchSize, boolean waitForTxn) throws AbortedOperationException;
+                                  int maxResults, int batchSize, int resultPageSize, boolean waitForTxn, SearchRequestID queryId)
+      throws AbortedOperationException;
 
   SearchQueryResults executeQuery(String cachename, List queryStack, Set<String> attributeSet,
                                   Set<String> groupByAttributes, List<NVPair> sortAttributes, List<NVPair> aggregators,
-                                  int maxResults, int batchSize, boolean waitForTxn) throws AbortedOperationException;
+                                  int maxResults, int batchSize, boolean waitForTxn, SearchRequestID queryId) throws AbortedOperationException;
 
   void preFetchObject(final ObjectID id) throws AbortedOperationException;
 
@@ -118,5 +123,21 @@ public interface PlatformService {
 
   void registerServerEventListener(ServerEventDestination destination, Set<ServerEventType> listenTo);
 
-  void unregisterServerEventListener(ServerEventDestination destination);
+  void registerServerEventListener(ServerEventDestination destination, ServerEventType... listenTo);
+
+  void unregisterServerEventListener(ServerEventDestination destination, final Set<ServerEventType> listenTo);
+
+  void unregisterServerEventListener(ServerEventDestination destination, ServerEventType... listenTo);
+
+  int getRejoinCount();
+
+  boolean isRejoinInProgress();
+
+  TaskRunner getTaskRunner();
+
+  boolean isExplicitlyLocked(Object lockID, LockLevel level);
+
+  boolean isLockedBeforeRejoin(Object lockID, LockLevel level);
+
+  long getClientId();
 }

@@ -30,13 +30,8 @@ public class ManagedObjectStateSerializationTest extends ManagedObjectStateSeria
           case ManagedObjectState.LIST_TYPE:
             testList();
             break;
-          case ManagedObjectState.SET_TYPE:
-            break;
           case ManagedObjectState.TDC_SERIALIZED_ENTRY:
             testTcHibernateSerializedEntry();
-            break;
-          case ManagedObjectState.TDC_CUSTOM_LIFESPAN_SERIALIZED_ENTRY:
-            testTcHibernateCustomSerializedEntry();
             break;
           default:
             testConcurrentDistributedServerMap();
@@ -54,17 +49,6 @@ public class ManagedObjectStateSerializationTest extends ManagedObjectStateSeria
     final ManagedObjectState state = applyValidation(className, cursor);
 
     serializationValidation(state, cursor, ManagedObjectState.TDC_SERIALIZED_ENTRY);
-  }
-
-  public void testTcHibernateCustomSerializedEntry() throws Exception {
-    final String className = ManagedObjectStateStaticConfig.CUSTOM_LIFESPAN_SERIALIZED_MAP_VALUE.getClientClassName();
-    final TestDNACursor cursor = new TestDNACursor();
-
-    cursor.addEntireArray(new byte[] { 1, 2, 3, 4 });
-
-    final ManagedObjectState state = applyValidation(className, cursor);
-
-    serializationValidation(state, cursor, ManagedObjectState.TDC_CUSTOM_LIFESPAN_SERIALIZED_ENTRY);
   }
 
   public void testList() throws Exception {

@@ -9,13 +9,13 @@ import com.tc.abortable.AbortedOperationException;
 import com.tc.object.ObjectID;
 import com.tc.object.TCClass;
 import com.tc.object.TCObjectServerMap;
+import com.tc.object.VersionedObject;
 import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.PinnedEntryFaultCallback;
-import com.tc.object.util.ToggleableStrongReference;
 import com.tc.platform.PlatformService;
 
 import java.lang.ref.WeakReference;
@@ -32,9 +32,11 @@ public class ExplicitLockingTCObjectServerMapImpl implements TCObjectServerMap {
     this.service = service;
   }
 
-  private void assertLockStateBeforeRejoin() {
+  private void assertLockAndRejoinState() {
     if (service.isLockedBeforeRejoin()) { throw new RejoinException(
                                                                     "Lock state not valid: lock was taken before rejoin"); }
+    if (service.isRejoinInProgress()) { throw new RejoinException(
+                                                                  "Operation can't be performed, as rejoin is in progress"); }
   }
 
   @Override
@@ -50,16 +52,6 @@ public class ExplicitLockingTCObjectServerMapImpl implements TCObjectServerMap {
   @Override
   public Object getPeerObject() {
     return delegate.getPeerObject();
-  }
-
-  @Override
-  public TCClass getTCClass() {
-    return delegate.getTCClass();
-  }
-
-  @Override
-  public int clearReferences(int toClear) {
-    return delegate.clearReferences(toClear);
   }
 
   @Override
@@ -194,7 +186,7 @@ public class ExplicitLockingTCObjectServerMapImpl implements TCObjectServerMap {
 
   @Override
   public void logicalInvoke(int method, String methodSignature, Object[] params) {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     delegate.logicalInvoke(method, methodSignature, params);
   }
 
@@ -206,11 +198,6 @@ public class ExplicitLockingTCObjectServerMapImpl implements TCObjectServerMap {
   @Override
   public boolean autoLockingDisabled() {
     return delegate.autoLockingDisabled();
-  }
-
-  @Override
-  public ToggleableStrongReference getOrCreateToggleRef() {
-    return delegate.getOrCreateToggleRef();
   }
 
   @Override
@@ -254,16 +241,6 @@ public class ExplicitLockingTCObjectServerMapImpl implements TCObjectServerMap {
   }
 
   @Override
-  public boolean canEvict() {
-    return delegate.canEvict();
-  }
-
-  @Override
-  public boolean isCacheManaged() {
-    return delegate.isCacheManaged();
-  }
-
-  @Override
   public void initialize(int maxTTISeconds, int maxTTLSeconds, int targetMaxTotalCount, boolean invalidateOnChange,
                          boolean localCacheEnabled) {
     delegate.initialize(maxTTISeconds, maxTTLSeconds, targetMaxTotalCount, invalidateOnChange, localCacheEnabled);
@@ -271,85 +248,113 @@ public class ExplicitLockingTCObjectServerMapImpl implements TCObjectServerMap {
 
   @Override
   public void doLogicalRemove(TCServerMap map, Object lockID, Object key) {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     delegate.doLogicalRemove(map, lockID, key);
   }
 
   @Override
+  public void doLogicalRemoveVersioned(final TCServerMap map, final Object lockID, final Object key, final long version) {
+    assertLockAndRejoinState();
+    delegate.doLogicalRemoveVersioned(map, lockID, key, version);
+  }
+
+  @Override
   public void doLogicalRemoveUnlocked(TCServerMap map, Object key) {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     delegate.doLogicalRemoveUnlocked(map, key);
   }
 
   @Override
-  public boolean doLogicalRemoveUnlocked(TCServerMap map, Object key, Object value) {
-    assertLockStateBeforeRejoin();
-    return delegate.doLogicalRemoveUnlocked(map, key, value);
+  public void doLogicalRemoveUnlockedVersioned(final TCServerMap map, final Object key, final long version) {
+    assertLockAndRejoinState();
+    delegate.doLogicalRemoveUnlockedVersioned(map, key, version);
   }
 
   @Override
-  public Object doLogicalPutIfAbsentUnlocked(TCServerMap map, Object key, Object value) {
-    assertLockStateBeforeRejoin();
-    return delegate.doLogicalPutIfAbsentUnlocked(map, key, value);
+  public boolean doLogicalRemoveUnlocked(TCServerMap map, Object key, Object value, MetaDataDescriptor mdd)
+      throws AbortedOperationException {
+    assertLockAndRejoinState();
+    return delegate.doLogicalRemoveUnlocked(map, key, value, mdd);
   }
 
   @Override
-  public boolean doLogicalReplaceUnlocked(TCServerMap map, Object key, Object current, Object newValue) {
-    assertLockStateBeforeRejoin();
-    return delegate.doLogicalReplaceUnlocked(map, key, current, newValue);
+  public boolean doLogicalPutIfAbsentUnlocked(TCServerMap map, Object key, Object value, MetaDataDescriptor mdd)
+      throws AbortedOperationException {
+    assertLockAndRejoinState();
+    return delegate.doLogicalPutIfAbsentUnlocked(map, key, value, mdd);
   }
 
   @Override
-  public boolean doLogicalReplaceUnlocked(TCServerMap map, Object key, Object newValue) {
-    assertLockStateBeforeRejoin();
-    return delegate.doLogicalReplaceUnlocked(map, key, newValue);
+  public boolean doLogicalReplaceUnlocked(TCServerMap map, Object key, Object current, Object newValue,
+                                          MetaDataDescriptor mdd)
+      throws AbortedOperationException {
+    assertLockAndRejoinState();
+    return delegate.doLogicalReplaceUnlocked(map, key, current, newValue, mdd);
   }
 
   @Override
-  public void doLogicalPut(TCServerMap map, Object lockID, Object key, Object value) {
-    assertLockStateBeforeRejoin();
-    delegate.doLogicalPut(map, lockID, key, value);
+  public void doLogicalPut(Object lockID, Object key, Object value) {
+    assertLockAndRejoinState();
+    delegate.doLogicalPut(lockID, key, value);
+  }
+
+  @Override
+  public void doLogicalPutVersioned(final TCServerMap map, final Object lockID, final Object key, final Object value, final long version) {
+    assertLockAndRejoinState();
+    delegate.doLogicalPutVersioned(map, lockID, key, value, version);
+  }
+
+  @Override
+  public void doLogicalPutIfAbsentVersioned(Object key, Object value, long version) {
+    assertLockAndRejoinState();
+    delegate.doLogicalPutIfAbsentVersioned(key, value, version);
   }
 
   @Override
   public void doClear(TCServerMap map) {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     delegate.doClear(map);
   }
 
   @Override
   public void doLogicalPutUnlocked(TCServerMap map, Object key, Object value) {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     delegate.doLogicalPutUnlocked(map, key, value);
   }
 
   @Override
+  public void doLogicalPutUnlockedVersioned(final TCServerMap map, final Object key, final Object value, final long version) {
+    assertLockAndRejoinState();
+    delegate.doLogicalPutUnlockedVersioned(map, key, value, version);
+  }
+
+  @Override
   public Object getValueUnlocked(TCServerMap map, Object key) throws AbortedOperationException {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     return delegate.getValueUnlocked(map, key);
   }
 
   @Override
   public Map getAllValuesUnlocked(Map mapIdToKeysMap) throws AbortedOperationException {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     return delegate.getAllValuesUnlocked(mapIdToKeysMap);
   }
 
   @Override
   public Set keySet(TCServerMap map) throws AbortedOperationException {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     return delegate.keySet(map);
   }
 
   @Override
   public Object getValue(TCServerMap map, Object lockID, Object key) throws AbortedOperationException {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     return delegate.getValue(map, lockID, key);
   }
 
   @Override
   public long getAllSize(TCServerMap[] maps) throws AbortedOperationException {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     return delegate.getAllSize(maps);
   }
 
@@ -455,8 +460,80 @@ public class ExplicitLockingTCObjectServerMapImpl implements TCObjectServerMap {
 
   @Override
   public void doLogicalSetLastAccessedTime(Object key, Object value, long lastAccessedTime) {
-    assertLockStateBeforeRejoin();
+    assertLockAndRejoinState();
     delegate.doLogicalSetLastAccessedTime(key, value, lastAccessedTime);
   }
 
+  @Override
+  public void doLogicalExpire(final Object lockID, final Object key, final Object value) {
+    assertLockAndRejoinState();
+    delegate.doLogicalExpire(lockID, key, value);
+  }
+
+  @Override
+  public boolean doLogicalExpireUnlocked(final TCServerMap map, final Object key, final Object value) {
+    assertLockAndRejoinState();
+    return delegate.doLogicalExpireUnlocked(map, key, value);
+  }
+
+  @Override
+  public void addTxnInProgressKeys(Set addSet, Set removeSet) {
+    delegate.addTxnInProgressKeys(addSet, removeSet);
+  }
+
+  @Override
+  public VersionedObject getVersionedValue(TCServerMap map, Object key) throws AbortedOperationException {
+    assertLockAndRejoinState();
+    return delegate.getVersionedValue(map, key);
+  }
+
+  @Override
+  public void doClearVersioned() {
+    assertLockAndRejoinState();
+    delegate.doClearVersioned();
+  }
+
+  @Override
+  public void doRegisterListener(Set eventTypes, boolean skipRejoinChecks) {
+    if (!skipRejoinChecks) {
+      assertLockAndRejoinState();
+    }
+    delegate.doRegisterListener(eventTypes, skipRejoinChecks);
+  }
+
+  @Override
+  public void doUnregisterListener(Set eventTypes) {
+    assertLockAndRejoinState();
+    delegate.doUnregisterListener(eventTypes);
+  }
+
+  @Override
+  public String getExtendingClassName() {
+    return delegate.getExtendingClassName();
+  }
+
+  @Override
+  public String getClassName() {
+    return delegate.getClassName();
+  }
+
+  @Override
+  public Class<?> getPeerClass() {
+    return delegate.getPeerClass();
+  }
+
+  @Override
+  public boolean isIndexed() {
+    return delegate.isIndexed();
+  }
+
+  @Override
+  public boolean isLogical() {
+    return delegate.isLogical();
+  }
+
+  @Override
+  public boolean isEnum() {
+    return delegate.isEnum();
+  }
 }

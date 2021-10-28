@@ -14,9 +14,10 @@ import com.tc.objectserver.l1.api.ClientStateManager;
 import com.tc.objectserver.l1.api.ObjectReferenceAddListener;
 import com.tc.objectserver.l1.impl.ClientObjectReferenceSet;
 import com.tc.objectserver.managedobject.ApplyTransactionInfo;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
-import java.util.Collection;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -53,7 +54,7 @@ public class PeriodicEvictionTrigger extends AbstractEvictionTrigger {
     private boolean completed = false;
     private volatile boolean stop = false;
     private final ObjectIDSet exclusionList;
-    private final ObjectIDSet passList = new ObjectIDSet();
+    private final ObjectIDSet passList = new BitSetObjectIDSet();
     
     private static final ClientObjectReferenceSet noReference = new ClientObjectReferenceSet(new ClientStateManager() {
 
@@ -122,7 +123,7 @@ public class PeriodicEvictionTrigger extends AbstractEvictionTrigger {
     });
     
     public PeriodicEvictionTrigger(ObjectID oid) {
-        this(oid,new ObjectIDSet(), true);
+        this(oid,new BitSetObjectIDSet(), true);
     }
     
     public PeriodicEvictionTrigger duplicate() {
@@ -217,7 +218,7 @@ public class PeriodicEvictionTrigger extends AbstractEvictionTrigger {
             sampled = 100;
         }
         
-        if ( ev.isEvictionEnabled() && max > 0 && count - max > 0 ) {
+        if ( ev.isEvictionEnabled() && count - max > 0 ) {
             sampled = count - max;
             dumpLive = true;
         }

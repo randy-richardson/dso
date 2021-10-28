@@ -4,6 +4,7 @@
 package com.terracotta.toolkit.nonstop;
 
 import com.tc.abortable.AbortableOperationManagerImpl;
+import com.terracotta.toolkit.nonstop.NonStopManagerImpl.NonStopTaskWrapper;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -25,8 +26,8 @@ public class NonStopManagerTest extends TestCase {
   }
 
   public void testNonStopTimer() throws Exception {
-    long startTime = System.currentTimeMillis();
-    int loopTmes = 50;
+    long startTime = System.nanoTime();
+    int loopTmes = 4;
     long timeout = 500;
     for (int i = 0; i < loopTmes; i++) {
       System.out.println("executing loop count" + i);
@@ -43,9 +44,13 @@ public class NonStopManagerTest extends TestCase {
         Assert.assertFalse(Thread.interrupted());
       }
     }
-    long timeTaken = System.currentTimeMillis() - startTime;
+    long timeTaken = System.nanoTime() - startTime;
     System.out.println("time taken to execute operations " + timeTaken);
-    Assert.assertTrue((timeTaken > loopTmes * timeout) && timeTaken < (loopTmes * timeout + 2000));
+    Assert
+        .assertTrue((timeTaken >= loopTmes * TimeUnit.MILLISECONDS.toNanos(timeout) && timeTaken < (loopTmes
+                                                                                                    * TimeUnit.MILLISECONDS
+                                                                                                        .toNanos(timeout) + TimeUnit.SECONDS
+            .toNanos(2))));
   }
 
   public void testTryBegin() throws Throwable {
@@ -129,11 +134,11 @@ public class NonStopManagerTest extends TestCase {
       nonStopManager.begin(TimeUnit.MINUTES.toMillis(10));
       try {
 
-        Collection collection = nonStopManager.getTimerTasks().values();
+        Collection<NonStopTaskWrapper> collection = nonStopManager.getTimerTasks().values();
         Assert.assertEquals(1, collection.size());
 
-        Object o = collection.iterator().next();
-        weakReferences.add(new WeakReference(o));
+        NonStopTaskWrapper o = collection.iterator().next();
+        weakReferences.add(new WeakReference(o.getFuture()));
       } finally {
         nonStopManager.finish();
       }

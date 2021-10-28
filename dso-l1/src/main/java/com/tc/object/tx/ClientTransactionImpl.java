@@ -8,7 +8,7 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCObject;
 import com.tc.object.change.TCChangeBuffer;
 import com.tc.object.change.TCChangeBufferImpl;
-import com.tc.object.dmi.DmiDescriptor;
+import com.tc.object.dna.api.LogicalChangeID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
 import com.tc.util.Assert;
@@ -30,13 +30,14 @@ public class ClientTransactionImpl extends AbstractClientTransaction {
 
   private Map                                 newRoots;
   private List                                notifies;
-  private List                                dmis;
 
   // used to keep things referenced until the transaction is completely ACKED
   private final Map                           referenced    = new IdentityHashMap();
+  private final int                           session;
 
-  public ClientTransactionImpl() {
+  public ClientTransactionImpl(int session) {
     super();
+    this.session = session;
   }
 
   @Override
@@ -88,8 +89,8 @@ public class ClientTransactionImpl extends AbstractClientTransaction {
   }
 
   @Override
-  protected void basicLogicalInvoke(TCObject source, int method, Object[] parameters) {
-    getOrCreateChangeBuffer(source).logicalInvoke(method, parameters);
+  protected void basicLogicalInvoke(TCObject source, int method, Object[] parameters, LogicalChangeID id) {
+    getOrCreateChangeBuffer(source).logicalInvoke(method, parameters, id);
   }
 
   @Override
@@ -151,21 +152,13 @@ public class ClientTransactionImpl extends AbstractClientTransaction {
   }
 
   @Override
-  public void addDmiDescriptor(DmiDescriptor dd) {
-    if (dmis == null) {
-      dmis = new ArrayList();
-    }
-    dmis.add(dd);
-  }
-
-  @Override
   protected void basicAddMetaDataDescriptor(TCObject tco, MetaDataDescriptorInternal md) {
     getOrCreateChangeBuffer(tco).addMetaDataDescriptor(md);
   }
 
   @Override
-  public List getDmiDescriptors() {
-    return dmis == null ? Collections.EMPTY_LIST : dmis;
+  public int getSession() {
+    return session;
   }
 
 }

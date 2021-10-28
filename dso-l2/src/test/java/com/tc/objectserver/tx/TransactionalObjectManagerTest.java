@@ -4,28 +4,6 @@
  */
 package com.tc.objectserver.tx;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.mockito.InOrder;
-
-import com.tc.net.ClientID;
-import com.tc.object.ObjectID;
-import com.tc.object.tx.ServerTransactionID;
-import com.tc.object.tx.TransactionID;
-import com.tc.objectserver.context.ApplyTransactionContext;
-import com.tc.objectserver.core.api.ManagedObject;
-import com.tc.objectserver.core.api.ServerConfigurationContext;
-import com.tc.objectserver.gtx.TestGlobalTransactionManager;
-import com.tc.objectserver.impl.TestObjectManager;
-import com.tc.objectserver.managedobject.ApplyTransactionInfo;
-import com.tc.test.TCTestCase;
-import com.tc.util.ObjectIDSet;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.IsNot.not;
@@ -39,12 +17,41 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.mockito.InOrder;
+
+import com.tc.async.api.EventContext;
+import com.tc.net.ClientID;
+import com.tc.object.ObjectID;
+import com.tc.object.gtx.GlobalTransactionID;
+import com.tc.object.tx.ServerTransactionID;
+import com.tc.object.tx.TransactionID;
+import com.tc.objectserver.context.ApplyTransactionContext;
+import com.tc.objectserver.core.api.ManagedObject;
+import com.tc.objectserver.core.api.ServerConfigurationContext;
+import com.tc.objectserver.event.ClientChannelMonitor;
+import com.tc.objectserver.event.ServerEventBuffer;
+import com.tc.objectserver.gtx.TestGlobalTransactionManager;
+import com.tc.objectserver.impl.TestObjectManager;
+import com.tc.objectserver.managedobject.ApplyTransactionInfo;
+import com.tc.test.TCTestCase;
+import com.tc.util.BitSetObjectIDSet;
+import com.tc.util.ObjectIDSet;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+
 public class TransactionalObjectManagerTest extends TCTestCase {
 
   private TestObjectManager                      objectManager;
   private TestTransactionalStageCoordinator      coordinator;
   private TransactionalObjectManagerImpl txObjectManager;
   private TestGlobalTransactionManager gtxMgr;
+  private ServerEventBuffer                 serverEventBuffer;
+  private ClientChannelMonitor              clientChannelMonitor;
 
   @Override
   public void setUp() {
@@ -54,6 +61,8 @@ public class TransactionalObjectManagerTest extends TCTestCase {
     this.txObjectManager = new TransactionalObjectManagerImpl(this.objectManager, gtxMgr, this.coordinator);
     ServerConfigurationContext scc = mock(ServerConfigurationContext.class);
     when(scc.getTransactionManager()).thenReturn(new TestServerTransactionManager());
+    serverEventBuffer = mock(ServerEventBuffer.class);
+    clientChannelMonitor = mock(ClientChannelMonitor.class);
   }
 
   public void testSimpleLookup() throws Exception {
@@ -139,7 +148,7 @@ public class TransactionalObjectManagerTest extends TCTestCase {
     gtxMgr.commit(new ServerTransactionID(new ClientID(0), new TransactionID(1)));
     txObjectManager.addTransactions(asList(createTransaction(1, Collections.EMPTY_SET, asList(1L))));
     txObjectManager.lookupObjectsForTransactions();
-    verify(coordinator).addToApplyStage(argThat(allOf(hasTransactionID(1), not(needsApply()))));
+    verify(coordinator).addToApplyStage((EventContext) argThat(allOf(hasTransactionID(1), not(needsApply()))));
 
     ApplyTransactionInfo applyTransactionInfo = applyInfoWithTransactionID(1);
     txObjectManager.applyTransactionComplete(applyTransactionInfo);
@@ -212,11 +221,11 @@ public class TransactionalObjectManagerTest extends TCTestCase {
     txObjectManager.lookupObjectsForTransactions();
 
     verify(objectManager, never()).createNewObjects((Set) argThat(containsObjectWithID(new ObjectID(1L))));
-    verify(coordinator).addToApplyStage(argThat(allOf(hasTransactionID(0), hasIgnorableObject(new ObjectID(1L)))));
+    verify(coordinator).addToApplyStage((EventContext) argThat(allOf(hasTransactionID(0), hasIgnorableObject(new ObjectID(1L)))));
   }
 
   private static Collection<ObjectID> asCollectionOfObjectIDs(Long ... longs) {
-    Set<ObjectID> oids = new ObjectIDSet();
+    Set<ObjectID> oids = new BitSetObjectIDSet();
     for (long l : longs) {
       oids.add(new ObjectID(l));
     }
@@ -224,7 +233,10 @@ public class TransactionalObjectManagerTest extends TCTestCase {
   }
 
   private ApplyTransactionInfo applyInfoWithTransactionID(long transactionID) {
-    return spy(new ApplyTransactionInfo(true, new ServerTransactionID(new ClientID(0), new TransactionID(transactionID)), true));
+    return spy(new ApplyTransactionInfo(true,
+                                        new ServerTransactionID(new ClientID(0), new TransactionID(transactionID)),
+                                        GlobalTransactionID.NULL_ID, true, false, serverEventBuffer,
+                                        clientChannelMonitor));
   }
 
   private <T> Matcher<T> containsObjectWithID(final ObjectID id) {
@@ -306,11 +318,11 @@ public class TransactionalObjectManagerTest extends TCTestCase {
 
   private ServerTransaction createTransaction(long txId, Collection<Long> newObjects, Collection<Long> objects) {
     ServerTransaction transaction = mock(ServerTransaction.class);
-    ObjectIDSet newObjectIDs = new ObjectIDSet();
+    ObjectIDSet newObjectIDs = new BitSetObjectIDSet();
     for (long l : newObjects) {
       newObjectIDs.add(new ObjectID(l));
     }
-    ObjectIDSet objectIDs = new ObjectIDSet(newObjectIDs);
+    ObjectIDSet objectIDs = new BitSetObjectIDSet(newObjectIDs);
     for (long l : objects) {
       objectIDs.add(new ObjectID(l));
     }

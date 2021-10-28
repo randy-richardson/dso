@@ -7,7 +7,6 @@ package com.tc.object;
 import com.tc.exception.ImplementMe;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
-import com.tc.object.util.ToggleableStrongReference;
 
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
@@ -49,11 +48,6 @@ public class MockTCObject implements TCObject {
   @Override
   public Object getPeerObject() {
     return this.peer;
-  }
-
-  @Override
-  public TCClass getTCClass() {
-    return this.tcClazz;
   }
 
   @Override
@@ -132,6 +126,36 @@ public class MockTCObject implements TCObject {
     return;
   }
 
+  @Override
+  public String getExtendingClassName() {
+    return tcClazz.getExtendingClassName();
+  }
+
+  @Override
+  public String getClassName() {
+    return tcClazz.getName();
+  }
+
+  @Override
+  public Class<?> getPeerClass() {
+    return tcClazz.getPeerClass();
+  }
+
+  @Override
+  public boolean isIndexed() {
+    return tcClazz.isIndexed();
+  }
+
+  @Override
+  public boolean isLogical() {
+    return tcClazz.isLogical();
+  }
+
+  @Override
+  public boolean isEnum() {
+    return tcClazz.isEnum();
+  }
+
   public static class MethodCall {
     public int      method;
     public Object[] parameters;
@@ -180,11 +204,6 @@ public class MockTCObject implements TCObject {
   @Override
   public void setVersion(final long version) {
     this.version = version;
-  }
-
-  @Override
-  public int clearReferences(final int toClear) {
-    return 0;
   }
 
   @Override
@@ -263,11 +282,6 @@ public class MockTCObject implements TCObject {
   }
 
   @Override
-  public boolean canEvict() {
-    throw new ImplementMe();
-  }
-
-  @Override
   public void objectArrayChanged(final int startPos, final Object[] array, final int length) {
     throw new ImplementMe();
   }
@@ -292,11 +306,6 @@ public class MockTCObject implements TCObject {
   }
 
   @Override
-  public ToggleableStrongReference getOrCreateToggleRef() {
-    throw new ImplementMe();
-  }
-
-  @Override
   public void setNotNew() {
     this.isNew = false;
   }
@@ -311,8 +320,4 @@ public class MockTCObject implements TCObject {
     throw new ImplementMe();
   }
 
-  @Override
-  public boolean isCacheManaged() {
-    return true;
-  }
 }

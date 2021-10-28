@@ -5,7 +5,7 @@
 package com.tc.l2.objectserver;
 
 import com.tc.net.NodeID;
-import com.tc.object.dmi.DmiDescriptor;
+import com.tc.object.ObjectID;
 import com.tc.object.dna.api.MetaDataReader;
 import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.gtx.GlobalTransactionID;
@@ -76,11 +76,6 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
   }
 
   @Override
-  public DmiDescriptor[] getDmiDescriptors() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public MetaDataReader[] getMetaDataReaders() {
     // meta data is not stored in the object state so there is nothing to provide here on the object sync.
     return EMPTY_META_DATA_READER_ARRAY;
@@ -92,7 +87,7 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
   }
 
   @Override
-  public Map getNewRoots() {
+  public Map<String, ObjectID> getNewRoots() {
     return this.rootsMap;
   }
 
@@ -169,4 +164,5 @@ public class ObjectSyncServerTransaction implements ServerTransaction {
   public boolean isEviction() {
     return false;
   }
+
 }

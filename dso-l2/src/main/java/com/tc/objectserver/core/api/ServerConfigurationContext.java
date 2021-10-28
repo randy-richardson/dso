@@ -47,7 +47,6 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public final static String HYDRATE_MESSAGE_SINK                               = "hydrate_message_stage";
   public static final String REQUEST_BATCH_GLOBAL_TRANSACTION_ID_SEQUENCE_STAGE = "request_batch_global_transaction_id_sequence_stage";
   public static final String COMMIT_CHANGES_STAGE                               = "commit_changes_stage";
-  public static final String JMX_EVENTS_STAGE                                   = "jmx_events_stage";
   public static final String MANAGED_OBJECT_FAULT_STAGE                         = "managed_object_fault_stage";
   public static final String MANAGED_OBJECT_FLUSH_STAGE                         = "managed_object_flush_stage";
   public static final String JMXREMOTE_TUNNEL_STAGE                             = "jmxremote_tunnel_stage";
@@ -64,8 +63,6 @@ public interface ServerConfigurationContext extends ConfigurationContext {
   public static final String GROUP_EVENTS_DISPATCH_STAGE                        = "group_events_dispatch_stage";
   public static final String L2_STATE_MESSAGE_HANDLER_STAGE                     = "l2_state_message_handler_stage";
   public static final String GC_RESULT_PROCESSING_STAGE                         = "gc_result_processing_stage";
-  public static final String CLIENT_LOCK_STATISTICS_RESPOND_STAGE               = "client_lock_statistics_respond_stage";
-  public static final String CLIENT_LOCK_STATISTICS_ENABLE_DISABLE_STAGE        = "client_lock_statistics_enable_disable_stage";
   public static final String TRANSACTION_LOWWATERMARK_STAGE                     = "transaction_lowwatermark_stage";
   public static final String RECEIVE_GROUP_MESSAGE_STAGE                        = "receive_group_message_stage";
   public static final String GROUP_HANDSHAKE_MESSAGE_STAGE                      = "group_handshake_message_stage";

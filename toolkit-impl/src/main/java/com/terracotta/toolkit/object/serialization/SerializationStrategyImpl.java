@@ -26,26 +26,34 @@ public class SerializationStrategyImpl implements SerializationStrategy {
    * String keys which are really serialized objects will have this as their first char This particular value was chosen
    * since it is an invalid character in UTF-16 (http://unicode.org/faq/utf_bom.html#utf16-7)
    */
-  private static final char                   MARKER   = 0xFFFE;
+  private static final char              MARKER   = 0xFFFE;
 
-  private static final byte                   HIGH_BIT = (byte) 0x80;
-  private final ObjectStreamClassMapping      serializer;
-  private final ThreadContextAwareClassLoader tccl;
+  private static final byte              HIGH_BIT = (byte) 0x80;
+  private final ObjectStreamClassMapping serializer;
+  private final ClassLoader              tccl;
 
-  public SerializationStrategyImpl(PlatformService platformService, SerializerMap serializerMap) {
+  public SerializationStrategyImpl(PlatformService platformService, SerializerMap serializerMap, ClassLoader loader) {
     this.serializer = new ObjectStreamClassMapping(platformService, serializerMap);
-    tccl = new ThreadContextAwareClassLoader(SerializationStrategyImpl.class.getClassLoader());
+    this.tccl = loader;
   }
 
   @Override
-  public Object deserialize(final byte[] data, boolean compression, boolean local) throws IOException, ClassNotFoundException {
+  public Object deserialize(final byte[] data, boolean compression, boolean local) throws IOException,
+      ClassNotFoundException {
     InputStream in = new ByteArrayInputStream(data);
     if (compression) {
       in = new GZIPInputStream(in);
     }
+    return getObjectFromStream(in, local);
+  }
+
+  private Object getObjectFromStream(InputStream in, boolean local) throws IOException,
+      ClassNotFoundException {
     SerializerObjectInputStream sois = new SerializerObjectInputStream(in, serializer, tccl, local);
     try {
       return sois.readObject();
+    } catch (ObjectStreamClassNotFoundException e) {
+      return null;
     } finally {
       sois.close();
     }
@@ -104,12 +112,10 @@ public class SerializationStrategyImpl implements SerializationStrategy {
   }
 
   @Override
-  public Object deserializeFromString(final String key, boolean localOnly) throws IOException,
-      ClassNotFoundException {
+  public Object deserializeFromString(final String key, boolean localOnly) throws IOException, ClassNotFoundException {
     if (key.length() >= 1 && key.charAt(0) == MARKER) {
       StringSerializedObjectInputStream ssois = new StringSerializedObjectInputStream(key);
-      SerializerObjectInputStream sois = new SerializerObjectInputStream(ssois, serializer, tccl, localOnly);
-      return sois.readObject();
+      return getObjectFromStream(ssois, localOnly);
     }
     return key;
   }
@@ -210,7 +216,9 @@ public class SerializationStrategyImpl implements SerializationStrategy {
     protected ObjectStreamClass readClassDescriptor() throws IOException, ClassNotFoundException {
       int code = decodeInt(this);
       if (local) {
-        return oscSerializer.localGetObjectStreamClassFor(code);
+        ObjectStreamClass osc = oscSerializer.localGetObjectStreamClassFor(code);
+        if (osc == null) { throw new ObjectStreamClassNotFoundException(); }
+        return osc;
       } else {
         return oscSerializer.getObjectStreamClassFor(code);
       }
@@ -311,6 +319,10 @@ public class SerializationStrategyImpl implements SerializationStrategy {
       os.write((value >> 8) & 0xFF);
       os.write(value & 0xFF);
     }
+  }
+
+  private static class ObjectStreamClassNotFoundException extends RuntimeException {
+    //
   }
 
 }

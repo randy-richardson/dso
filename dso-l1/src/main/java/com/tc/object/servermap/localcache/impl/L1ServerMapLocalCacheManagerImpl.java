@@ -13,8 +13,6 @@ import com.tc.object.TCObjectSelf;
 import com.tc.object.TCObjectSelfCallback;
 import com.tc.object.TCObjectSelfStore;
 import com.tc.object.bytecode.Manager;
-import com.tc.object.locks.ClientLockManager;
-import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallService;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheManager;
@@ -26,6 +24,7 @@ import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.object.servermap.localcache.ServerMapLocalCacheRemoveCallback;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.TCConcurrentMultiMap;
 
@@ -39,10 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheManager {
 
-  private static final boolean                                                   PINNING_ENABLED                      = TCPropertiesImpl
-                                                                                                                          .getProperties()
-                                                                                                                          .getBoolean(TCPropertiesConsts.L1_LOCKMANAGER_PINNING_ENABLED);
-
   private static final boolean                                                   FAULT_INVALIDATED_PINNED_ENTRIES     = TCPropertiesImpl
                                                                                                                           .getProperties()
                                                                                                                           .getBoolean(TCPropertiesConsts.L1_SERVERMAPMANAGER_FAULT_INVALIDATED_PINNED_ENTRIES,
@@ -55,11 +50,6 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   private final TCConcurrentMultiMap<ServerMapLocalCache, ObjectID>              localCacheToMapIds                   = new TCConcurrentMultiMap<ServerMapLocalCache, ObjectID>();
 
   /**
-   * For lock recalls
-   */
-  private volatile TCConcurrentMultiMap<LockID, ServerMapLocalCache>                lockIdsToLocalCache                  = new TCConcurrentMultiMap<LockID, ServerMapLocalCache>();
-
-  /**
    * All local caches
    */
   private final ConcurrentHashMap<ServerMapLocalCache, PinnedEntryFaultCallback> localCacheToPinnedEntryFaultCallback = new ConcurrentHashMap<ServerMapLocalCache, PinnedEntryFaultCallback>();
@@ -70,17 +60,14 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   private final IdentityHashMap<L1ServerMapLocalCacheStore, ServerMapLocalCache> localStores                          = new IdentityHashMap<L1ServerMapLocalCacheStore, ServerMapLocalCache>();
 
   private final AtomicBoolean                                                    shutdown                             = new AtomicBoolean();
-  private final LocksRecallService                                               locksRecallHelper;
   private final Sink                                                             capacityEvictionSink;
   private final Sink                                                             txnCompleteSink;
   private final RemoveCallback                                                   removeCallback;
   private final TCObjectSelfStore                                                tcObjectSelfStore;
-  private volatile ClientLockManager                                             clientLockManager;
   private final PinnedEntryInvalidationListener                                  pinnedEntryInvalidationListener;
 
   public L1ServerMapLocalCacheManagerImpl(LocksRecallService locksRecallHelper, Sink capacityEvictionSink,
                                           Sink txnCompleteSink, Sink pinnedEntryFaultSink) {
-    this.locksRecallHelper = locksRecallHelper;
     this.capacityEvictionSink = capacityEvictionSink;
     removeCallback = new RemoveCallback();
     tcObjectSelfStore = new TCObjectSelfStoreImpl(localCacheToPinnedEntryFaultCallback);
@@ -92,7 +79,6 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   public void cleanup() {
     // Clean-up of local cache is done by AggreagateServerMap on Rejoin Completed
 
-    lockIdsToLocalCache = new TCConcurrentMultiMap<LockID, ServerMapLocalCache>();
     tcObjectSelfStore.cleanup();
     // all sinks will be cleaned-up as a part of stageManager.cleanAll() from ClientHandshakeManagerImpl.reset()
     // clientLockManager will be cleanup from clientHandshakeCallbacks
@@ -101,11 +87,6 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   @Override
   public void initializeTCObjectSelfStore(TCObjectSelfCallback callback) {
     this.tcObjectSelfStore.initializeTCObjectSelfStore(callback);
-  }
-
-  @Override
-  public void setLockManager(ClientLockManager lockManager) {
-    this.clientLockManager = lockManager;
   }
 
   @Override
@@ -169,30 +150,12 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
   }
 
   @Override
-  public void recallLocks(Set<LockID> lockIds) {
-    if (PINNING_ENABLED) {
-      for (LockID lockId : lockIds) {
-        this.clientLockManager.unpinLock(lockId);
-      }
+  public ObjectIDSet getObjectIDsToValidate(final NodeID remoteNode) {
+    ObjectIDSet validations = tcObjectSelfStore.getObjectIDsToValidate(remoteNode);
+    for (ServerMapLocalCache cache : localStores.values()) {
+      cache.handleObjectIDsToValidate(validations);
     }
-
-    locksRecallHelper.recallLocks(lockIds);
-  }
-
-  @Override
-  public void recallLocksInline(Set<LockID> lockIds) {
-    if (PINNING_ENABLED) {
-      for (LockID lockId : lockIds) {
-        this.clientLockManager.unpinLock(lockId);
-      }
-    }
-
-    locksRecallHelper.recallLocksInline(lockIds);
-  }
-
-  @Override
-  public void addAllObjectIDsToValidate(Invalidations invalidations, NodeID remoteNode) {
-    tcObjectSelfStore.addAllObjectIDsToValidate(invalidations, remoteNode);
+    return validations;
   }
 
   /**
@@ -200,7 +163,7 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
    */
   @Override
   public ObjectIDSet removeEntriesForObjectId(ObjectID mapID, Set<ObjectID> set) {
-    ObjectIDSet invalidationsFailed = new ObjectIDSet();
+    ObjectIDSet invalidationsFailed = new BitSetObjectIDSet();
 
     if (ObjectID.NULL_ID.equals(mapID)) {
       for (ServerMapLocalCache cache : localCacheToPinnedEntryFaultCallback.keySet()) {
@@ -224,37 +187,17 @@ public class L1ServerMapLocalCacheManagerImpl implements L1ServerMapLocalCacheMa
     }
   }
 
-  /**
-   * This method is called only when recall happens
-   */
-  @Override
-  public void removeEntriesForLockId(LockID lockID) {
-    if (PINNING_ENABLED) {
-      this.clientLockManager.unpinLock(lockID);
-    }
-
-    final Set<ServerMapLocalCache> caches = lockIdsToLocalCache.removeAll(lockID);
-
-    for (ServerMapLocalCache localCache : caches) {
-      localCache.removeEntriesForLockId(lockID);
-    }
-  }
-
-  @Override
-  public void rememberMapIdForValueLockId(LockID valueLockId, ServerMapLocalCache localCache) {
-    if (PINNING_ENABLED) {
-      this.clientLockManager.pinLock(valueLockId);
-    }
-
-    lockIdsToLocalCache.add(valueLockId, localCache);
-  }
-
   @Override
   public void evictElements(Map evictedElements, ServerMapLocalCache localCache) {
     Set<Map.Entry> entries = evictedElements.entrySet();
     for (Entry entry : entries) {
       localCache.entryEvicted(entry.getKey(), entry.getValue());
     }
+  }
+
+  @Override
+  public void rejoinInProgress(boolean rejoinInProgress) {
+    tcObjectSelfStore.rejoinInProgress(rejoinInProgress);
   }
 
   @Override

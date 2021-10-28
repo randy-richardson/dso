@@ -4,11 +4,11 @@
  */
 package com.tc.object;
 
-import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
 
 import com.tc.abortable.NullAbortableOperationManager;
 import com.tc.async.impl.MockSink;
 import com.tc.exception.ImplementMe;
+import com.tc.exception.PlatformRejoinException;
 import com.tc.exception.TCNotRunningException;
 import com.tc.exception.TCObjectNotFoundException;
 import com.tc.net.protocol.tcm.TestChannelIDProvider;
@@ -62,9 +62,9 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
   public void setUp() throws Exception {
     this.remoteObjectManager = new TestRemoteObjectManager();
     this.classProvider = new MockClassProvider();
-    this.clientConfiguration = configHelper();
     this.classFactory = new TestClassFactory();
     this.objectFactory = new TestObjectFactory();
+    this.clientConfiguration = configHelper();
     this.tcObjectSelfStore = new L1ServerMapLocalCacheManagerImpl(new TestLocksRecallService(), new MockSink(),
                                                                   new MockSink(), new MockSink());
 
@@ -75,10 +75,10 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     this.objectFactory.peerObject = this.object;
     this.objectFactory.tcObject = this.tcObject;
 
-    this.mgr = new ClientObjectManagerImpl(this.remoteObjectManager, this.clientConfiguration, this.idProvider,
+    this.mgr = new ClientObjectManagerImpl(this.remoteObjectManager, this.idProvider,
                                            new ClientIDProviderImpl(new TestChannelIDProvider()),
                                            this.classProvider, this.classFactory, this.objectFactory,
-                                           new PortabilityImpl(this.clientConfiguration), null, null,
+                                           new PortabilityImpl(this.clientConfiguration),
                                            this.tcObjectSelfStore, new NullAbortableOperationManager());
     this.mgr.setTransactionManager(new MockTransactionManager());
   }
@@ -178,7 +178,6 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     final TestMutualReferenceObjectFactory testMutualReferenceObjectFactory = new TestMutualReferenceObjectFactory();
     final ClientObjectManagerImpl clientObjectManager = new ClientObjectManagerImpl(
                                                                                     this.remoteObjectManager,
-                                                                                    this.clientConfiguration,
                                                                                     this.idProvider,
                                                                                     new ClientIDProviderImpl(
                                                                                                              new TestChannelIDProvider()),
@@ -187,7 +186,7 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
                                                                                     testMutualReferenceObjectFactory,
                                                                                     new PortabilityImpl(
                                                                                                         this.clientConfiguration),
-                                                                                    null, null, this.tcObjectSelfStore,
+                                                                                    this.tcObjectSelfStore,
                                                                                     new NullAbortableOperationManager());
     this.mgr = clientObjectManager;
     final MockTransactionManager mockTransactionManager = new MockTransactionManager();
@@ -258,7 +257,7 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
   }
 
   private static final class ExceptionHolder {
-    private final SynchronizedBoolean exceptionOccurred = new SynchronizedBoolean(false);
+    private final AtomicBoolean exceptionOccurred = new AtomicBoolean(false);
     private Exception                 threadException;
 
     public Exception getThreadException() {
@@ -269,7 +268,7 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
       this.threadException = threadException;
     }
 
-    public SynchronizedBoolean getExceptionOccurred() {
+    public AtomicBoolean getExceptionOccurred() {
       return this.exceptionOccurred;
     }
 
@@ -601,21 +600,10 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     }
 
     @Override
-    public Object __tc_getmanagedfield(final String name) {
-      throw new ImplementMe();
-    }
-
-    @Override
     public void __tc_setfield(final String name, final Object value) {
       if ("object".equals(name)) {
         this.object = (TestObject) value;
       }
-    }
-
-    @Override
-    public void __tc_setmanagedfield(final String name, final Object value) {
-      throw new ImplementMe();
-
     }
 
     @Override
@@ -647,20 +635,10 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     }
 
     @Override
-    public Object __tc_getmanagedfield(final String name) {
-      throw new ImplementMe();
-    }
-
-    @Override
     public void __tc_setfield(final String name, final Object value) {
       if ("object".equals(name)) {
         this.object = (StupidTestObject) value;
       }
-    }
-
-    @Override
-    public void __tc_setmanagedfield(final String name, final Object value) {
-      throw new ImplementMe();
     }
 
     @Override
@@ -689,5 +667,40 @@ public class ClientObjectManagerTest extends BaseDSOTestCase {
     for (int i = 0; i < 100; i++) {
       Assert.assertSame(tco.getObjectID(), this.mgr.lookupExistingObjectID(this.object));
     }
+  }
+
+  public void testCleanupDuringLookup() throws Exception {
+    final ObjectID id = new ObjectID(1);
+    final List errors = Collections.synchronizedList(new ArrayList());
+
+    final Runnable lookup = new Runnable() {
+      @Override
+      public void run() {
+        try {
+          ClientObjectManagerTest.this.mgr.lookup(id);
+        } catch (final Throwable t) {
+          System.err.println("got exception: " + t.getClass().getName());
+          errors.add(t);
+        }
+      }
+    };
+
+    final Thread t1 = new Thread(lookup);
+    t1.start();
+    final Thread t2 = new Thread(lookup);
+    t2.start();
+
+    ThreadUtil.reallySleep(2000);
+    ((ClientHandshakeCallback) this.mgr).pause(null, 0);
+    ((ClientHandshakeCallback) this.mgr).cleanup();
+    this.remoteObjectManager.cleanup();
+
+    t1.join();
+    t2.join();
+
+    assertEquals(2, errors.size());
+    assertEquals(PlatformRejoinException.class, errors.remove(0).getClass());
+    assertEquals(PlatformRejoinException.class, errors.remove(0).getClass());
+
   }
 }

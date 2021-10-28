@@ -4,6 +4,7 @@
  */
 package com.tc.net.groups;
 
+import com.google.common.base.Throwables;
 import com.tc.async.api.ConfigurationContext;
 import com.tc.async.api.EventContext;
 import com.tc.async.api.Sink;
@@ -20,12 +21,13 @@ import com.tc.l2.state.StateManager;
 import com.tc.l2.state.StateManagerConfig;
 import com.tc.l2.state.StateManagerImpl;
 import com.tc.lang.TCThreadGroup;
-import com.tc.lang.ThrowableHandler;
+import com.tc.lang.TestThrowableHandler;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.NodeID;
 import com.tc.net.protocol.transport.NullConnectionPolicy;
 import com.tc.object.net.groups.HaConfigForGroupNameTests;
+import com.tc.objectserver.persistence.TestClusterStatePersistor;
 import com.tc.test.TCTestCase;
 import com.tc.util.PortChooser;
 import com.tc.util.State;
@@ -37,153 +39,78 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
   private final static String   LOCALHOST = "localhost";
   private static final TCLogger logger    = TCLogging.getLogger(VirtualTCGroupStateManagerTest.class);
+  private TestThrowableHandler throwableHandler;
   private TCThreadGroup         threadGroup;
-
-  public VirtualTCGroupStateManagerTest() {
-    // disableAllUntil("2009-01-14");
-  }
 
   @Override
   public void setUp() {
-    threadGroup = new TCThreadGroup(new ThrowableHandler(logger), "VirtualTCGroupStateManagerTestGroup");
+    throwableHandler = new TestThrowableHandler(logger);
+    threadGroup = new TCThreadGroup(throwableHandler, "VirtualTCGroupStateManagerTestGroup");
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    try {
+      throwableHandler.throwIfNecessary();
+    } catch (Throwable throwable) {
+      throw Throwables.propagate(throwable);
+    }
   }
 
   public void testStateManagerTwoServers() throws Exception {
     // 2 nodes join concurrently
     // setup throwable ThreadGroup to catch AssertError from threads.
-    Thread throwableThread = new Thread(threadGroup, new Runnable() {
-      @Override
-      public void run() {
-        try {
-          nodesConcurrentJoining(4, 2);
-        } catch (Exception e) {
-          throw new RuntimeException("testStateManagerTwoServers failed! " + e);
-        }
-      }
-    });
-    throwableThread.start();
-    throwableThread.join();
+    nodesConcurrentJoining(4, 2);
   }
 
   public void testStateManagerThreeServers() throws Exception {
     // 3 nodes join concurrently
     // setup throwable ThreadGroup to catch AssertError from threads.
-    Thread throwableThread = new Thread(threadGroup, new Runnable() {
-      @Override
-      public void run() {
-        try {
-          nodesConcurrentJoining(6, 3);
-        } catch (Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException("testStateManagerThreeServers failed! " + e);
-        }
-      }
-    });
-    throwableThread.start();
-    throwableThread.join();
+    nodesConcurrentJoining(6, 3);
   }
 
   public void testStateManagerSixServers() throws Exception {
     // 6 nodes join concurrently
     // setup throwable ThreadGroup to catch AssertError from threads.
-    Thread throwableThread = new Thread(threadGroup, new Runnable() {
-      @Override
-      public void run() {
-        try {
-          nodesConcurrentJoining(8, 6);
-        } catch (Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException("testStateManagerSixServers failed! " + e);
-        }
-      }
-    });
-    throwableThread.start();
-    throwableThread.join();
+    nodesConcurrentJoining(8, 6);
   }
 
   public void testStateManagerMixJoinAndElect3() throws Exception {
     // 3 nodes mix join and election
     // setup throwable ThreadGroup to catch AssertError from threads.
-    Thread throwableThread = new Thread(threadGroup, new Runnable() {
-      @Override
-      public void run() {
-        try {
-          nodesMixJoinAndElect(6, 3);
-        } catch (Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException("testStateManagerMixJoinAndElect3 failed! " + e);
-        }
-      }
-    });
-    throwableThread.start();
-    throwableThread.join();
+    nodesMixJoinAndElect(6, 3);
   }
 
   public void testStateManagerMixJoinAndElect6() throws Exception {
     // 6 nodes mix join and election
     // setup throwable ThreadGroup to catch AssertError from threads.
-    Thread throwableThread = new Thread(threadGroup, new Runnable() {
-      @Override
-      public void run() {
-        try {
-          nodesMixJoinAndElect(8, 6);
-        } catch (Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException("testStateManagerMixJoinAndElect6 failed! " + e);
-        }
-      }
-    });
-    throwableThread.start();
-    throwableThread.join();
+    nodesMixJoinAndElect(8, 6);
   }
 
   public void testStateManagerJoinLater3() throws Exception {
     // first node shall be active and remaining 2 nodes join later
     // setup throwable ThreadGroup to catch AssertError from threads.
-    Thread throwableThread = new Thread(threadGroup, new Runnable() {
-      @Override
-      public void run() {
-        try {
-          nodesJoinLater(6, 3);
-        } catch (Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException("testStateManagerJoinLater3 failed! " + e);
-        }
-      }
-    });
-    throwableThread.start();
-    throwableThread.join();
+    nodesJoinLater(6, 3);
   }
 
   public void testStateManagerJoinLater6() throws Exception {
     // first node shall be active and remaining 5 nodes join later
     // setup throwable ThreadGroup to catch AssertError from threads.
-    Thread throwableThread = new Thread(threadGroup, new Runnable() {
-      @Override
-      public void run() {
-        try {
-          nodesJoinLater(9, 6);
-        } catch (Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException("testStateManagerJoinLater6 failed! " + e);
-        }
-      }
-    });
-    throwableThread.start();
-    throwableThread.join();
+    nodesJoinLater(9, 6);
   }
 
   // -----------------------------------------------------------------------
 
   private void nodesConcurrentJoining(int nodes, int virtuals) throws Exception {
     System.out.println("*** Testing total=" + nodes + " with " + virtuals + " nodes join at same time.");
-
+// force gc to try and free uncollected ports
+    System.gc();
+    
     TCGroupManagerImpl[] groupMgr = new TCGroupManagerImpl[nodes];
     PortChooser pc = new PortChooser();
     int[] ports = new int[nodes];
@@ -282,7 +209,9 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
   private void nodesMixJoinAndElect(int nodes, int virtuals) throws Exception {
     System.out.println("*** Testing total=" + nodes + " with " + virtuals
                        + " nodes mixed join and election at same time.");
-
+// force gc to try and free uncollected ports
+    System.gc();
+    
     TCGroupManagerImpl[] groupMgr = new TCGroupManagerImpl[nodes];
     PortChooser pc = new PortChooser();
     int[] ports = new int[nodes];
@@ -350,6 +279,8 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
   }
 
   private void nodesJoinLater(int nodes, int virtuals) throws Exception {
+// force gc to try and free uncollected ports
+    System.gc();
     System.out.println("*** Testing total=" + nodes + " with " + virtuals + " nodes join at later time.");
 
     final LinkedBlockingQueue<NodeID> joinedNodes = new LinkedBlockingQueue<NodeID>();
@@ -393,7 +324,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
     Collections.addAll(nodeSet, allNodes);
     NodesStore nodeStore = new NodesStoreImpl(nodeSet);
     ids[0] = groupMgr[0].join(allNodes[0], nodeStore);
-    managers[0].startElection(true);
+    managers[0].startElection();
     ThreadUtil.reallySleep(100);
 
     // move following join nodes to passive-standby
@@ -416,7 +347,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
     ThreadUtil.reallySleep(1000);
     int nodesNeedToMoveToPassive = virtuals - 1;
     while (nodesNeedToMoveToPassive > 0) {
-      NodeID toBePassiveNode = joinedNodes.poll(5000, TimeUnit.MILLISECONDS);
+      NodeID toBePassiveNode = joinedNodes.take();
       System.out.println("*** moveNodeToPassiveStandby -> " + toBePassiveNode);
       managers[0].moveNodeToPassiveStandby(toBePassiveNode);
       --nodesNeedToMoveToPassive;
@@ -494,7 +425,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
     MyStateManagerConfig config = new MyStateManagerConfig();
     config.electionTime = 5;
     StateManager mgr = new StateManagerImpl(logger, gm, sinks[localIndex], config, WeightGeneratorFactory
-        .createDefaultFactory());
+        .createDefaultFactory(), new TestClusterStatePersistor());
     messageStage[localIndex] = new L2StateMessageStage(mgr);
     gm.routeMessages(L2StateMessage.class, messageStage[localIndex].getSink());
     messageStage[localIndex].start();
@@ -555,7 +486,7 @@ public class VirtualTCGroupStateManagerTest extends TCTestCase {
 
     @Override
     public void run() {
-      mgr.startElection(true);
+      mgr.startElection();
     }
   }
 

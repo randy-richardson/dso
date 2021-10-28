@@ -21,14 +21,17 @@ import com.tc.logging.TCLogger;
 import com.tc.management.TerracottaManagement;
 import com.tc.management.beans.L2MBeanNames;
 import com.tc.management.beans.TCServerInfoMBean;
+import com.tc.net.core.BufferManagerFactory;
+import com.tc.net.core.security.TCSecurityManager;
 import com.tc.security.PwProvider;
 import com.tc.util.concurrent.ThreadUtil;
+import com.terracotta.management.keychain.KeyChain;
 
 import java.io.Console;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -36,6 +39,7 @@ import java.util.Arrays;
 
 import javax.management.MBeanServerConnection;
 import javax.management.remote.JMXConnector;
+import javax.net.ssl.SSLContext;
 
 public class TCStop {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
@@ -60,6 +64,7 @@ public class TCStop {
     commandLineBuilder.addOption("s", "secured", false, "secured", String.class, false);
     commandLineBuilder.addOption("force", "force", false, "force", String.class, false);
     commandLineBuilder.addOption("h", "help", String.class, false);
+    commandLineBuilder.addOption("k", "ignoreSSLCert", false, "Ignore untrusted SSL certificate", String.class, false);
 
     commandLineBuilder.parse();
     String[] arguments = commandLineBuilder.getArguments();
@@ -73,6 +78,10 @@ public class TCStop {
 
     if (commandLineBuilder.hasOption('h')) {
       commandLineBuilder.usageAndDie();
+    }
+
+    if (commandLineBuilder.hasOption('k')) {
+      System.setProperty("tc.ssl.trustAllCerts", "true");
     }
 
     String defaultName = StandardConfigurationSetupManagerFactory.DEFAULT_CONFIG_SPEC;
@@ -150,8 +159,9 @@ public class TCStop {
       String[] servers = manager.allCurrentlyKnownServers();
 
       if(manager.isSecure() || securedSpecified) {
+        // Create a security manager that will set the default SSL context
         final Class<?> securityManagerClass = Class.forName("com.tc.net.core.security.TCClientSecurityManager");
-        securityManagerClass.newInstance();
+        securityManagerClass.getConstructor(KeyChain.class, boolean.class).newInstance(null, true);
         secured = true;
       }
 
@@ -175,7 +185,8 @@ public class TCStop {
 
       CommonL2Config serverConfig = manager.commonL2ConfigFor(name);
 
-      host = serverConfig.host();
+      host = serverConfig.jmxPort().getBind();
+      if (host == null || host.equals("0.0.0.0")) host = serverConfig.host();
       if (host == null) host = name;
       if (host == null) host = DEFAULT_HOST;
       port = serverConfig.jmxPort().getIntValue();
@@ -205,6 +216,8 @@ public class TCStop {
       if (root instanceof ConnectException) {
         consoleLogger.error("Unable to connect to host '" + host + "', port " + port
                             + ". Are you sure there is a Terracotta server instance running there?");
+      } else {
+        consoleLogger.error("Unexpected error while stopping server: " + root.getMessage());
       }
       System.exit(1);
     }
@@ -284,24 +297,13 @@ public class TCStop {
 
   private ServerGroupInfo getCurrentServerGroup(TCServerInfoMBean tcServerInfo) throws UnknownHostException {
     ServerGroupInfo[] serverGroupInfos = tcServerInfo.getServerGroupInfo();
-    InetAddress ipAddress = null;
-    ipAddress = getIpAddressOfServer(host);
     for (ServerGroupInfo serverGroupInfo : serverGroupInfos) {
       L2Info[] members = serverGroupInfo.members();
       for (L2Info l2Info : members) {
-        if (l2Info.getInetAddress().equals(ipAddress) && l2Info.jmxPort() == port) { return serverGroupInfo; }
+        if (l2Info.name().equals(tcServerInfo.getL2Identifier())) { return serverGroupInfo; }
       }
     }
     return null;
-  }
-
-  private InetAddress getIpAddressOfServer(final String name) throws UnknownHostException {
-    InetAddress address;
-    address = InetAddress.getByName(name);
-    if (address.isLoopbackAddress()) {
-      address = InetAddress.getLocalHost();
-    }
-    return address;
   }
 
   private boolean isPassiveStandBy(L2Info l2Info) throws Exception {

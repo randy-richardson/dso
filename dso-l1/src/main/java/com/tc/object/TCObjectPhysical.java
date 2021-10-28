@@ -10,7 +10,6 @@ import com.tc.exception.TCRuntimeException;
 import com.tc.object.bytecode.TransparentAccess;
 import com.tc.object.field.TCField;
 import com.tc.util.Assert;
-import com.tc.util.ClassUtils;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -183,86 +182,8 @@ public class TCObjectPhysical extends TCObjectImpl {
   }
 
   @Override
-  protected boolean isEvictable() {
-    return true;
-  }
-
-  @Override
-  protected int clearReferences(Object pojo, int toClear) {
-    if (tcClazz.isIndexed()) {
-      if (ClassUtils.isPrimitiveArray(pojo)) return 0;
-      return clearArrayReferences((Object[]) pojo);
-    } else if (pojo instanceof TransparentAccess) {
-      return clearObjectReferences((TransparentAccess) pojo);
-    } else {
-      return 0;
-    }
-  }
-
-  private int clearArrayReferences(Object[] array) {
-    int cleared = 0;
-    int l = array.length;
-    for (int i = 0; i < l; i++) {
-      Object o = array[i];
-      if (o == null) continue;
-      if (getObjectManager().isManaged(o)) {
-        ObjectID lid = getObjectManager().lookupExistingObjectID(o);
-        ObjectID old = setReference(Integer.toString(i), lid);
-        if (old != null && !lid.equals(old)) {
-          // Formatting
-          throw new AssertionError("clearArrayReferences : mapped [" + i + "] to " + lid
-                                   + " while there was an exisiting mapping in references : " + old + " : TCObject =  "
-                                   + getObjectID() + " : " + this + " version = " + this.getVersion());
-        }
-        array[i] = null;
-        cleared++;
-      }
-    }
-    return cleared;
-  }
-
-  private int clearObjectReferences(TransparentAccess ta) {
-
-    Map fieldValues = null;
-    int cleared = 0;
-
-    TCClass aClazz = tcClazz;
-
-    while (aClazz != null) {
-
-      TCField[] fields = aClazz.getPortableFields();
-
-      for (TCField field : fields) {
-
-        if (!field.canBeReference()) continue;
-
-        if (fieldValues == null) {
-          // lazy instantiation. TODO:: Add a new method in TransparentAccess __tc_getFieldNoResolve()
-          fieldValues = new HashMap();
-          ta.__tc_getallfields(fieldValues);
-        }
-
-        Object obj = fieldValues.get(field.getName());
-
-        if (obj == null) continue;
-
-        TCObject tobj = getObjectManager().lookupExistingOrNull(obj);
-
-        if (tobj != null) {
-          ObjectID lid = tobj.getObjectID();
-          setValue(field.getName(), lid);
-          cleared++;
-        }
-      }
-
-      aClazz = aClazz.getSuperclass();
-    }
-    return cleared;
-  }
-
-  @Override
   public void unresolveReference(String fieldName) {
-    TCField field = tcClazz.getField(fieldName);
+    TCField field = getTCClass().getField(fieldName);
     if (field == null) { throw new IllegalArgumentException("No such field: " + fieldName); }
     if (!field.canBeReference()) return;
 
@@ -285,4 +206,5 @@ public class TCObjectPhysical extends TCObjectImpl {
       }
     }
   }
+
 }

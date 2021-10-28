@@ -14,7 +14,7 @@ import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
 import com.tc.lang.StartupHelper;
 import com.tc.lang.TCThreadGroup;
-import com.tc.lang.ThrowableHandler;
+import com.tc.lang.ThrowableHandlerImpl;
 import com.tc.logging.TCLogging;
 import com.tc.net.protocol.tcm.msgs.PingMessage;
 import com.tc.object.BaseDSOTestCase;
@@ -30,9 +30,7 @@ import com.tc.objectserver.impl.DistributedObjectServer;
 import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.platform.rejoin.RejoinManager;
 import com.tc.platform.rejoin.RejoinManagerInternal;
-import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
-import com.tc.properties.TCPropertiesImpl;
 import com.tc.server.TCServer;
 import com.tc.server.TCServerImpl;
 import com.tc.util.Assert;
@@ -51,7 +49,6 @@ public class ClientShutdownTest extends BaseDSOTestCase {
 
   private PreparedComponentsFromL2Connection preparedComponentsFromL2Connection;
   private boolean                            originalReconnect;
-  private final TCProperties                 tcProps = TCPropertiesImpl.getProperties();
 
   @Override
   protected void setUp() throws Exception {
@@ -190,7 +187,7 @@ public class ClientShutdownTest extends BaseDSOTestCase {
 
     RejoinManagerInternal mock = Mockito.mock(RejoinManagerInternal.class);
     DistributedObjectClient client = new DistributedObjectClient(new StandardDSOClientConfigHelperImpl(manager),
-                                                                 new TCThreadGroup(new ThrowableHandler(TCLogging
+                                                                 new TCThreadGroup(new ThrowableHandlerImpl(TCLogging
                                                                      .getLogger(DistributedObjectClient.class))),
                                                                  new MockClassProvider(),
                                                                  preparedComponentsFromL2Connection,
@@ -203,7 +200,7 @@ public class ClientShutdownTest extends BaseDSOTestCase {
   }
 
   protected final TCThreadGroup group = new TCThreadGroup(
-                                                          new ThrowableHandler(TCLogging
+                                                          new ThrowableHandlerImpl(TCLogging
                                                               .getLogger(DistributedObjectServer.class)));
 
   protected class StartAction implements StartupHelper.StartupAction {

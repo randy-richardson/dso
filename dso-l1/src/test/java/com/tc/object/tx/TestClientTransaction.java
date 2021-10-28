@@ -7,7 +7,7 @@ package com.tc.object.tx;
 import com.tc.exception.ImplementMe;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObject;
-import com.tc.object.dmi.DmiDescriptor;
+import com.tc.object.dna.api.LogicalChangeID;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.Notify;
 import com.tc.object.metadata.MetaDataDescriptorInternal;
@@ -79,7 +79,8 @@ public class TestClientTransaction implements ClientTransaction {
   }
 
   @Override
-  public void logicalInvoke(TCObject source, int method, Object[] parameters, String methodName) {
+  public void logicalInvoke(TCObject source, int method, Object[] parameters, String methodName,
+ LogicalChangeID id) {
     throw new ImplementMe();
   }
 
@@ -153,16 +154,6 @@ public class TestClientTransaction implements ClientTransaction {
     return Collections.EMPTY_LIST;
   }
 
-  @Override
-  public void addDmiDescriptor(DmiDescriptor dd) {
-    throw new ImplementMe();
-  }
-
-  @Override
-  public List getDmiDescriptors() {
-    return Collections.EMPTY_LIST;
-  }
-
   public List getMetaDataDescriptors() {
     return Collections.EMPTY_LIST;
   }
@@ -215,6 +206,11 @@ public class TestClientTransaction implements ClientTransaction {
   @Override
   public List<OnCommitCallable> getOnCommitCallables() {
     return Collections.EMPTY_LIST;
+  }
+
+  @Override
+  public int getSession() {
+    return 0;
   }
 
 }

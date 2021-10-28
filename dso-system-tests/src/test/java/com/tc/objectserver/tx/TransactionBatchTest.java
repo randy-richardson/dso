@@ -12,8 +12,6 @@ import com.tc.object.ApplicatorDNAEncodingImpl;
 import com.tc.object.MockTCObject;
 import com.tc.object.ObjectID;
 import com.tc.object.bytecode.MockClassProvider;
-import com.tc.object.dmi.DmiClassSpec;
-import com.tc.object.dmi.DmiDescriptor;
 import com.tc.object.dna.api.DNAEncodingInternal;
 import com.tc.object.dna.impl.ObjectStringSerializer;
 import com.tc.object.dna.impl.ObjectStringSerializerImpl;
@@ -27,6 +25,7 @@ import com.tc.object.tx.ClientTransactionBatchWriter;
 import com.tc.object.tx.ClientTransactionBatchWriter.FoldedInfo;
 import com.tc.object.tx.ClientTransactionBatchWriter.FoldingConfig;
 import com.tc.object.tx.ClientTransactionImpl;
+import com.tc.object.tx.FoldingConfigHelper;
 import com.tc.object.tx.TestClientTransaction;
 import com.tc.object.tx.TransactionContext;
 import com.tc.object.tx.TransactionContextImpl;
@@ -36,6 +35,7 @@ import com.tc.object.tx.TxnBatchID;
 import com.tc.object.tx.TxnType;
 import com.tc.objectserver.core.api.DSOGlobalServerStats;
 import com.tc.objectserver.core.api.DSOGlobalServerStatsImpl;
+import com.tc.objectserver.tx.TransactionBatchReaderImpl.TransactionSizeCounterCallback;
 import com.tc.properties.TCProperties;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
@@ -73,20 +73,21 @@ public class TransactionBatchTest extends TestCase {
 
   private ClientTransactionBatchWriter newWriter(final ObjectStringSerializer serializer) {
     return new ClientTransactionBatchWriter(GroupID.NULL_ID, new TxnBatchID(1), serializer, this.encoding,
-                                            this.messageFactory, FoldingConfig.createFromProperties(TCPropertiesImpl
+                                            this.messageFactory,
+                                            FoldingConfigHelper.createFromProperties(TCPropertiesImpl
                                                 .getProperties()));
   }
 
   private ClientTransactionBatchWriter newWriter(final ObjectStringSerializer serializer, final boolean foldEnabled,
                                                  final int lockLimit, final int objectLimit) {
     return new ClientTransactionBatchWriter(GroupID.NULL_ID, new TxnBatchID(1), serializer, this.encoding,
-                                            this.messageFactory, new FoldingConfig(foldEnabled, objectLimit, lockLimit));
+                                            this.messageFactory, new FoldingConfig(foldEnabled, objectLimit, lockLimit,
+                                                                                   false));
   }
 
   public void testGetMinTransaction() throws Exception {
     final SequenceGenerator sequenceGenerator = new SequenceGenerator();
     final TransactionIDGenerator tidGenerator = new TransactionIDGenerator();
-
     final LinkedList list = new LinkedList();
     for (int i = 0; i < 100; i++) {
       final TestClientTransaction tx = new TestClientTransaction();
@@ -137,11 +138,11 @@ public class TransactionBatchTest extends TestCase {
     // A nested transaction (all this buys us is more than 1 lock in a txn)
     final LockID lid1 = new StringLockID("1");
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction tmp = new ClientTransactionImpl();
+    final ClientTransaction tmp = new ClientTransactionImpl(0);
     tmp.setTransactionContext(tc);
     final LockID lid2 = new StringLockID("2");
     tc = new TransactionContextImpl(lid2, TxnType.NORMAL, TxnType.NORMAL, Arrays.asList(new LockID[] { lid1, lid2 }));
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
 
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
@@ -158,11 +159,12 @@ public class TransactionBatchTest extends TestCase {
     }
 
     tc = new TransactionContextImpl(new StringLockID("3"), TxnType.CONCURRENT, TxnType.CONCURRENT);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
 
     this.writer = new ClientTransactionBatchWriter(GroupID.NULL_ID, batchID, serializer, this.encoding, mf,
-                                                   FoldingConfig.createFromProperties(TCPropertiesImpl.getProperties()));
+                                                   FoldingConfigHelper.createFromProperties(TCPropertiesImpl
+                                                       .getProperties()));
 
     final SequenceGenerator sequenceGenerator = new SequenceGenerator();
     final TransactionIDGenerator tidGenerator = new TransactionIDGenerator();
@@ -174,7 +176,7 @@ public class TransactionBatchTest extends TestCase {
     final TransactionBatchReaderImpl reader = new TransactionBatchReaderImpl(this.writer.getData(), clientID,
                                                                              serializer,
                                                                              new ActiveServerTransactionFactory(),
-                                                                             stats);
+                                                                             newCallback(stats));
     // let transactionSize counter sample
     ThreadUtil.reallySleep(2000);
     assertTransactionSize(this.writer.getData(), 2, stats.getTransactionSizeCounter());
@@ -235,18 +237,18 @@ public class TransactionBatchTest extends TestCase {
 
     final LockID lid1 = new StringLockID("1");
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
     txn2.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     // txn3 has more objects than 1 & 2, but contains all from the previous, it can be folded
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn3 = new ClientTransactionImpl();
+    final ClientTransaction txn3 = new ClientTransactionImpl(0);
     txn3.setTransactionContext(tc);
     txn3.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
     txn3.fieldChanged(new MockTCObject(new ObjectID(2), this), "class", "class.field", ObjectID.NULL_ID, -1);
@@ -270,7 +272,7 @@ public class TransactionBatchTest extends TestCase {
     final LockID lid2 = new StringLockID("2");
 
     tc = new TransactionContextImpl(lid2, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn4 = new ClientTransactionImpl();
+    final ClientTransaction txn4 = new ClientTransactionImpl(0);
     txn4.setTransactionContext(tc);
     txn4.fieldChanged(new MockTCObject(new ObjectID(2), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
@@ -282,7 +284,7 @@ public class TransactionBatchTest extends TestCase {
     final TransactionBatchReaderImpl reader = new TransactionBatchReaderImpl(this.writer.getData(), clientID,
                                                                              serializer,
                                                                              new ActiveServerTransactionFactory(),
-                                                                             stats);
+                                                                             newCallback(stats));
     // let transactionSize counter sample
     ThreadUtil.reallySleep(2000);
     assertTransactionSize(writer.getData(), 1, stats.getTransactionSizeCounter());
@@ -325,6 +327,15 @@ public class TransactionBatchTest extends TestCase {
     }
   }
 
+  private TransactionSizeCounterCallback newCallback(final DSOGlobalServerStats stats) {
+    return new TransactionSizeCounterCallback() {
+      @Override
+      public void increment(long numerator, long denominator) {
+        stats.getTransactionSizeCounter().increment(numerator, denominator);
+      }
+    };
+  }
+
   private void assertTransactionSize(TCByteBuffer[] actualData, int actualNumTxns,
                                      SampledRateCounter transactionSizeCounter) {
     long expectedAvgTxnSize = new TCByteBufferInputStream(actualData).getTotalLength() / actualNumTxns;
@@ -339,14 +350,14 @@ public class TransactionBatchTest extends TestCase {
 
     final LockID lid1 = new StringLockID("1");
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
     txn1.fieldChanged(new MockTCObject(new ObjectID(2), this), "class", "class.field", ObjectID.NULL_ID, -1);
     txn1.fieldChanged(new MockTCObject(new ObjectID(3), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
     txn2.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
     txn2.fieldChanged(new MockTCObject(new ObjectID(2), this), "class", "class.field", ObjectID.NULL_ID, -1);
@@ -357,7 +368,6 @@ public class TransactionBatchTest extends TestCase {
     final long startSeq = sequenceGenerator.getCurrentSequence();
 
     FoldedInfo fi;
-
     // txn1 and txn2 exceed the object limit (should not fold)
     fi = writer.addTransaction(txn1, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
@@ -377,12 +387,12 @@ public class TransactionBatchTest extends TestCase {
     final List threeLocks = Arrays.asList(lid1, lid2, lid3);
 
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL, threeLocks);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL, threeLocks);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
     txn2.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
@@ -391,7 +401,6 @@ public class TransactionBatchTest extends TestCase {
     final long startSeq = sequenceGenerator.getCurrentSequence();
 
     FoldedInfo fi;
-
     // txn1 and txn2 exceed the lock limit (should not fold)
     fi = writer.addTransaction(txn1, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
@@ -408,12 +417,12 @@ public class TransactionBatchTest extends TestCase {
     final LockID lid1 = new StringLockID("1");
 
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
     txn2.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
@@ -422,7 +431,6 @@ public class TransactionBatchTest extends TestCase {
     final long startSeq = sequenceGenerator.getCurrentSequence();
 
     FoldedInfo fi;
-
     // folding disabled (these txns would normally fold)
     fi = writer.addTransaction(txn1, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
@@ -439,22 +447,17 @@ public class TransactionBatchTest extends TestCase {
     final LockID lid1 = new StringLockID("1");
 
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txnWithRoot = new ClientTransactionImpl();
+    final ClientTransaction txnWithRoot = new ClientTransactionImpl(0);
     txnWithRoot.setTransactionContext(tc);
     txnWithRoot.createRoot("root", new ObjectID(234));
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txnWithDMI = new ClientTransactionImpl();
-    txnWithDMI.setTransactionContext(tc);
-    txnWithDMI.addDmiDescriptor(new DmiDescriptor(new ObjectID(12), new ObjectID(13), new DmiClassSpec[] {}, true));
-
-    tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txnWithNotify = new ClientTransactionImpl();
+    final ClientTransaction txnWithNotify = new ClientTransactionImpl(0);
     txnWithNotify.setTransactionContext(tc);
     txnWithNotify.addNotify(new NotifyImpl(lid1, new ThreadID(122), true));
 
@@ -463,20 +466,16 @@ public class TransactionBatchTest extends TestCase {
     final long startSeq = sequenceGenerator.getCurrentSequence();
 
     FoldedInfo fi;
-
-    // Txns with DMI, root or notifies do not qualify for folds
+    // Txns with root or notifies do not qualify for folds
     fi = writer.addTransaction(txn1, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
     assertEquals(1 + startSeq, sequenceGenerator.getCurrentSequence());
     fi = writer.addTransaction(txnWithRoot, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
     assertEquals(2 + startSeq, sequenceGenerator.getCurrentSequence());
-    fi = writer.addTransaction(txnWithDMI, sequenceGenerator, tidGenerator);
-    assertFalse(fi.isFolded());
-    assertEquals(3 + startSeq, sequenceGenerator.getCurrentSequence());
     fi = writer.addTransaction(txnWithNotify, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
-    assertEquals(4 + startSeq, sequenceGenerator.getCurrentSequence());
+    assertEquals(3 + startSeq, sequenceGenerator.getCurrentSequence());
   }
 
   public void testFoldBug1() {
@@ -494,19 +493,19 @@ public class TransactionBatchTest extends TestCase {
     final LockID lid2 = new StringLockID("2");
 
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid2, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
     final MockTCObject mtco = new MockTCObject(new ObjectID(2), new Object());
     mtco.setNew(true);
     txn2.createObject(mtco);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn3 = new ClientTransactionImpl();
+    final ClientTransaction txn3 = new ClientTransactionImpl(0);
     txn3.setTransactionContext(tc);
     txn3.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
     txn3.fieldChanged(new MockTCObject(new ObjectID(2), this), "class", "class.field", ObjectID.NULL_ID, -1);
@@ -516,7 +515,6 @@ public class TransactionBatchTest extends TestCase {
     final long startSeq = sequenceGenerator.getCurrentSequence();
 
     FoldedInfo fi;
-
     fi = writer.addTransaction(txn1, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
     assertEquals(1 + startSeq, sequenceGenerator.getCurrentSequence());
@@ -539,12 +537,12 @@ public class TransactionBatchTest extends TestCase {
     final LockID lid1 = new StringLockID("1");
 
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
     txn2.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
     final MockTCObject mtco = new MockTCObject(new ObjectID(2), new Object());
@@ -556,7 +554,6 @@ public class TransactionBatchTest extends TestCase {
     final long startSeq = sequenceGenerator.getCurrentSequence();
 
     FoldedInfo fi;
-
     fi = writer.addTransaction(txn1, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());
     assertEquals(1 + startSeq, sequenceGenerator.getCurrentSequence());
@@ -573,17 +570,17 @@ public class TransactionBatchTest extends TestCase {
     final LockID lid2 = new StringLockID("2");
 
     TransactionContext tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn1 = new ClientTransactionImpl();
+    final ClientTransaction txn1 = new ClientTransactionImpl(0);
     txn1.setTransactionContext(tc);
     txn1.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid2, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn2 = new ClientTransactionImpl();
+    final ClientTransaction txn2 = new ClientTransactionImpl(0);
     txn2.setTransactionContext(tc);
     txn2.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
     tc = new TransactionContextImpl(lid1, TxnType.NORMAL, TxnType.NORMAL);
-    final ClientTransaction txn3 = new ClientTransactionImpl();
+    final ClientTransaction txn3 = new ClientTransactionImpl(0);
     txn3.setTransactionContext(tc);
     txn3.fieldChanged(new MockTCObject(new ObjectID(1), this), "class", "class.field", ObjectID.NULL_ID, -1);
 
@@ -592,7 +589,6 @@ public class TransactionBatchTest extends TestCase {
     final long startSeq = sequenceGenerator.getCurrentSequence();
 
     FoldedInfo fi;
-
     // There is a common object between txn1 and txn2 (but differing locks). This should fold
     fi = writer.addTransaction(txn1, sequenceGenerator, tidGenerator);
     assertFalse(fi.isFolded());

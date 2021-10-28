@@ -11,6 +11,8 @@ public class TerracottaClientConfigParams {
   private Set<String> tunnelledMBeanDomains;
   private boolean     rejoin;
   private boolean     nonStop;
+  private String      productId;
+  private ClassLoader clasLoader;
 
   public String getTcConfigSnippetOrUrl() {
     return tcConfigSnippetOrUrl;
@@ -75,6 +77,32 @@ public class TerracottaClientConfigParams {
 
   public TerracottaClientConfig newTerracottaClientConfig() {
     return new TerracottaClientConfig(this);
+  }
+
+  public String getProductId() {
+    return productId;
+  }
+
+  public void setProductId(final String productId) {
+    this.productId = productId;
+  }
+
+  public TerracottaClientConfigParams productId(String appName) {
+    setProductId(appName);
+    return this;
+  }
+
+  public ClassLoader getClassLoader() {
+    return clasLoader;
+  }
+
+  public TerracottaClientConfigParams classLoader(ClassLoader loader) {
+    setClassLoader(loader);
+    return this;
+  }
+
+  public void setClassLoader(ClassLoader loader) {
+    this.clasLoader = loader;
   }
 
 }

@@ -6,6 +6,8 @@ package com.tc.objectserver.control;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.terracotta.test.util.JMXUtils;
+import org.terracotta.test.util.TestBaseUtil;
+import org.terracotta.test.util.TestProcessUtil;
 
 import com.tc.admin.common.MBeanServerInvocationProxy;
 import com.tc.config.Directories;
@@ -42,6 +44,7 @@ import javax.management.remote.JMXConnector;
 public class ExtraProcessServerControl extends ServerControlBase {
   private static final String  DEFAULT_MIN_HEAP   = "-Xms128m";
   private static final String  DEFAULT_MAX_HEAP   = "-Xmx128m";
+  private static final String  DEFAULT_MAX_DIRECT_MEMORY = "-XX:MaxDirectMemorySize=1g";
   private static final String  NOT_DEF            = "";
   private static final String  ERR_STREAM         = "ERR";
   private static final String  OUT_STREAM         = "OUT";
@@ -54,7 +57,7 @@ public class ExtraProcessServerControl extends ServerControlBase {
   protected File               javaHome;
   protected final String       configFileLoc;
   protected final List<String> jvmArgs;
-  private final File           runningDirectory;
+  private File                 runningDirectory;
   private String               serverName;
   private OutputStream         outStream;
   private StreamCopier         outCopier;
@@ -202,6 +205,7 @@ public class ExtraProcessServerControl extends ServerControlBase {
   private void setDefaultHeapIfUnspecified() {
     boolean hasMin = false;
     boolean hasMax = false;
+    boolean hasDirect = false;
 
     for (String arg : jvmArgs) {
       arg = arg.trim();
@@ -209,6 +213,8 @@ public class ExtraProcessServerControl extends ServerControlBase {
         hasMin = true;
       } else if (arg.startsWith("-Xmx")) {
         hasMax = true;
+      } else if (arg.startsWith("-XX:MaxDirectMemorySize")) {
+        hasDirect = true;
       }
     }
 
@@ -219,7 +225,12 @@ public class ExtraProcessServerControl extends ServerControlBase {
     if (!hasMax) {
       jvmArgs.add(DEFAULT_MAX_HEAP);
     }
+    
+    if (!hasDirect) {
+      jvmArgs.add(DEFAULT_MAX_DIRECT_MEMORY);
+    }
   }
+  
 
   protected void addProductKeyIfExists(List args) {
     String propertyKey = TCPropertiesImpl.SYSTEM_PROP_PREFIX + TCPropertiesConsts.PRODUCTKEY_PATH;
@@ -262,7 +273,8 @@ public class ExtraProcessServerControl extends ServerControlBase {
         // that can properly account for all properties that should not be passed
         // through.
         if (parentJvmArg.startsWith("-D" + TCPropertiesImpl.SYSTEM_PROP_PREFIX)
-            && !parentJvmArg.startsWith("-D" + TCPropertiesImpl.SYSTEM_PROP_PREFIX + "properties")) {
+            && !parentJvmArg.startsWith("-D" + TCPropertiesImpl.SYSTEM_PROP_PREFIX + "properties")
+            && !parentJvmArg.contains(TCPropertiesConsts.PRODUCTKEY_PATH)) {
           args.add(parentJvmArg);
         }
       }
@@ -297,8 +309,12 @@ public class ExtraProcessServerControl extends ServerControlBase {
     this.serverName = serverName;
   }
 
+  public void setRunningDirectory(final File runningDirectory) {
+    this.runningDirectory = runningDirectory;
+  }
+
   /**
-   * The JAVA_HOME for the JVM to use when creating a {@link LinkedChildProcess}.
+   * The JAVA_HOME for the JVM to use when creating a {@link LinkedJavaProcess}.
    */
   public File getJavaHome() {
     if (javaHome == null) {
@@ -404,8 +420,10 @@ public class ExtraProcessServerControl extends ServerControlBase {
 
   private void attemptForceShutdownInternal(boolean secured, String username, String passwd) throws Exception {
     System.out.println("Force Shutting down server (secured=" + secured
-                       + (username != null ? ", username: " + username : "") + (passwd != null ? ", passwd: " + passwd : "") + ")");
+                       + (username != null ? ", username: " + username : "")
+                       + (passwd != null ? ", passwd: " + passwd : "") + ")");
     List<String> mainClassArguments = new ArrayList<String>();
+    List<String> stopperJvmArgs = new ArrayList<String>(jvmArgs);
     mainClassArguments.addAll(getMainClassArguments());
     mainClassArguments.add("-force");
     if (secured) {
@@ -419,7 +437,9 @@ public class ExtraProcessServerControl extends ServerControlBase {
       mainClassArguments.add("-w");
       mainClassArguments.add(passwd);
     }
-    LinkedJavaProcess stopper = createLinkedJavaProcess("com.tc.admin.TCStop", mainClassArguments, jvmArgs);
+    TestBaseUtil.setHeapSizeArgs(stopperJvmArgs, 32, 64, -1, true);
+
+    LinkedJavaProcess stopper = createLinkedJavaProcess("com.tc.admin.TCStop", mainClassArguments, stopperJvmArgs);
     stopper.start();
 
     ByteArrayOutputStream stopperLog = null;
@@ -481,6 +501,11 @@ public class ExtraProcessServerControl extends ServerControlBase {
   private void waitUntilStarted() throws Exception {
     while (true) {
       if (isRunning()) return;
+      try {
+        throw new IllegalStateException("process exited with: " + process.exitValue());
+      } catch ( IllegalThreadStateException state ) {
+        //  can continue
+      }
       Thread.sleep(1000);
     }
   }
@@ -667,5 +692,21 @@ public class ExtraProcessServerControl extends ServerControlBase {
         }
       }
     }
+  }
+
+  @Override
+  public void pauseServer(long pauseTimeMillis) throws InterruptedException {
+    TestProcessUtil.pauseProcess(process, pauseTimeMillis);
+
+  }
+
+  @Override
+  public void pauseServer() throws InterruptedException {
+    TestProcessUtil.pauseProcess(process);
+  }
+
+  @Override
+  public void unpauseServer() throws InterruptedException {
+    TestProcessUtil.unpauseProcess(process);
   }
 }

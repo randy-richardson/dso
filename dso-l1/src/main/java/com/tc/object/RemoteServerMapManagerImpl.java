@@ -12,7 +12,7 @@ import com.tc.invalidation.Invalidations;
 import com.tc.logging.TCLogger;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
-import com.tc.object.locks.LockID;
+import com.tc.object.dna.api.DNA;
 import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.msg.GetAllKeysServerMapRequestMessage;
 import com.tc.object.msg.GetAllSizeServerMapRequestMessage;
@@ -61,6 +61,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private final ServerMapMessageFactory                                  smmFactory;
   private final TCLogger                                                 logger;
   private final SessionManager                                           sessionManager;
+  private final RemoteObjectManager                                      remoteObjectManager;
   private final Map<ServerMapRequestID, AbstractServerMapRequestContext> outstandingRequests                       = new HashMap<ServerMapRequestID, AbstractServerMapRequestContext>();
   private final TaskRunner                                               taskRunner;
   private final AbortableOperationManager                                abortableOperationManager;
@@ -79,7 +80,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     PAUSED, RUNNING, REJOIN_IN_PROGRESS, STARTING, STOPPED
   }
 
-  public RemoteServerMapManagerImpl(final GroupID groupID, final TCLogger logger,
+  public RemoteServerMapManagerImpl(final GroupID groupID, final TCLogger logger, final RemoteObjectManager remoteObjectManager,
                                     final ServerMapMessageFactory smmFactory, final SessionManager sessionManager,
                                     L1ServerMapLocalCacheManager globalLocalCacheManager,
                                     final AbortableOperationManager abortableOperationManager,
@@ -88,6 +89,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     this.logger = logger;
     this.smmFactory = smmFactory;
     this.sessionManager = sessionManager;
+    this.remoteObjectManager = remoteObjectManager;
     this.globalLocalCacheManager = globalLocalCacheManager;
     this.reInvalidateHandler = new ReInvalidateHandler(globalLocalCacheManager, taskRunner);
     this.abortableOperationManager = abortableOperationManager;
@@ -108,6 +110,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
   private void checkAndSetstate() {
     throwExceptionIfNecessary(true);
     state = State.REJOIN_IN_PROGRESS;
+    globalLocalCacheManager.rejoinInProgress(true);
     notifyAll();
   }
 
@@ -395,6 +398,11 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     }
     for (final ServerMapGetValueResponse r : responses) {
       setResultForRequest(sessionID, mapID, r.getRequestID(), r.getValues(), nodeID);
+      addResponseToObjectManager(r.getValues());
+      if (getRequestContext(r.getRequestID()) == null) {
+        // Request was aborted, so we need to clean up.
+        cleanupObjectManagerOnAbort(r.getValues());
+      }
     }
     notifyAll();
   }
@@ -451,8 +459,37 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
     if (context != null) {
       context.setResult(mapID, rv);
     } else {
-      this.logger.warn("Server Map Request Context is null for " + mapID + " request ID : " + requestID + " result : "
+      if (logger.isDebugEnabled()) {
+        this.logger.debug("Server Map Request Context is null for " + mapID + " request ID : " + requestID
+                          + " result : "
                        + rv);
+      }
+    }
+  }
+
+  private void addResponseToObjectManager(final Map<Object, Object> rv) {
+    for (Map.Entry<Object, Object> entry : rv.entrySet()) {
+      Object value = entry.getValue();
+      if (value instanceof CompoundResponse) {
+        if (((CompoundResponse) value).getData() instanceof DNA) {
+          remoteObjectManager.addObject((DNA) ((CompoundResponse) value).getData());
+        }
+      }
+    }
+  }
+
+  private void cleanupObjectManagerOnAbort(final Map<Object, Object> rv) {
+    if (rv == null) {
+      // Short circuit when there's no result, it'll get picked up later.
+      return;
+    }
+    for (Object value : rv.values()) {
+      if (value instanceof CompoundResponse) {
+        Object data = ((CompoundResponse)value).getData();
+        if (data instanceof DNA) {
+          remoteObjectManager.cleanOutObject((DNA) data);
+        }
+      }
     }
   }
 
@@ -507,6 +544,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
       throws AbortedOperationException {
     if (isAborted()) {
       removeRequestContext(context);
+      cleanupObjectManagerOnAbort(context.getResult());
       AbortedOperationUtil.throwExceptionIfAborted(abortableOperationManager);
     }
   }
@@ -544,8 +582,9 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
                                                final ClientHandshakeMessage handshakeMessage) {
     if (isStopped()) { return; }
     assertPausedOrRejoinInProgress("Attempt to init handshake while");
+    globalLocalCacheManager.rejoinInProgress(false);
     this.state = State.STARTING;
-    globalLocalCacheManager.addAllObjectIDsToValidate(handshakeMessage.getObjectIDsToValidate(), remoteNode);
+    handshakeMessage.setObjectIDsToValidate(globalLocalCacheManager.getObjectIDsToValidate(remoteNode));
   }
 
   @Override
@@ -653,7 +692,7 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
 
   }
 
-  private static class GetValueServerMapRequestContext extends AbstractServerMapRequestContext {
+  private class GetValueServerMapRequestContext extends AbstractServerMapRequestContext {
 
     private final Set<Object> portableKeys;
 
@@ -728,16 +767,6 @@ public class RemoteServerMapManagerImpl implements RemoteServerMapManager {
       ObjectIDSet invalidationsFailed = globalLocalCacheManager.removeEntriesForObjectId(mapID, set);
       reInvalidateHandler.add(mapID, invalidationsFailed);
     }
-  }
-
-  /**
-   * Flush all local entries corresponding for the lock that is about to be flushed
-   */
-  @Override
-  public void preTransactionFlush(LockID lockID) {
-    // NOTE: if this impl changes, check RemoteServerMapManagerGroupImpl
-    if (lockID == null) { throw new AssertionError("ID cannot be null"); }
-    this.globalLocalCacheManager.removeEntriesForLockId(lockID);
   }
 
   @Override

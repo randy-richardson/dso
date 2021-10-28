@@ -7,11 +7,8 @@ import com.tc.abortable.AbortedOperationException;
 import com.tc.exception.TCClassNotFoundException;
 import com.tc.exception.TCNonPortableObjectError;
 import com.tc.net.GroupID;
-import com.tc.object.appevent.ApplicationEvent;
-import com.tc.object.appevent.ApplicationEventContext;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.tx.ClientTransactionManager;
-import com.tc.object.util.ToggleableStrongReference;
 
 import java.lang.ref.WeakReference;
 
@@ -329,44 +326,6 @@ public interface ClientObjectManager extends TCObjectSelfCallback {
    * @param root New root value
    */
   public Object createOrReplaceRoot(String rootName, Object root);
-
-  // // The following are in support of the Eclipse ApplicationEventDialog and the Session Configurator.
-
-  /**
-   * Store the pojo object hierarchy in the context's tree model.
-   * 
-   * @param pojo The object
-   * @param context The event context
-   */
-  void storeObjectHierarchy(Object pojo, ApplicationEventContext context);
-
-  /**
-   * Send an ApplicationEvent occurring on pojo to the server via JMX. The handling of concrete event types occurs in
-   * com.tc.objectserver.DSOApplicationEvents.
-   * 
-   * @param pojo The object
-   * @param event The event
-   */
-  void sendApplicationEvent(Object pojo, ApplicationEvent event);
-
-  /**
-   * Clone logicalPojo and then apply the specified logical operation, returning the clone.
-   * 
-   * @param logicalPojo The logical object
-   * @param methodName The method name on the logical object
-   * @param parameters The parameter values
-   * @return The cloned object
-   */
-  Object cloneAndInvokeLogicalOperation(Object logicalPojo, String methodName, Object[] parameters);
-
-  /**
-   * Get or create the toggle reference for the given TCObject
-   * 
-   * @param objectID The TCObjet
-   * @param peer The peer object
-   * @return the toggle reference
-   */
-  ToggleableStrongReference getOrCreateToggleRef(ObjectID objectID, Object peer);
 
   /**
    * Create new WeakReference wrapper for the given id and peer object.

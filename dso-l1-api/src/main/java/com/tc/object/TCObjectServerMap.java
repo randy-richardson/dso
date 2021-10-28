@@ -8,6 +8,7 @@ import com.tc.object.bytecode.TCServerMap;
 import com.tc.object.metadata.MetaDataDescriptor;
 import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.PinnedEntryFaultCallback;
+import com.tc.server.ServerEventType;
 
 import java.util.Map;
 import java.util.Set;
@@ -22,8 +23,8 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param targetMaxTotalCount targetMaxTotalCount
    * @param invalidateOnChange invalidateOnChange
    */
-  public void initialize(int maxTTISeconds, int maxTTLSeconds, int targetMaxTotalCount, boolean invalidateOnChange,
-                         boolean localCacheEnabled);
+  void initialize(int maxTTISeconds, int maxTTLSeconds, int targetMaxTotalCount, boolean invalidateOnChange,
+                  boolean localCacheEnabled);
 
   /**
    * Does a logic remove and removes from the local cache if present
@@ -31,9 +32,10 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param map ServerTCMap
    * @param key Key Object
    * @param lockID LockID of lock protecting this key
-   * @param value Object in the mapping
    */
-  public void doLogicalRemove(final TCServerMap map, final L lockID, final Object key);
+  void doLogicalRemove(final TCServerMap map, final L lockID, final Object key);
+
+  void doLogicalRemoveVersioned(TCServerMap map, L lockID, Object key, long version);
 
   /**
    * Does a logic remove and mark as removed in the local cache if present. The cached item is not associated to a lock.
@@ -41,7 +43,9 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param map ServerTCMap
    * @param key Key Object
    */
-  public void doLogicalRemoveUnlocked(final TCServerMap map, final Object key);
+  void doLogicalRemoveUnlocked(final TCServerMap map, final Object key);
+
+  void doLogicalRemoveUnlockedVersioned(TCServerMap map, Object key, long version);
 
   /**
    * Does a logic remove and mark as removed in the local cache if present only if there exist a mapping of key to
@@ -51,8 +55,10 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param key Key Object
    * @param value Object in the mapping
    * @return true if operation changed the clustered state
+   * @throws AbortedOperationException
    */
-  public boolean doLogicalRemoveUnlocked(final TCServerMap map, final Object key, final Object value);
+  boolean doLogicalRemoveUnlocked(final TCServerMap map, final Object key, final Object value, MetaDataDescriptor mdd)
+      throws AbortedOperationException;
 
   /**
    * Does a logic putIfAbsent. The cached item is not associated to a lock. The check about the presence of an existing
@@ -61,58 +67,91 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param map ServerTCMap
    * @param key Key Object
    * @param value Object in the mapping
+   * @param mdd
    * @return true if operation changed the clustered state
+   * @throws AbortedOperationException
    */
-  public Object doLogicalPutIfAbsentUnlocked(final TCServerMap map, final Object key, final Object value);
+  boolean doLogicalPutIfAbsentUnlocked(final TCServerMap map, final Object key, final Object value,
+                                      MetaDataDescriptor mdd)
+      throws AbortedOperationException;
 
   /**
    * Does a logic replace. The cached item is not associated to a lock.
    * 
    * @param map ServerTCMap
    * @param key Key Object
-   * @param value Object in the mapping
    * @return true if operation changed the clustered state
+   * @throws AbortedOperationException
    */
-  public boolean doLogicalReplaceUnlocked(final TCServerMap map, final Object key, final Object current,
-                                          final Object newValue);
+  boolean doLogicalReplaceUnlocked(final TCServerMap map, final Object key, final Object current,
+                                   final Object newValue, MetaDataDescriptor mdd)
+      throws AbortedOperationException;
 
   /**
    * Does a logic replace. The cached item is not associated to a lock.
    * 
    * @param map ServerTCMap
    * @param key Key Object
-   * @param value Object in the mapping
    * @return true if operation changed the clustered state
+   * @throws AbortedOperationException
    */
-  public boolean doLogicalReplaceUnlocked(final TCServerMap map, final Object key,
-                                          final Object newValue);
+  // boolean doLogicalReplaceUnlocked(final TCServerMap map, final Object key, final Object newValue)
+  // throws AbortedOperationException;
 
   /**
    * Does a logical put and updates the local cache
+   * 
+   * @param key Key Object
+   * @param value Object in the mapping
+   */
+  void doLogicalPut(final L lockID, final Object key, final Object value);
+
+  /**
+   * Does a logical put with version and updates the local cache
    * 
    * @param map ServerTCMap
    * @param lockID, lock under which this entry is added
    * @param key Key Object
    * @param value Object in the mapping
+   * @param version
    */
-  public void doLogicalPut(final TCServerMap map, final L lockID, final Object key, final Object value);
+  void doLogicalPutVersioned(TCServerMap map, L lockID, Object key, Object value, long version);
+
+  /**
+   * Does a logical put if absent or the version present is older
+   * 
+   * @param key Key Object
+   * @param value Object in the mapping
+   * @param version
+   */
+  void doLogicalPutIfAbsentVersioned(Object key, Object value, long version);
 
   /**
    * Clear this map
    * 
    * @param map ServerTCMap
    */
-  public void doClear(final TCServerMap map);
+  void doClear(final TCServerMap map);
 
   /**
    * Does a logical put and updates the local cache without using a lock. The cached Item is not associated to a lock.
    * 
    * @param map ServerTCMap
-   * @param lockID, lock under which this entry is added
    * @param key Key Object
    * @param value Object in the mapping
    */
-  public void doLogicalPutUnlocked(final TCServerMap map, final Object key, final Object value);
+  void doLogicalPutUnlocked(final TCServerMap map, final Object key, final Object value);
+
+  /**
+   * Does a logical put with version and updates the local cache without using a lock. The cached Item is not associated
+   * to a lock.
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object
+   * @param value Object in the mapping
+   * @param version
+   */
+  void doLogicalPutUnlockedVersioned(TCServerMap map, Object key, Object value, long version);
 
   /**
    * Returns the value for a particular key in a TCServerMap. If already present in local cache, returns the value
@@ -125,9 +164,21 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @return value Object in the mapping, null if no mapping present.
    * @throws AbortedOperationException
    */
-  public Object getValueUnlocked(final TCServerMap map, final Object key) throws AbortedOperationException;
+  Object getValueUnlocked(final TCServerMap map, final Object key) throws AbortedOperationException;
 
-  public Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap)
+  /**
+   * Returns the VersionedObject for a particular key in a TCServerMap. It always fetches it from the server. LocalCache
+   * is not read.
+   * 
+   * @param map ServerTCMap
+   * @param key Key Object : Note currently only literal keys or shared keys are supported. Even if the key is portable,
+   *        but not shared, it is not supported.
+   * @return value VersionedObject in the mapping, null if no mapping present.
+   * @throws AbortedOperationException
+   */
+  VersionedObject getVersionedValue(final TCServerMap map, final Object key) throws AbortedOperationException;
+
+  Map<Object, Object> getAllValuesUnlocked(final Map<ObjectID, Set<Object>> mapIdToKeysMap)
       throws AbortedOperationException;
 
   /**
@@ -136,7 +187,7 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param map TCServerMap
    * @return set Set return snapshot of keys
    */
-  public Set keySet(final TCServerMap map) throws AbortedOperationException;
+  Set keySet(final TCServerMap map) throws AbortedOperationException;
 
   /**
    * Returns the value for a particular Key in a ServerTCMap.
@@ -148,7 +199,7 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @return value Object in the mapping, null if no mapping present.
    * @throws AbortedOperationException
    */
-  public Object getValue(final TCServerMap map, final L lockID, final Object key) throws AbortedOperationException;
+  Object getValue(final TCServerMap map, final L lockID, final Object key) throws AbortedOperationException;
 
   /**
    * Returns total size of an array of ServerTCMap.
@@ -160,87 +211,87 @@ public interface TCObjectServerMap<L> extends TCObject {
    * @param maps ServerTCMap[]
    * @return long for size of map.
    */
-  public long getAllSize(final TCServerMap[] maps) throws AbortedOperationException;
+  long getAllSize(final TCServerMap[] maps) throws AbortedOperationException;
 
   /**
    * Returns the size of the local cache
    * 
    * @return int for size for the local cache of map.
    */
-  public int getLocalSize();
+  int getLocalSize();
 
   /**
    * Get the local cache's on heap size in bytes
    */
-  public long getLocalOnHeapSizeInBytes();
+  long getLocalOnHeapSizeInBytes();
 
   /**
    * Get the local cache's off heap size in bytes
    */
-  public long getLocalOffHeapSizeInBytes();
+  long getLocalOffHeapSizeInBytes();
 
   /**
    * Get the number of items on the local heap
    */
-  public int getLocalOnHeapSize();
+  int getLocalOnHeapSize();
 
   /**
    * Get the number of items in local offheap
    */
-  public int getLocalOffHeapSize();
+  int getLocalOffHeapSize();
 
   /**
    * Clears local cache of all entries. It is not immediate as all associated locks needs to be recalled.
    * 
    * @param map ServerTCMap
    */
-  public void clearLocalCache(final TCServerMap map);
+  void clearLocalCache(final TCServerMap map);
 
-  public void cleanLocalState();
+  void cleanLocalState();
 
-  public void clearAllLocalCacheInline();
+  void clearAllLocalCacheInline();
 
   /**
    * Clears local cache for the corresponding key
    */
-  public void evictedInServer(Object key);
+  void evictedInServer(Object key);
 
   /**
    * Get set of keys present in the local cache.
    */
-  public Set getLocalKeySet();
+  Set getLocalKeySet();
 
   /**
    * Is key local.
    */
-  public boolean containsLocalKey(Object key);
+  boolean containsLocalKey(Object key);
 
   /**
    * Check if the requested key is on the local heap
    */
-  public boolean containsKeyLocalOnHeap(Object key);
+  boolean containsKeyLocalOnHeap(Object key);
 
   /**
    * Check if the requested key is on the local offheap
    */
-  public boolean containsKeyLocalOffHeap(Object key);
+  boolean containsKeyLocalOffHeap(Object key);
 
   /**
    * Get from local cache.
    */
-  public Object getValueFromLocalCache(Object key);
+  Object getValueFromLocalCache(Object key);
 
   /**
    * Remove the given key from local cache.
-   *
+   * 
    * @param key key to remove.
    */
-  public void removeValueFromLocalCache(Object key);
+  void removeValueFromLocalCache(Object key);
 
   /**
    * Add meta data to this server map
    */
-  public void addMetaData(MetaDataDescriptor mdd);
+  void addMetaData(MetaDataDescriptor mdd);
 
   /**
    * Setup the local store for use. This method is called whenever the map is created or faulted in the L1 first time.
@@ -259,4 +310,21 @@ public interface TCObjectServerMap<L> extends TCObject {
   void recalculateLocalCacheSize(Object key);
 
   void doLogicalSetLastAccessedTime(Object key, Object value, long lastAccessedTime);
+
+  void doLogicalExpire(L lockID, Object key, Object value);
+
+  boolean doLogicalExpireUnlocked(TCServerMap map, Object key, Object value);
+
+  /**
+   * Adds the Keys for which pending additions are in progress to addSet and the Keys for which pending removes are in
+   * progress to removeSet.
+   */
+  void addTxnInProgressKeys(Set addSet, Set removeSet);
+
+  void doClearVersioned();
+
+  void doRegisterListener(Set<ServerEventType> eventTypes, boolean skipRejoinChecks);
+
+  void doUnregisterListener(Set<ServerEventType> eventTypes);
+
 }

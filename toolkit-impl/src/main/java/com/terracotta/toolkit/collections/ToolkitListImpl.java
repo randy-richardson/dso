@@ -75,7 +75,12 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
 
     writeLock();
     try {
-      return unlockedAdd(e);
+      synchronized (localResolveLock) {
+        Object o = createTCCompatibleObject(e);
+        logicalInvoke(SerializationUtil.ADD_SIGNATURE, new Object[] { o });
+        localList.add(o);
+        return true;
+      }
     } finally {
       writeUnlock();
     }
@@ -226,10 +231,12 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
 
   private void logicalInvoke(String signature, Object[] params) {
     concurrentLock.lock();
-    platformService.logicalInvoke(this, signature, params);
-    concurrentLock.unlock();
+    try {
+      platformService.logicalInvoke(this, signature, params);
+    } finally {
+      concurrentLock.unlock();
+    }
   }
-
 
   @Override
   public void __tc_managed(TCObject t) {
@@ -254,7 +261,7 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
   public Iterator<E> iterator() {
     readLock();
     try {
-      return new SimpleIterator(localList.iterator());
+      return new SimpleIterator(localList.iterator(), 0);
     } finally {
       readUnlock();
     }
@@ -275,7 +282,7 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
     readLock();
     try {
       if (start < 0 || start > size()) { throw new IndexOutOfBoundsException(); }
-      return new SimpleListIterator(localList.listIterator(start), 0);
+      return new SimpleListIterator(localList.listIterator(start), start);
     } finally {
       readUnlock();
     }
@@ -508,7 +515,7 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
     private Iterator<E> subIterator() {
       readLock();
       try {
-        return new SimpleIterator(subList.iterator());
+        return new SimpleIterator(subList.iterator(), startIndex);
       } finally {
         readUnlock();
       }
@@ -518,11 +525,12 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       readLock();
       try {
         checkRange(index);
-        return new SimpleListIterator(subList.listIterator(index), startIndex);
+        return new SimpleListIterator(subList.listIterator(index), startIndex + index);
       } finally {
         readUnlock();
       }
     }
+
     @Override
     public Iterator<E> iterator() {
       synchronized (localResolveLock) {
@@ -694,8 +702,8 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       writeLock();
       try {
         synchronized (localResolveLock) {
-        checkModification();
-        boolean isRemoved = false;
+          checkModification();
+          boolean isRemoved = false;
           for (Object o : c) {
             if (unlockedRemoveSubList(o)) {
               isRemoved = true;
@@ -830,13 +838,11 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
    */
   private class SimpleListIterator implements ListIterator<E> {
     private final ListIterator myListIterator;
-    private Object             currentItem;
     private int                currentIndex;
-    private final int          offset;        // it is offset form Main list starting point in case of SubTerracotsList
 
-    SimpleListIterator(ListIterator myListIterator, int offset) {
+    SimpleListIterator(ListIterator myListIterator, int startIndex) {
       this.myListIterator = myListIterator;
-      this.offset = offset;
+      this.currentIndex = startIndex - 1;
     }
 
     @Override
@@ -856,9 +862,9 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       readLock();
       try {
         synchronized (localResolveLock) {
-          currentIndex = myListIterator.nextIndex();
-          currentItem = myListIterator.next();
-          return getValueFromTCCompatibleObject(currentItem);
+          Object iter = myListIterator.next();
+          currentIndex++;
+          return getValueFromTCCompatibleObject(iter);
         }
       } finally {
         readUnlock();
@@ -882,9 +888,9 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       readLock();
       try {
         synchronized (localResolveLock) {
-          currentIndex = myListIterator.previousIndex();
-          currentItem = myListIterator.previous();
-          return getValueFromTCCompatibleObject(currentItem);
+          Object iter = myListIterator.previous();
+          currentIndex--;
+          return getValueFromTCCompatibleObject(iter);
         }
       } finally {
         readUnlock();
@@ -920,8 +926,9 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       writeLock();
       try {
         synchronized (localResolveLock) {
-          logicalInvoke(SerializationUtil.REMOVE_SIGNATURE, new Object[] { currentItem });
+          logicalInvoke(SerializationUtil.REMOVE_AT_SIGNATURE, new Object[] { Integer.valueOf(currentIndex) });
           myListIterator.remove();
+          currentIndex--;
         }
       } finally {
         writeUnlock();
@@ -934,7 +941,7 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       try {
         synchronized (localResolveLock) {
           Object objectToPut = createTCCompatibleObject(o);
-          logicalInvoke(SerializationUtil.SET_SIGNATURE, new Object[] { Integer.valueOf(currentIndex + offset),
+          logicalInvoke(SerializationUtil.SET_SIGNATURE, new Object[] { Integer.valueOf(currentIndex),
               objectToPut });
           myListIterator.set(objectToPut);
         }
@@ -951,6 +958,7 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
           Object objectToPut = createTCCompatibleObject(o);
           logicalInvoke(SerializationUtil.ADD_SIGNATURE, new Object[] { objectToPut });
           myListIterator.add(objectToPut);
+          currentIndex++;
         }
       } finally {
         writeUnlock();
@@ -961,10 +969,11 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
 
   private class SimpleIterator implements Iterator<E> {
     private final Iterator myLocalIterator;
-    private Object         currentItem;
+    private int            currentIndex;
 
-    SimpleIterator(Iterator myLocalIterator) {
+    SimpleIterator(Iterator myLocalIterator, int startIndex) {
       this.myLocalIterator = myLocalIterator;
+      this.currentIndex = startIndex - 1;
     }
 
     @Override
@@ -984,8 +993,9 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       readLock();
       try {
         synchronized (localResolveLock) {
-          currentItem = myLocalIterator.next();
-          return getValueFromTCCompatibleObject(currentItem);
+          Object element = myLocalIterator.next();
+          currentIndex++;
+          return getValueFromTCCompatibleObject(element);
         }
       } finally {
         readUnlock();
@@ -997,8 +1007,9 @@ public class ToolkitListImpl<E> extends AbstractTCToolkitObject implements Toolk
       writeLock();
       try {
         synchronized (localResolveLock) {
-          logicalInvoke(SerializationUtil.REMOVE_SIGNATURE, new Object[] { currentItem });
+          logicalInvoke(SerializationUtil.REMOVE_AT_SIGNATURE, new Object[] { Integer.valueOf(currentIndex) });
           myLocalIterator.remove();
+          currentIndex--;
         }
       } finally {
         writeUnlock();

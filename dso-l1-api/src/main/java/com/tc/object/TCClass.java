@@ -3,6 +3,9 @@
  */
 package com.tc.object;
 
+import com.tc.object.ObjectID;
+import com.tc.object.TCObject;
+import com.tc.object.TraversedReferences;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.field.TCField;
@@ -189,11 +192,6 @@ public interface TCClass {
    * Returns true if the resolve lock should be held while clearing references
    */
   public boolean useResolveLockWhileClearing();
-
-  /**
-   * Returns true if instances of this type should NOT be cleared by the memory manager
-   */
-  public boolean isNotClearable();
 
   /**
    * List of method handles for the post create methods for this type. This list will include the post create methods

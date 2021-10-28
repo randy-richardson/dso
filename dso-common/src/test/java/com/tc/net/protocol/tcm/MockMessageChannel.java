@@ -3,12 +3,11 @@
  */
 package com.tc.net.protocol.tcm;
 
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
-
 import com.tc.bytes.TCByteBuffer;
 import com.tc.exception.ImplementMe;
 import com.tc.io.TCByteBufferOutput;
 import com.tc.io.TCByteBufferOutputStream;
+import com.tc.license.ProductID;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
 import com.tc.net.ServerID;
@@ -21,13 +20,16 @@ import com.tc.net.protocol.transport.MessageTransport;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class MockMessageChannel implements MessageChannelInternal {
 
   private final ChannelID  channelId;
   private NetworkLayer     sendLayer;
 
-  LinkedQueue              closedCalls = new LinkedQueue();
+  BlockingQueue<Object>    closedCalls = new LinkedBlockingQueue<Object>();
   private long             lastClosedCallTimestamp;
 
   private final Map        knownMessageTypes;
@@ -94,7 +96,7 @@ public class MockMessageChannel implements MessageChannelInternal {
   }
 
   public boolean waitForCloseCall(long timeout) throws InterruptedException {
-    return closedCalls.poll(timeout) != null;
+    return closedCalls.poll(timeout, TimeUnit.MILLISECONDS) != null;
   }
 
   @Override
@@ -244,8 +246,8 @@ public class MockMessageChannel implements MessageChannelInternal {
     return destination;
   }
 
-  public void setRemoteNodeID(NodeID destination) {
-    this.destination = destination;
+  @Override
+  public ProductID getProductId() {
+    return null;
   }
-
 }

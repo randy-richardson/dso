@@ -39,24 +39,26 @@ public class TransactionSequencerTest extends TestCase {
   protected void setUp() throws Exception {
     TCPropertiesImpl.getProperties().setProperty(TCPropertiesConsts.L1_TRANSACTIONMANAGER_MAXPENDING_BATCHES,
                                                  MAX_PENDING_BATCHES + "");
+    RemoteTransactionManagerImpl mockedRTMI = Mockito.mock(RemoteTransactionManagerImpl.class);
     this.txnSequencer = new TransactionSequencer(GroupID.NULL_ID, new TransactionIDGenerator(),
                                                  new TestTransactionBatchFactory(),
-                                                 new TestLockAccounting(new NullAbortableOperationManager()),
+                                                 new TestLockAccounting(new NullAbortableOperationManager(), mockedRTMI),
                                                  new SampledRateCounterImpl(new SampledRateCounterConfig(1, 1, false)),
                                                  new SampledRateCounterImpl(new SampledRateCounterConfig(1, 1, false)),
-                                                 new NullAbortableOperationManager());
+                                                 new NullAbortableOperationManager(),
+ mockedRTMI);
   }
   
   // checkout DEV-5872 to know why this test was written
   public void testDeadLockWithFolding() throws InterruptedException {
       folding = true;
       deadlockCheck();
-  }  
+  }
   // checkout DEV-5872 to know why this test was written
   public void testDeadLockWithNoFolding() throws InterruptedException {
       folding = false;
       deadlockCheck();
-  }  
+  }
   // checkout DEV-5872 to know why this test was written
   public void deadlockCheck() throws InterruptedException {
     Thread producer1 = new Thread(new Producer(this.txnSequencer), "Producer1");
@@ -74,8 +76,11 @@ public class TransactionSequencerTest extends TestCase {
     Thread consumer = new Thread(new Consumer(this.txnSequencer), "Consumer");
     consumer.start();
 
-    producer1.join();
     consumer.join();
+    while ( producer1.isAlive() ) {
+      this.txnSequencer.clear();
+      producer1.join(1000);
+  }
   }
   public void testInterruptAddTransactionWithFolding() throws Exception {
       folding = true;
@@ -292,15 +297,15 @@ public class TransactionSequencerTest extends TestCase {
     public String toString() {
         return "TestTransactionBatch{" + "batchID=" + batchID + ", transactions=" + transactions + '}';
     }
-    
-    
+
 
   }
 
   private class TestLockAccounting extends LockAccounting {
 
-    public TestLockAccounting(AbortableOperationManager abortableOperationManager) {
-      super(abortableOperationManager);
+    public TestLockAccounting(AbortableOperationManager abortableOperationManager,
+                              RemoteTransactionManagerImpl remoteTxnMgrImpl) {
+      super(abortableOperationManager, remoteTxnMgrImpl);
     }
 
     @Override

@@ -3,10 +3,13 @@
  */
 package com.tc.objectserver.search;
 
+import com.tc.net.ClientID;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.metadata.MetaDataProcessingContext;
+import com.tc.search.SearchRequestID;
 import com.terracottatech.search.IndexException;
 import com.terracottatech.search.NVPair;
+import com.terracottatech.search.QueryID;
 import com.terracottatech.search.SearchResult;
 import com.terracottatech.search.SyncSnapshot;
 import com.terracottatech.search.ValueID;
@@ -42,16 +45,22 @@ public interface IndexManager {
   void replace(String indexName, String key, ValueID value, ValueID previousValue, List<NVPair> attributes,
                ObjectID segmentOid, MetaDataProcessingContext metaDataContext) throws IndexException;
 
-  public SearchResult searchIndex(String indexName, List queryStack, boolean includeKeys, boolean includeValues,
+  public SearchResult searchIndex(String indexName, ClientID clientId, SearchRequestID reqId, List queryStack,
+                                  boolean includeKeys, boolean includeValues,
                                   Set<String> attributeSet, Set<String> groupByAttributes, List<NVPair> sortAttributes,
-                                  List<NVPair> aggregators, int maxResults) throws IndexException;
+                                  List<NVPair> aggregators, int maxResults, int fetchSize) throws IndexException;
 
+  public SearchResult getSearchResults(String name, ClientID clientId, SearchRequestID reqId, final List queryStack,
+                                       final boolean includeKeys, final boolean includeValues,
+                                       final Set<String> attributeSet, final List<NVPair> sortAttributes,
+                                       final List<NVPair> aggregators, final int maxResults, int start, int pageSize)
+      throws IndexException;
 
   public SyncSnapshot snapshot(String id) throws IndexException;
 
   void backup(File destDir, SyncSnapshot syncSnapshot) throws IndexException;
 
-  void shutdown();
+  void shutdown() throws IndexException;
 
   void optimizeSearchIndex(String indexName);
 
@@ -59,4 +68,12 @@ public interface IndexManager {
 
   InputStream getIndexFile(String cacheName, String indexId, String fileName) throws IOException;
 
+  void releaseAllResultsFor(ClientID clientId) throws IndexException;
+
+  void pruneSearchResults(Set<ClientID> clientFilter) throws IndexException;
+
+  void releaseSearchResults(String indexName, QueryID query,
+                            MetaDataProcessingContext context) throws IndexException;
+
+  void snapshotForQuery(String indexName, QueryID query, MetaDataProcessingContext context) throws IndexException;
 }

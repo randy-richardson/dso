@@ -4,6 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
+import com.google.common.collect.Sets;
 import com.tc.config.test.schema.ConfigHelper;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.test.config.model.TestConfig;
@@ -28,9 +29,13 @@ import java.net.URLDecoder;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,6 +50,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 public class TestBaseUtil {
+  private static final String  SEP                       = File.pathSeparator;
   private static final String  MAVEN_LOCAL_REPO = getMavenLocalRepo();
   private static final Pattern ARTIFACT_PATTERN = Pattern.compile("^\\s*([^:]+):([^:]+):([^:]+):([^:]+):(.+)$");
 
@@ -128,6 +134,8 @@ public class TestBaseUtil {
     if (Vm.isJRockit()) {
       jvmArgs.add("-Xverbose:gcpause,gcreport");
       jvmArgs.add("-Xverboselog:" + verboseGcOutputFile.getAbsolutePath());
+    } else if (Vm.isIBM()) {
+      jvmArgs.add("-Xverbosegclog:" + verboseGcOutputFile.getAbsolutePath());
     } else {
       jvmArgs.add("-Xloggc:" + verboseGcOutputFile.getAbsolutePath());
       jvmArgs.add("-XX:+PrintGCTimeStamps");
@@ -135,12 +143,17 @@ public class TestBaseUtil {
     }
   }
 
-  public static void setHeapSizeArgs(List<String> jvmArgs, int minHeap, int maxHeap, int directMemorySize) {
+  public static void setHeapSizeArgs(List<String> jvmArgs, int minHeap, int maxHeap, int directMemorySize,
+                                     boolean overrideParams) {
     Iterator<String> i = jvmArgs.iterator();
     List<String> illegalArgs = new ArrayList<String>();
     while (i.hasNext()) {
       String arg = i.next();
       if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") || arg.startsWith("-XX:MaxDirectMemorySize")) {
+        if (overrideParams) {
+          i.remove();
+          continue;
+        }
         illegalArgs.add(arg);
       }
     }
@@ -182,10 +195,7 @@ public class TestBaseUtil {
 
   public static void enableL1Reconnect(TestConfig testConfig) {
     testConfig.addTcProperty(TCPropertiesConsts.L2_L1RECONNECT_ENABLED, "true");
-    if (Os.isLinux() || Os.isSolaris()) {
-      // default 5000 ms seems too small occasionally in few linux machines
-      testConfig.addTcProperty(TCPropertiesConsts.L2_L1RECONNECT_TIMEOUT_MILLS, "20000");
-    }
+    testConfig.addTcProperty(TCPropertiesConsts.L2_L1RECONNECT_TIMEOUT_MILLS, "20000");
   }
 
   public static void enabledL1ProxyConnection(TestConfig testConfig) {
@@ -298,10 +308,11 @@ public class TestBaseUtil {
   }
 
   private static String getMavenLocalRepo() {
-    String base = System.getProperty("localMavenRepository");
+    String base = System.getProperty("maven.repo.local");
     try {
       if (base == null) {
-        base = new File(System.getProperty("user.home"), "/.m2/repository").getCanonicalPath();
+        base = System.getProperty("localMavenRepository");
+        if (base == null) base = new File(System.getProperty("user.home"), "/.m2/repository").getCanonicalPath();
       }
       File settingsXml = new File(System.getProperty("user.home"), "/.m2/settings.xml");
       if (settingsXml.exists()) {
@@ -312,7 +323,7 @@ public class TestBaseUtil {
         doc.getDocumentElement().normalize();
         NodeList nodeList = doc.getElementsByTagName("localRepository");
         if (nodeList.getLength() > 0) {
-          base = nodeList.item(0).getNodeValue();
+          base = nodeList.item(0).getTextContent();
         }
       }
       return base;
@@ -361,5 +372,17 @@ public class TestBaseUtil {
 
   public static List<String> getTerracottaCoreDependencies(Class<?> someTCCoreClass) {
     return getDevmodeAwareDependenciesOf("org.terracotta", "terracotta", "terracotta-ee", someTCCoreClass);
+  }
+
+  public static String constructClassPath(String... jars) {
+    return constructClassPath(Arrays.asList(jars));
+  }
+
+  public static String constructClassPath(Collection<String> jars) {
+    StringBuilder builder = new StringBuilder();
+    for (String jar : Sets.newLinkedHashSet(jars)) {
+      builder.append(SEP).append(jar);
+    }
+    return builder.toString();
   }
 }

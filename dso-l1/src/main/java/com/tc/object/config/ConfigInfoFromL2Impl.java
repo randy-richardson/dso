@@ -20,10 +20,8 @@ import com.tc.net.core.ConnectionInfo;
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.tc.security.PwProvider;
-import com.tc.util.ProductInfo;
 import com.tc.util.concurrent.ThreadUtil;
 import com.tc.util.io.ServerURL;
-import com.tc.util.version.Version;
 import com.terracottatech.config.L1ReconnectPropertiesDocument;
 
 import java.io.ByteArrayInputStream;
@@ -31,7 +29,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
-import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,6 +46,10 @@ public class ConfigInfoFromL2Impl implements ConfigInfoFromL2 {
   private static final long      RECONNECT_WAIT_INTERVAL                      = TCPropertiesImpl
                                                                                   .getProperties()
                                                                                   .getLong(TCPropertiesConsts.L1_SOCKET_RECONNECT_WAIT_INTERVAL);
+  private static final long      GET_CONFIGURATION_ONE_SOURCE_TIMEOUT         = TCPropertiesImpl
+                                                                                  .getProperties()
+                                                                                  .getLong(TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT,
+                                                                                           30000);
   private static final long      MIN_RETRY_INTERVAL_MILLS                     = 1000;
 
   public static final String     GROUP_INFO_SERVLET_PATH                      = "/groupinfo";
@@ -106,7 +107,7 @@ public class ConfigInfoFromL2Impl implements ConfigInfoFromL2 {
   @Override
   public Map<String, GroupID> getGroupNameIDMapFromL2() throws ConfigurationSetupException {
     Map<String, GroupID> map = new HashMap<String, GroupID>();
-    verifyServerClientCompatibility();
+
     GroupnameIdMapDocument groupnameIdMapDocument = getAndParseDocumentFromL2("Groupname ID Map",
                                                                               GROUPID_MAP_SERVLET_PATH,
                                                                               new FactoryParser<GroupnameIdMapDocument>() {
@@ -269,48 +270,6 @@ public class ConfigInfoFromL2Impl implements ConfigInfoFromL2 {
     }
   }
 
-  private void verifyServerClientCompatibility() {
-    ServerURL theURL;
-    for (ConnectionInfo ci : connections) {
-      try {
-        theURL = new ServerURL(ci.getHostname(), ci.getPort(), "/version", ci.getSecurityInfo());
-      } catch (MalformedURLException e1) {
-        throw new IllegalStateException("Some problem occured while checking Client-Server compatibility", e1);
-      }
-      matchServerClientVersion(theURL);
-    }
-  }
-
-  void matchServerClientVersion(ServerURL theURL) {
-    String strServerVersion = theURL.getHeaderField("Version", pwProvider);
-    int responseCode = 0;
-    // we'll get strServerVersion as null in following 2 cases:
-    // 1. Server is 4.0 server
-    // 2. We hit a server which is not up yet
-    if (strServerVersion == null) {
-      try {
-        responseCode = theURL.getResponseCode(pwProvider);
-      } catch (IOException e) {
-        // while getting responseCode if we get this exception it means that
-        // it was an active/passive server which has not started running yet, we can safely ignore this exception
-        return;
-      }
-      if (responseCode != 0) {
-        // a 4.0 server detected, as we didn't get IOException meaning that server is alive
-        Version clientVersion = new Version(ProductInfo.getInstance().version());
-        throw new IllegalStateException("client Server Version mismatch occured: client version : " + clientVersion
-                                        + " is not compatible with a server of Terracotta version: 4.0 or before");
-      }
-    }
-    Version serverVersion = new Version(strServerVersion);
-    Version clientVersion = new Version(ProductInfo.getInstance().version());
-    if (!clientVersion.equals(serverVersion)) { throw new IllegalStateException(
-                                                                                "client Server Version mismatch occured: client version : "
-                                                                                    + clientVersion
-                                                                                    + " is not compatible with serverVersion : "
-                                                                                    + serverVersion); }
-  }
-
   /*
    * Open an InputStream via http servlet from one of L2s.
    */
@@ -320,7 +279,8 @@ public class ConfigInfoFromL2Impl implements ConfigInfoFromL2 {
     for (int i = 0; i < connections.length; i++) {
       ConnectionInfo ci = connections[i];
       try {
-        theURL = new ServerURL(ci.getHostname(), ci.getPort(), httpPathExtension, ci.getSecurityInfo());
+        theURL = new ServerURL(ci.getHostname(), ci.getPort(), httpPathExtension,
+                               (int) GET_CONFIGURATION_ONE_SOURCE_TIMEOUT, ci.getSecurityInfo());
         String text = "Trying to get " + message + " from " + theURL.toString();
         logger.info(text);
         propFromL2Stream = theURL.openStream(pwProvider);

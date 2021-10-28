@@ -4,9 +4,6 @@
  */
 package com.tc.object.config;
 
-import com.tc.object.config.schema.IncludeOnLoad;
-
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,13 +29,10 @@ public class TransparencyClassSpecImpl implements TransparencyClassSpec {
   private ChangeApplicatorSpec                    changeApplicatorSpec;
   private boolean                                 isLogical;
   private boolean                                 onLoadInjection;
-  private final IncludeOnLoad                     onLoad                    = new IncludeOnLoad();
   private boolean                                 preInstrumented;
   private boolean                                 foreign;
 
   private boolean                                 useNonDefaultConstructor  = false;
-
-  private byte                                    instrumentationAction     = NOT_SET;
 
   private String                                  postCreateMethod          = null;
   private String                                  preCreateMethod           = null;
@@ -101,27 +95,6 @@ public class TransparencyClassSpecImpl implements TransparencyClassSpec {
     return preInstrumented;
   }
 
-  /**
-   * returns null if no LockDefinitions exists that makes the method autolocked.
-   */
-  @Override
-  public LockDefinition getAutoLockDefinition(final LockDefinition lds[]) {
-    if (lds == null) return null;
-    for (LockDefinition ld : lds) {
-      if (ld.isAutolock()) { return ld; }
-    }
-    return null;
-  }
-
-  @Override
-  public LockDefinition getNonAutoLockDefinition(final LockDefinition lds[]) {
-    if (lds == null) return null;
-    for (int i = 0; i < lds.length; i++) {
-      if (!lds[i].isAutolock()) { return lds[i]; }
-    }
-    return null;
-  }
-
   @Override
   public String getClassName() {
     return className;
@@ -140,19 +113,6 @@ public class TransparencyClassSpecImpl implements TransparencyClassSpec {
   @Override
   public boolean ignoreChecks() {
     return TransparencyClassSpecUtil.ignoreChecks(className);
-  }
-
-  /**
-   * returns null if no LockDefinitions exists that makes the method locked.
-   */
-  @Override
-  public LockDefinition getLockMethodLockDefinition(final int access, final LockDefinition lds[]) {
-    if (lds == null) return null;
-    for (int i = 0; i < lds.length; i++) {
-      if ((lds[i].isAutolock() && Modifier.isSynchronized(access) && !Modifier.isStatic(access))
-          || !lds[i].isAutolock()) { return lds[i]; }
-    }
-    return null;
   }
 
   @Override
@@ -239,41 +199,13 @@ public class TransparencyClassSpecImpl implements TransparencyClassSpec {
     return this;
   }
 
-  @Override
-  public TransparencyClassSpec setCallConstructorOnLoad(final boolean b) {
-    onLoad.setToCallConstructorOnLoad(b);
-    return this;
-  }
-
-  @Override
-  public TransparencyClassSpec setExecuteScriptOnLoad(final String script) {
-    onLoad.setExecuteScriptOnLoad(script);
-    return this;
-  }
-
-  @Override
-  public TransparencyClassSpec setCallMethodOnLoad(final String method) {
-    onLoad.setMethodCallOnLoad(method);
-    return this;
-  }
-
   private boolean basicIsHonorJavaTransient() {
     return flags.get(HONOR_TRANSIENT_KEY);
   }
 
   @Override
-  public boolean isCallConstructorSet() {
-    return onLoad.isCallConstructorOnLoadType();
-  }
-
-  @Override
   public boolean isHonorJavaTransient() {
     return basicIsHonorJavaTransient();
-  }
-
-  @Override
-  public boolean isCallConstructorOnLoad() {
-    return onLoad.isCallConstructorOnLoad();
   }
 
   @Override
@@ -290,26 +222,6 @@ public class TransparencyClassSpecImpl implements TransparencyClassSpec {
   }
 
   @Override
-  public boolean isExecuteScriptOnLoadSet() {
-    return onLoad.isExecuteScriptOnLoadType();
-  }
-
-  @Override
-  public boolean isCallMethodOnLoadSet() {
-    return onLoad.isCallMethodOnLoadType();
-  }
-
-  @Override
-  public String getOnLoadMethod() {
-    return onLoad.getMethod();
-  }
-
-  @Override
-  public String getOnLoadExecuteScript() {
-    return onLoad.getExecuteScript();
-  }
-
-  @Override
   public boolean isUseNonDefaultConstructor() {
     return this.useNonDefaultConstructor;
   }
@@ -317,16 +229,6 @@ public class TransparencyClassSpecImpl implements TransparencyClassSpec {
   @Override
   public void setUseNonDefaultConstructor(final boolean useNonDefaultConstructor) {
     this.useNonDefaultConstructor = useNonDefaultConstructor;
-  }
-
-  @Override
-  public void setInstrumentationAction(final byte action) {
-    this.instrumentationAction = action;
-  }
-
-  @Override
-  public byte getInstrumentationAction() {
-    return this.instrumentationAction;
   }
 
   @Override

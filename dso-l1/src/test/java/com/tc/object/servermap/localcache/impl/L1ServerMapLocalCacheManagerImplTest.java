@@ -20,23 +20,16 @@ import com.tc.object.TCObjectSelf;
 import com.tc.object.TCObjectSelfCallback;
 import com.tc.object.context.LocksToRecallContext;
 import com.tc.object.handler.LockRecallHandler;
-import com.tc.object.locks.LockID;
 import com.tc.object.locks.LocksRecallService;
 import com.tc.object.locks.LocksRecallServiceImpl;
-import com.tc.object.locks.LongLockID;
 import com.tc.object.locks.MockClientLockManager;
 import com.tc.object.servermap.localcache.AbstractLocalCacheStoreValue;
-import com.tc.object.servermap.localcache.L1ServerMapLocalCacheStore;
 import com.tc.object.servermap.localcache.LocalCacheStoreEventualValue;
-import com.tc.object.servermap.localcache.MapOperationType;
 import com.tc.object.servermap.localcache.PinnedEntryFaultCallback;
-import com.tc.object.servermap.localcache.ServerMapLocalCache;
 import com.tc.stats.Stats;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -66,7 +59,6 @@ public class L1ServerMapLocalCacheManagerImplTest extends TestCase {
     LocksRecallService locksRecallHelper = new LocksRecallServiceImpl(lockRecallHandler, lockRecallStage);
     this.l1LocalCacheManagerImpl = new L1ServerMapLocalCacheManagerImpl(locksRecallHelper, testSink,
                                                                         new TxnCompleteSink(), Mockito.mock(Sink.class));
-    this.l1LocalCacheManagerImpl.setLockManager(clientLockManager);
   }
 
   public void testTCNotRunning() {
@@ -94,50 +86,6 @@ public class L1ServerMapLocalCacheManagerImplTest extends TestCase {
     }
 
     Assert.assertTrue(expectedException);
-  }
-
-  public void testInitiateRecall() {
-    LockID lockID = new LongLockID(500);
-    Set<LockID> lockIDs = Collections.singleton(lockID);
-
-    l1LocalCacheManagerImpl.recallLocks(lockIDs);
-    testSink.waitUntilContextsAddedEqualsAndCompletedEquals(1, 1);
-
-    Assert.assertEquals(1, clientLockManager.getRecallList().size());
-    Assert.assertEquals(lockID, clientLockManager.getRecallList().get(0));
-  }
-
-  public void testInlineRecall() {
-    LockID lockID = new LongLockID(500);
-    Set<LockID> lockIDs = Collections.singleton(lockID);
-
-    l1LocalCacheManagerImpl.recallLocksInline(lockIDs);
-
-    Assert.assertEquals(1, clientLockManager.getRecallList().size());
-    Assert.assertEquals(lockID, clientLockManager.getRecallList().get(0));
-  }
-
-  public void testRememberMapIDToLockID() {
-    L1ServerMapLocalCacheStore store = new L1ServerMapLocalCacheStoreHashMap();
-    ObjectID mapID = new ObjectID(100);
-    ServerMapLocalCache localCache = this.l1LocalCacheManagerImpl.getOrCreateLocalCache(mapID, Mockito
-        .mock(ClientObjectManager.class), null, true, store, Mockito.mock(PinnedEntryFaultCallback.class));
-    localCache.setLocalCacheEnabled(true);
-
-    MockTCObjectSelfCallback tcObjectSelfCallback = new MockTCObjectSelfCallback();
-    this.l1LocalCacheManagerImpl.initializeTCObjectSelfStore(tcObjectSelfCallback);
-
-    LockID lockID = new LongLockID(100);
-
-    MockModesAdd.addStrongValueToCache(localCache, l1LocalCacheManagerImpl, "key", lockID,
-                                       MockModesAdd.createMockSerializedEntry(12345), mapID, MapOperationType.GET);
-
-    this.l1LocalCacheManagerImpl.removeEntriesForLockId(lockID);
-
-    System.err.println("Object IDs removed = " + tcObjectSelfCallback.getRemovedSet());
-
-    Assert.assertEquals(0, store.size());
-    Assert.assertEquals(0, localCache.size());
   }
 
   private static class MySink implements Sink {

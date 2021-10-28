@@ -3,7 +3,8 @@
  */
 package com.tc.net.protocol.transport;
 
-import EDU.oswego.cs.dl.util.concurrent.SynchronizedInt;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.tc.logging.LogLevelImpl;
 import com.tc.logging.TCLogger;
@@ -41,11 +42,14 @@ import com.tc.util.PortChooser;
 import com.tc.util.SequenceGenerator;
 import com.tc.util.concurrent.ThreadUtil;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
 
@@ -247,7 +251,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     SequenceGenerator sq = new SequenceGenerator();
     for (int i = 1; i <= 5; i++) {
       PingMessage ping = (PingMessage) clientMsgCh.createMessage(TCMessageType.PING_MESSAGE);
-      ping.initialize(sq);
+      ping.initialize(sq.getNextSequence());
       ping.send();
     }
 
@@ -284,7 +288,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     SequenceGenerator sq = new SequenceGenerator();
     for (int i = 1; i <= 5; i++) {
       PingMessage ping = (PingMessage) clientMsgCh.createMessage(TCMessageType.PING_MESSAGE);
-      ping.initialize(sq);
+      ping.initialize(sq.getNextSequence());
       ping.send();
     }
 
@@ -403,7 +407,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     SequenceGenerator sq = new SequenceGenerator();
     for (int i = 1; i <= 5; i++) {
       PingMessage ping = (PingMessage) clientMsgCh.createMessage(TCMessageType.PING_MESSAGE);
-      ping.initialize(sq);
+      ping.initialize(sq.getNextSequence());
       ping.send();
     }
 
@@ -453,7 +457,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
   public void testL2SocketConnectL1FailTooLongGC() throws Exception {
     HealthCheckerConfig hcConfig = new HealthCheckerConfigImpl(5000, 2000, 2, "ServerCommsHC-Test35", true);
     HealthCheckerConfig clientHcConfig = new HealthCheckerConfigClientImpl(15000, 5000, 2, "ClientCommsHC-Test35",
-                                                                           false, 5, 5, "0.0.0.0", 0);
+                                                                           false, 5, 5, "0.0.0.0", "0");
     this.setUp(hcConfig, clientHcConfig);
 
     ClientMessageChannel clientMsgCh = createClientMsgCh();
@@ -487,10 +491,10 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     assertEquals(0, connHC.getTotalConnsUnderMonitor());
   }
 
-  public void testL2SocketConnectL1Pass() throws Exception {
+  private void testL2SocketConnectL1Pass(String bindPort) throws Exception {
     HealthCheckerConfig hcConfig = new HealthCheckerConfigImpl(5000, 2000, 1, "ServerCommsHC-Test36", true,
                                                                Integer.MAX_VALUE, 2);
-    HealthCheckerConfig clientHcConfig = new HealthCheckerConfigClientImpl("ClientCommsHC-Test36");
+    HealthCheckerConfig clientHcConfig = new HealthCheckerConfigClientImpl("ClientCommsHC-Test36", bindPort);
 
     this.setUp(hcConfig, clientHcConfig);
     ((CommunicationsManagerImpl) clientComms).setConnHealthChecker(new ConnectionHealthCheckerDummyImpl());
@@ -510,7 +514,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     SequenceGenerator sq = new SequenceGenerator();
     for (int i = 1; i <= 5; i++) {
       PingMessage ping = (PingMessage) clientMsgCh.createMessage(TCMessageType.PING_MESSAGE);
-      ping.initialize(sq);
+      ping.initialize(sq.getNextSequence());
       ping.send();
     }
 
@@ -525,11 +529,25 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     assertEquals(1, connHC.getTotalConnsUnderMonitor());
   }
 
+  public void testL2SocketConnectL1Pass() throws Exception {
+    testL2SocketConnectL1Pass(String.valueOf(CallbackPortRange.SYSTEM_ASSIGNED));
+  }
+
+  public void testL2SocketConnectL1PortRangePass() throws Exception {
+    ServerSocket ss = new ServerSocket(0);
+    
+    try {
+      testL2SocketConnectL1Pass(ss.getLocalPort() + "," + new PortChooser().chooseRandomPort());
+    } finally {
+      ss.close();
+    }
+  }
+
   public void testL2SocketConnectMultipleL1PassAndFail() throws Exception {
     HealthCheckerConfig serverHcConfig = new HealthCheckerConfigImpl(5000, 2000, 3, "ServerCommsHC-Test37", true);
     HealthCheckerConfig clientHcConfig = new HealthCheckerConfigClientImpl(60000, 2000, 2,
                                                                            "ClientCommsHC-normal-Test37", false, 3, 2,
-                                                                           "0.0.0.0", 0);
+                                                                           "0.0.0.0", "0");
 
     this.setUp(serverHcConfig, clientHcConfig);
 
@@ -564,7 +582,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     SequenceGenerator sq = new SequenceGenerator();
     for (int i = 1; i <= 5; i++) {
       PingMessage ping = (PingMessage) clientMsgCh.createMessage(TCMessageType.PING_MESSAGE);
-      ping.initialize(sq);
+      ping.initialize(sq.getNextSequence());
       ping.send();
     }
 
@@ -583,11 +601,11 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     Assert.assertEquals(1, connHC.getTotalConnsUnderMonitor());
   }
 
-  public void testL1CallbackPortListenerSwitchOff() throws Exception {
+  private void testL1CallbackPortListenerSwitchOff(String bindPort) throws Exception {
     HealthCheckerConfig serverHcConfig = new HealthCheckerConfigImpl(5000, 2000, 3, "ServerCommsHC-Test37", true);
     HealthCheckerConfig clientHcConfig = new HealthCheckerConfigClientImpl(6000, 2000, 2,
                                                                            "ClientCommsHC-normal-Test37", false, 3, 2,
-                                                                           "0.0.0.0", -1);
+                                                                           "0.0.0.0", bindPort);
 
     this.setUp(serverHcConfig, clientHcConfig);
 
@@ -607,6 +625,32 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
     ThreadUtil.reallySleep(3000);
     // Client comms mgr should not start callbackport listener as it is disabled.
     assertNull(((CommunicationsManagerImpl) clientComms).getCallbackPortListener());
+  }
+
+  public void testL1CallbackPortListenerSwitchOff() throws Exception {
+    testL1CallbackPortListenerSwitchOff("-1");
+  }
+
+  public void testL1CallbackPortListenerNoAvailablePorts() throws Exception {
+    ServerSocket[] ss = new ServerSocket[10];
+    Integer[] ports = new Integer[ss.length];
+
+    for (int i = 0; i < ss.length; i++) {
+      ss[i] = new ServerSocket(0);
+      ports[i] = ss[i].getLocalPort();
+    }
+    
+    try {
+      testL1CallbackPortListenerSwitchOff(StringUtils.join(ports, ","));
+    } finally {
+      for (ServerSocket s : ss) {
+        try {
+          s.close();
+        } catch (IOException ioe) {
+          //
+        }
+      }
+    }
   }
 
   protected void closeCommsMgr() throws Exception {
@@ -686,7 +730,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
       }
     }
 
-    private final SynchronizedInt connectCount = new SynchronizedInt(0);
+    private final AtomicInteger connectCount = new AtomicInteger(0);
 
     class LongGCTestHealthCheckerSocketConnectImpl extends HealthCheckerSocketConnectImpl {
 
@@ -697,7 +741,7 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
 
       @Override
       public synchronized void connectEvent(TCConnectionEvent event) {
-        connectCount.increment();
+        connectCount.getAndIncrement();
         if (connectCount.get() <= 1) {
           System.out.println("LongGCTestHealthCheckerSocketConnectImpl: supering connect event");
           super.connectEvent(event);
@@ -710,3 +754,4 @@ public class ConnectionHealthCheckerLongGCTest extends TCTestCase {
   }
 
 }
+

@@ -13,6 +13,7 @@ import com.tc.object.msg.ClientHandshakeMessage;
 import java.util.Collection;
 
 public interface ClientLock extends ClearableCallback {
+
   /**
    * Blocking acquire
    * 
@@ -188,9 +189,11 @@ public interface ClientLock extends ClearableCallback {
   /**
    * Called by a Terracotta thread to award a per-thread or greedy lock to the client.
    * 
+   * @param awardID
    * @throws GarbageLockException if this state has been marked as garbage
    */
-  public void award(RemoteLockManager remote, ThreadID thread, ServerLockLevel level) throws GarbageLockException;
+  public void award(RemoteLockManager remote, ThreadID thread, ServerLockLevel level, long awardID)
+      throws GarbageLockException;
 
   /**
    * Called by a Terracotta thread to indicate that the specified non-blocking try lock attempt
@@ -225,7 +228,11 @@ public interface ClientLock extends ClearableCallback {
    */
   public boolean tryMarkAsGarbage(RemoteLockManager remote);
 
-  public void pinLock();
+  public void pinLock(long awardID);
 
-  public void unpinLock();
+  public void unpinLock(long awardID);
+
+  public boolean isAwardValid(long awardIDParam);
+
+  public long getAwardID();
 }

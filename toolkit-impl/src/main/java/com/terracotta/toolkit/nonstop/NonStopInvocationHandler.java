@@ -38,7 +38,8 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
         .getName());
 
     if (!nonStopConfiguration.isEnabled()) {
-      return invokeMethod(method, args, toolkitObjectLookup.getInitializedObject());
+      Object returnValue = invokeMethod(method, args, toolkitObjectLookup.getInitializedObject());
+      return createNonStopSubtypeIfNecessary(returnValue, method.getReturnType());
     }
 
     if (LocalMethodUtil.isLocal(nonStopConfigurationLookup.getObjectType(), method.getName())) {
@@ -49,7 +50,7 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("Executing NonStop behaviour for method - " + method.getName());
       }
-      return handleNonStopBehavior(method, args, nonStopConfiguration);
+      return handleNonStopBehavior(method, args, nonStopConfiguration, null);
     }
     
     boolean started = context.getNonStopManager().tryBegin(getTimeout(nonStopConfiguration));
@@ -62,15 +63,15 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
       return handleNonStopToolkitInstantiationException(method, args, nonStopConfiguration, e);
     } catch (ToolkitAbortableOperationException e) {
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Invocation failed for method - " + method.getName(), e);
+        LOGGER.debug("Invocation failed for method - " + method.getName() + ". Exception occurred - " + e.getMessage());
       }
-      return handleNonStopBehavior(method, args, nonStopConfiguration);
+      return handleNonStopBehavior(method, args, nonStopConfiguration, e);
     } catch (RejoinException e) {
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Invocation failed for method - " + method.getName(), e);
+        LOGGER.debug("Invocation failed for method - " + method.getName() + ". Exception occurred - " + e.getMessage());
       }
       // TODO: Review this.. Is this the right place to handle this...
-      return handleNonStopBehavior(method, args, nonStopConfiguration);
+      return handleNonStopBehavior(method, args, nonStopConfiguration, e);
     } finally {
       if (started) {
         context.getNonStopManager().finish();
@@ -87,14 +88,15 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
     }
   }
 
-  private Object handleNonStopBehavior(Method method, Object[] args, NonStopConfiguration nonStopConfiguration) throws Throwable {
+  private Object handleNonStopBehavior(Method method, Object[] args, NonStopConfiguration nonStopConfiguration,
+                                       Exception expection) throws Throwable {
     try {
       return invokeMethod(method, args, resolveTimeoutBehavior(nonStopConfiguration));
     } catch (NonStopException e) {
       if(context.getNonStopClusterListener().isNodeError()) {
         throw new NonStopException(context.getNonStopClusterListener().getNodeErrorMessage());
       } else {
-        throw e;
+        throw new NonStopException(e.getMessage(), expection);
       }
     }
   }
@@ -113,7 +115,7 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
                                                                                       .getObjectType());
   }
 
-  private Object resolveTimeoutBehavior(NonStopConfiguration nonStopConfiguration) {
+  Object resolveTimeoutBehavior(NonStopConfiguration nonStopConfiguration) {
     return context.getNonstopTimeoutBehaviorResolver()
         .resolveTimeoutBehavior(nonStopConfigurationLookup.getObjectType(), nonStopConfiguration, toolkitObjectLookup);
   }
@@ -134,7 +136,7 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
     }
   }
 
-  private Object invokeMethod(Method method, Object[] args, Object object) throws Throwable {
+  Object invokeMethod(Method method, Object[] args, Object object) throws Throwable {
     try {
       return method.invoke(object, args);
     } catch (InvocationTargetException t) {

@@ -6,6 +6,7 @@ package com.tc.object.tx;
 
 import com.tc.abortable.AbortableOperationManager;
 import com.tc.abortable.AbortedOperationException;
+import com.tc.exception.PlatformRejoinException;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.GroupID;
@@ -19,7 +20,7 @@ import com.tc.util.SequenceGenerator;
 import com.tc.util.SequenceID;
 import com.tc.util.Util;
 
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.LinkedList;
 
 public class TransactionSequencer implements ClearableCallback {
 
@@ -46,10 +47,11 @@ public class TransactionSequencer implements ClearableCallback {
 
   private SequenceGenerator                                 sequence       = new SequenceGenerator(1);
   private final TransactionBatchFactory                     batchFactory;
-  private final LinkedBlockingQueue<ClientTransactionBatch> pendingBatches = new LinkedBlockingQueue<ClientTransactionBatch>();
+  private final LinkedList<ClientTransactionBatch>       pendingBatches = new LinkedList<ClientTransactionBatch>();
+  private int                                               waiters = 0;
 
   private ClientTransactionBatch                            currentBatch;
-  private Average                                           currentWritten = new Average();
+  private final Average                                           currentWritten = new Average();
 
   private final int                                         slowDownStartsAt;
   private final double                                      sleepTimeIncrements;
@@ -63,19 +65,21 @@ public class TransactionSequencer implements ClearableCallback {
   private final GroupID                                     groupID;
   private final TransactionIDGenerator                      transactionIDGenerator;
   private final AbortableOperationManager                   abortableOperationManager;
+  private final RemoteTransactionManagerImpl                remoteTxnMgrImpl;
 
   public TransactionSequencer(GroupID groupID, TransactionIDGenerator transactionIDGenerator,
                               TransactionBatchFactory batchFactory, LockAccounting lockAccounting,
                               SampledRateCounter transactionSizeCounter,
                               SampledRateCounter transactionsPerBatchCounter,
-                              AbortableOperationManager abortableOperationManager) {
+                              AbortableOperationManager abortableOperationManager,
+                              RemoteTransactionManagerImpl remoteTxnMgrImpl) {
 
     this.groupID = groupID;
     this.transactionIDGenerator = transactionIDGenerator;
     this.batchFactory = batchFactory;
     this.lockAccounting = lockAccounting;
     createNewBatch();
-    this.slowDownStartsAt = (int) (MAX_PENDING_BATCHES * 0.66);
+    this.slowDownStartsAt = (int) (MAX_PENDING_BATCHES / 2);
     this.sleepTimeIncrements = MAX_SLEEP_TIME_BEFORE_HALT / (MAX_PENDING_BATCHES - this.slowDownStartsAt);
     if (LOGGING_ENABLED) {
       log_settings();
@@ -83,14 +87,16 @@ public class TransactionSequencer implements ClearableCallback {
     this.transactionSizeCounter = transactionSizeCounter;
     this.transactionsPerBatchCounter = transactionsPerBatchCounter;
     this.abortableOperationManager = abortableOperationManager;
+    this.remoteTxnMgrImpl = remoteTxnMgrImpl;
   }
 
   @Override
   public synchronized void cleanup() {
-    notifyAll();
     sequence = new SequenceGenerator(1);
     pendingBatches.clear();
+    lockAccounting.cleanup();
     createNewBatch();
+    notifyAll();
   }
   
   private void log_settings() {
@@ -124,10 +130,13 @@ public class TransactionSequencer implements ClearableCallback {
     }
   }
 
-  public void throttleIfNecesary() throws AbortedOperationException {
+  public boolean throttleIfNecesary() throws AbortedOperationException {
     int diff = this.pendingBatches.size() - this.slowDownStartsAt;
     if (diff >= 0) {
         waitIfNecessary();
+        return true;
+    } else {
+      return false;
     }
   }
 
@@ -135,11 +144,6 @@ public class TransactionSequencer implements ClearableCallback {
     this.shutdown = true;
   }
 
-  /**
-   * XXX::Note : There is automatic throttling built in by adding to a BoundedLinkedQueue from within a synch block
-   * 
-   * @throws AbortedOperationException Only when the Transaction is not written to the batch.
-   */
   private void addTxnInternal(ClientTransaction txn) {
     // waitIfNecessary();
     final TransactionID txnID = addToCurrentBatch(txn);
@@ -161,18 +165,18 @@ public class TransactionSequencer implements ClearableCallback {
     
     try {
       synchronized (this) {
-        if ( this.currentWritten.getAverage() * this.currentBatch.numberOfTxnsBeforeFolding() > MAX_BYTE_SIZE_FOR_BATCH ) {
+        if ( this.currentBatch.numberOfTxnsBeforeFolding() > this.getAverageBatchSize() ) {
           if ( this.currentBatch.numberOfTxnsBeforeFolding() == 0 ) {
             throw new AssertionError("no transaction in batch " + this.currentWritten + " " + this.currentBatch);
           }
-          put(this.currentBatch);
+          this.pendingBatches.add(this.currentBatch);
           if (LOGGING_ENABLED) {
             log_stats();
           }
           createNewBatch();
           this.txnsPerBatch = 0;
           numBatchesDelta = 1;
-        } 
+        }
 
         this.txnsPerBatch += 1;
 
@@ -197,7 +201,7 @@ public class TransactionSequencer implements ClearableCallback {
       written = buffer.write(txn);
 
       return txn.getTransactionID();
-    } finally {    
+    } finally {
       this.currentWritten.written(written);
       this.transactionsPerBatchCounter.increment(numTransactionsDelta, numBatchesDelta);
       synchronized (transactionSizeCounter) {
@@ -212,14 +216,18 @@ public class TransactionSequencer implements ClearableCallback {
     boolean isInterrupted = false;
     try {
       do {
+        if (remoteTxnMgrImpl.isRejoinInProgress()) { throw new PlatformRejoinException(); }
         int diff = this.pendingBatches.size() - this.slowDownStartsAt;
         if (diff >= 0) {
           long sleepTime = (long) (1 + diff * this.sleepTimeIncrements);
           try {
+              waiters++;
               wait(sleepTime);
           } catch (InterruptedException e) {
             AbortedOperationUtil.throwExceptionIfAborted(abortableOperationManager);
             isInterrupted = true;
+          } finally {
+            waiters--;            
           }
         }
       } while (this.pendingBatches.size() >= MAX_PENDING_BATCHES);
@@ -228,30 +236,13 @@ public class TransactionSequencer implements ClearableCallback {
     }
   }
   
-  private void put(ClientTransactionBatch batch) {
-    boolean isInterrupted = false;
-    try {
-      while (true) {
-        try {
-          // Unbounded Queue should not block here.
-          this.pendingBatches.put(batch);
-          break;
-        } catch (InterruptedException e) {
-          isInterrupted = true;
-        }
-      }
-    } finally {
-      Util.selfInterruptIfNeeded(isInterrupted);
-    }
-  }
-
   private void log_stats() {
     int size = this.pendingBatches.size();
     if (size == MAX_PENDING_BATCHES) {
       logger.info("Max pending size reached !!! : Pending Batches size = " + size + " TxnsInBatch = "
                   + this.txnsPerBatch);
     } else if (size % 5 == 0) {
-      logger.info("Pending Batch Size : " + size + " TxnsInBatch = " + this.txnsPerBatch);
+      logger.info("Pending Batch Size : " + size + " TxnsInBatch = " + this.txnsPerBatch + " remote " + remoteTxnMgrImpl);
     }
   }
 
@@ -260,20 +251,22 @@ public class TransactionSequencer implements ClearableCallback {
   }
 
   public ClientTransactionBatch getNextBatch() {
-    ClientTransactionBatch batch = this.pendingBatches.poll();
+    ClientTransactionBatch batch = null;
     try {
-      if (batch != null) { return batch; }
-        // Check again to avoid sending the txn in the wrong order
       synchronized (this) {
         batch = this.pendingBatches.poll();
-        notifyAll();
-        if (batch != null) { return batch; }
-        if (!this.currentBatch.isEmpty()) {
+        if (batch != null) { 
+          if ( waiters > 0 ) {
+            notify();
+          }
+          return batch; 
+        } else if (!this.currentBatch.isEmpty()) {
           batch = this.currentBatch;
           createNewBatch();
           return batch;
-        }
+        } else {
         return null;
+      }
       }
     } finally {
       if ( LOGGING_ENABLED && batch != null && logger.isDebugEnabled() ) {
@@ -288,6 +281,7 @@ public class TransactionSequencer implements ClearableCallback {
   public synchronized void clear() {
     this.pendingBatches.clear();
     createNewBatch();
+    notifyAll();
   }
 
   public SequenceID getNextSequenceID() {
@@ -302,6 +296,10 @@ public class TransactionSequencer implements ClearableCallback {
     }
   }
   
+  public int getAverageBatchSize() {
+    return MAX_BYTE_SIZE_FOR_BATCH / currentWritten.getAverage();
+  }
+    
   private static class Average {
     private int count = 0;
     private int written = 0;

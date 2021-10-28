@@ -12,7 +12,8 @@ import com.tc.net.NodeID;
 import com.tc.object.ClientIDProvider;
 import com.tc.object.ObjectID;
 import com.tc.object.TCObject;
-import com.tc.object.dmi.DmiDescriptor;
+import com.tc.object.dna.api.LogicalChangeID;
+import com.tc.object.dna.api.LogicalChangeResult;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
 import com.tc.object.locks.Notify;
@@ -212,11 +213,6 @@ public class MockTransactionManager implements ClientTransactionManager {
     throw new ImplementMe();
   }
 
-  @Override
-  public void addDmiDescriptor(DmiDescriptor d) {
-    throw new ImplementMe();
-  }
-
   public int localHeldCount(String lockName, int lockLevel) {
     throw new ImplementMe();
   }
@@ -240,6 +236,17 @@ public class MockTransactionManager implements ClientTransactionManager {
   public void addMetaDataDescriptor(TCObject tco, MetaDataDescriptorInternal md) {
     throw new ImplementMe();
 
+  }
+
+  @Override
+  public void receivedLogicalChangeResult(Map<LogicalChangeID, LogicalChangeResult> results) {
+    throw new ImplementMe();
+
+  }
+
+  @Override
+  public boolean logicalInvokeWithResult(TCObject source, int method, String methodName, Object[] parameters) {
+    return false;
   }
 
 }

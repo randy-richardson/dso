@@ -7,7 +7,9 @@ package com.tc.objectserver.managedobject;
 import com.tc.object.ObjectID;
 import com.tc.object.dna.api.DNACursor;
 import com.tc.object.dna.api.LogicalAction;
+import com.tc.object.dna.api.LogicalChangeResult;
 import com.tc.object.dna.api.PhysicalAction;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.Events;
 import com.tc.util.ObjectIDSet;
 
@@ -48,7 +50,8 @@ public abstract class LogicalManagedObjectState extends AbstractManagedObjectSta
         final LogicalAction logicalAction = (LogicalAction)action;
         final int method = logicalAction.getMethod();
         final Object[] params = logicalAction.getParameters();
-        applyLogicalAction(objectID, applyInfo, method, params);
+        LogicalChangeResult result = applyLogicalAction(objectID, applyInfo, method, params);
+        applyInfo.getApplyResultRecorder().recordResult(logicalAction.getLogicalChangeID(), result);
       }
     }
     if (eventCount != 0) {
@@ -60,7 +63,9 @@ public abstract class LogicalManagedObjectState extends AbstractManagedObjectSta
     // to be optionally implemented by subclasses
   }
 
-  protected abstract void applyLogicalAction(final ObjectID objectID, final ApplyTransactionInfo applyInfo, final int method,
+  protected abstract LogicalChangeResult applyLogicalAction(final ObjectID objectID,
+                                                            final ApplyTransactionInfo applyInfo,
+                                               final int method,
                                              final Object[] params);
 
   protected abstract void addAllObjectReferencesTo(Set refs);
@@ -76,7 +81,7 @@ public abstract class LogicalManagedObjectState extends AbstractManagedObjectSta
 
   @Override
   public final Set getObjectReferences() {
-    final ObjectIDSet refs = new ObjectIDSet();
+    final ObjectIDSet refs = new BitSetObjectIDSet();
     addAllObjectReferencesTo(refs);
     return refs;
   }

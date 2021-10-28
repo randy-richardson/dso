@@ -5,6 +5,7 @@
 package com.tc.objectserver.tx;
 
 import com.tc.net.NodeID;
+import com.tc.util.Util;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,39 +15,50 @@ public class TransactionRecord {
   private final Set<NodeID>      waitees;
 
   public TransactionRecord() {
-    this(false);
+    this(null);
   }
 
-  public TransactionRecord(final boolean objectSyncRecord) {
+  public TransactionRecord(final NodeID node) {
     this.waitees = new HashSet<NodeID>();
-    if (objectSyncRecord) {
+    if (node != null) {
       this.state = TransactionState.COMPLETED_STATE;
+      this.waitees.add(node);
     } else {
       this.state = new TransactionState();
     }
   }
 
-  public void relayTransactionComplete() {
+  public synchronized boolean relayTransactionComplete() {
     this.state.relayTransactionComplete();
+    notifyAll();
+    return this.waitees.isEmpty() && this.state.isComplete();
   }
 
-  public void applyAndCommitSkipped() {
+  public synchronized boolean applyAndCommitSkipped() {
     this.state.applyAndCommitSkipped();
+    notifyAll();
+    return this.waitees.isEmpty() && this.state.isComplete();
   }
 
-  public void applyCommitted() {
+  public synchronized boolean applyCommitted() {
     this.state.applyCommitted();
+    notifyAll();
+    return this.waitees.isEmpty() && this.state.isComplete();
   }
 
-  public void broadcastCompleted() {
+  public synchronized boolean broadcastCompleted() {
     this.state.broadcastCompleted();
+    notifyAll();
+    return this.waitees.isEmpty() && this.state.isComplete();
   }
   
-  public void processMetaDataCompleted() {
-    state.processMetaDataCompleted();
+  public synchronized boolean processMetaDataCompleted() {
+    this.state.processMetaDataCompleted();
+    notifyAll();
+    return this.waitees.isEmpty() && this.state.isComplete();
   }
 
-  public boolean isComplete() {
+  public synchronized boolean isComplete() {
     return this.state.isComplete() && this.waitees.isEmpty();
   }
 
@@ -55,20 +67,65 @@ public class TransactionRecord {
     return "TransactionRecord@" + System.identityHashCode(this) + " = " + this.state + "  :: waitees = " + this.waitees;
   }
 
-  public boolean addWaitee(final NodeID waitee) {
+  public synchronized boolean addWaitee(final NodeID waitee) {
+/* this the transaction is already complete, can't add waitee and switch state back to not completed  */
+    if ( this.waitees.isEmpty() && this.state.isComplete() ) {
+      return false;
+    }
     return this.waitees.add(waitee);
   }
 
-  public boolean remove(final NodeID waitee) {
-    return this.waitees.remove(waitee);
+  public synchronized boolean remove(final NodeID waitee) {
+    if (this.waitees.remove(waitee)) {
+      notifyAll();
+      if ( this.waitees.isEmpty() && this.state.isComplete() ) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  public boolean isEmpty() {
+  public synchronized boolean isEmpty() {
     return this.waitees.isEmpty();
   }
 
-  public boolean contains(final NodeID waitee) {
+  public synchronized boolean contains(final NodeID waitee) {
     return this.waitees.contains(waitee);
   }
 
+  private synchronized boolean isRelayComplete() {
+    if (this.state.isRelayComplete()) {
+      for (NodeID waitee : waitees) {
+        if (waitee.getNodeType() == NodeID.SERVER_NODE_TYPE) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public synchronized void waitUntilRelayComplete() {
+    boolean interrupted = false;
+    while(!isRelayComplete()) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        interrupted = true;
+      }
+    }
+    Util.selfInterruptIfNeeded(interrupted);
+  }
+
+  public synchronized void waitUntilCommit() {
+    boolean interrupted = false;
+    while (!this.state.isApplyCommitted()) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        interrupted = true;
+      }
+    }
+    Util.selfInterruptIfNeeded(interrupted);
+  }
 }

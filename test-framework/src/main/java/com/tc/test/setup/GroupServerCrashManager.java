@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class GroupServerCrashManager implements Runnable {
+class GroupServerCrashManager implements Runnable {
   private final GroupServerManager serverManager;
   private int                      crashCount    = 0;
   private volatile boolean         done;
@@ -21,7 +21,7 @@ public class GroupServerCrashManager implements Runnable {
   private final TestConfig         testConfig;
   private final SimpleDateFormat   dateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss.SSS");
 
-  public GroupServerCrashManager(TestConfig testConfig, GroupServerManager groupServerManager) throws Exception {
+  GroupServerCrashManager(TestConfig testConfig, GroupServerManager groupServerManager) throws Exception {
     this.serverManager = groupServerManager;
     this.testConfig = testConfig;
     this.errors = new ArrayList<Throwable>();
@@ -39,38 +39,43 @@ public class GroupServerCrashManager implements Runnable {
       debug("Sleeping for initial delay seconds before starting to crash servers - " + delayInSeconds);
       sleep(delayInSeconds * 1000);
     }
+    try {
+      // Precondition for the loop
+      serverManager.waituntilEveryPassiveStandBy();
 
-    while (!done) {
-      sleep(getCrashConfig().getServerCrashWaitTimeInSec() * 1000);
+      while (!done) {
+        sleep(getCrashConfig().getServerCrashWaitTimeInSec() * 1000);
 
-      if ((getCrashConfig().getMaxCrashCount() > crashCount) && !done) {
-        try {
+        if ((getCrashConfig().getMaxCrashCount() > crashCount) && !done) {
+          switch (getCrashConfig().getCrashMode()) {
 
-          if (getCrashConfig().getCrashMode().equals(ServerCrashMode.RANDOM_ACTIVE_CRASH)) {
-            debug("about to crash active servers in all groups");
-            serverManager.crashActiveAndWaitForPassiveToTakeOver();
-            debug("about to restart last crashed servers in all groups");
-            serverManager.restartLastCrashedServer();
-          } else if (getCrashConfig().getCrashMode().equals(ServerCrashMode.RANDOM_SERVER_CRASH)) {
-            debug("about to crash server");
-            serverManager.crashRandomServer();
-            debug("about to restart crashed server");
-            serverManager.restartLastCrashedServer();
+            case RANDOM_ACTIVE_CRASH:
+              debug("about to crash active server");
+              serverManager.crashActiveAndWaitForPassiveToTakeOver();
+              break;
+            case RANDOM_SERVER_CRASH:
+              debug("about to crash server");
+              serverManager.crashRandomServer();
+              break;
+            default:
+              throw new AssertionError("Unsupported crash mode: " + getCrashConfig().getCrashMode());
           }
+          debug("about to restart last crashed server");
+          // Re-establish a stable state prior to next iteration
+          serverManager.restartLastCrashedServer();
+          serverManager.waituntilEveryPassiveStandBy();
 
           crashCount++;
-        } catch (Exception e) {
-          debug("Error occured while crashing/restarting server");
-
-          e.printStackTrace();
-
-          break;
         }
-      } else {
-        debug("ServerCrasher is done: errors[" + errors.size() + "] crashCount[" + crashCount + "]");
-        break;
       }
+    } catch (Exception e) {
+      debug("Error occured while crashing/restarting server");
+      errors.add(e);
+      e.printStackTrace();
+
     }
+
+    debug("ServerCrasher is done: errors[" + errors.size() + "] crashCount[" + crashCount + "]");
   }
 
   private void sleep(long timeMillis) {
@@ -85,13 +90,14 @@ public class GroupServerCrashManager implements Runnable {
     return testConfig.getCrashConfig();
   }
 
-  public synchronized void stop() {
+  void stop() {
     this.done = true;
     debug("Stopping crasher");
   }
 
-  public void debug(String msg) {
+  private void debug(String msg) {
     System.out.println("[****** ServerCrasher : " + dateFormatter.format(new Date()) + " '"
-                       + Thread.currentThread().getName() + "'] " + msg);
+                       + Thread.currentThread().getName() + "' '" + serverManager.getGroupData().getGroupName() + "'] "
+                       + msg);
   }
 }

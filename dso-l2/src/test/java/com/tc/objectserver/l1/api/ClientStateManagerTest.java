@@ -4,13 +4,17 @@
  */
 package com.tc.objectserver.l1.api;
 
+import com.google.common.collect.Sets;
 import com.tc.invalidation.Invalidations;
-import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
 import com.tc.object.ObjectID;
+import com.tc.object.dna.api.DNA;
+import com.tc.object.tx.ServerTransactionID;
+import com.tc.object.tx.TransactionID;
 import com.tc.objectserver.core.api.TestDNA;
 import com.tc.objectserver.l1.impl.ClientStateManagerImpl;
 import com.tc.objectserver.managedobject.ApplyTransactionInfo;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 
 import java.util.Collections;
@@ -23,13 +27,22 @@ import java.util.Set;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 /**
  * @author steve
  */
 public class ClientStateManagerTest extends TestCase {
 
   public void test() throws Exception {
-    ClientStateManager stateManager = new ClientStateManagerImpl(TCLogging.getLogger(ClientStateManager.class));
+    ClientStateManager stateManager = new ClientStateManagerImpl();
 
     Set toGC = new HashSet();
     toGC.add(new ObjectID(0));
@@ -101,7 +114,7 @@ public class ClientStateManagerTest extends TestCase {
     // map id 2 has 101 - 200
     // map id 3 has 201 - 400
 
-    ClientStateManager stateManager = new ClientStateManagerImpl(TCLogging.getLogger(ClientStateManager.class));
+    ClientStateManager stateManager = new ClientStateManagerImpl();
     final ClientID cid1 = new ClientID(1);
     final ClientID cid2 = new ClientID(2);
     final ClientID cid3 = new ClientID(3);
@@ -168,7 +181,7 @@ public class ClientStateManagerTest extends TestCase {
     // Client ID 1 asserts
     Invalidations invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid1,
-                                                     new ObjectIDSet(), invalidationsForClient);
+                                                     new BitSetObjectIDSet(), invalidationsForClient);
     oidSetInvalidated = invalidationsForClient.getObjectIDSetForMapId(mapid1);
     Assert.assertEquals(50, oidSetInvalidated.size());
     for (int i = 1; i <= 50; i++) {
@@ -178,7 +191,7 @@ public class ClientStateManagerTest extends TestCase {
     // Client ID 2 asserts
     invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid2,
-                                                     new ObjectIDSet(), invalidationsForClient);
+                                                     new BitSetObjectIDSet(), invalidationsForClient);
     oidSetInvalidated = invalidationsForClient.getObjectIDSetForMapId(mapid2);
     Assert.assertEquals(75, oidSetInvalidated.size());
     for (int i = 101; i <= 175; i++) {
@@ -188,7 +201,7 @@ public class ClientStateManagerTest extends TestCase {
     // Client ID 3 asserts
     invalidationsForClient = new Invalidations();
     stateManager.createPrunedChangesAndAddObjectIDTo(Collections.EMPTY_LIST, applyTransactionInfo, cid3,
-                                                     new ObjectIDSet(), invalidationsForClient);
+                                                     new BitSetObjectIDSet(), invalidationsForClient);
     oidSetInvalidated = invalidationsForClient.getObjectIDSetForMapId(mapid2);
     Assert.assertEquals(25, oidSetInvalidated.size());
     for (int i = 151; i <= 175; i++) {
@@ -200,5 +213,44 @@ public class ClientStateManagerTest extends TestCase {
     for (int i = 201; i <= 300; i++) {
       oidSetInvalidated.contains(new ObjectID(i));
     }
+  }
+
+  public void testNoInvalidationEcho() throws Exception {
+    ClientStateManager clientStateManager = new ClientStateManagerImpl();
+    ClientID clientID = new ClientID(1);
+    ObjectID mapID = new ObjectID(2);
+    ObjectID objectID = new ObjectID(1);
+    ApplyTransactionInfo applyInfo = mock(ApplyTransactionInfo.class);
+    Invalidations invalidations = spy(new Invalidations());
+    when(applyInfo.getServerTransactionID()).thenReturn(new ServerTransactionID(clientID, new TransactionID(1)));
+    when(applyInfo.getObjectIDsToInvalidate()).thenReturn(new Invalidations(
+        Collections.<ObjectID, ObjectIDSet>singletonMap(mapID, new BitSetObjectIDSet(Collections.singleton(objectID)))));
+
+    clientStateManager.startupNode(clientID);
+    clientStateManager.addReferences(clientID, Sets.newHashSet(objectID, mapID));
+
+    clientStateManager.createPrunedChangesAndAddObjectIDTo(Collections.<DNA>emptyList(), applyInfo,
+        clientID, Sets.<ObjectID>newHashSet(), invalidations);
+
+    verify(invalidations, never()).add(any(Invalidations.class));
+  }
+
+  public void testChangeEcho() throws Exception {
+    ClientStateManager clientStateManager = new ClientStateManagerImpl();
+    ClientID clientID = new ClientID(1);
+    ObjectID oid = new ObjectID(1);
+    DNA dna = when(mock(DNA.class).getObjectID()).thenReturn(oid).getMock();
+    when(dna.isDelta()).thenReturn(true);
+    ApplyTransactionInfo applyInfo = mock(ApplyTransactionInfo.class);
+    when(applyInfo.getServerTransactionID()).thenReturn(new ServerTransactionID(clientID, new TransactionID(1)));
+    when(applyInfo.getObjectsToEchoChangesFor()).thenReturn(Sets.newHashSet(oid));
+
+    clientStateManager.startupNode(clientID);
+    clientStateManager.addReference(clientID, oid);
+
+    List<DNA> prunedChanges = clientStateManager.createPrunedChangesAndAddObjectIDTo(Collections.singleton(dna), applyInfo, clientID,
+        Sets.<ObjectID>newHashSet(), new Invalidations());
+
+    assertThat(prunedChanges, contains(dna));
   }
 }

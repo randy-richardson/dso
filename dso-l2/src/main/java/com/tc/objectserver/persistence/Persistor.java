@@ -4,7 +4,7 @@ import org.terracotta.corestorage.KeyValueStorageConfig;
 import org.terracotta.corestorage.StorageManager;
 import org.terracotta.corestorage.monitoring.MonitoredResource;
 
-import com.tc.object.persistence.api.PersistentMapStore;
+import com.tc.properties.TCPropertiesConsts;
 import com.tc.text.PrettyPrintable;
 import com.tc.text.PrettyPrinter;
 import com.tc.util.Conversion;
@@ -25,15 +25,16 @@ public class Persistor implements PrettyPrintable {
 
   private volatile boolean started = false;
 
-  private final PersistentMapStore persistentMapStore;
   private final PersistentObjectFactory persistentObjectFactory;
   private final PersistenceTransactionProvider persistenceTransactionProvider;
+  private final ClusterStatePersistor clusterStatePersistor;
 
   private TransactionPersistor transactionPersistor;
   private ManagedObjectPersistor managedObjectPersistor;
   private MutableSequence gidSequence;
   private ClientStatePersistor clientStatePersistor;
   private SequenceManager sequenceManager;
+  private InlineGCPersistor inlineGCPersistor;
   private final ObjectIDSetMaintainer objectIDSetMaintainer;
 
   private EvictionTransactionPersistor evictionTransactionPersistor;
@@ -50,7 +51,7 @@ public class Persistor implements PrettyPrintable {
 
     persistenceTransactionProvider = new PersistenceTransactionProvider(storageManager);
     persistentObjectFactory = new PersistentObjectFactory(storageManager, storageManagerFactory);
-    persistentMapStore = new PersistentMapStoreImpl(storageManager);
+    clusterStatePersistor = new ClusterStatePersistor(storageManager);
   }
 
   public StorageManager getStorageManager() {
@@ -84,6 +85,7 @@ public class Persistor implements PrettyPrintable {
 
     gidSequence = sequenceManager.getSequence(GLOBAL_TRANSACTION_ID_SEQUENCE);
     evictionTransactionPersistor = createEvictionTransactionPersistor(storageManager);
+    inlineGCPersistor = createInlineGCPersistor(storageManager);
 
     started = true;
   }
@@ -92,19 +94,17 @@ public class Persistor implements PrettyPrintable {
     return new NullTransactionPersistor();
   }
 
+  protected InlineGCPersistor createInlineGCPersistor(StorageManager storageMgr) {
+    return new HeapInlineGCPersistor();
+  }
+
   public void close() {
     storageManager.close();
   }
   
-  public MonitoredResource getMonitoredResource() {
+  public Collection<MonitoredResource> getMonitoredResources() {
     checkStarted();
-    Collection<MonitoredResource> list = storageManager.getMonitoredResources();
-    for (MonitoredResource rsrc : list) {
-      if (rsrc.getType() == MonitoredResource.Type.OFFHEAP || rsrc.getType() == MonitoredResource.Type.HEAP) {
-        return rsrc;
-      }
-    }
-    return null;
+    return storageManager.getMonitoredResources();
   }
 
   public PersistenceTransactionProvider getPersistenceTransactionProvider() {
@@ -132,8 +132,8 @@ public class Persistor implements PrettyPrintable {
     return gidSequence;
   }
 
-  public PersistentMapStore getPersistentStateStore() {
-    return persistentMapStore;
+  public ClusterStatePersistor getClusterStatePersistor() {
+    return clusterStatePersistor;
   }
 
   public PersistentObjectFactory getPersistentObjectFactory() {
@@ -161,16 +161,24 @@ public class Persistor implements PrettyPrintable {
     return this.evictionTransactionPersistor;
   }
 
+  public InlineGCPersistor getInlineGCPersistor() {
+    checkStarted();
+    return inlineGCPersistor;
+  }
+
   @Override
   public PrettyPrinter prettyPrint(final PrettyPrinter out) {
     out.print(getClass().getName()).flush();
     if (!started) {
       out.indent().print("PersistorImpl not started.").flush();
     } else {
-      out.indent().print("Resource Type: " + getMonitoredResource().getType()).flush();
-      out.indent().print("Resource Total: " + safeByteSizeAsString(getMonitoredResource().getTotal())).flush();
-      out.indent().print("Resource Reserved: " + safeByteSizeAsString(getMonitoredResource().getReserved())).flush();
-      out.indent().print("Resource Used: " + safeByteSizeAsString(getMonitoredResource().getUsed())).flush();
+      Collection<MonitoredResource> list = storageManager.getMonitoredResources();
+      for ( MonitoredResource rsrc : list ) {
+          out.indent().print("Resource Type: " + rsrc.getType()).flush();
+          out.indent().print("Resource Total: " + safeByteSizeAsString(rsrc.getTotal())).flush();
+          out.indent().print("Resource Reserved: " + safeByteSizeAsString(rsrc.getReserved())).flush();
+          out.indent().print("Resource Used: " + safeByteSizeAsString(rsrc.getUsed())).flush();
+      }
     }
     return out;
   }

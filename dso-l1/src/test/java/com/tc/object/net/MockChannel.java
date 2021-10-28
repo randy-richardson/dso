@@ -2,7 +2,6 @@ package com.tc.object.net;
 
 import com.tc.exception.ImplementMe;
 import com.tc.io.TCByteBufferOutputStream;
-import com.tc.management.lock.stats.LockStatisticsReponseMessageFactory;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.net.protocol.TestClientMessageChannel;
@@ -20,8 +19,6 @@ import com.tc.object.msg.ClientHandshakeMessageFactory;
 import com.tc.object.msg.CommitTransactionMessageFactory;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessage;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessageFactory;
-import com.tc.object.msg.ServerEventListenerMessageFactory;
-import com.tc.object.msg.JMXMessage;
 import com.tc.object.msg.KeysForOrphanedValuesMessageFactory;
 import com.tc.object.msg.LockRequestMessageFactory;
 import com.tc.object.msg.NodeMetaDataMessageFactory;
@@ -122,11 +119,6 @@ public class MockChannel implements DSOClientMessageChannel {
     throw new ImplementMe();
   }
 
-  @Override
-  public JMXMessage getJMXMessage() {
-    throw new ImplementMe();
-  }
-
   CompletedTransactionLowWaterMarkMessageFactory nullFactory = new NullCompletedTransactionLowWaterMarkMessageFactory();
   public GroupID[]                               groups      = new GroupID[] { new GroupID(0) };
 
@@ -150,16 +142,6 @@ public class MockChannel implements DSOClientMessageChannel {
   @Override
   public GroupID[] getGroupIDs() {
     return this.groups;
-  }
-
-  @Override
-  public ServerEventListenerMessageFactory getServerEventListenerMessageFactory() {
-    throw new ImplementMe();
-  }
-
-  @Override
-  public LockStatisticsReponseMessageFactory getLockStatisticsReponseMessageFactory() {
-    throw new ImplementMe();
   }
 
   public ServerMapRequestMessage newServerTCMapRequestMessage(final NodeID nodeID) {

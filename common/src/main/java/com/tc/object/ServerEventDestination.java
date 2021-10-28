@@ -1,9 +1,15 @@
 package com.tc.object;
 
+import com.tc.server.ServerEvent;
+
 /**
  * @author Eugene Shelestovich
  */
 public interface ServerEventDestination {
+
   String getDestinationName();
-  void handleServerEvent(ServerEventType type, Object key);
+
+  void handleServerEvent(ServerEvent event);
+
+  void resendEventRegistrations();
 }

@@ -30,6 +30,7 @@ import com.tc.objectserver.locks.LockManagerMBean;
 import com.tc.objectserver.mgmt.ManagedObjectFacade;
 import com.tc.objectserver.search.IndexManager;
 import com.tc.objectserver.storage.api.OffheapStats;
+import com.tc.objectserver.storage.api.StorageDataStats;
 import com.tc.objectserver.tx.ServerTransactionManagerEventListener;
 import com.tc.objectserver.tx.ServerTransactionManagerMBean;
 import com.tc.operatorevent.TerracottaOperatorEvent;
@@ -87,12 +88,14 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
   private final ClientStateManager                     clientStateManager;
   private final TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider;
   private final OffheapStats                           offheapStats;
+  private final StorageDataStats                       storageStats;
   private final IndexManager                           indexManager;
   private final ConnectionPolicy                       connectionPolicy;
 
   public DSO(final ServerManagementContext managementContext, final ServerConfigurationContext configContext,
              final MBeanServer mbeanServer, final GCStatsEventPublisher gcStatsPublisher,
-             TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider, OffheapStats offheapStats)
+             TerracottaOperatorEventHistoryProvider operatorEventHistoryProvider, OffheapStats offheapStats,
+             StorageDataStats storageStats)
       throws NotCompliantMBeanException {
     super(DSOMBean.class);
     try {
@@ -112,6 +115,7 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
     this.clientStateManager = configContext.getClientStateManager();
     this.operatorEventHistoryProvider = operatorEventHistoryProvider;
     this.offheapStats = offheapStats;
+    this.storageStats = storageStats;
     this.connectionPolicy = managementContext.getConnectionPolicy();
 
     // add various listeners (do this before the setupXXX() methods below so we don't ever miss anything)
@@ -259,7 +263,8 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
 
   private ObjectName makeClientObjectName(MessageChannel channel) {
     try {
-      return new ObjectName(DSO_OBJECT_NAME_PREFIX + "channelID=" + channel.getChannelID().toLong());
+      return new ObjectName(DSO_OBJECT_NAME_PREFIX + "channelID=" + channel.getChannelID().toLong() +
+                            ",productId=" + channel.getProductId());
     } catch (MalformedObjectNameException e) {
       // this shouldn't happen
       throw new RuntimeException(e);
@@ -314,7 +319,10 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
         logger.error(e);
       } finally {
         clientObjectNames.remove(clientName);
-        clientMap.remove(clientName);
+        DSOClient client = clientMap.remove(clientName);
+        if (client != null) {
+          client.stopListeningForTunneledBeans();
+        }
       }
     }
   }
@@ -819,5 +827,10 @@ public class DSO extends AbstractNotifyingMBean implements DSOMBean {
   @Override
   public long getExpirationRate() {
     return getStats().getExpirationRate();
+  }
+
+  @Override
+  public Map<String, Map<String, Long>> getStorageStats() {
+    return storageStats.getStorageStats();
   }
 }

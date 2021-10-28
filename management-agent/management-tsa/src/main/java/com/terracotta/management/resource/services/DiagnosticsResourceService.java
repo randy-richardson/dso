@@ -40,7 +40,7 @@ public interface DiagnosticsResourceService {
   Collection<ThreadDumpEntity> serversThreadDump(@Context UriInfo info);
 
   @GET
-  @Path("/threadDump/servers")
+  @Path("/threadDumpArchive/servers")
   @Produces("application/zip")
   Response serversThreadDumpZipped(@Context UriInfo info);
 
@@ -50,7 +50,7 @@ public interface DiagnosticsResourceService {
   Collection<ThreadDumpEntity> clientsThreadDump(@Context UriInfo info);
 
   @GET
-  @Path("/threadDump/clients")
+  @Path("/threadDumpArchive/clients")
   @Produces("application/zip")
   Response clientsThreadDumpZipped(@Context UriInfo info);
 
@@ -58,6 +58,11 @@ public interface DiagnosticsResourceService {
   @Path("/dgc")
   @Produces(MediaType.APPLICATION_JSON)
   boolean runDgc(@Context UriInfo info);
+
+  @POST
+  @Path("/dumpClusterState")
+  @Produces(MediaType.APPLICATION_JSON)
+  boolean dumpClusterState(@Context UriInfo info);
 
   @POST
   @Path("/reloadConfiguration")

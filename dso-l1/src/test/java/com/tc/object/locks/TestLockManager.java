@@ -216,19 +216,29 @@ public class TestLockManager implements ClientLockManager {
   }
 
   @Override
-  public void pinLock(LockID lock) {
+  public void pinLock(LockID lock, long awardID) {
     throw new ImplementMe();
 
   }
 
   @Override
-  public void unpinLock(LockID lock) {
+  public void unpinLock(LockID lock, long awardID) {
     throw new ImplementMe();
 
   }
 
   @Override
   public boolean isLockedByCurrentThread(LockLevel level) {
+    throw new ImplementMe();
+  }
+
+  @Override
+  public boolean isLockAwardValid(LockID lock, long awardID) {
+    throw new ImplementMe();
+  }
+
+  @Override
+  public long getAwardIDFor(LockID lock) {
     throw new ImplementMe();
   }
 

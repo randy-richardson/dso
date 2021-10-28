@@ -24,8 +24,10 @@ public interface TransactionStore {
 
   /**
    * This method clears the server transaction ids less than the low water mark, for that particular node.
+   * 
+   * @return Collection of {@link GlobalTransactionDescriptor} for removed server transaction
    */
-  public void clearCommitedTransactionsBelowLowWaterMark(ServerTransactionID lowWaterMark);
+  public Collection<GlobalTransactionDescriptor> clearCommitedTransactionsBelowLowWaterMark(ServerTransactionID lowWaterMark);
 
   /**
    * This is used by the passive to clear completed Transaction ids.
@@ -37,7 +39,5 @@ public interface TransactionStore {
   public void shutdownAllClientsExcept(Set cids);
 
   public void createGlobalTransactionDescIfNeeded(ServerTransactionID stxnID, GlobalTransactionID globalTransactionID);
-
-  public void commitAllTransactionDescriptor(Collection stxIDs);
 
 }

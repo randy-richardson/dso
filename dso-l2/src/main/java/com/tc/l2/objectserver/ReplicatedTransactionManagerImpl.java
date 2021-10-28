@@ -34,6 +34,7 @@ import com.tc.objectserver.gtx.ServerGlobalTransactionManager;
 import com.tc.objectserver.tx.ServerTransaction;
 import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.util.Assert;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 
 import java.util.ArrayList;
@@ -225,7 +226,7 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
 
   private final class PassiveUninitializedTransactionManager implements PassiveTransactionManager {
 
-    ObjectIDSet           existingOIDs = new ObjectIDSet();
+    ObjectIDSet existingOIDs = new BitSetObjectIDSet();
     PendingChangesAccount pca          = new PendingChangesAccount();
 
     // NOTE::XXX:: Messages are not Recylced in Passive Uninitialized state because of complicated pruning
@@ -254,8 +255,8 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
       for (ServerTransaction st : txns) {
         List changes = st.getChanges();
         List prunedChanges = new ArrayList(changes.size());
-        ObjectIDSet oids = new ObjectIDSet();
-        ObjectIDSet newOids = new ObjectIDSet();
+        ObjectIDSet oids = new BitSetObjectIDSet();
+        ObjectIDSet newOids = new BitSetObjectIDSet();
         for (Iterator j = changes.iterator(); j.hasNext();) {
           DNA dna = (DNA) j.next();
           ObjectID id = dna.getObjectID();
@@ -292,14 +293,14 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
     }
 
     public void clear() {
-      existingOIDs = new ObjectIDSet();
+      existingOIDs = new BitSetObjectIDSet();
       pca.clear();
     }
 
     public void addKnownObjectIDs(Set knownObjectIDs) {
       if (existingOIDs.size() < knownObjectIDs.size()) {
         ObjectIDSet old = existingOIDs;
-        existingOIDs = new ObjectIDSet(knownObjectIDs); // This is optimized for ObjectIDSet2
+        existingOIDs = new BitSetObjectIDSet(knownObjectIDs); // This is optimized for ObjectIDSet2
         existingOIDs.addAll(old);
       } else {
         existingOIDs.addAll(knownObjectIDs);
@@ -330,7 +331,7 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
       // XXX::NOTE:: Normally even though getChanges() returns a list, you will only find one change for each OID (Look
       // at ClientTransactionImpl) but here we break that. But hopefully no one is depending on THAT in the system.
       List compoundChanges = new ArrayList(changes.size() * 2);
-      ObjectIDSet oids = new ObjectIDSet();
+      ObjectIDSet oids = new BitSetObjectIDSet();
       boolean modified = false;
       for (Iterator i = changes.iterator(); i.hasNext();) {
         DNA dna = (DNA) i.next();
@@ -345,7 +346,11 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
             PendingRecord pr = (PendingRecord) j.next();
             long version = pr.getGlobalTransactionID().toLong();
             // XXX:: This should be true since we maintain the order in the List.
-            Assert.assertTrue(lastVersion < version);
+            if (lastVersion >= version) {
+              logger.error("Change versions received out of order. lastVersion=" + lastVersion + " version=" + version
+                           + ". Changes " + moreChanges);
+              Assert.assertTrue("lastVersion=" + lastVersion + " version=" + version, lastVersion < version);
+            }
             compoundChanges.add(new VersionizedDNAWrapper(pr.getChange(), version));
 
             lastVersion = version;
@@ -385,7 +390,7 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
     private final Multimap<GlobalTransactionID, PendingRecord> gid2Changes = HashMultimap.create();
 
     void addToPending(ServerTransaction st, DNA dna) {
-      PendingRecord pr = new PendingRecord(dna, st.getGlobalTransactionID());
+      PendingRecord pr = new PendingRecord(st.getServerTransactionID(), dna, st.getGlobalTransactionID());
       ObjectID oid = dna.getObjectID();
       oid2Changes.put(oid, pr);
       gid2Changes.put(st.getGlobalTransactionID(), pr);
@@ -411,10 +416,12 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
 
   private static final class PendingRecord {
 
+    private final ServerTransactionID serverTransactionID;
     private final DNA                 dna;
     private final GlobalTransactionID gid;
 
-    public PendingRecord(DNA dna, GlobalTransactionID gid) {
+    public PendingRecord(final ServerTransactionID serverTransactionID, DNA dna, GlobalTransactionID gid) {
+      this.serverTransactionID = serverTransactionID;
       this.dna = dna;
       this.gid = gid;
     }
@@ -429,9 +436,8 @@ public class ReplicatedTransactionManagerImpl implements ReplicatedTransactionMa
 
     @Override
     public String toString() {
-      return String.format("DNA: %s, GID: %s", dna, gid);
+      return String.format("DNA: %s, GID: %s, SID: %s", dna, gid, serverTransactionID);
     }
-
   }
 
 }

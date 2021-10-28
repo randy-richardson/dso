@@ -4,16 +4,17 @@
  */
 package com.tc.lang;
 
-import EDU.oswego.cs.dl.util.concurrent.SynchronizedRef;
 
 import com.tc.logging.NullTCLogger;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import junit.framework.TestCase;
 
 public class StartupHelperTest extends TestCase {
 
   public void testException() throws Throwable {
-    final SynchronizedRef error = new SynchronizedRef(null);
+    final AtomicReference<Throwable> error = new AtomicReference(null);
 
     ThreadGroup group = new ThreadGroup("group") {
       @Override
@@ -31,7 +32,11 @@ public class StartupHelperTest extends TestCase {
       }
     });
 
-    helper.startUp();
+    try {
+      helper.startUp();
+    } catch (RuntimeException e) {
+      //
+    }
 
     RuntimeException thrown = (RuntimeException) error.get();
     if (thrown == null) {
@@ -42,7 +47,7 @@ public class StartupHelperTest extends TestCase {
   }
 
   public void testGroup() throws Throwable {
-    final TCThreadGroup group = new TCThreadGroup(new ThrowableHandler(new NullTCLogger()));
+    final TCThreadGroup group = new TCThreadGroup(new ThrowableHandlerImpl(new NullTCLogger()));
 
     StartupHelper helper = new StartupHelper(group, new StartupHelper.StartupAction() {
       @Override

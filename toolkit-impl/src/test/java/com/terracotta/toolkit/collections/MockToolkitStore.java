@@ -9,9 +9,14 @@ import org.terracotta.toolkit.cluster.ClusterNode;
 import org.terracotta.toolkit.concurrent.locks.ToolkitReadWriteLock;
 import org.terracotta.toolkit.config.Configuration;
 import org.terracotta.toolkit.internal.cache.ToolkitCacheInternal;
+import org.terracotta.toolkit.internal.cache.ToolkitValueComparator;
+import org.terracotta.toolkit.internal.cache.VersionUpdateListener;
+import org.terracotta.toolkit.internal.cache.VersionedValue;
 import org.terracotta.toolkit.search.QueryBuilder;
 import org.terracotta.toolkit.search.attribute.ToolkitAttributeExtractor;
 import org.terracotta.toolkit.store.ToolkitStore;
+
+import com.tc.exception.ImplementMe;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -50,8 +55,18 @@ public class MockToolkitStore<K, V> extends ConcurrentHashMap<K, V> implements T
   }
 
   @Override
+  public void unlockedPutNoReturnVersioned(final K k, final V v, final long version, final int createTime, final int customTTI, final int customTTL) {
+    super.put(k, v);
+  }
+
+  @Override
   public void unlockedRemoveNoReturn(final Object k) {
     super.remove(k);
+  }
+
+  @Override
+  public void unlockedRemoveNoReturnVersioned(final Object key, final long version) {
+    super.remove(key);
   }
 
   @Override
@@ -205,6 +220,28 @@ public class MockToolkitStore<K, V> extends ConcurrentHashMap<K, V> implements T
   }
 
   @Override
+  public void putVersioned(final K key, final V value, final long version) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void putVersioned(final K key, final V value, final long version, final int createTimeInSecs,
+                           final int customMaxTTISeconds, final int customMaxTTLSeconds) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version, int createTimeInSecs, int customMaxTTISeconds,
+                                        int customMaxTTLSeconds) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
   public void disposeLocally() {
     throw new UnsupportedOperationException("Implement me!");
   }
@@ -213,4 +250,79 @@ public class MockToolkitStore<K, V> extends ConcurrentHashMap<K, V> implements T
   public void removeAll(final Set<K> keys) {
     throw new UnsupportedOperationException("Implement me!");
   }
+
+  @Override
+  public void removeVersioned(final Object key, final long version) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void registerVersionUpdateListener(final VersionUpdateListener listener) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void unregisterVersionUpdateListener(final VersionUpdateListener listener) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public Set<K> keySetForSegment(final int segmentIndex) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public VersionedValue<V> getVersionedValue(Object key) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public boolean isBulkLoadEnabled() {
+    throw new UnsupportedOperationException("Implement me!");
+
+  }
+
+  @Override
+  public boolean isNodeBulkLoadEnabled() {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void setNodeBulkLoadEnabled(boolean enabledBulkLoad) {
+    throw new UnsupportedOperationException("Implement me!");
+
+  }
+
+  @Override
+  public void waitUntilBulkLoadComplete() throws InterruptedException {
+    throw new UnsupportedOperationException("Implement me!");
+
+  }
+
+  @Override
+  public void clearVersioned() {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void quickClear() {
+    throw new UnsupportedOperationException("Implement me!");
+
+  }
+
+  @Override
+  public int quickSize() {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public boolean remove(Object key, Object value, ToolkitValueComparator<V> comparator) {
+    throw new ImplementMe();
+  }
+
+  @Override
+  public boolean replace(K key, V oldValue, V newValue, ToolkitValueComparator<V> comparator) {
+    throw new ImplementMe();
+  }
+
 }

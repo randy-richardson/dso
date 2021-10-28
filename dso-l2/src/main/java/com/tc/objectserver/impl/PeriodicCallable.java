@@ -6,7 +6,9 @@ package com.tc.objectserver.impl;
 import com.tc.object.ObjectID;
 import com.tc.objectserver.api.EvictionListener;
 import com.tc.stats.counter.sampled.derived.SampledRateCounter;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
+
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +30,7 @@ public class PeriodicCallable implements Callable<SampledRateCounter>, CanCancel
     public PeriodicCallable(ProgressiveEvictionManager evictor, Set<ObjectID> workingSet) {
       this.evictor = evictor;
       this.workingSet = workingSet;
-      this.listeningSet = new ObjectIDSet(workingSet);
+      this.listeningSet = new BitSetObjectIDSet(workingSet);
     }
 
     @Override
@@ -58,7 +60,7 @@ public class PeriodicCallable implements Callable<SampledRateCounter>, CanCancel
     @Override
     public SampledRateCounter call() throws Exception {
       SampledRateCounter counter = new AggregateSampleRateCounter();
-      ObjectIDSet rollover = new ObjectIDSet();
+      ObjectIDSet rollover = new BitSetObjectIDSet();
       try {
         evictor.addEvictionListener(this);
         for (final ObjectID mapID : workingSet) {
@@ -70,7 +72,9 @@ public class PeriodicCallable implements Callable<SampledRateCounter>, CanCancel
               rollover.add(mapID);
             }
           } else {
-            listeningSet.remove(mapID);
+            synchronized (this) {
+              listeningSet.remove(mapID);
+            }
           }
           if ( isStopped() ) {
             return counter;

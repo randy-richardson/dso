@@ -3,12 +3,15 @@
  */
 package com.terracotta.toolkit.express;
 
+import static com.terracotta.management.security.SecretUtils.TERRACOTTA_CUSTOM_SECRET_PROVIDER_PROP;
+
 import org.terracotta.toolkit.ToolkitRuntimeException;
 
 import com.terracotta.toolkit.express.loader.Util;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -38,22 +41,13 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
   private final AppClassLoader                  appClassLoader;
   private volatile DSOContextControl            contextControl;
   private final AtomicInteger                   refCount             = new AtomicInteger(0);
-  private final TerracottaInternalClientFactory parent;
-  private final String                          tcConfig;
-  private final boolean                         isUrlConfig;
-  private final boolean                         rejoinEnabled;
   private boolean                               shutdown             = false;
   private volatile Object                       dsoContext;
   private final Set<String>                     tunneledMBeanDomains = new HashSet<String>();
   private volatile boolean                      isInitialized        = false;
 
-  TerracottaInternalClientImpl(String tcConfig, boolean isUrlConfig, ClassLoader appLoader,
-                               TerracottaInternalClientFactory parent, boolean rejoinEnabled,
-                               Set<String> tunneledMBeanDomains, Map<String, Object> env) {
-    this.rejoinEnabled = rejoinEnabled;
-    this.tcConfig = tcConfig;
-    this.isUrlConfig = isUrlConfig;
-    this.parent = parent;
+  TerracottaInternalClientImpl(String tcConfig, boolean isUrlConfig, ClassLoader appLoader, boolean rejoinEnabled,
+                               Set<String> tunneledMBeanDomains, final String productId, Map<String, Object> env) {
     if (tunneledMBeanDomains != null) {
       this.tunneledMBeanDomains.addAll(tunneledMBeanDomains);
     }
@@ -63,17 +57,17 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
 
       Class bootClass = clusteredStateLoader.loadClass(StandaloneL1Boot.class.getName());
       Constructor<?> cstr = bootClass.getConstructor(String.class, Boolean.TYPE, ClassLoader.class, Boolean.TYPE,
-                                                     Map.class);
+                                                     String.class, Map.class);
 
       // XXX: It's be nice to not use Object here, but exposing the necessary type (DSOContext) seems wrong too)
       if (isUrlConfig && isRequestingSecuredEnv(tcConfig)) {
         if (env != null) {
-          env.put("com.terracotta.SecretProvider",
+          env.put(TERRACOTTA_CUSTOM_SECRET_PROVIDER_PROP,
                   newSecretProviderDelegate(clusteredStateLoader, env.get(TerracottaInternalClientImpl.SECRET_PROVIDER)));
         }
       }
       Callable<Object> boot = (Callable<Object>) cstr.newInstance(tcConfig, isUrlConfig, clusteredStateLoader,
-                                                                  rejoinEnabled, env);
+                                                                  rejoinEnabled, productId, env);
 
       Object context = boot.call();
       this.dsoContext = context;
@@ -96,12 +90,33 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
       contextControl = (DSOContextControl) spiInit.getConstructor(Object.class).newInstance(dsoContext);
       isInitialized = true;
       join(tunneledMBeanDomains);
+      setSecretHackOMFG();
     } catch (InvocationTargetException e) {
       throw new RuntimeException(e.getCause());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
 
+  }
+
+  private void setSecretHackOMFG() {
+    try {
+      // Let's make sure we even care about security stuff at all...
+      // if so, then check if the thing that cares is the BM Connector's TkSecurityManager
+      appClassLoader.loadClass("com.terracotta.management.keychain.KeyChain");
+      final Class<?> omfg = appClassLoader.loadClass("net.sf.ehcache.thrift.server.tc.TkSecurityManager");
+      final Field secret = omfg.getDeclaredField("SECRET");
+      if(secret.getType() == byte[].class) {
+        secret.setAccessible(true);
+        Class dsoContextClass = clusteredStateLoader.loadClass(DSO_CONTEXT_IMPL);
+        Method method = dsoContextClass.getMethod("getSecret");
+        secret.set(null, method.invoke(dsoContext));
+      }
+    } catch (ClassNotFoundException e) {
+      // That's fine, moving on
+    } catch (Throwable t) {
+      //
+    }
   }
 
   @Override
@@ -117,7 +132,7 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
 
   @Override
   public boolean isDedicatedClient() {
-    return rejoinEnabled;
+    return true;
   }
 
   @Override
@@ -135,9 +150,15 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
 
   @Override
   public <T> T instantiate(String className, Class[] cstrArgTypes, Object[] cstrArgs) throws Exception {
+    try {
     Class clazz = clusteredStateLoader.loadClass(className);
     Constructor cstr = clazz.getConstructor(cstrArgTypes);
     return (T) cstr.newInstance(cstrArgs);
+    } catch (InvocationTargetException e) {
+      Throwable targetEx = e.getTargetException();
+      throw (targetEx instanceof ToolkitRuntimeException) ? (ToolkitRuntimeException) targetEx
+          : new ToolkitRuntimeException(targetEx);
+    }
   }
 
   @Override
@@ -174,7 +195,6 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
         contextControl.shutdown();
       } finally {
         appClassLoader.clear();
-        parent.remove(this, tcConfig, isUrlConfig);
       }
     }
   }

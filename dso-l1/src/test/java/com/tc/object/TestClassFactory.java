@@ -24,7 +24,7 @@ public class TestClassFactory implements TCClassFactory {
   }
 
   @Override
-  public ChangeApplicator createApplicatorFor(final TCClass clazz, final boolean indexed) {
+  public ChangeApplicator createApplicatorFor(final TCClass clazz) {
     throw new ImplementMe();
   }
 
@@ -190,11 +190,6 @@ public class TestClassFactory implements TCClassFactory {
     }
 
     public boolean hasOnLoadInjection() {
-      return false;
-    }
-
-    @Override
-    public boolean isNotClearable() {
       return false;
     }
 

@@ -13,6 +13,7 @@ import com.tc.object.locks.LockID;
 import com.tc.object.tx.RemoteTransactionManager;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.object.tx.TransactionID;
+import com.tc.properties.TCPropertiesImpl;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,18 +30,17 @@ public class ClientGlobalTransactionManagerImpl implements
                                                                      .getLogger(ClientGlobalTransactionManagerImpl.class);
 
   private static final int                  ALLOWED_LWM_DELTA    = 100;
+  private static final int                  LWM_IGNORE_MULTIPLIER = TCPropertiesImpl.getProperties()
+                                                                      .getInt("lwm.ignore.multiplier", 100);
   private final Set                               applied              = new HashSet();
   private final SortedMap                         globalTransactionIDs = new TreeMap();
 
   private GlobalTransactionID               lowWatermark         = GlobalTransactionID.NULL_ID;
   private final RemoteTransactionManager    remoteTransactionManager;
   private int                               ignoredCount         = 0;
-  private final PreTransactionFlushCallback preTransactionFlushCallback;
 
-  public ClientGlobalTransactionManagerImpl(final RemoteTransactionManager remoteTransactionManager,
-                                            final PreTransactionFlushCallback preTransactionFlushCallback) {
+  public ClientGlobalTransactionManagerImpl(final RemoteTransactionManager remoteTransactionManager) {
     this.remoteTransactionManager = remoteTransactionManager;
-    this.preTransactionFlushCallback = preTransactionFlushCallback;
   }
 
   @Override
@@ -90,7 +90,7 @@ public class ClientGlobalTransactionManagerImpl implements
       return;
     }
     if (this.lowWatermark.toLong() + ALLOWED_LWM_DELTA > lowWatermark.toLong()) {
-      if (this.ignoredCount++ > ALLOWED_LWM_DELTA * 100) {
+      if (this.ignoredCount++ > ALLOWED_LWM_DELTA * LWM_IGNORE_MULTIPLIER) {
         logger.warn("Current Low water Mark = " + this.lowWatermark + " Server sent " + lowWatermark);
         logger.warn("Server didnt send a Low water mark higher than ALLOWED_LWM_DELTA for " + this.ignoredCount
                     + " times. applied.size() = " + this.applied.size() + " Resetting count.");
@@ -110,10 +110,7 @@ public class ClientGlobalTransactionManagerImpl implements
   }
 
   @Override
-  public void flush(final LockID lockID, boolean noLocksLeftOnClient) throws AbortedOperationException {
-    if (noLocksLeftOnClient) {
-      preTransactionFlushCallback.preTransactionFlush(lockID);
-    }
+  public void flush(final LockID lockID) throws AbortedOperationException {
     this.remoteTransactionManager.flush(lockID);
   }
 
@@ -123,10 +120,7 @@ public class ClientGlobalTransactionManagerImpl implements
   }
 
   @Override
-  public boolean asyncFlush(final LockID lockID, final LockFlushCallback callback, boolean noLocksLeftOnClient) {
-    if (noLocksLeftOnClient) {
-      preTransactionFlushCallback.preTransactionFlush(lockID);
-    }
+  public boolean asyncFlush(final LockID lockID, final LockFlushCallback callback) {
     return this.remoteTransactionManager.asyncFlush(lockID, callback);
   }
 }

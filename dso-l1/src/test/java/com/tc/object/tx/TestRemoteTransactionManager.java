@@ -30,8 +30,13 @@ public class TestRemoteTransactionManager implements RemoteTransactionManager {
   public long                         txnCounter;
 
   @Override
+  public void preCleanup() {
+    // no-op
+  }
+
+  @Override
   public void cleanup() {
-    // NOP
+    // no-op
   }
 
   @Override
@@ -125,5 +130,16 @@ public class TestRemoteTransactionManager implements RemoteTransactionManager {
 
   public long getTxnCount() {
     return txnCounter;
+  }
+
+  @Override
+  public void throttleProcessing(boolean processing) {
+    throw new ImplementMe();
+  }
+
+  @Override
+  public void requestImmediateShutdown() {
+    throw new ImplementMe();
+
   }
 }

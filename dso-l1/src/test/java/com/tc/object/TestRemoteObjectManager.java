@@ -4,16 +4,18 @@
  */
 package com.tc.object;
 
+import org.mockito.Mockito;
+
 import com.tc.exception.ImplementMe;
+import com.tc.exception.PlatformRejoinException;
 import com.tc.exception.TCObjectNotFoundException;
 import com.tc.net.GroupID;
 import com.tc.net.NodeID;
 import com.tc.object.dna.api.DNA;
-import com.tc.object.dna.api.DNACursor;
-import com.tc.object.dna.api.DNAException;
 import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 import com.tc.text.PrettyPrinter;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.ObjectIDSet;
 import com.tc.util.concurrent.NoExceptionLinkedQueue;
 
@@ -34,13 +36,15 @@ public class TestRemoteObjectManager implements RemoteObjectManager {
   public final ArrayBlockingQueue retrieveRootIDCalls   = new ArrayBlockingQueue(SIZE);
   public final ArrayBlockingQueue retrieveRootIDResults = new ArrayBlockingQueue(SIZE);
 
-  public static final DNA         THROW_NOT_FOUND       = new ThrowNotFound();
-  public final ObjectIDSet        removedObjects        = new ObjectIDSet();
+  public static final DNA         THROW_NOT_FOUND       = Mockito.mock(DNA.class);
+  public final ObjectIDSet        removedObjects        = new BitSetObjectIDSet();
+  public static final DNA         REJOIN_IN_PROGRESS    = Mockito.mock(DNA.class);
 
   @Override
   public void cleanup() {
     retrieveCalls.clear();
     retrieveResults.clear();
+    retrieveResults.add(REJOIN_IN_PROGRESS);
     retrieveRootIDCalls.clear();
     retrieveRootIDResults.clear();
     removedObjects.clear();
@@ -56,6 +60,11 @@ public class TestRemoteObjectManager implements RemoteObjectManager {
       throw new AssertionError(e);
     }
     if (dna == THROW_NOT_FOUND) { throw new TCObjectNotFoundException("missing ID"); }
+    if (dna == REJOIN_IN_PROGRESS) {
+      // add for subsequent lookups..
+      retrieveResults.add(REJOIN_IN_PROGRESS);
+      throw new PlatformRejoinException("missing ID");
+    }
     return dna;
   }
 
@@ -95,6 +104,11 @@ public class TestRemoteObjectManager implements RemoteObjectManager {
   }
 
   @Override
+  public void cleanOutObject(final DNA dna) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
   public void addRoot(final String name, final ObjectID id, final NodeID nodeID) {
     throw new ImplementMe();
   }
@@ -103,53 +117,6 @@ public class TestRemoteObjectManager implements RemoteObjectManager {
   public void objectsNotFoundFor(final SessionID sessionID, final long batchID, final Set missingObjectIDs,
                                  final NodeID nodeID) {
     throw new ImplementMe();
-  }
-
-  public static class ThrowNotFound implements DNA {
-
-    private ThrowNotFound() {
-      //
-    }
-
-    @Override
-    public int getArraySize() {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public DNACursor getCursor() {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public ObjectID getObjectID() throws DNAException {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public ObjectID getParentObjectID() throws DNAException {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public String getTypeName() {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public long getVersion() {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public boolean hasLength() {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public boolean isDelta() {
-      throw new ImplementMe();
-    }
   }
 
   @Override
@@ -165,8 +132,7 @@ public class TestRemoteObjectManager implements RemoteObjectManager {
   @Override
   public void initializeHandshake(final NodeID thisNode, final NodeID remoteNode,
                                   final ClientHandshakeMessage handshakeMessage) {
-    throw new ImplementMe();
-
+    retrieveResults.clear();
   }
 
   @Override

@@ -47,12 +47,6 @@ public class TCObjectImplTest extends BaseDSOTestCase {
     tcObj.resolveReference(TestObject.class.getName() + ".test2");
     assertTrue(to1.test1 == null);// nothing should happen from that
     assertTrue(to1.test2 == to2);
-
-    tcObj.getTCClass().dehydrate(tcObj, new TestDNAWriter(), tcObj.getPeerObject());
-    tcObj.clearReferences(100);
-    assertTrue(to1.test2 == null);
-    tcObj.resolveReference(TestObject.class.getName() + ".test2");
-    assertTrue(to1.test2 == to2);
   }
 
   private static class TestObject implements TransparentAccess {
@@ -78,16 +72,6 @@ public class TCObjectImplTest extends BaseDSOTestCase {
       if (fieldName.equals(TestObject.class.getName() + ".test2")) {
         this.test2 = (TestObject) value;
       }
-    }
-
-    @Override
-    public Object __tc_getmanagedfield(final String name) {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public void __tc_setmanagedfield(final String name, final Object value) {
-      throw new ImplementMe();
     }
 
   }
@@ -275,11 +259,6 @@ public class TCObjectImplTest extends BaseDSOTestCase {
     }
 
     public boolean hasOnLoadInjection() {
-      return false;
-    }
-
-    @Override
-    public boolean isNotClearable() {
       return false;
     }
 

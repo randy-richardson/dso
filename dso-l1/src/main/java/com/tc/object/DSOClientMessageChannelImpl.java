@@ -4,8 +4,6 @@
  */
 package com.tc.object;
 
-import com.tc.management.lock.stats.LockStatisticsReponseMessageFactory;
-import com.tc.management.lock.stats.LockStatisticsResponseMessage;
 import com.tc.net.CommStackMismatchException;
 import com.tc.net.GroupID;
 import com.tc.net.MaxConnectionsExceededException;
@@ -21,8 +19,6 @@ import com.tc.object.msg.CommitTransactionMessage;
 import com.tc.object.msg.CommitTransactionMessageFactory;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessage;
 import com.tc.object.msg.CompletedTransactionLowWaterMarkMessageFactory;
-import com.tc.object.msg.ServerEventListenerMessageFactory;
-import com.tc.object.msg.JMXMessage;
 import com.tc.object.msg.KeysForOrphanedValuesMessage;
 import com.tc.object.msg.KeysForOrphanedValuesMessageFactory;
 import com.tc.object.msg.LockRequestMessage;
@@ -35,16 +31,15 @@ import com.tc.object.msg.NodesWithObjectsMessage;
 import com.tc.object.msg.NodesWithObjectsMessageFactory;
 import com.tc.object.msg.ObjectIDBatchRequestMessage;
 import com.tc.object.msg.ObjectIDBatchRequestMessageFactory;
-import com.tc.object.msg.RegisterServerEventListenerMessage;
 import com.tc.object.msg.RequestManagedObjectMessage;
 import com.tc.object.msg.RequestManagedObjectMessageFactory;
 import com.tc.object.msg.RequestRootMessage;
 import com.tc.object.msg.RequestRootMessageFactory;
 import com.tc.object.msg.SearchQueryRequestMessage;
 import com.tc.object.msg.SearchRequestMessageFactory;
+import com.tc.object.msg.SearchResultsRequestMessage;
 import com.tc.object.msg.ServerMapMessageFactory;
 import com.tc.object.msg.ServerMapRequestMessage;
-import com.tc.object.msg.UnregisterServerEventListenerMessage;
 import com.tc.object.net.DSOClientMessageChannel;
 import com.tc.util.TCTimeoutException;
 
@@ -55,8 +50,8 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
     RequestRootMessageFactory, RequestManagedObjectMessageFactory, ClientHandshakeMessageFactory,
     ObjectIDBatchRequestMessageFactory, CommitTransactionMessageFactory, AcknowledgeTransactionMessageFactory,
     CompletedTransactionLowWaterMarkMessageFactory, NodesWithObjectsMessageFactory, ServerMapMessageFactory,
-    KeysForOrphanedValuesMessageFactory, NodeMetaDataMessageFactory, LockStatisticsReponseMessageFactory,
-    SearchRequestMessageFactory, NodesWithKeysMessageFactory, ServerEventListenerMessageFactory {
+    KeysForOrphanedValuesMessageFactory, NodeMetaDataMessageFactory,
+    SearchRequestMessageFactory, NodesWithKeysMessageFactory {
 
   private final ClientMessageChannel channel;
   private final GroupID              groups[];
@@ -130,11 +125,6 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
   }
 
   @Override
-  public ServerEventListenerMessageFactory getServerEventListenerMessageFactory() {
-    return this;
-  }
-
-  @Override
   public SearchRequestMessageFactory getSearchRequestMessageFactory() {
     return this;
   }
@@ -190,11 +180,6 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
   }
 
   @Override
-  public JMXMessage getJMXMessage() {
-    return (JMXMessage) this.channel.createMessage(TCMessageType.JMX_MESSAGE);
-  }
-
-  @Override
   public CompletedTransactionLowWaterMarkMessage newCompletedTransactionLowWaterMarkMessage(final NodeID remoteID) {
     return (CompletedTransactionLowWaterMarkMessage) this.channel
         .createMessage(TCMessageType.COMPLETED_TRANSACTION_LOWWATERMARK_MESSAGE);
@@ -236,6 +221,11 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
   }
 
   @Override
+  public SearchResultsRequestMessage newSearchResultsRequestMessage(NodeID nodeID) {
+    return (SearchResultsRequestMessage) this.channel.createMessage(TCMessageType.SEARCH_RESULTS_REQUEST_MESSAGE);
+  }
+
+  @Override
   public NodeMetaDataMessage newNodeMetaDataMessage() {
     return (NodeMetaDataMessage) this.channel.createMessage(TCMessageType.NODE_META_DATA_MESSAGE);
   }
@@ -251,16 +241,6 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
   }
 
   @Override
-  public LockStatisticsResponseMessage newLockStatisticsResponseMessage(final NodeID remoteID) {
-    return (LockStatisticsResponseMessage) this.channel.createMessage(TCMessageType.LOCK_STATISTICS_RESPONSE_MESSAGE);
-  }
-
-  @Override
-  public LockStatisticsReponseMessageFactory getLockStatisticsReponseMessageFactory() {
-    return this;
-  }
-
-  @Override
   public GroupID[] getGroupIDs() {
     return this.groups;
   }
@@ -268,18 +248,6 @@ public class DSOClientMessageChannelImpl implements DSOClientMessageChannel, Loc
   @Override
   public NodesWithKeysMessage newNodesWithKeysMessage(final NodeID nodeID) {
     return (NodesWithKeysMessage) this.channel.createMessage(TCMessageType.NODES_WITH_KEYS_MESSAGE);
-  }
-
-  @Override
-  public RegisterServerEventListenerMessage newRegisterServerEventListenerMessage(final NodeID nodeID) {
-    return (RegisterServerEventListenerMessage)this.channel
-        .createMessage(TCMessageType.REGISTER_SERVER_EVENT_LISTENER_MESSAGE);
-  }
-
-  @Override
-  public UnregisterServerEventListenerMessage newUnregisterServerEventListenerMessage(final NodeID nodeID) {
-    return (UnregisterServerEventListenerMessage)this.channel
-        .createMessage(TCMessageType.UNREGISTER_SERVER_EVENT_LISTENER_MESSAGE);
   }
 
 }

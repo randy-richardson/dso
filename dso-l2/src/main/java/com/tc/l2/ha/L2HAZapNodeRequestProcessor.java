@@ -4,6 +4,7 @@
  */
 package com.tc.l2.ha;
 
+import com.tc.exception.TCShutdownServerException;
 import com.tc.exception.ZapDirtyDbServerNodeException;
 import com.tc.exception.ZapServerNodeException;
 import com.tc.l2.state.Enrollment;
@@ -14,16 +15,12 @@ import com.tc.net.NodeID;
 import com.tc.net.groups.GroupManager;
 import com.tc.net.groups.ZapEventListener;
 import com.tc.net.groups.ZapNodeRequestProcessor;
-import com.tc.object.persistence.api.PersistentMapStore;
+import com.tc.objectserver.persistence.ClusterStatePersistor;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import static com.tc.l2.ha.ClusterStateDBKeyNames.DATABASE_CREATION_TIMESTAMP_KEY;
 
 public class L2HAZapNodeRequestProcessor implements ZapNodeRequestProcessor {
   private static final TCLogger               logger                        = TCLogging
@@ -43,15 +40,15 @@ public class L2HAZapNodeRequestProcessor implements ZapNodeRequestProcessor {
 
   private final GroupManager                  groupManager;
   private final List<ZapEventListener>        listeners                     = new CopyOnWriteArrayList<ZapEventListener>();
-  private final PersistentMapStore            persistentMapStore;
+  private final ClusterStatePersistor         clusterStatePersistor;
 
   public L2HAZapNodeRequestProcessor(TCLogger consoleLogger, StateManager stateManager, GroupManager groupManager,
-                                     WeightGeneratorFactory factory, PersistentMapStore persistentMapStore) {
+                                     WeightGeneratorFactory factory, ClusterStatePersistor clusterStatePersistor) {
     this.consoleLogger = consoleLogger;
     this.stateManager = stateManager;
     this.groupManager = groupManager;
     this.factory = factory;
-    this.persistentMapStore = persistentMapStore;
+    this.clusterStatePersistor = clusterStatePersistor;
   }
 
   @Override
@@ -96,7 +93,7 @@ public class L2HAZapNodeRequestProcessor implements ZapNodeRequestProcessor {
       case SPLIT_BRAIN:
         return "Two or more Active servers detected in the cluster";
       case INSUFFICIENT_RESOURCES:
-        return "L2 has insufficient resources to join the cluster. Check offheap settings and try again.";
+        return "L2 has insufficient resources to join the cluster. Check dataStorage and offheap settings and try again.";
       default:
         throw new AssertionError("Unknown type : " + type);
     }
@@ -130,10 +127,10 @@ public class L2HAZapNodeRequestProcessor implements ZapNodeRequestProcessor {
         String message = "Terminating due to Zap request from " + getFormatedError(nodeID, zapNodeType, reason);
         logger.error(message);
         if (zapNodeType == NODE_JOINED_WITH_DIRTY_DB) {
-          markDBDirty(persistentMapStore);
+          clusterStatePersistor.setDBClean(false);
           throw new ZapDirtyDbServerNodeException(message);
         } else if (zapNodeType == INSUFFICIENT_RESOURCES) {
-          throw new RuntimeException(message);
+          throw new TCShutdownServerException(message);
         } else {
           throw new ZapServerNodeException(message);
         }
@@ -142,14 +139,6 @@ public class L2HAZapNodeRequestProcessor implements ZapNodeRequestProcessor {
                     + activeNode + " but from " + getFormatedError(nodeID, zapNodeType, reason));
       }
     }
-  }
-
-  private void markDBDirty(PersistentMapStore persMapStore) {
-    final Calendar cal = Calendar.getInstance();
-    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
-    persMapStore.put(DATABASE_CREATION_TIMESTAMP_KEY, sdf.format(cal.getTime()));
-    persMapStore.put(ClusterStateDBKeyNames.L2_STATE_KEY, StateManager.PASSIVE_STANDBY
-        .getName());
   }
 
   private void handleSplitBrainScenario(NodeID nodeID, int zapNodeType, String reason, long[] weights) {

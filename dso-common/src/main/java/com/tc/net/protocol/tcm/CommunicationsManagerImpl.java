@@ -6,6 +6,7 @@ package com.tc.net.protocol.tcm;
 import com.tc.async.api.Sink;
 import com.tc.async.impl.NullSink;
 import com.tc.exception.TCRuntimeException;
+import com.tc.license.ProductID;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.AddressChecker;
@@ -48,7 +49,6 @@ import com.tc.net.protocol.transport.WireProtocolMessageSink;
 import com.tc.object.session.NullSessionManager;
 import com.tc.object.session.SessionProvider;
 import com.tc.util.Assert;
-import com.tc.util.concurrent.ConcurrentHashMap;
 import com.tc.util.concurrent.SetOnceFlag;
 
 import java.io.IOException;
@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -83,6 +84,7 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
   private final HealthCheckerConfig                                         healthCheckerConfig;
   private final ConnectionPolicy                                            connectionPolicy;
   private final ReconnectionRejectedHandler                                 reconnectionRejectedHandler;
+  protected final ProductID productId;
   protected final ConcurrentHashMap<TCMessageType, Class>                   messageTypeClassMapping   = new ConcurrentHashMap<TCMessageType, Class>();
   protected final ConcurrentHashMap<TCMessageType, GeneratedMessageFactory> messageTypeFactoryMapping = new ConcurrentHashMap<TCMessageType, GeneratedMessageFactory>();
 
@@ -138,7 +140,7 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                    TCSecurityManager securityManager) {
     this(commsMgrName, monitor, messageRouter, stackHarnessFactory, null, connectionPolicy, workerCommCount, config,
          transportHandshakeErrorHandler, messageTypeClassMapping, messageTypeFactoryMapping,
-         ReconnectionRejectedHandlerL2.SINGLETON, securityManager);
+         ReconnectionRejectedHandlerL2.SINGLETON, securityManager, null);
     this.serverID = serverID;
   }
 
@@ -152,14 +154,15 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                    TCSecurityManager securityManager) {
     this(commsMgrName, monitor, messageRouter, stackHarnessFactory, connMgr, connectionPolicy, workerCommCount,
          healthCheckerConf, transportHandshakeErrorHandler, messageTypeClassMapping, messageTypeFactoryMapping,
-         ReconnectionRejectedHandlerL1.SINGLETON, securityManager);
+         ReconnectionRejectedHandlerL1.SINGLETON, securityManager, null);
   }
 
   /**
    * Create a comms manager with the given connection manager. This cstr is mostly for testing, or in the event that you
    * actually want to use an explicit connection manager
-   * 
+   *
    * @param connMgr the connection manager to use
+   * @param productId
    */
   public CommunicationsManagerImpl(String commsMgrName, MessageMonitor monitor, TCMessageRouter messageRouter,
                                    NetworkStackHarnessFactory stackHarnessFactory, TCConnectionManager connMgr,
@@ -168,10 +171,12 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                    TransportHandshakeErrorHandler transportHandshakeErrorHandler,
                                    Map<TCMessageType, Class> messageTypeClassMapping,
                                    Map<TCMessageType, GeneratedMessageFactory> messageTypeFactoryMapping,
-                                   ReconnectionRejectedHandler reconnectionRejectedHandler, TCSecurityManager securityManager) {
+                                   ReconnectionRejectedHandler reconnectionRejectedHandler, TCSecurityManager securityManager,
+                                   ProductID productId) {
     this.commsMgrName = commsMgrName;
     this.monitor = monitor;
     this.messageRouter = messageRouter;
+    this.productId = productId;
     this.transportMessageFactory = new TransportMessageFactoryImpl();
     this.connectionPolicy = connectionPolicy;
     this.stackHarnessFactory = stackHarnessFactory;
@@ -282,14 +287,14 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
     ClientMessageChannelImpl rv = new ClientMessageChannelImpl(msgFactory, this.messageRouter, sessionProvider,
                                                                new GroupID(addressProvider.getGroupId()),
                                                                addressProvider.getSecurityInfo(), securityManager,
-                                                               addressProvider);
+                                                               addressProvider, productId);
     if (transportFactory == null) transportFactory = new MessageTransportFactoryImpl(transportMessageFactory,
                                                                                      connectionHealthChecker,
                                                                                      connectionManager,
                                                                                      addressProvider,
                                                                                      maxReconnectTries, timeout,
                                                                                      callbackPort, handshakeErrHandler,
-                                                                                     reconnectionRejectedHandler);
+                                                                                     reconnectionRejectedHandler, securityManager);
     NetworkStackHarness stackHarness = this.stackHarnessFactory.createClientHarness(transportFactory, rv,
                                                                                     new MessageTransportListener[0]);
     stackHarness.finalizeStack();
@@ -353,8 +358,8 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
 
     final ServerMessageChannelFactory channelFactory = new ServerMessageChannelFactory() {
       @Override
-      public MessageChannelInternal createNewChannel(ChannelID id) {
-        return new ServerMessageChannelImpl(id, messageRouter, msgFactory, serverID);
+      public MessageChannelInternal createNewChannel(ChannelID id, final ProductID productId) {
+        return new ServerMessageChannelImpl(id, messageRouter, msgFactory, serverID, productId);
       }
     };
 
@@ -401,8 +406,7 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
         return rv;
       }
     };
-    ServerStackProvider stackProvider = new ServerStackProvider(TCLogging.getLogger(ServerStackProvider.class),
-                                                                initialConnectionIDs, stackHarnessFactory,
+    ServerStackProvider stackProvider = new ServerStackProvider(initialConnectionIDs, stackHarnessFactory,
                                                                 channelFactory, transportFactory,
                                                                 this.transportMessageFactory, connectionIdFactory,
                                                                 this.connectionPolicy,
@@ -416,12 +420,6 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
     if (!healthCheckrConfig.isCallbackPortListenerNeeded()) {
       // Callback Port Listeners are not needed for L2s.
       logger.info("HealthCheck CallbackPort Listener not requested");
-      return;
-    }
-
-    int bindPort = healthCheckrConfig.getCallbackPortListenerBindPort();
-    if (bindPort == TransportHandshakeMessage.NO_CALLBACK_PORT) {
-      logger.info("HealthCheck CallbackPort Listener disabled");
       return;
     }
 
@@ -444,18 +442,34 @@ public class CommunicationsManagerImpl implements CommunicationsManager {
                                                                                          + addressChecker
                                                                                              .getAllLocalAddresses()); }
 
-    TCSocketAddress address = new TCSocketAddress(bindAddr, bindPort);
-    NetworkListener callbackPortListener = createListener(new NullSessionManager(), address, true,
-                                                          new DefaultConnectionIdFactory());
-    try {
-      callbackPortListener.start(new HashSet());
-      this.callbackPort = callbackPortListener.getBindPort();
-      this.callbackportListener = callbackPortListener;
-      logger.info("HealthCheck CallbackPort Listener started at " + callbackPortListener.getBindAddress() + ":"
-                  + callbackPort);
-    } catch (IOException ioe) {
-      logger.info("Unable to start HealthCheck CallbackPort Listener at" + address + ": " + ioe);
+    startCallbackListener(healthCheckrConfig, bindAddr);
+  }
+
+  private void startCallbackListener(HealthCheckerConfig healthCheckrConfig, InetAddress bindAddr) {
+    for (Integer bindPort : healthCheckrConfig.getCallbackPortListenerBindPort()) {
+      if (bindPort == TransportHandshakeMessage.NO_CALLBACK_PORT) {
+        logger.info("HealthCheck CallbackPort Listener disabled");
+        return;
+      }
+
+      TCSocketAddress address = new TCSocketAddress(bindAddr, bindPort);
+      NetworkListener callbackPortListener = createListener(new NullSessionManager(), address, true,
+                                                            new DefaultConnectionIdFactory());
+      try {
+        callbackPortListener.start(new HashSet());
+        this.callbackPort = callbackPortListener.getBindPort();
+        this.callbackportListener = callbackPortListener;
+        logger.info("HealthCheck CallbackPort Listener started at " + callbackPortListener.getBindAddress() + ":"
+                    + callbackPort);
+        return;
+      } catch (IOException ioe) {
+        if (healthCheckrConfig.getCallbackPortListenerBindPort().size() == 1) {
+          logger.warn("Unable to start HealthCheck CallbackPort Listener at" + address + ": " + ioe);
+        }
+      }
     }
+
+    logger.warn("Unable to start HealthCheck CallbackPort Listener on any port");
   }
 
   void registerListener(NetworkListener lsnr) {

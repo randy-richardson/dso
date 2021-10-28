@@ -24,8 +24,8 @@ import com.tc.objectserver.context.BroadcastChangeContext;
 import com.tc.objectserver.context.FlushApplyCommitContext;
 import com.tc.objectserver.core.api.ManagedObject;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
-import com.tc.objectserver.event.ServerEventPublisher;
-import com.tc.objectserver.event.ServerEventRecorder;
+import com.tc.objectserver.event.ClientChannelMonitor;
+import com.tc.objectserver.event.ServerEventBuffer;
 import com.tc.objectserver.locks.LockManager;
 import com.tc.objectserver.locks.NotifiedWaiters;
 import com.tc.objectserver.locks.ServerLock;
@@ -33,6 +33,7 @@ import com.tc.objectserver.managedobject.ApplyTransactionInfo;
 import com.tc.objectserver.tx.ServerTransaction;
 import com.tc.objectserver.tx.ServerTransactionManager;
 import com.tc.objectserver.tx.TransactionalObjectManager;
+import com.tc.properties.TCPropertiesImpl;
 import com.tc.util.concurrent.TaskRunner;
 import com.tc.util.concurrent.Timer;
 
@@ -51,36 +52,41 @@ import java.util.concurrent.TimeUnit;
  * @author steve
  */
 public class ApplyTransactionChangeHandler extends AbstractEventHandler {
-  private static final int               LWM_UPDATE_INTERVAL = 10000;
 
-  private ServerTransactionManager       transactionManager;
-  private LockManager                    lockManager;
-  private Sink                           broadcastChangesSink;
-  private final ServerMapEvictionManager serverEvictions;
-  private final ObjectInstanceMonitor    instanceMonitor;
-  private TransactionalObjectManager     txnObjectMgr;
+  private static final int                 LWM_UPDATE_INTERVAL = TCPropertiesImpl.getProperties()
+                                                                   .getInt("lwm.update.intervalInMillis", 10000);
 
-  private volatile GlobalTransactionID   lowWaterMark                    = GlobalTransactionID.NULL_ID;
-  private final TransactionProvider      persistenceTransactionProvider;
+  private ServerTransactionManager         transactionManager;
+  private LockManager                      lockManager;
+  private Sink                             broadcastChangesSink;
+  private final ServerMapEvictionManager   serverEvictions;
+  private final ObjectInstanceMonitor      instanceMonitor;
+  private TransactionalObjectManager       txnObjectMgr;
 
-  private final ThreadLocal<CommitContext> localCommitContext = new ThreadLocal<CommitContext>();
-  private GarbageCollectionManager garbageCollectionManager;
-  private final ServerEventPublisher serverEventPublisher;
+  private volatile GlobalTransactionID     lowWaterMark        = GlobalTransactionID.NULL_ID;
+  private final TransactionProvider        persistenceTransactionProvider;
+
+  private final ThreadLocal<CommitContext> localCommitContext  = new ThreadLocal<CommitContext>();
+  private GarbageCollectionManager         garbageCollectionManager;
+  private final ServerEventBuffer          eventBuffer;
+  private final ClientChannelMonitor       clientChannelMonitor;
 
   public ApplyTransactionChangeHandler(final ObjectInstanceMonitor instanceMonitor,
-                                       final GlobalTransactionManager gtxm,
-                                       final ServerMapEvictionManager evictions,
+                                       final GlobalTransactionManager gtxm, final ServerMapEvictionManager evictions,
                                        final TransactionProvider persistenceTransactionProvider,
-                                       final TaskRunner taskRunner,
-                                       final ServerEventPublisher serverEventPublisher) {
+                                       final TaskRunner taskRunner, final ServerEventBuffer eventBuffer,
+                                       final ClientChannelMonitor clientChannelMonitor) {
     this.instanceMonitor = instanceMonitor;
     this.serverEvictions = evictions;
     this.persistenceTransactionProvider = persistenceTransactionProvider;
-    this.serverEventPublisher = serverEventPublisher;
+    this.eventBuffer = eventBuffer;
+    this.clientChannelMonitor = clientChannelMonitor;
     final Timer timer = taskRunner.newTimer("Apply Transaction Change Timer");
     timer.scheduleAtFixedRate(new Runnable() {
       @Override
-      public void run() { lowWaterMark = gtxm.getLowGlobalTransactionIDWatermark(); }
+      public void run() {
+        lowWaterMark = gtxm.getLowGlobalTransactionIDWatermark();
+      }
     }, 0, LWM_UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
   }
 
@@ -90,20 +96,25 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
     begin();
 
     if (context instanceof FlushApplyCommitContext) {
-      commit(((FlushApplyCommitContext)context).getObjectsToRelease(), true);
+      commit(((FlushApplyCommitContext) context).getObjectsToRelease(), true);
       return;
     }
 
     ApplyTransactionContext atc = (ApplyTransactionContext) context;
     ServerTransaction txn = atc.getTxn();
     ServerTransactionID stxnID = txn.getServerTransactionID();
-    ApplyTransactionInfo applyInfo = new ApplyTransactionInfo(txn.isActiveTxn(), stxnID, txn.isSearchEnabled());
+    ApplyTransactionInfo applyInfo = new ApplyTransactionInfo(txn.isActiveTxn(), stxnID, txn.getGlobalTransactionID(),
+                                                              txn.isSearchEnabled(), txn.isEviction(), eventBuffer,
+                                                              clientChannelMonitor);
 
     if (atc.needsApply()) {
       transactionManager.apply(txn, atc.getObjects(), applyInfo, this.instanceMonitor);
-      garbageCollectionManager.deleteObjects(applyInfo.getObjectIDsToDelete());
+      if ( applyInfo.hasObjectsToDelete() ) {
+        garbageCollectionManager.deleteObjects(applyInfo.getObjectIDsToDelete(), atc.allCheckedOutObjects());
+      }
       txnObjectMgr.applyTransactionComplete(applyInfo);
     } else {
+      transactionManager.loadApplyChangeResults(txn, applyInfo);
       transactionManager.skipApplyAndCommit(txn);
       txnObjectMgr.applyTransactionComplete(applyInfo);
       getLogger().warn("Not applying previously applied transaction: " + stxnID);
@@ -114,33 +125,26 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
     NotifiedWaiters notifiedWaiters = new NotifiedWaiters();
 
     for (final Object o : txn.getNotifies()) {
-      final Notify notify = (Notify)o;
+      final Notify notify = (Notify) o;
       final ServerLock.NotifyAction allOrOne = notify.getIsAll() ? ServerLock.NotifyAction.ALL
           : ServerLock.NotifyAction.ONE;
-      notifiedWaiters = lockManager.notify(notify.getLockID(), (ClientID)txn.getSourceID(), notify.getThreadID(),
-          allOrOne, notifiedWaiters);
+      notifiedWaiters = lockManager.notify(notify.getLockID(), (ClientID) txn.getSourceID(), notify.getThreadID(),
+                                           allOrOne, notifiedWaiters);
     }
 
     if (txn.isActiveTxn()) {
       // only for active
-      publishModifications(applyInfo);
 
       final Set<ObjectID> initiateEviction = applyInfo.getObjectIDsToInitateEviction();
       if (!initiateEviction.isEmpty()) {
-        for ( ObjectID oid : initiateEviction ) {
+        for (ObjectID oid : initiateEviction) {
           serverEvictions.scheduleCapacityEviction(oid);
         }
       }
-
       broadcastChangesSink.add(new BroadcastChangeContext(txn, lowWaterMark, notifiedWaiters, applyInfo));
     }
 
     commit(atc, applyInfo);
-  }
-
-  private void publishModifications(final ApplyTransactionInfo applyInfo) {
-    final ServerEventRecorder recorder = applyInfo.getServerEventRecorder();
-    serverEventPublisher.post(recorder.getEvents());
   }
 
   private void begin() {
@@ -151,8 +155,8 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
 
   private void commit(ApplyTransactionContext atc, ApplyTransactionInfo applyInfo) {
     if (atc.needsApply()) {
-      commit(applyInfo.getObjectsToRelease(), atc.getTxn().getNewRoots(), 
-              atc.getTxn().getServerTransactionID(), applyInfo.isCommitNow());
+      commit(applyInfo.getObjectsToRelease(), atc.getTxn().getNewRoots(), atc.getTxn().getServerTransactionID(),
+             applyInfo.isCommitNow());
     } else {
       commit(applyInfo.getObjectsToRelease(), applyInfo.isCommitNow());
     }
@@ -183,10 +187,10 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
   }
 
   private class CommitContext {
-    private final Transaction transaction = persistenceTransactionProvider.newTransaction();
-    private final Map<String, ObjectID> newRoots = new HashMap<String, ObjectID>();
-    private final Collection<ServerTransactionID> stxIDs = new HashSet<ServerTransactionID>();
-    private final Collection<ManagedObject> objectsToRelease = new ArrayList<ManagedObject>();
+    private final Transaction                     transaction      = persistenceTransactionProvider.newTransaction();
+    private final Map<String, ObjectID>           newRoots         = new HashMap<String, ObjectID>();
+    private final Collection<ServerTransactionID> stxIDs           = new HashSet<ServerTransactionID>();
+    private final Collection<ManagedObject>       objectsToRelease = new ArrayList<ManagedObject>();
 
     boolean commit(Collection<ManagedObject> moreObjectsToRelease, boolean done) {
       objectsToRelease.addAll(moreObjectsToRelease);
@@ -200,8 +204,7 @@ public class ApplyTransactionChangeHandler extends AbstractEventHandler {
     }
 
     boolean commit(Collection<ManagedObject> objectsToReleaseParam, Map<String, ObjectID> moreRoots,
-                          ServerTransactionID stxID,
-                          boolean done) {
+                   ServerTransactionID stxID, boolean done) {
       stxIDs.add(stxID);
       newRoots.putAll(moreRoots);
       return commit(objectsToReleaseParam, done);

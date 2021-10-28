@@ -1,7 +1,9 @@
 package com.tc.object;
 
+import com.tc.net.NodeID;
 import com.tc.object.handshakemanager.ClientHandshakeCallback;
-import com.tc.object.msg.ServerEventMessage;
+import com.tc.server.ServerEvent;
+import com.tc.server.ServerEventType;
 
 import java.util.Set;
 
@@ -14,7 +16,7 @@ public interface ServerEventListenerManager extends ClientHandshakeCallback {
 
   void registerListener(ServerEventDestination destination, Set<ServerEventType> listenTo);
 
-  void unregisterListener(ServerEventDestination destination);
+  void unregisterListener(ServerEventDestination destination, final Set<ServerEventType> listenTo);
 
-  void dispatch(ServerEventMessage message);
+  void dispatch(ServerEvent event, NodeID remoteNode);
 }

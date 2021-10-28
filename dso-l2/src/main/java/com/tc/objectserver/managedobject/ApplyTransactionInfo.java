@@ -4,12 +4,18 @@
  */
 package com.tc.objectserver.managedobject;
 
+import com.google.common.collect.Sets;
 import com.tc.invalidation.Invalidations;
 import com.tc.object.ObjectID;
+import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.object.tx.ServerTransactionID;
 import com.tc.objectserver.core.api.ManagedObject;
-import com.tc.objectserver.event.ServerEventRecorder;
-import com.tc.util.ObjectIDSet;
+import com.tc.objectserver.event.ClientChannelMonitor;
+import com.tc.objectserver.event.DefaultMutationEventPublisher;
+import com.tc.objectserver.event.InClusterServerEventBuffer;
+import com.tc.objectserver.event.MutationEventPublisher;
+import com.tc.objectserver.event.ServerEventBuffer;
+import com.tc.util.BitSetObjectIDSet;
 import com.tc.util.TCCollections;
 
 import java.util.ArrayList;
@@ -23,33 +29,45 @@ import java.util.SortedSet;
 
 public class ApplyTransactionInfo {
 
-  private final Map<ObjectID, Node> nodes;
-  private final Set<ObjectID>       parents;
-  private final ServerTransactionID stxnID;
-  private final boolean             isActiveTxn;
-  private Set<ObjectID>             ignoreBroadcasts   = Collections.emptySet();
-  private Set<ObjectID>             initiateEviction   = Collections.emptySet();
-  private SortedSet<ObjectID>       deleteObjects      = TCCollections.EMPTY_SORTED_SET;
+  private final Map<ObjectID, Node>    nodes;
+  private final Set<ObjectID>          parents;
+  private final ServerTransactionID    stxnID;
+  private final boolean isEviction;
+  private final boolean                isActiveTxn;
+  private Set<ObjectID>                ignoreBroadcasts   = Collections.emptySet();
+  private Set<ObjectID>                initiateEviction   = Collections.emptySet();
+  private SortedSet<ObjectID>          deleteObjects      = TCCollections.EMPTY_SORTED_SET;
   // TODO: This is probably not the place to pass releaseable objects...
-  private Collection<ManagedObject> objectsToRelease = Collections.emptySet();
-  private Invalidations             invalidate;
-  private final boolean             isSearchEnabled;
+  private Collection<ManagedObject>    objectsToRelease   = Collections.emptySet();
+  private Invalidations                invalidate;
+  private final boolean                isSearchEnabled;
   private final Map<ObjectID, Boolean> keyPresentForValue = new HashMap<ObjectID, Boolean>();
-  private boolean commitNow;
-  private final ServerEventRecorder serverEventRecorder;
+  private boolean                      commitNow;
+  private final MutationEventPublisher mutationEventPublisher;
+  private final ApplyResultRecorder    resultRecorder;
+  private Set<ObjectID>                echoChangesFor = TCCollections.EMPTY_OBJECT_ID_SET;
+  private final ServerEventBuffer      serverEventBuffer;
+  private final ClientChannelMonitor   clientChannelMonitor;
 
   // For tests
   public ApplyTransactionInfo() {
-    this(true, ServerTransactionID.NULL_ID, false);
+    this(true, ServerTransactionID.NULL_ID, GlobalTransactionID.NULL_ID, false, false,
+         new InClusterServerEventBuffer(), null);
   }
 
-  public ApplyTransactionInfo(final boolean isActiveTxn, final ServerTransactionID stxnID, final boolean isSearchEnabled) {
+  public ApplyTransactionInfo(final boolean isActiveTxn, final ServerTransactionID stxnID,
+                              final GlobalTransactionID gtxId, final boolean isSearchEnabled, final boolean isEviction,
+                              final ServerEventBuffer serverEventBuffer, final ClientChannelMonitor clientChannelMonitor) {
     this.isActiveTxn = isActiveTxn;
     this.stxnID = stxnID;
-    this.parents = new ObjectIDSet();
+    this.isEviction = isEviction;
+    this.parents = new BitSetObjectIDSet();
     this.nodes = new HashMap<ObjectID, Node>();
     this.isSearchEnabled = isSearchEnabled;
-    this.serverEventRecorder = new ServerEventRecorder();
+    this.serverEventBuffer = serverEventBuffer;
+    this.clientChannelMonitor = clientChannelMonitor;
+    this.mutationEventPublisher = new DefaultMutationEventPublisher(gtxId, serverEventBuffer);
+    this.resultRecorder = new DefaultResultRecorderImpl();
   }
 
   public void addBackReference(final ObjectID child, final ObjectID parent) {
@@ -70,7 +88,7 @@ public class ApplyTransactionInfo {
   }
 
   public Set<ObjectID> getAllParents() {
-    return new ObjectIDSet(this.parents);
+    return new BitSetObjectIDSet(this.parents);
   }
 
   public Set<ObjectID> addReferencedChildrenTo(final Set<ObjectID> objectIDs, final Set<ObjectID> interestedParents) {
@@ -135,7 +153,7 @@ public class ApplyTransactionInfo {
 
   public void ignoreBroadcastFor(final ObjectID objectID) {
     if (this.ignoreBroadcasts == Collections.EMPTY_SET) {
-      this.ignoreBroadcasts = new ObjectIDSet();
+      this.ignoreBroadcasts = new BitSetObjectIDSet();
     }
     this.ignoreBroadcasts.add(objectID);
   }
@@ -146,7 +164,7 @@ public class ApplyTransactionInfo {
 
   public void initiateEvictionFor(final ObjectID objectID) {
     if (this.initiateEviction == Collections.EMPTY_SET) {
-      this.initiateEviction = new ObjectIDSet();
+      this.initiateEviction = new BitSetObjectIDSet();
     }
     this.initiateEviction.add(objectID);
   }
@@ -168,16 +186,20 @@ public class ApplyTransactionInfo {
 
   public void deleteObject(ObjectID old) {
     if (this.deleteObjects == TCCollections.EMPTY_SORTED_SET) {
-      this.deleteObjects = new ObjectIDSet();
+      this.deleteObjects = new BitSetObjectIDSet();
     }
     this.deleteObjects.add(old);
   }
 
   public void deleteObjects(Set<ObjectID> oids) {
     if (this.deleteObjects == TCCollections.EMPTY_SORTED_SET) {
-      this.deleteObjects = new ObjectIDSet();
+      this.deleteObjects = new BitSetObjectIDSet();
     }
     this.deleteObjects.addAll(oids);
+  }
+  
+  public boolean hasObjectsToDelete() {
+    return !deleteObjects.isEmpty();
   }
 
   public SortedSet<ObjectID> getObjectIDsToDelete() {
@@ -224,7 +246,34 @@ public class ApplyTransactionInfo {
     keyPresentForValue.remove(value);
   }
 
-  public ServerEventRecorder getServerEventRecorder() {
-    return serverEventRecorder;
+  public MutationEventPublisher getMutationEventPublisher() {
+    return mutationEventPublisher;
+  }
+
+  public ApplyResultRecorder getApplyResultRecorder() {
+    return resultRecorder;
+  }
+
+  public boolean isEviction() {
+    return isEviction;
+  }
+
+  public void echoChangesFor(ObjectID objectID) {
+    if (echoChangesFor == TCCollections.EMPTY_OBJECT_ID_SET) {
+      echoChangesFor = Sets.newHashSet();
+    }
+    echoChangesFor.add(objectID);
+  }
+
+  public Set<ObjectID> getObjectsToEchoChangesFor() {
+    return echoChangesFor;
+  }
+  
+  public ServerEventBuffer getServerEventBuffer() {
+    return serverEventBuffer;
+  }
+
+  public ClientChannelMonitor getClientChannelMonitor() {
+    return clientChannelMonitor;
   }
 }

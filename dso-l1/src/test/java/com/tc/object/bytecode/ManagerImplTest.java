@@ -4,7 +4,6 @@
  */
 package com.tc.object.bytecode;
 
-import com.tc.abortable.AbortedOperationException;
 import com.tc.exception.ImplementMe;
 import com.tc.exception.TCNonPortableObjectError;
 import com.tc.net.GroupID;
@@ -15,8 +14,6 @@ import com.tc.object.ObjectID;
 import com.tc.object.TCClass;
 import com.tc.object.TCObject;
 import com.tc.object.TCObjectSelf;
-import com.tc.object.appevent.ApplicationEvent;
-import com.tc.object.appevent.ApplicationEventContext;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.locks.ClientLockManager;
 import com.tc.object.locks.ClientServerExchangeLockContext;
@@ -28,7 +25,6 @@ import com.tc.object.locks.ThreadID;
 import com.tc.object.msg.ClientHandshakeMessage;
 import com.tc.object.session.SessionID;
 import com.tc.object.tx.ClientTransactionManager;
-import com.tc.object.util.ToggleableStrongReference;
 import com.tc.text.PrettyPrinter;
 
 import java.lang.ref.WeakReference;
@@ -216,13 +212,13 @@ public class ManagerImplTest extends BaseDSOTestCase {
     }
 
     @Override
-    public void pinLock(final LockID lock) {
+    public void pinLock(final LockID lock, long awardID) {
       throw new ImplementMe();
 
     }
 
     @Override
-    public void unpinLock(final LockID lock) {
+    public void unpinLock(final LockID lock, long awardID) {
       throw new ImplementMe();
 
     }
@@ -235,6 +231,16 @@ public class ManagerImplTest extends BaseDSOTestCase {
     @Override
     public PrettyPrinter prettyPrint(PrettyPrinter out) {
       throw new ImplementMe();
+    }
+
+    @Override
+    public boolean isLockAwardValid(LockID lock, long awardID) {
+      return false;
+    }
+
+    @Override
+    public long getAwardIDFor(LockID lock) {
+      return -1;
     }
 
   }
@@ -389,25 +395,6 @@ public class ManagerImplTest extends BaseDSOTestCase {
       throw new ImplementMe();
     }
 
-    @Override
-    public void storeObjectHierarchy(final Object pojo, final ApplicationEventContext context) {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public void sendApplicationEvent(final Object pojo, final ApplicationEvent event) {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public Object cloneAndInvokeLogicalOperation(final Object pojo, final String methodName, final Object[] parameters) {
-      throw new ImplementMe();
-    }
-
-    @Override
-    public ToggleableStrongReference getOrCreateToggleRef(final ObjectID id, final Object peer) {
-      throw new ImplementMe();
-    }
 
     @Override
     public WeakReference newWeakObjectReference(final ObjectID objectID, final Object peer) {
@@ -447,12 +434,12 @@ public class ManagerImplTest extends BaseDSOTestCase {
     }
 
     @Override
-    public TCObject lookupQuiet(final ObjectID id) throws ClassNotFoundException, AbortedOperationException {
+    public TCObject lookupQuiet(final ObjectID id) {
       throw new ImplementMe();
     }
 
     @Override
-    public TCObject addLocalPrefetch(DNA object) throws ClassNotFoundException {
+    public TCObject addLocalPrefetch(DNA object) {
       throw new ImplementMe();
     }
   }

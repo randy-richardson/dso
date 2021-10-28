@@ -7,16 +7,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.terracotta.management.ServiceExecutionException;
 import org.terracotta.management.ServiceLocator;
+import org.terracotta.management.resource.AgentEntity;
 import org.terracotta.management.resource.exceptions.ResourceRuntimeException;
 import org.terracotta.management.resource.services.validator.RequestValidator;
 
+import com.tc.license.ProductID;
 import com.terracotta.management.resource.TopologyEntity;
+import com.terracotta.management.resource.services.utils.UriInfoUtils;
 import com.terracotta.management.resource.services.validator.TSARequestValidator;
 import com.terracotta.management.service.OperatorEventsService;
 import com.terracotta.management.service.TopologyService;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
@@ -47,10 +51,13 @@ public class TopologyResourceServiceImpl implements TopologyResourceService {
     requestValidator.validateSafe(info);
 
     try {
+      Set<ProductID> productIDs = UriInfoUtils.extractProductIds(info);
       TopologyEntity result = new TopologyEntity();
-      result.setUnreadOperatorEventCount(operatorEventsService.getUnreadCount());
+      result.setAgentId(AgentEntity.EMBEDDED_AGENT_ID);
+      result.setVersion(this.getClass().getPackage().getImplementationVersion());
+      result.getUnreadOperatorEventCount().putAll(operatorEventsService.getUnreadCount());
       result.getServerGroupEntities().addAll(topologyService.getTopology());
-      result.getClientEntities().addAll(topologyService.getClients());
+      result.getClientEntities().addAll(topologyService.getClients(productIDs));
       return Collections.singleton(result);
     } catch (ServiceExecutionException see) {
       throw new ResourceRuntimeException("Failed to get TSA topologies", see, Response.Status.BAD_REQUEST.getStatusCode());
@@ -65,6 +72,9 @@ public class TopologyResourceServiceImpl implements TopologyResourceService {
 
     try {
       TopologyEntity result = new TopologyEntity();
+      result.setAgentId(AgentEntity.EMBEDDED_AGENT_ID);
+      result.setVersion(this.getClass().getPackage().getImplementationVersion());
+      result.getUnreadOperatorEventCount().putAll(operatorEventsService.getUnreadCount());
       result.getServerGroupEntities().addAll(topologyService.getTopology());
       return Collections.singleton(result);
     } catch (ServiceExecutionException see) {
@@ -79,8 +89,11 @@ public class TopologyResourceServiceImpl implements TopologyResourceService {
     requestValidator.validateSafe(info);
 
     try {
+      Set<ProductID> productIDs = UriInfoUtils.extractProductIds(info);
       TopologyEntity result = new TopologyEntity();
-      result.getClientEntities().addAll(topologyService.getClients());
+      result.setAgentId(AgentEntity.EMBEDDED_AGENT_ID);
+      result.setVersion(this.getClass().getPackage().getImplementationVersion());
+      result.getClientEntities().addAll(topologyService.getClients(productIDs));
       return Collections.singleton(result);
     } catch (ServiceExecutionException see) {
       throw new ResourceRuntimeException("Failed to get TSA clients topologies", see, Response.Status.BAD_REQUEST.getStatusCode());

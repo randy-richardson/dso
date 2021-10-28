@@ -3,6 +3,8 @@
  */
 package com.tc.util.concurrent;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Some shortcut stuff for doing common thread stuff
  * 
@@ -14,6 +16,10 @@ public class ThreadUtil {
     reallySleep(millis, 0);
   }
   
+  public static void reallySleep(TimeUnit unit, long sleepTime) {
+    reallySleep(unit.toMillis(sleepTime));
+  }
+
   public static void reallySleep(long millis, int nanos) {
     boolean interrupted = false;
     try {
@@ -32,27 +38,6 @@ public class ThreadUtil {
       if (interrupted) {
         Thread.currentThread().interrupt();
       }
-    }
-  }
-
-  /**
-   * @return <code>true</code> if the call to Thread.sleep() was successful, <code>false</code> if the call was
-   *         interrupted.
-   */
-  public static boolean tryToSleep(long millis) {
-    boolean slept = false;
-    try {
-      Thread.sleep(millis);
-      slept = true;
-    } catch (InterruptedException ie) {
-      slept = false;
-    }
-    return slept;
-  }
-
-  public static void printStackTrace(StackTraceElement ste[]) {
-    for (int i = 0; i < ste.length; i++) {
-      System.err.println("\tat " + ste[i]);
     }
   }
 }

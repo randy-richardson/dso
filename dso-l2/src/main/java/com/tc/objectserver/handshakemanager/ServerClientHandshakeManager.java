@@ -6,7 +6,6 @@ package com.tc.objectserver.handshakemanager;
 
 import com.tc.async.api.EventContext;
 import com.tc.async.api.Sink;
-import com.tc.async.impl.NullSink;
 import com.tc.logging.TCLogger;
 import com.tc.net.ClientID;
 import com.tc.net.NodeID;
@@ -38,8 +37,6 @@ public class ServerClientHandshakeManager {
   private static final State             STARTED                           = new State("STARTED");
   private static final int               BATCH_SEQUENCE_SIZE               = 10000;
   static final int                       RECONNECT_WARN_INTERVAL           = 15000;
-
-  public static final Sink               NULL_SINK                         = new NullSink();
 
   private State                          state                             = INIT;
 
@@ -105,10 +102,14 @@ public class ServerClientHandshakeManager {
                                                              + " still not cleaned up."); }
 
       if (this.state == STARTED) {
-        if (handshake.getObjectIDs().size() > 0 || handshake.getObjectIDsToValidate().size() > 0) { throw new ClientHandshakeException(
-                                                                                                                                       "Client "
-                                                                                                                                           + clientID
-                                                                                                                                           + " connected after startup should have no existing object references."); }
+        int oidSize = handshake.getObjectIDs().size();
+        int validateSize = handshake.getObjectIDsToValidate().size();
+        if (oidSize > 0 || validateSize > 0) { throw new ClientHandshakeException(
+                                                                                  "Client "
+                                                                                      + clientID
+                                                                                      + " connected after startup should have no existing object references oidSize="
+                                                                                      + oidSize + "validateSize="
+                                                                                      + validateSize); }
 
         for (final ClientServerExchangeLockContext context : handshake.getLockContexts()) {
           if (context.getState() == com.tc.object.locks.ServerLockContext.State.WAITER) { throw new ClientHandshakeException(

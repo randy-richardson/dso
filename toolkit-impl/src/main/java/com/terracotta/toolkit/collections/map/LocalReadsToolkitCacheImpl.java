@@ -7,9 +7,11 @@ import org.terracotta.toolkit.cache.ToolkitCacheListener;
 import org.terracotta.toolkit.cluster.ClusterNode;
 import org.terracotta.toolkit.concurrent.locks.ToolkitReadWriteLock;
 import org.terracotta.toolkit.config.Configuration;
+import org.terracotta.toolkit.internal.cache.ToolkitValueComparator;
+import org.terracotta.toolkit.internal.cache.VersionUpdateListener;
+import org.terracotta.toolkit.internal.cache.VersionedValue;
 import org.terracotta.toolkit.search.QueryBuilder;
 import org.terracotta.toolkit.search.attribute.ToolkitAttributeExtractor;
-import org.terracotta.toolkit.store.ToolkitStore;
 
 import com.tc.object.ObjectID;
 import com.terracotta.toolkit.nonstop.ToolkitObjectLookup;
@@ -22,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class LocalReadsToolkitCacheImpl<K, V> implements ValuesResolver<K, V>, ToolkitCacheImplInterface<K, V>,
-    DestroyableToolkitObject, ToolkitStore<K, V> {
+    DestroyableToolkitObject {
   private final ToolkitObjectLookup<ToolkitCacheImplInterface<K, V>> delegate;
   private final ToolkitCacheImplInterface<K, V>                      noOpBehaviourResolver;
 
@@ -189,6 +191,11 @@ public class LocalReadsToolkitCacheImpl<K, V> implements ValuesResolver<K, V>, T
   }
 
   @Override
+  public void clearVersioned() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Set<K> keySet() {
     return getDelegate().localKeySet();
   }
@@ -224,7 +231,17 @@ public class LocalReadsToolkitCacheImpl<K, V> implements ValuesResolver<K, V>, T
   }
 
   @Override
+  public void unlockedPutNoReturnVersioned(final K k, final V v, final long version, final int createTime, final int customTTI, final int customTTL) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public void unlockedRemoveNoReturn(Object k) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void unlockedRemoveNoReturnVersioned(final Object key, final long version) {
     throw new UnsupportedOperationException();
   }
 
@@ -295,6 +312,28 @@ public class LocalReadsToolkitCacheImpl<K, V> implements ValuesResolver<K, V>, T
   }
 
   @Override
+  public void putVersioned(final K key, final V value, final long version) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void putVersioned(final K key, final V value, final long version, final int createTimeInSecs,
+                           final int customMaxTTISeconds, final int customMaxTTLSeconds) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void putIfAbsentVersioned(K key, V value, long version, int createTimeInSecs, int customMaxTTISeconds,
+                                        int customMaxTTLSeconds) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public void disposeLocally() {
     // TODO: discuss
     throw new UnsupportedOperationException();
@@ -303,6 +342,31 @@ public class LocalReadsToolkitCacheImpl<K, V> implements ValuesResolver<K, V>, T
   @Override
   public void removeAll(Set<K> keys) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void removeVersioned(final Object key, final long version) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void registerVersionUpdateListener(final VersionUpdateListener listener) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public void unregisterVersionUpdateListener(final VersionUpdateListener listener) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public Set<K> keySetForSegment(final int segmentIndex) {
+    throw new UnsupportedOperationException("Implement me!");
+  }
+
+  @Override
+  public VersionedValue<V> getVersionedValue(Object key) {
+    throw new UnsupportedOperationException("Implement me!");
   }
 
   @Override
@@ -323,5 +387,65 @@ public class LocalReadsToolkitCacheImpl<K, V> implements ValuesResolver<K, V>, T
   @Override
   public Map<K, V> unlockedGetAll(Collection<K> keys, boolean quiet) {
     return getDelegate().unlockedGetAll(keys, quiet);
+  }
+
+  @Override
+  public boolean isBulkLoadEnabled() {
+    return false;
+  }
+
+  @Override
+  public boolean isNodeBulkLoadEnabled() {
+    return false;
+  }
+
+  @Override
+  public void setNodeBulkLoadEnabled(boolean enabledBulkLoad) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void waitUntilBulkLoadComplete() throws InterruptedException {
+    // do nothing
+  }
+
+  @Override
+  public void quickClear() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int quickSize() {
+    return getDelegate().localSize();
+  }
+
+  @Override
+  public boolean remove(Object key, Object value, ToolkitValueComparator<V> comparator) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean replace(K key, V oldValue, V newValue, ToolkitValueComparator<V> comparator) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void startBuffering() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean isBuffering() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void stopBuffering() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void flushBuffer() {
+    throw new UnsupportedOperationException();
   }
 }

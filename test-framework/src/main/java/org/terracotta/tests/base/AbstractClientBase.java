@@ -21,23 +21,32 @@ public abstract class AbstractClientBase implements Runnable {
   public final int                      HEAVY_CLIENT_TEST_TIME = 5 * 60 * 1000;
   private static final SimpleDateFormat DATE_FORMATTER         = new SimpleDateFormat("HH:mm:ss.SSS");
 
-  private final TestHandlerMBean        testControlMBean;
+  private final int                     clientIndex;
+  private final MBeanServerConnection   mBeanServerConnection;
+
+  private TestHandlerMBean        testControlMBean;
 
   abstract protected void doTest() throws Throwable;
 
   public AbstractClientBase(String args[]) {
     int index = 0;
+    clientIndex = Integer.parseInt(args[index++]);
     final int testControlMbeanPort = Integer.parseInt(args[index++]);
-
     try {
       JMXConnector jmxConnector = JMXUtils.getJMXConnector("localhost", testControlMbeanPort);
-      final MBeanServerConnection mbs = jmxConnector.getMBeanServerConnection();
-      testControlMBean = MBeanServerInvocationProxy.newMBeanProxy(mbs, TestHandler.TEST_SERVER_CONTROL_MBEAN,
-                                                                  TestHandlerMBean.class, false);
+      mBeanServerConnection = jmxConnector.getMBeanServerConnection();
     } catch (Exception e) {
       System.out.println("****** Exception while connecting to TestMBean Port[" + testControlMbeanPort + "]");
       throw new RuntimeException(e);
     }
+  }
+
+  protected final MBeanServerConnection getmBeanServerConnection() {
+    return mBeanServerConnection;
+  }
+
+  public int getClientIndex() {
+    return clientIndex;
   }
 
   @Override
@@ -53,7 +62,7 @@ public abstract class AbstractClientBase implements Runnable {
       } catch (Exception e) {
         new Exception("Unabled to dump cluster state.", e).printStackTrace();
       }
-      testControlMBean.clientExitedWithException(t);
+      getTestControlMbean().clientExitedWithException(t);
       System.exit(1);
     }
   }
@@ -62,24 +71,41 @@ public abstract class AbstractClientBase implements Runnable {
     System.err.println("[PASS: " + getClass().getName() + "]");
   }
 
-  public TestHandlerMBean getTestControlMbean() {
-    return this.testControlMBean;
+  protected TestHandlerMBean createTestControlMBean() {
+    return MBeanServerInvocationProxy.newMBeanProxy(getmBeanServerConnection(), TestHandler.TEST_SERVER_CONTROL_MBEAN,
+        TestHandlerMBean.class, false);
+  }
+
+  protected synchronized TestHandlerMBean getTestControlMbean() {
+    if (testControlMBean == null) {
+      testControlMBean = createTestControlMBean();
+    }
+    return testControlMBean;
   }
 
   public GroupsData getGroupData(int groupIndex) {
-    return this.testControlMBean.getGroupsData()[groupIndex];
+    return getTestControlMbean().getGroupsData()[groupIndex];
   }
 
   public int getParticipantCount() {
-    return this.testControlMBean.getParticipantCount();
+    return getTestControlMbean().getParticipantCount();
   }
 
   public String getTerracottaUrl() {
-    return this.testControlMBean.getTerracottaUrl();
+    return getTestControlMbean().getTerracottaUrl();
   }
 
   public static synchronized void debug(String msg) {
     System.out.println("[D E B U G : " + DATE_FORMATTER.format(new Date()) + " '" + Thread.currentThread().getName()
                        + "'] " + msg);
   }
+
+  public String getStackTrace(Throwable t) {
+    StringBuilder stackTrace = new StringBuilder("\n" + t.getClass().getName() + " :" + t.getMessage() + "\n");
+    for (StackTraceElement stackTraceElement : t.getStackTrace()) {
+      stackTrace = stackTrace.append(stackTraceElement + "\n");
+    }
+    return stackTrace.toString();
+  }
+
 }

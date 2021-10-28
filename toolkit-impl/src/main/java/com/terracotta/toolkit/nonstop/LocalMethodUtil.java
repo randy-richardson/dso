@@ -5,7 +5,7 @@ package com.terracotta.toolkit.nonstop;
 
 import org.terracotta.toolkit.ToolkitObjectType;
 
-import com.terracotta.toolkit.collections.map.ToolkitCacheImplInterface;
+import com.terracotta.toolkit.collections.map.AggregateServerMap;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -27,7 +27,11 @@ class LocalMethodUtil {
     cacheLocalMethodSet.add("localOffHeapSize");
     cacheLocalMethodSet.add("containsKeyLocalOnHeap");
     cacheLocalMethodSet.add("containsKeyLocalOffHeap");
-    validateMethodNamesExist(ToolkitCacheImplInterface.class, cacheLocalMethodSet);
+    cacheLocalMethodSet.add("disposeLocally");
+    // Non-stop in search is handled separately, and there is a separate timeout setting for it!
+    cacheLocalMethodSet.add("createQueryBuilder");
+    cacheLocalMethodSet.add("executeQuery");
+    validateMethodNamesExist(AggregateServerMap.class, cacheLocalMethodSet);
     localMethods.put(ToolkitObjectType.CACHE, cacheLocalMethodSet);
     localMethods.put(ToolkitObjectType.STORE, cacheLocalMethodSet);
   }

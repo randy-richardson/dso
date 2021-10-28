@@ -8,7 +8,6 @@ import com.tc.object.bytecode.TransparentAccess;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAWriter;
 import com.tc.object.field.TCField;
-import com.tc.object.util.ToggleableStrongReference;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -20,7 +19,7 @@ import java.lang.ref.WeakReference;
  */
 public class TCObjectSelfImpl implements TCObjectSelf {
 
-  private volatile transient ObjectID oid;
+  protected volatile transient ObjectID oid;
   private volatile transient TCClass  tcClazz;
   private volatile transient boolean  isNew;
   private volatile transient long     version;
@@ -73,8 +72,7 @@ public class TCObjectSelfImpl implements TCObjectSelf {
     return oid;
   }
 
-  @Override
-  public TCClass getTCClass() {
+  protected TCClass getTCClass() {
     if (tcClazz == null) throw new AssertionError("getTCClass() called before initialization for "
                                                   + this.getClass().getName());
     return tcClazz;
@@ -132,12 +130,6 @@ public class TCObjectSelfImpl implements TCObjectSelf {
   }
 
   @Override
-  public boolean canEvict() {
-    // nothing to evict as tco=self
-    return false;
-  }
-
-  @Override
   public Object getResolveLock() {
     return this;
   }
@@ -188,11 +180,6 @@ public class TCObjectSelfImpl implements TCObjectSelf {
   }
 
   @Override
-  public boolean isCacheManaged() {
-    return false;
-  }
-
-  @Override
   public void markAccessed() {
     // No-op
   }
@@ -207,12 +194,6 @@ public class TCObjectSelfImpl implements TCObjectSelf {
     // No reference to clear
   }
 
-  @Override
-  public int clearReferences(int arg0) {
-    // No reference to clear
-    return 0;
-  }
-
   // ====================================================
   // Not relevant for this implementation
   // ====================================================
@@ -224,11 +205,6 @@ public class TCObjectSelfImpl implements TCObjectSelf {
   @Override
   public void disableAutoLocking() {
     // No-op
-  }
-
-  @Override
-  public ToggleableStrongReference getOrCreateToggleRef() {
-    throw new UnsupportedOperationException();
   }
 
   public boolean isFieldPortableByOffset(long arg0) {
@@ -353,5 +329,35 @@ public class TCObjectSelfImpl implements TCObjectSelf {
   public boolean isInitialized() {
     if (oid == null) { return false; }
     return true;
+  }
+
+  @Override
+  public String getExtendingClassName() {
+    return getTCClass().getExtendingClassName();
+  }
+
+  @Override
+  public String getClassName() {
+    return getTCClass().getName();
+  }
+
+  @Override
+  public Class<?> getPeerClass() {
+    return getTCClass().getPeerClass();
+  }
+
+  @Override
+  public boolean isIndexed() {
+    return getTCClass().isIndexed();
+  }
+
+  @Override
+  public boolean isLogical() {
+    return getTCClass().isLogical();
+  }
+
+  @Override
+  public boolean isEnum() {
+    return getTCClass().isEnum();
   }
 }

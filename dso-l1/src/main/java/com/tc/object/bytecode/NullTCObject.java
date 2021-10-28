@@ -6,12 +6,10 @@ package com.tc.object.bytecode;
 
 import com.tc.exception.ImplementMe;
 import com.tc.object.ObjectID;
-import com.tc.object.TCClass;
 import com.tc.object.TCObject;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.dna.api.DNAException;
 import com.tc.object.dna.api.DNAWriter;
-import com.tc.object.util.ToggleableStrongReference;
 
 import java.lang.ref.WeakReference;
 
@@ -38,17 +36,6 @@ public class NullTCObject implements TCObject {
   public Object getPeerObject() {
     // do nothing
     return null;
-  }
-
-  @Override
-  public TCClass getTCClass() {
-    // do nothing
-    return null;
-  }
-
-  @Override
-  public int clearReferences(final int toClear) {
-    return 0;
   }
 
   @Override
@@ -207,16 +194,6 @@ public class NullTCObject implements TCObject {
   }
 
   @Override
-  public boolean canEvict() {
-    throw new ImplementMe();
-  }
-
-  @Override
-  public boolean isCacheManaged() {
-    throw new ImplementMe();
-  }
-
-  @Override
   public void objectArrayChanged(final int startPos, final Object[] array, final int length) {
     // do nothing
   }
@@ -251,11 +228,6 @@ public class NullTCObject implements TCObject {
   }
 
   @Override
-  public ToggleableStrongReference getOrCreateToggleRef() {
-    throw new AssertionError();
-  }
-
-  @Override
   public void setNotNew() {
     throw new AssertionError();
   }
@@ -268,5 +240,35 @@ public class NullTCObject implements TCObject {
   @Override
   public void unresolveReference(final String fieldName) {
     //
+  }
+
+  @Override
+  public String getExtendingClassName() {
+    throw new AssertionError();
+  }
+
+  @Override
+  public String getClassName() {
+    throw new AssertionError();
+  }
+
+  @Override
+  public Class<?> getPeerClass() {
+    throw new AssertionError();
+  }
+
+  @Override
+  public boolean isIndexed() {
+    throw new AssertionError();
+  }
+
+  @Override
+  public boolean isLogical() {
+    throw new AssertionError();
+  }
+
+  @Override
+  public boolean isEnum() {
+    throw new AssertionError();
   }
 }
