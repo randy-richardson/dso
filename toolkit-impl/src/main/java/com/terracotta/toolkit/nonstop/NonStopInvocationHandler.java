@@ -46,6 +46,9 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
     }
 
     if (nonStopConfiguration.isImmediateTimeoutEnabled() && !context.getNonStopClusterListener().areOperationsEnabled()) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Executing NonStop behaviour for method - " + method.getName());
+      }
       return handleNonStopBehavior(method, args, nonStopConfiguration);
     }
     
@@ -58,8 +61,14 @@ public class NonStopInvocationHandler<T extends ToolkitObject> implements Invoca
       LOGGER.error(nonStopConfigurationLookup.getObjectType().name() + " instantiation failed.", e);
       return handleNonStopToolkitInstantiationException(method, args, nonStopConfiguration, e);
     } catch (ToolkitAbortableOperationException e) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Invocation failed for method - " + method.getName(), e);
+      }
       return handleNonStopBehavior(method, args, nonStopConfiguration);
     } catch (RejoinException e) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Invocation failed for method - " + method.getName(), e);
+      }
       // TODO: Review this.. Is this the right place to handle this...
       return handleNonStopBehavior(method, args, nonStopConfiguration);
     } finally {
