@@ -120,16 +120,24 @@ The Initial Developer of the Covered Software is
         <version>3.1.1</version>
         <executions>
           <execution>
-            <!-- this generates "ehcache/lib/slf4j-api-1.7.25.jar ehcache/lib/ehcache-2.10.10-SNAPSHOT.jar" to be used below -->
-            <!-- this way we don't need to hardcode slf4j version that's defined in the bom -->
-            <id>resolve-dep-versions</id>
+            <id>resolve-ehcache-path</id>
             <goals>
               <goal>build-classpath</goal>
             </goals>
             <configuration>
-              <includeArtifactIds>slf4j-api,ehcache</includeArtifactIds>
-              <outputProperty>terracotta.client.dependency.classpath</outputProperty>
-              <pathSeparator>&#160;</pathSeparator>
+              <includeArtifactIds>ehcache</includeArtifactIds>
+              <outputProperty>ehcache.path</outputProperty>
+              <prefix>ehcache/lib</prefix>
+            </configuration>
+          </execution>
+          <execution>
+            <id>resolve-slf4j-api-path</id>
+            <goals>
+              <goal>build-classpath</goal>
+            </goals>
+            <configuration>
+              <includeArtifactIds>slf4j-api</includeArtifactIds>
+              <outputProperty>slf4j-api.path</outputProperty>
               <prefix>ehcache/lib</prefix>
             </configuration>
           </execution>
@@ -151,7 +159,7 @@ The Initial Developer of the Covered Software is
                   <addClasspath>false</addClasspath>
                 </manifest>
                 <manifestEntries>
-                  <Class-Path>${terracotta.client.dependency.classpath} toolkit/lib/terracotta-toolkit-runtime-${project.version}.jar</Class-Path>
+                  <Class-Path>${ehcache.path} ${slf4j-api.path} toolkit/lib/terracotta-toolkit-runtime-${project.version}.jar</Class-Path>
                 </manifestEntries>
               </archive>
               <excludes>
@@ -169,7 +177,7 @@ The Initial Developer of the Covered Software is
         <executions>
           <execution>
             <id>prepare-server-lib</id>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -180,8 +188,28 @@ The Initial Developer of the Covered Software is
               <resolveTransitively>true</resolveTransitively>
               <outputDir>${project.build.directory}/server-lib</outputDir>          
             </configuration>
-
-          </execution> 
+          </execution>
+          <execution>
+            <id>default-integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+            <configuration>
+              <skipTests>false</skipTests>
+              <systemPropertyVariables>
+                <project.version>${project.version}</project.version>
+              </systemPropertyVariables>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <skipTests>false</skipTests>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -191,7 +219,7 @@ The Initial Developer of the Covered Software is
         <executions>
           <execution>
             <id>copy</id>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -203,7 +231,7 @@ The Initial Developer of the Covered Software is
           </execution>
           <execution>
             <id>unpack</id>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -270,7 +298,28 @@ The Initial Developer of the Covered Software is
             </goals>
           </execution>
         </executions>
-      </plugin>      
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>testResources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -325,7 +374,7 @@ The Initial Developer of the Covered Software is
             <executions>
               <execution>
                 <id>unpack-javadoc</id>
-                <phase>package</phase>
+                <phase>prepare-package</phase>
                 <goals>
                   <goal>unpack</goal>
                 </goals>
