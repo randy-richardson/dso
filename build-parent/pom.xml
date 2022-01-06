@@ -44,7 +44,7 @@ The Initial Developer of the Covered Software is
     <heap-core-storage.version>1.2.1</heap-core-storage.version>
     <bigmemory-core-storage.version>2.1.1</bigmemory-core-storage.version>
     <search.version>1.5.14</search.version>
-    <management-core.version>2.1.27</management-core.version>
+    <management-core.version>2.1.30-SNAPSHOT</management-core.version>
     <session-management.version>4.3.9</session-management.version>
     <tc-messaging.version>1.1.6</tc-messaging.version>
     <terracotta-license.version>1.2.3</terracotta-license.version>
