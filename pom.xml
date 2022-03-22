@@ -209,7 +209,7 @@ The Initial Developer of the Covered Software is
     <profile>
       <id>cloud</id>
       <modules>
-        <module>../cloud/images</module>
+        <module>../cloud</module>
       </modules>
     </profile>
 
