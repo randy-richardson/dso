@@ -138,11 +138,6 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
 
       ServiceLocator.load(serviceLocator);
 
-      List<String> strings = securitySetup.performSecurityChecks();
-      for (String string : strings) {
-        LOG.warn(string);
-      }
-
       super.contextInitialized(sce);
     } catch (Exception e) {
       throw new RuntimeException("Error initializing TSAEnvironmentLoaderListener", e);
