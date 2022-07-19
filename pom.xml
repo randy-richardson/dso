@@ -104,8 +104,7 @@ The Initial Developer of the Covered Software is
               <configuration>
                 <scripts>
                   <script><![CDATA[
-                        new org.reflections.Reflections(["com", "org", "net"])
-                            .save("${project.build.directory}/reflections.xml")
+                        new org.reflections.Reflections(["com", "org", "net"]).save(new File(project.build.directory, "reflections.xml").absolutePath)
                     ]]></script>
                 </scripts>
               </configuration>
