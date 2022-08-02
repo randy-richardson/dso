@@ -16,12 +16,6 @@
  */
 package com.terracotta.management.web.shiro;
 
-import org.apache.shiro.web.env.EnvironmentLoaderListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
-import org.terracotta.management.ServiceLocator;
-
 import com.tc.properties.TCPropertiesConsts;
 import com.tc.properties.TCPropertiesImpl;
 import com.terracotta.management.ApplicationTsaService;
@@ -32,8 +26,13 @@ import com.terracotta.management.service.impl.TimeoutServiceImpl;
 import com.terracotta.management.service.impl.util.LocalManagementSource;
 import com.terracotta.management.service.impl.util.RemoteManagementSource;
 import com.terracotta.management.web.utils.TSAConfig;
+import org.apache.shiro.web.env.EnvironmentLoaderListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.terracotta.management.ServiceLocator;
 
-import java.util.List;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
@@ -45,9 +44,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-
 /**
  * @param <T>
  * @author Ludovic Orban
@@ -55,16 +51,6 @@ import javax.servlet.ServletContextEvent;
 public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
 
   private static final int REJECTION_TIMEOUT = Integer.getInteger("com.tc.management.threadPools.rejectionTimeout", 25);
-
-  static {
-    // Optionally remove existing handlers attached to j.u.l root logger
-    SLF4JBridgeHandler.removeHandlersForRootLogger();  // (since SLF4J 1.6.5)
-    // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
-    // the initialization phase of your application
-    SLF4JBridgeHandler.install();
-  }
-
-  private static final Logger LOG = LoggerFactory.getLogger(TSAEnvironmentLoaderListener.class);
 
   private volatile ThreadPoolExecutor l1BridgeExecutorService;
   private volatile ThreadPoolExecutor tsaExecutorService;
