@@ -26,6 +26,6 @@ resources:
 jobs:
   - template: build-templates/maven-common.yml@templates
     parameters:
-      jdkVersion: '1.11',
+      jdkVersion: '1.11'
       options: -B -Djava.test.vendor=zulu -Pfullmode,check-short -Dsag-deps=true -DskipCheckstyle -DskipJavadoc
       mavenGoals: 'clean install' # verify won't work because of funky poms
