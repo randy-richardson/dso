@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -77,7 +77,7 @@ public class TerracottaConnector extends LocalConnector {
   }
 
   @Override
-  public Future<Void> shutdown() {
+  public CompletableFuture<Void> shutdown() {
     executorService.shutdownNow();
     return super.shutdown();
   }

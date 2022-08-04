@@ -285,7 +285,7 @@ public class ClusterManager {
   }
 
   private static void https_waitUntilTsaAgentInitialized(int port) throws Exception {
-    HttpClient httpClient = new HttpClient(new SslContextFactory(true));
+    HttpClient httpClient = new HttpClient();
     try {
       httpClient.start();
       waitForAgentInitialization(port, httpClient, ClusterManager::contentTypeIsJson);
@@ -295,7 +295,7 @@ public class ClusterManager {
   }
 
   private static void https_waitUntilL1ThroughTsaAgentInitialized(int port) throws Exception {
-    HttpClient httpClient = new HttpClient(new SslContextFactory(true));
+    HttpClient httpClient = new HttpClient();
     try {
       httpClient.start();
       waitForAgentInitialization(port, httpClient, ClusterManager::responseContainsAgencyEhcache);

@@ -54,7 +54,6 @@ The Initial Developer of the Covered Software is
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
 
     <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
-    <groovy.version>2.5.8</groovy.version>
 
     <cargo-maven2-plugin.version>1.7.11</cargo-maven2-plugin.version>
     <tc.linked-child-process.version>1.0.17</tc.linked-child-process.version>

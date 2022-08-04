@@ -55,7 +55,6 @@ The Initial Developer of the Covered Software is
     <tcconfig.version>9.6</tcconfig.version>
     <linked-child-process.version>1.0.17</linked-child-process.version>
     <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
-    <groovy.version>2.5.8</groovy.version>
     <skip.testjar>false</skip.testjar>
     <listName>checkshort.txt</listName>
     <localMavenRepository>${user.home}/.m2/repository</localMavenRepository>
