@@ -187,6 +187,18 @@ The Initial Developer of the Covered Software is
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.4.0</version>
+        <configuration>
+          <skip>${skipJavadoc}</skip>
+          <source>8</source>
+          <detectJavaApiLink>false</detectJavaApiLink>
+          <doclint>none</doclint>
+          <quiet>true</quiet>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
