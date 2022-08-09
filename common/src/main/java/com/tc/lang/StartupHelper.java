@@ -16,6 +16,11 @@
  */
 package com.tc.lang;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 /**
  * The purpose of this class to execute a startup action (ie. "start the server", or "start the client", etc) in a
  * thread in the specified thread group. The side effect of doing this is that any more threads spawned by the startup
@@ -33,22 +38,25 @@ public class StartupHelper {
   }
 
   public void startUp() {
-    Runnable r = () -> {
-      try {
-        action.execute();
-      } catch (Throwable t) {
-        threadGroup.uncaughtException(Thread.currentThread(), t);
-        throw new RuntimeException(t);
-      }
-    };
-
-    Thread th = new Thread(threadGroup, r);
-    th.start();
-
+    ExecutorService executor = Executors.newSingleThreadExecutor(r -> new Thread(threadGroup, r));
     try {
-      th.join();
-    } catch (InterruptedException ie) {
-      throw new RuntimeException(ie);
+      Future<?> submit = executor.submit(() -> {
+        try {
+          action.execute();
+        } catch (Throwable t) {
+          threadGroup.uncaughtException(Thread.currentThread(), t);
+          throw new RuntimeException(t);
+        }
+      });
+      try {
+        submit.get();
+      } catch (InterruptedException exception) {
+        submit.cancel(true);
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e.getCause());
+      }
+    } finally {
+      executor.shutdown();
     }
   }
 
