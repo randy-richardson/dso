@@ -729,6 +729,10 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     for (int i = 0; samples.size() < count && i < size; i++) {
       if (evictionIterator == null || !evictionIterator.hasNext()) {
         evictionIterator = references.keySet().iterator();
+        if (!evictionIterator.hasNext()) {
+          //map is empty, abort and return what we can
+          break;
+        }
       }
       final Object k = evictionIterator.next();
       if (k == null) { throw new AssertionError("key is not null"); }
