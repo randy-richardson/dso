@@ -21,14 +21,14 @@ The Initial Developer of the Covered Software is
 
   <parent>
     <groupId>org.terracotta.forge</groupId>
-    <artifactId>forge-parent-ee</artifactId>
-    <version>4.14</version>
+    <artifactId>forge-parent</artifactId>
+    <version>5.5</version>
     <relativePath/>
   </parent>
 
   <groupId>org.terracotta</groupId>
   <artifactId>terracotta-root</artifactId>
-  <version>4.3.9-SNAPSHOT</version>
+  <version>4.3.10-SNAPSHOT</version>
   <name>terracotta-root</name>
   <packaging>pom</packaging>
 
@@ -38,9 +38,10 @@ The Initial Developer of the Covered Software is
   
   <properties>
     <build.edition>opensource</build.edition>
-    <maven-forge-plugin.version>1.2.30</maven-forge-plugin.version>
     <tc-shader.version>1.2</tc-shader.version>
     <skip.deploy>false</skip.deploy>
+    <!-- can't default to ${project.version}, breaks child projects like ehcache that use a different version -->
+    <thirdparty-bom.version>4.3.10-SNAPSHOT</thirdparty-bom.version>
   </properties>
 
   <modules>
@@ -75,28 +76,116 @@ The Initial Developer of the Covered Software is
     <module>management-cli-oss</module>
   </modules>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.terracotta</groupId>
+        <artifactId>thirdparty-bom-4.x</artifactId>
+        <version>${thirdparty-bom.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <build>
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.sonatype.plugins</groupId>
-          <artifactId>nexus-staging-maven-plugin</artifactId>
-          <version>1.6.1</version>
-          <extensions>true</extensions>
-          <configuration>
-            <!-- The Base URL of Nexus instance where we want to stage -->
-            <nexusUrl>http://nexus.terracotta.eur.ad.sag</nexusUrl>
-            <!-- The server "id" element from settings to use authentication from -->
-            <serverId>terracotta-nexus-staging</serverId>
-            <skipNexusStagingDeployMojo>${skip.deploy}</skipNexusStagingDeployMojo>
-          </configuration>
+          <groupId>org.codehaus.gmavenplus</groupId>
+          <artifactId>gmavenplus-plugin</artifactId>
+          <version>1.12.1</version>
+          <executions>
+            <execution>
+              <phase>process-test-classes</phase>
+              <goals>
+                <goal>execute</goal>
+              </goals>
+              <configuration>
+                <scripts>
+                  <script><![CDATA[
+                        new org.reflections.Reflections(["com", "org", "net"])
+                            .save("${project.build.directory}/reflections.xml")
+                    ]]></script>
+                </scripts>
+              </configuration>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>org.reflections</groupId>
+              <artifactId>reflections</artifactId>
+              <version>0.9.12</version>
+            </dependency>
+            <dependency>
+              <groupId>org.codehaus.groovy</groupId>
+              <artifactId>groovy</artifactId>
+              <version>${groovy.version}</version>
+              <scope>runtime</scope>
+            </dependency>
+            <dependency>
+              <groupId>org.dom4j</groupId>
+              <artifactId>dom4j</artifactId>
+              <version>2.1.3</version>
+            </dependency>
+            <dependency>
+              <groupId>org.codehaus.groovy</groupId>
+              <artifactId>groovy-ant</artifactId>
+              <version>${groovy.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
+
       </plugins>
     </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>4.1</version>
+        <configuration>
+          <defaultBasedir>${project.basedir}</defaultBasedir>
+          <licenseSets>
+            <licenseSet>
+              <inlineHeader>
+                <![CDATA[The contents of this file are subject to the Terracotta Public License Version
+2.0 (the "License"); You may not use this file except in compliance with the
+License. You may obtain a copy of the License at
+
+     http://terracotta.org/legal/terracotta-public-license.
+
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
+the specific language governing rights and limitations under the License.
+
+The Covered Software is Terracotta Platform.
+
+The Initial Developer of the Covered Software is
+     Terracotta, Inc., a Software AG company]]></inlineHeader>
+              <excludes>
+                <exclude>**/target/**</exclude>
+                <exclude>azure-pipelines.yml</exclude>
+                <exclude>Jenkinsfile</exclude>
+                <exclude>**/pom.xml</exclude>
+                <exclude>**/README</exclude>
+                <exclude>**/*.txt</exclude>
+                <exclude>src/test/resources/**</exclude>
+                <exclude>src/main/resources/**</exclude>
+              </excludes>
+            </licenseSet>
+          </licenseSets>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -144,7 +233,6 @@ The Initial Developer of the Covered Software is
         <module>../toolkit-runtime-ee</module>
         <module>../toolkit-ee-system-tests</module>
         <module>../toolkit-lrt-system-tests</module>
-        <module>../wan-standalone</module>
       </modules>
     </profile>
 
@@ -607,37 +695,26 @@ The Initial Developer of the Covered Software is
       <name>Terracotta Nexus Staging Repository</name>
       <url>${terracotta-nexus-staging-url}</url>
     </repository>
-    <snapshotRepository>
-      <id>terracotta-os-snapshots</id>
-       <uniqueVersion>false</uniqueVersion>
-       <name>Terracotta OS Snapshots Repository</name>
-       <url>${terracotta-os-snapshots-url}</url>
-    </snapshotRepository>
   </distributionManagement>
 
   <repositories>
     <repository>
       <id>sonatype-snapshots</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </repository>
-    <repository>
-      <id>terracotta-snapshots</id>
-      <url>http://www.terracotta.org/download/reflector/snapshots</url>
-    </repository>
+    <!-- this we need to find parent -->
     <repository>
       <id>terracotta-releases</id>
-      <url>http://www.terracotta.org/download/reflector/releases</url>
+      <url>https://repo.terracotta.org/maven2</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
     </repository>
   </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>terracotta-snapshots</id>
-      <url>http://www.terracotta.org/download/reflector/snapshots</url>
-    </pluginRepository>
-    <pluginRepository>
-      <id>terracotta-releases</id>
-      <url>http://www.terracotta.org/download/reflector/releases</url>
-    </pluginRepository>
-  </pluginRepositories>
 </project>

@@ -64,7 +64,7 @@ public abstract class ManagementToolUtil {
   private static boolean securityManagerInitDone = false;
 
   private static boolean isSecured(CommandLineBuilder commandLineBuilder) {
-    return commandLineBuilder.hasOption('s');
+    return commandLineBuilder.hasOption("secured");
   }
 
   private static boolean isIgnoreUntrustedCerts(CommandLineBuilder commandLineBuilder) {
@@ -109,13 +109,17 @@ public abstract class ManagementToolUtil {
   }
 
   public static void addConnectionOptionsTo(CommandLineBuilder commandLineBuilder) {
+    addConnectionOptionsTo(commandLineBuilder, false);
+  }
+
+  public static void addConnectionOptionsTo(CommandLineBuilder commandLineBuilder, boolean serversShortOpt) {
     commandLineBuilder.addOption("u", "username", true, "username", String.class, false);
-    commandLineBuilder.addOption("w", "password", true, "password", String.class, false);
-    commandLineBuilder.addOption("s", "secured", false, "secured", String.class, false);
-    commandLineBuilder.addOption("k", "ignoreSSLCert", false, "Ignore untrusted SSL certificate", String.class, false);
-    commandLineBuilder.addOption("f", "config", true, "tc-config.xml file", String.class, false);
-    commandLineBuilder.addOption("n", "name", true, "name of the server when specifying a tc-config.xml", String.class, false);
-    commandLineBuilder.addOption(null, "servers", true, "comma separated list of host:port pairs.", String.class, false);
+    commandLineBuilder.addOption("w", "password", true, "password; prompted if omitted and username is specified", String.class, false);
+    commandLineBuilder.addOption(serversShortOpt ? null : "s", "secured", false, "secured by SSL", String.class, false);
+    commandLineBuilder.addOption("k", "ignoreSSLCert", false, "ignore untrusted SSL certificate", String.class, false);
+    commandLineBuilder.addOption("f", "config", true, "tc-config.xml file; required if servers are not specified", String.class, false);
+    commandLineBuilder.addOption("n", "name", true, "optional name of a server when specifying a tc-config.xml", String.class, false);
+    commandLineBuilder.addOption(serversShortOpt ? "s" : null, "servers", true, "comma separated list of host:management-port pairs; required if a config file is not specified", String.class, false);
   }
 
   public static Collection<WebTarget> getTargets(CommandLineBuilder commandLineBuilder)

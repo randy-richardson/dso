@@ -21,7 +21,7 @@ The Initial Developer of the Covered Software is
 	<parent>
 		<groupId>org.terracotta</groupId>
 		<artifactId>build-parent</artifactId>
-		<version>4.3.9-SNAPSHOT</version>
+		<version>4.3.10-SNAPSHOT</version>
 		<relativePath>../build-parent</relativePath>
 	</parent>
 
@@ -473,18 +473,5 @@ The Initial Developer of the Covered Software is
 			</build>
 		</profile>
 	</profiles>
-
-	<repositories>
-		<repository>
-			<id>terracotta-releases</id>
-			<url>http://www.terracotta.org/download/reflector/releases</url>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>terracotta-releases</id>
-			<url>http://www.terracotta.org/download/reflector/releases</url>
-		</pluginRepository>
-	</pluginRepositories>
 
 </project>

@@ -1,7 +1,7 @@
-/* 
+/*
  * The contents of this file are subject to the Terracotta Public License Version
  * 2.0 (the "License"); You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at 
+ * License. You may obtain a copy of the License at
  *
  *      http://terracotta.org/legal/terracotta-public-license.
  *
@@ -11,7 +11,7 @@
  *
  * The Covered Software is Terracotta Platform.
  *
- * The Initial Developer of the Covered Software is 
+ * The Initial Developer of the Covered Software is
  *      Terracotta, Inc., a Software AG company
  */
 package com.terracotta.management.web.shiro;
@@ -84,7 +84,7 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
       l1BridgeExecutorService.setRejectedExecutionHandler(new RejectedExecutionHandler() {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
           try {
-            boolean accepted = l1BridgeExecutorService.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
+            boolean accepted = executor.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
             if (!accepted) {
               throw new RejectedExecutionException("L1 Management thread pool saturated, job rejected");
             }
@@ -100,7 +100,7 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
       tsaExecutorService.setRejectedExecutionHandler(new RejectedExecutionHandler() {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
           try {
-            boolean accepted = l1BridgeExecutorService.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
+            boolean accepted = executor.getQueue().offer(r, REJECTION_TIMEOUT, TimeUnit.MILLISECONDS);
             if (!accepted) {
               throw new RejectedExecutionException("L2 Management thread pool saturated, job rejected");
             }
@@ -110,7 +110,9 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
         }
       });
 
-      TimeoutService timeoutService = new TimeoutServiceImpl(TSAConfig.getDefaultL1BridgeTimeout());
+      TimeoutService timeoutService = new TimeoutServiceImpl(
+          TSAConfig.getDefaultL1BridgeTimeout(),
+          TSAConfig.getDefaultL1BridgeConnectionTimeout());
 
       LocalManagementSource localManagementSource = new LocalManagementSource();
 
@@ -121,7 +123,8 @@ public class TSAEnvironmentLoaderListener<T> extends EnvironmentLoaderListener {
       /// Security Services ///
       SecuritySetup securitySetup = buildSecuritySetup(serviceLocator);
 
-      remoteManagementSource = securitySetup.buildRemoteManagementSource(localManagementSource, timeoutService);
+      remoteManagementSource = securitySetup.buildRemoteManagementSource(localManagementSource, timeoutService,
+          tsaExecutorService);
       serviceLocator.loadService(RemoteManagementSource.class, remoteManagementSource);
 
       ServiceLoader<ApplicationTsaService> loaders = ServiceLoader.load(ApplicationTsaService.class);

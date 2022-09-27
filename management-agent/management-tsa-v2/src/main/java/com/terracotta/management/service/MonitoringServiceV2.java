@@ -21,6 +21,7 @@ import org.terracotta.management.resource.ResponseEntityV2;
 
 import com.terracotta.management.resource.StatisticsEntityV2;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.Set;
 
@@ -51,6 +52,8 @@ public interface MonitoringServiceV2 {
    */
   ResponseEntityV2<StatisticsEntityV2> getServerStatistics(Set<String> serverNames, Set<String> attributes) throws ServiceExecutionException;
 
+  ResponseEntityV2<StatisticsEntityV2> getServerStatistics(Set<String> serverNames, Set<String> attributes,
+                                                           Set<String> agentIds, URI uri) throws ServiceExecutionException;
   /**
    * Get the DGC statistics.
    *

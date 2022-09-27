@@ -21,7 +21,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>4.3.9-SNAPSHOT</version>
+    <version>4.3.10-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
 
@@ -31,7 +31,6 @@ The Initial Developer of the Covered Software is
   <name>test-framework</name>
   
   <properties>
-    <byteman.version>2.0.1</byteman.version>
     <skip.testjar>true</skip.testjar>
   </properties>
 
@@ -90,11 +89,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>jline</groupId>
-      <artifactId>jline</artifactId>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
@@ -161,7 +155,6 @@ The Initial Developer of the Covered Software is
     <dependency>
       <groupId>org.jboss.byteman</groupId>
       <artifactId>byteman</artifactId>
-      <version>${byteman.version}</version>
     </dependency>
     <dependency>
       <groupId>org.terracotta.internal</groupId>
@@ -238,30 +231,14 @@ The Initial Developer of the Covered Software is
         </executions>
       </plugin>
       <plugin>
-        <groupId>com.github.goldin</groupId>
-        <artifactId>copy-maven-plugin</artifactId>
-        <version>${copy-maven-plugin.version}</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
         <executions>
           <execution>
-            <id>create-source-archive</id>
-            <phase>package</phase>
+            <id>attach-sources</id>
             <goals>
-              <goal>copy</goal>
+              <goal>jar</goal>
             </goals>
-            <configuration>
-              <resources>
-                <resource>
-                  <targetPath>${project.build.directory}/sources</targetPath>
-                  <directory>${basedir}/src/main/java</directory>
-                </resource>
-                <resource>
-                  <targetPath>${project.build.directory}/${project.artifactId}-${project.version}-sources.jar</targetPath>
-                  <directory>${project.build.directory}/sources</directory>
-                  <pack>true</pack>
-                  <attachArtifact>false</attachArtifact>
-                </resource>
-              </resources>
-            </configuration>
           </execution>
         </executions>
       </plugin>

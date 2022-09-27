@@ -56,6 +56,7 @@ import static org.mockito.Mockito.when;
 public class ClientManagementServiceV2Test {
 
   private ExecutorService executorService;
+  private final long defaultConnectionTimeout = 1_000;
 
   @Before
   public void setUp() throws Exception {
@@ -70,9 +71,9 @@ public class ClientManagementServiceV2Test {
   @Test
   public void test_getClients_local() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
     L1MBeansSource l1MBeansSource = mock(L1MBeansSource.class);
 
     when(localManagementSource.getRemoteServerUrls()).thenReturn(new HashMap<String, String>() {{
@@ -116,7 +117,7 @@ public class ClientManagementServiceV2Test {
   @Test
   public void test_getClients_remote() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
     RemoteManagementSource remoteManagementSource = mock(RemoteManagementSource.class);
     L1MBeansSource l1MBeansSource = mock(L1MBeansSource.class);

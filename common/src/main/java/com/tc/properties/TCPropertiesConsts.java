@@ -487,6 +487,7 @@ public interface TCPropertiesConsts {
    ********************************************************************************************************************/
   public static final String LOGGING_MAXBACKUPS                                             = "logging.maxBackups";
   public static final String LOGGING_MAX_LOGFILE_SIZE                                       = "logging.maxLogFileSize";
+  public static final String LOGGING_BACKUP_FILE_SUFFIX                                     = "logging.backupFileSuffix";
   public static final String LOGGING_LONG_GC_THRESHOLD                                      = "logging.longgc.threshold";
 
   /*********************************************************************************************************************
@@ -901,6 +902,9 @@ public interface TCPropertiesConsts {
   public static final String TOOLKIT_LOCAL_BUFFER_PUTS_BATCH_BYTE_SIZE                      = "toolkit.bulkload.minbatchbytesize";
   public static final String TOOLKIT_LOCAL_BUFFER_PUTS_BATCH_TIME_MILLIS                    = "toolkit.bulkload.throttle.timeInmillis";
   public static final String TOOLKIT_LOCAL_BUFFER_PUTS_THROTTLE_BYTE_SIZE                   = "toolkit.bulkload.throttle.threshold";
+
+  public static final String TOOLKIT_NOTIFIER_THREADS                                       = "toolkit.notifier.threads";
+  public static final String TOOLKIT_NOTIFIER_QUEUE_SIZE                                    = "toolkit.notifier.queueSize";
 
   /*
    * For enabling CAS logging

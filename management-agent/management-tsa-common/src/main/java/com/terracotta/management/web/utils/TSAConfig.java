@@ -28,6 +28,7 @@ public class TSAConfig {
 
   private static final int DEFAULT_SECURITY_TIMEOUT = 10000;
   private static final int DEFAULT_L1_BRIDGE_TIMEOUT = 15000;
+  private static final int DEFAULT_L1_BRIDGE_CONNECTION_TIMEOUT = 7000;
 
   public static boolean isSslEnabled() {
     try {
@@ -113,6 +114,15 @@ public class TSAConfig {
   public static long getDefaultL1BridgeTimeout() {
     try {
       String timeoutString = System.getProperty("com.terracotta.agent.defaultL1BridgeTimeout", "" + DEFAULT_L1_BRIDGE_TIMEOUT);
+      return Long.parseLong(timeoutString);
+    } catch (NumberFormatException nfe) {
+      return DEFAULT_L1_BRIDGE_TIMEOUT;
+    }
+  }
+
+  public static long getDefaultL1BridgeConnectionTimeout() {
+    try {
+      String timeoutString = System.getProperty("com.terracotta.agent.defaultL1BridgeConnectionTimeout", "" + DEFAULT_L1_BRIDGE_CONNECTION_TIMEOUT);
       return Long.parseLong(timeoutString);
     } catch (NumberFormatException nfe) {
       return DEFAULT_L1_BRIDGE_TIMEOUT;

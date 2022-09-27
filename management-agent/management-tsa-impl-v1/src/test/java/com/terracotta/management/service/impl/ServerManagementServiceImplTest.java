@@ -32,8 +32,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.hamcrest.MockitoHamcrest;
 
 import javax.ws.rs.WebApplicationException;
 import java.net.URI;
@@ -52,7 +50,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -75,6 +72,7 @@ public class ServerManagementServiceImplTest {
 
 
   private ExecutorService executorService;
+  private final long defaultConnectionTimeout = 1_000;
 
   @Before
   public void setUp() throws Exception {
@@ -89,9 +87,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void test_getBackupsStatus() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getL2Infos()).thenReturn(L2_INFOS);
     when(localManagementSource.getLocalServerName()).thenReturn("s1");
@@ -118,9 +116,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void test_serversThreadDump_all() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getL2Infos()).thenReturn(L2_INFOS);
     when(localManagementSource.getLocalServerName()).thenReturn("s1");
@@ -143,9 +141,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void test_serversThreadDump_filter() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getL2Infos()).thenReturn(L2_INFOS);
     when(localManagementSource.getLocalServerName()).thenReturn("s1");
@@ -167,9 +165,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void test_getServersStatistics_all() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getL2Infos()).thenReturn(L2_INFOS);
     when(localManagementSource.getLocalServerName()).thenReturn("s1");
@@ -202,9 +200,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void test_getServersStatistics_filter() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getL2Infos()).thenReturn(L2_INFOS);
     when(localManagementSource.getLocalServerName()).thenReturn("s1");
@@ -237,9 +235,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void test_getServerGroups() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getL2Infos()).thenReturn(L2_INFOS);
     when(localManagementSource.getLocalServerName()).thenReturn("s1");
@@ -266,9 +264,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void testProxyClientRequest_throwsProxyException() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getLocalServerName()).thenReturn("s2");
     when(localManagementSource.getServerGroupInfos()).thenReturn(new ServerGroupInfo[] {
@@ -311,9 +309,9 @@ public class ServerManagementServiceImplTest {
   @Test
   public void testProxyClientRequest_noActiveInCoordinatorGroupThrowsHttp400() throws Exception {
     LocalManagementSource localManagementSource = mock(LocalManagementSource.class);
-    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L);
+    TimeoutServiceImpl timeoutService = new TimeoutServiceImpl(1000L, defaultConnectionTimeout);
     DfltSecurityContextService securityContextService = new DfltSecurityContextService();
-    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService));
+    RemoteManagementSource remoteManagementSource = spy(new RemoteManagementSource(localManagementSource, timeoutService, executorService));
 
     when(localManagementSource.getServerGroupInfos()).thenReturn(new ServerGroupInfo[] {
         new ServerGroupInfo(new L2Info[] {L2_INFOS[0], L2_INFOS[1]}, "group0", 0, true),

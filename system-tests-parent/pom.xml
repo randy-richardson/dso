@@ -12,7 +12,7 @@ the specific language governing rights and limitations under the License.
 
 The Covered Software is Terracotta Platform.
 
-The Initial Developer of the Covered Software is 
+The Initial Developer of the Covered Software is
      Terracotta, Inc., a Software AG company
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -21,7 +21,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-root</artifactId>
-    <version>4.3.9-SNAPSHOT</version>
+    <version>4.3.10-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -39,9 +39,8 @@ The Initial Developer of the Covered Software is
   </licenses>
 
   <properties>
-    <group>system</group>
     <tcmaven.version>2.1.0</tcmaven.version>
-    <terracotta.core.version>4.3.9-SNAPSHOT</terracotta.core.version>
+    <terracotta.core.version>4.3.10-SNAPSHOT</terracotta.core.version>
     <tc.core.groupId>org.terracotta</tc.core.groupId>
     <tc.core.artifactId>terracotta</tc.core.artifactId>
     <tc.management.war.groupId>org.terracotta</tc.management.war.groupId>
@@ -49,15 +48,15 @@ The Initial Developer of the Covered Software is
     <productKeyPath/>
     <ee.license>-Dcom.tc.productkey.path=${productKeyPath}</ee.license>
     <!-- must not be a SNAPSHOT, pipeline checks for that -->
-    <container-test-framework.version>3.0.3</container-test-framework.version>
+    <container-test-framework.version>3.0.4</container-test-framework.version>
 
     <tc.tests.configuration.properties.file>${project.build.testOutputDirectory}/tc.tests.properties</tc.tests.configuration.properties.file>
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
 
     <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
     <groovy.version>2.5.8</groovy.version>
-    <rest-assured.version>4.1.2</rest-assured.version>
-    <cargo-maven2-plugin.version>1.0.3</cargo-maven2-plugin.version>
+
+    <cargo-maven2-plugin.version>1.7.11</cargo-maven2-plugin.version>
     <tc.linked-child-process.version>1.0.17</tc.linked-child-process.version>
     <maven-appserver-plugin.version>1.0.5</maven-appserver-plugin.version>
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
@@ -76,7 +75,6 @@ The Initial Developer of the Covered Software is
     <surefire.additional-jvm-args/>
     <surefire.additional-jvm-module-args/>
     <surefire.argLine>-server -Xms${surefire.min-memory} -Xmx${surefire.max-memory} ${surefire.additional-jvm-module-args} ${surefire.additional-jvm-args} -Dtc.base-dir=${tc.base-dir} ${tc.config} -Dtc.dso.globalmode=${tc.dso.globalmode} -Dtc.tests.info.property-files=${tc.tests.info.property-files} -Dcom.tc.properties=${tc.system.tests.properties} -Dcom.sun.management.jmxremote ${ee.license}</surefire.argLine>
-    <skipTests>true</skipTests>
 
     <!--
         Unfortunately, this silly localMavenRepository property is necessary
@@ -115,59 +113,6 @@ The Initial Developer of the Covered Software is
         <artifactId>test-framework</artifactId>
         <version>${terracotta.core.version}</version>
       </dependency>
-      <dependency>
-        <groupId>io.rest-assured</groupId>
-        <artifactId>rest-assured</artifactId>
-        <version>${rest-assured.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-xml</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>io.rest-assured</groupId>
-        <artifactId>json-path</artifactId>
-        <version>${rest-assured.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-json</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.groovy</groupId>
-        <artifactId>groovy</artifactId>
-        <version>${groovy.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.groovy</groupId>
-        <artifactId>groovy-json</artifactId>
-        <version>${groovy.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.groovy</groupId>
-        <artifactId>groovy-xml</artifactId>
-        <version>${groovy.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -189,6 +134,18 @@ The Initial Developer of the Covered Software is
       <groupId>org.terracotta.junit</groupId>
       <artifactId>test-listeners</artifactId>
       <version>1.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
     </dependency>
     <!-- This isn't published and external things use this project as a parent
     <dependency>
@@ -233,14 +190,17 @@ The Initial Developer of the Covered Software is
           <artifactId>maven-forge-plugin</artifactId>
           <version>${maven-forge-plugin.version}</version>
           <executions>
+            <!--
+            Only integration tests in this module.
+            This should be run with -Psystem-tests to pick up forge-parent profile
+            ITs must run after maven-appserver-plugin sets up in pre-integration-test
+            -->
             <execution>
-              <id>default-test</id>
-              <phase>integration-test</phase>
+              <id>default-integration-test</id>
               <goals>
-                <goal>test</goal>
+                <goal>integration-test</goal>
               </goals>
               <configuration>
-                <skipTests>${skipTests}</skipTests>
                 <forkCount>1</forkCount>
                 <reuseForks>false</reuseForks>
                 <printSummary>true</printSummary>
@@ -381,10 +341,6 @@ The Initial Developer of the Covered Software is
     </pluginManagement>
     <plugins>
       <plugin>
-        <groupId>org.terracotta</groupId>
-        <artifactId>maven-forge-plugin</artifactId>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.gmaven</groupId>
         <artifactId>groovy-maven-plugin</artifactId>
       </plugin>
@@ -419,36 +375,17 @@ The Initial Developer of the Covered Software is
         <tc.core.artifactId>terracotta-ee</tc.core.artifactId>
         <tc.management.war.groupId>com.terracottatech</tc.management.war.groupId>
         <tc.management.war.artifactId>ent-management-tsa-war</tc.management.war.artifactId>
-        <skipTests>false</skipTests>
       </properties>
     </profile>
 
     <profile>
       <id>check-short</id>
-      <properties>
-        <should_skip_tests>false</should_skip_tests>
-      </properties>     
       <build>
         <plugins>
           <plugin>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections-maven</artifactId>
-            <version>0.9.9-RC1</version>
-            <configuration>
-              <scanners>org.reflections.scanners.TypeAnnotationsScanner</scanners>
-              <destinations>${project.build.directory}/reflections.xml</destinations>
-              <tests>true</tests>
-              <parallel>true</parallel>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>reflections</goal>
-                </goals>
-                <phase>process-test-classes</phase>
-              </execution>
-            </executions>
-          </plugin>        
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
+          </plugin>
           <plugin>
             <groupId>org.terracotta</groupId>
             <artifactId>maven-forge-plugin</artifactId>
@@ -468,7 +405,6 @@ The Initial Developer of the Covered Software is
       <!-- Not sure this is used anywhere anymore -->
       <id>single-server</id>
       <properties>
-        <should_skip_tests>false</should_skip_tests>
         <tc.tests.info.standalone>true</tc.tests.info.standalone>
         <tc.tests.info.tsa.port>9910</tc.tests.info.tsa.port>
       </properties>
@@ -509,23 +445,8 @@ The Initial Developer of the Covered Software is
           </plugin>
 
           <plugin>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections-maven</artifactId>
-            <version>0.9.9-RC1</version>
-            <configuration>
-              <scanners>org.reflections.scanners.TypeAnnotationsScanner</scanners>
-              <destinations>${project.build.directory}/reflections.xml</destinations>
-              <tests>true</tests>
-              <parallel>true</parallel>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>reflections</goal>
-                </goals>
-                <phase>process-test-classes</phase>
-              </execution>
-            </executions>
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
           </plugin>
           <plugin>
             <groupId>org.terracotta</groupId>
@@ -574,7 +495,7 @@ The Initial Developer of the Covered Software is
                 <configuration>
                   <source><![CDATA[
                     import org.apache.maven.artifact.Artifact
-                    if (properties['appserver'] =~ /websphere/) {
+                    if (project.properties['appserver'] =~ /websphere/) {
                       project.properties.setProperty('tc.tests.info.junit-test-timeout-inseconds', '2700')
                       project.properties.setProperty('absolute-test-timeout-secs', '2700')
                       def cacheDir = System.getProperty("user.home") + File.separator + ".tc"
@@ -627,9 +548,6 @@ The Initial Developer of the Covered Software is
 
     <profile>
       <id>run-test-group</id>
-      <properties>
-        <skipTests>false</skipTests>
-      </properties>
       <build>
         <plugins>
           <plugin>
@@ -663,106 +581,6 @@ The Initial Developer of the Covered Software is
       </properties>
     </profile>
 
-    <profile>
-      <id>check</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>groovy-maven-plugin</artifactId>
-            <version>${groovy-maven-plugin.version}</version>
-            <executions>
-              <execution>
-                <id>decide-which-group-should-run-tests</id>
-                <phase>process-test-resources</phase>
-                <goals>
-                  <goal>execute</goal>
-                </goals>
-                <configuration>
-                  <source>
-                    def target = properties['target']
-                    if (target == null) fail("-Dtarget needs to be set for this profile")
-                    def targetSet = new HashSet(Arrays.asList(target.split(",")))
-                    def projectGroups = new HashSet()
-                    if (project.properties['group'] != null) {
-                      projectGroups.addAll(Arrays.asList(project.properties['group'].split(",")))
-                    }
-                    targetSet.retainAll(projectGroups)
-                    def shouldSkipTest = targetSet.size() == 0
-                    project.properties.should_skip_tests = String.valueOf(shouldSkipTest)
-                  </source>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>         
-        </plugins>          
-      </build>
-    </profile>    
-
-    <profile>
-      <id>system-tests</id>
-      <properties>
-        <skipTests>false</skipTests>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.terracotta</groupId>
-            <artifactId>maven-forge-plugin</artifactId>
-            <configuration>
-              <printSummary>true</printSummary>
-              <reportFormat>plain</reportFormat>
-              <excludes>
-                <exclude>**/Abstract*.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>    
   </profiles>
-
-  <repositories>
-    <repository>
-      <id>terracotta-snapshots</id>
-      <url>http://www.terracotta.org/download/reflector/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>terracotta-releases</id>
-      <url>http://www.terracotta.org/download/reflector/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jboss-public</id>
-      <url>http://repository.jboss.org/nexus/content/groups/public</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>terracotta-snapshots</id>
-      <url>http://www.terracotta.org/download/reflector/snapshots</url>
-    </pluginRepository>
-    <pluginRepository>
-      <id>terracotta-releases</id>
-      <url>http://www.terracotta.org/download/reflector/releases</url>
-    </pluginRepository>
-  </pluginRepositories>
 
 </project>

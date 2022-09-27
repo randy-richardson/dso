@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -661,12 +662,21 @@ class CoreNIOServices implements TCListenerEventListener, TCConnectionEventListe
           } catch (CancelledKeyException cke) {
             logger.debug("Selection key cancelled key@" + key.hashCode());
           } catch (Exception e) { // DEV-9369. Do not reconnect on fatal errors.
-            logger.info("Unhandled exception occured on connection layer", e);
-            TCConnectionImpl conn = (TCConnectionImpl) key.attachment();
-            // TCConnectionManager will take care of closing and cleaning up resources
-            // key may not have an attachment yet.
-            if ( conn != null ) {
+            String channel;
+            try {
+              channel = String.valueOf(key.channel());
+            } catch (Throwable t) {
+              channel = "<unknown>:" + key.channel().getClass().getSimpleName() + "[" + t + "]";
+            }
+            logger.info("Unhandled exception occurred on connection layer for " + channel, e);
+            Object attachment = key.attachment();
+            if (attachment instanceof TCConnectionImpl) {
+              // TCConnectionManager will take care of closing and cleaning up resources
+              // key may not have an attachment yet.
+              TCConnectionImpl conn = (TCConnectionImpl) attachment;
               conn.fireErrorEvent(new RuntimeException(e), null);
+            } else if (key.channel() instanceof SocketChannel) {
+              cleanupChannel(key.channel(), null);
             }
           }
         } // for

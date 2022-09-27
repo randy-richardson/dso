@@ -16,7 +16,7 @@
  */
 package com.tc.object;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 public class VersionedObject {
 
@@ -38,7 +38,7 @@ public class VersionedObject {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("object", object)
         .add("version", version)
         .toString();
