@@ -43,7 +43,7 @@ The Initial Developer of the Covered Software is
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <core-storage-api.version>1.4</core-storage-api.version>
     <heap-core-storage.version>1.2.1</heap-core-storage.version>
-    <bigmemory-core-storage.version>2.1.1</bigmemory-core-storage.version>
+    <bigmemory-core-storage.version>2.1.2</bigmemory-core-storage.version>
     <javax.servlet.version>3.0.0.v201112011016</javax.servlet.version>
     <search.version>1.5.11</search.version>
     <shiro.version>1.4.0</shiro.version>
