@@ -42,7 +42,7 @@ The Initial Developer of the Covered Software is
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <core-storage-api.version>1.4</core-storage-api.version>
     <heap-core-storage.version>1.2.1</heap-core-storage.version>
-    <bigmemory-core-storage.version>2.1.1</bigmemory-core-storage.version>
+    <bigmemory-core-storage.version>2.1.2</bigmemory-core-storage.version>
     <search.version>1.5.14</search.version>
     <management-core.version>2.1.30-SNAPSHOT</management-core.version>
     <session-management.version>4.3.9</session-management.version>
