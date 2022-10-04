@@ -17,6 +17,7 @@
 package com.terracotta.management.service.impl;
 
 import org.terracotta.management.ServiceExecutionException;
+import org.terracotta.management.resource.ErrorEntity;
 import org.terracotta.management.resource.ExceptionEntityV2;
 import org.terracotta.management.resource.ResponseEntityV2;
 
@@ -273,10 +274,11 @@ public class ClientManagementServiceV2 {
   }
 
   private ExceptionEntityV2 createExceptionEntity(ManagementSourceException mse) {
-    if (mse.getErrorEntity() != null) {
+    final ErrorEntity errorEntity = mse.getErrorEntity();
+    if (errorEntity != null) {
       ExceptionEntityV2 exceptionEntity = new ExceptionEntityV2();
       exceptionEntity.setMessage(mse.getMessage());
-      exceptionEntity.setStackTrace(mse.getErrorEntity().getStackTrace());
+      exceptionEntity.setDetails(errorEntity.getDetails());
       return exceptionEntity;
     } else {
       return new ExceptionEntityV2(mse);
