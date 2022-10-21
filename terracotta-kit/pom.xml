@@ -117,7 +117,6 @@ The Initial Developer of the Covered Software is
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.1.1</version>
         <executions>
           <execution>
             <id>resolve-ehcache-path</id>
@@ -139,6 +138,60 @@ The Initial Developer of the Covered Software is
               <includeArtifactIds>slf4j-api</includeArtifactIds>
               <outputProperty>slf4j-api.path</outputProperty>
               <prefix>ehcache/lib</prefix>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeTypes>war</includeTypes>
+              <outputDirectory>${project.build.directory}/server-lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>net.sf.ehcache</groupId>
+                  <artifactId>ehcache-kit</artifactId>
+                  <version>${ehcache.version}</version>
+                  <classifier>distribution</classifier>
+                  <type>tar.gz</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.terracotta</groupId>
+                  <artifactId>terracotta-samples</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>distribution</classifier>
+                  <type>tar.gz</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/code-samples</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.terracotta.internal</groupId>
+                  <artifactId>build-data</artifactId>
+                  <version>${project.version}</version>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.terracotta</groupId>
+                  <artifactId>server-script</artifactId>
+                  <version>${project.version}</version>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
             </configuration>
           </execution>
         </executions>
@@ -165,7 +218,6 @@ The Initial Developer of the Covered Software is
               <excludes>
                 <exclude>**</exclude>
               </excludes>
-
               <finalName>ehcache-terracotta-client-all</finalName>
             </configuration>
           </execution>
@@ -214,69 +266,7 @@ The Initial Developer of the Covered Software is
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.8</version>
-        <executions>
-          <execution>
-            <id>copy</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeTypes>war</includeTypes>
-              <outputDirectory>${project.build.directory}/server-lib</outputDirectory>
-            </configuration>
-
-          </execution>
-          <execution>
-            <id>unpack</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>net.sf.ehcache</groupId>
-                  <artifactId>ehcache-kit</artifactId>
-                  <version>${ehcache.version}</version>
-                  <classifier>distribution</classifier>
-                  <type>tar.gz</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.terracotta</groupId>
-                  <artifactId>terracotta-samples</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>distribution</classifier>
-                  <type>tar.gz</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}/code-samples</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.terracotta.internal</groupId>
-                  <artifactId>build-data</artifactId>
-                  <version>${project.version}</version>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </artifactItem>
-                 <artifactItem>
-                  <groupId>org.terracotta</groupId>
-                  <artifactId>server-script</artifactId>
-                  <version>${project.version}</version>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.4</version>
         <configuration>
           <finalName>terracotta-${project.version}</finalName>
           <appendAssemblyId>false</appendAssemblyId>
@@ -301,6 +291,7 @@ The Initial Developer of the Covered Software is
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
@@ -370,7 +361,6 @@ The Initial Developer of the Covered Software is
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
-            <version>2.8</version>
             <executions>
               <execution>
                 <id>unpack-javadoc</id>

@@ -16,14 +16,6 @@
  */
 package com.tc.test.config.builder;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.xmlbeans.XmlException;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.tc.config.Loader;
 import com.tc.test.TestConfigUtil;
 import com.tc.test.process.ExternalDsoServer;
@@ -34,8 +26,14 @@ import com.terracottatech.config.Server;
 import com.terracottatech.config.TcConfigDocument;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.xmlbeans.XmlException;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -211,10 +209,23 @@ public class ClusterManager {
     return tcConfig.serverAt(groupIdx, serverIdx).getName();
   }
 
+  // TODO: If we remove devmode, this method can be removed and just use ProductInfo directly
+
+  private static final String detectEdition() {
+    String edition = ProductInfo.OPENSOURCE;
+    try {
+      Class.forName("com.tc.util.ProductInfoEnterpriseBundle");
+      edition = ProductInfo.ENTERPRISE;
+    } catch (ClassNotFoundException e) {
+      // ignore
+    }
+    return edition;
+  }
+
   public static String findAgentWarLocation(String version) {
     String groupId = "org.terracotta";
     String artifactId = "management-tsa-war";
-    if (ProductInfo.ENTERPRISE.equals(ProductInfo.getInstance().edition())) {
+    if (ProductInfo.ENTERPRISE.equals(detectEdition())) {
       groupId = "com.terracottatech";
       artifactId = "ent-management-tsa-war";
     }

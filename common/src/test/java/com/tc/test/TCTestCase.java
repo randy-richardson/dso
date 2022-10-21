@@ -158,7 +158,7 @@ public class TCTestCase extends TestCase {
   }
 
   protected boolean shouldBeSkipped() {
-    return isContainerTest() ^ isConfiguredToRunWithAppServer();
+    return isContainerTest() && !isConfiguredToRunWithAppServer();
   }
 
   protected void tcTestCaseSetup() throws Exception {
@@ -185,7 +185,7 @@ public class TCTestCase extends TestCase {
       Banner
           .warnBanner("Test "
                       + this.getClass().getName()
-                      + " is skipped because sytem test trying to run with appserver or container test running without an appserver. ");
+                      + " is skipped because system test trying to run with appserver or container test running without an appserver. ");
       return;
     }
 
