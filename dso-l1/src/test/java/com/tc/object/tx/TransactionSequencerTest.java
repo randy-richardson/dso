@@ -44,6 +44,9 @@ import junit.framework.TestCase;
 public class TransactionSequencerTest extends TestCase {
 
   public TransactionSequencer txnSequencer;
+  private static final TransactionBuffer mockTxnBuffer = createTransactionBuffer();
+  private static final FoldedInfo foldedInfoWithMockTxnBuffer = new FoldedInfo(mockTxnBuffer);
+
   public boolean  folding = true;
   private static final long   TIME_TO_RUN         = 1 * 60 * 1000;
   private static final int    MAX_PENDING_BATCHES = 5;
@@ -61,7 +64,15 @@ public class TransactionSequencerTest extends TestCase {
                                                  new NullAbortableOperationManager(),
  mockedRTMI);
   }
-  
+
+  private static TransactionBuffer createTransactionBuffer() {
+    TransactionBuffer buffer = Mockito.mock(TransactionBuffer.class);
+    Mockito.when(buffer.getTxnCount()).thenReturn(1);
+    Mockito.when(buffer.getFoldedTransactionID()).thenReturn(Mockito.mock(TransactionID.class));
+    Mockito.doReturn(640000).when(buffer).write(Matchers.any(ClientTransaction.class));
+    return buffer;
+  }
+
   // checkout DEV-5872 to know why this test was written
   public void testDeadLockWithFolding() throws InterruptedException {
       folding = true;
@@ -234,17 +245,9 @@ public class TransactionSequencerTest extends TestCase {
       txn.setSequenceID(new SequenceID(sequenceGenerator.getNextSequence()));
       txn.setTransactionID(transactionIDGenerator.nextTransactionID());
       transactions += 1;
-      return new FoldedInfo(createTransactionBuffer());
+      return foldedInfoWithMockTxnBuffer;
     }
-    
-    private TransactionBuffer createTransactionBuffer() {
-      TransactionBuffer buffer = Mockito.mock(TransactionBuffer.class);
-      Mockito.when(buffer.getTxnCount()).thenReturn(1);
-      Mockito.when(buffer.getFoldedTransactionID()).thenReturn(Mockito.mock(TransactionID.class));
-      Mockito.doReturn(640000).when(buffer).write(Matchers.any(ClientTransaction.class));
-      return buffer;
-   }
-    
+
     @Override
     public synchronized TransactionBuffer addSimpleTransaction(ClientTransaction txn) {
       transactions += 1;

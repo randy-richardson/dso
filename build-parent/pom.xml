@@ -23,7 +23,6 @@ The Initial Developer of the Covered Software is
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-root</artifactId>
     <version>4.4.0-SNAPSHOT</version>
-    <relativePath>..</relativePath>
   </parent>
 
   <artifactId>build-parent</artifactId>
@@ -53,8 +52,7 @@ The Initial Developer of the Covered Software is
     <!-- version of ehcache embedded inside toolkit -->
     <ehcache.version>2.11.0-SNAPSHOT</ehcache.version>
     <tcconfig.version>9.6</tcconfig.version>
-    <linked-child-process.version>1.0.17</linked-child-process.version>
-    <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
+    <linked-child-process.version>2.0.0</linked-child-process.version>
     <skip.testjar>false</skip.testjar>
     <listName>checkshort.txt</listName>
     <localMavenRepository>${user.home}/.m2/repository</localMavenRepository>
@@ -89,7 +87,9 @@ The Initial Developer of the Covered Software is
       -Dtc.install-root.ignore-checks=true
       -Dcom.sun.management.jmxremote
       ${surefire.additional-jvm-args}
-      ${surefire.additional-jvm-module-args}</surefire.argLine>
+      ${surefire.additional-jvm-module-args}
+      -Djdk.attach.allowAttachSelf
+    </surefire.argLine>
   </properties>
 
   <dependencyManagement>
@@ -269,11 +269,13 @@ The Initial Developer of the Covered Software is
                 <reportFormat>plain</reportFormat>
                 <includes>
                   <include>**/*Test.java</include>
-                </includes>         
+                </includes>
                 <forkCount>1</forkCount>
                 <reuseForks>false</reuseForks>
                 <forkedProcessTimeoutInSeconds>${tc.tests.info.junit-test-timeout-inseconds}</forkedProcessTimeoutInSeconds>
                 <useSystemClassLoader>true</useSystemClassLoader>
+                <useManifestOnlyJar>true</useManifestOnlyJar>
+                <trimStackTrace>false</trimStackTrace>
                 <workingDirectory>${project.build.directory}/temp</workingDirectory>
                 <devLog>true</devLog>
                 <argLine>${surefire.argLine}</argLine>
@@ -327,7 +329,11 @@ The Initial Developer of the Covered Software is
       <plugin>
         <groupId>org.codehaus.gmaven</groupId>
         <artifactId>groovy-maven-plugin</artifactId>
-      </plugin>      
+      </plugin>
+      <plugin>
+        <groupId>org.terracotta</groupId>
+        <artifactId>maven-forge-plugin</artifactId>
+      </plugin>
     </plugins>
   </build>
 

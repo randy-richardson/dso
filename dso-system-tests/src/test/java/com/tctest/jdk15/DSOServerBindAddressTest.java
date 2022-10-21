@@ -16,12 +16,9 @@
  */
 package com.tctest.jdk15;
 
-import org.terracotta.test.util.WaitUtil;
-
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
-import com.tc.exception.TCRuntimeException;
 import com.tc.lang.StartupHelper;
 import com.tc.lang.StartupHelper.StartupAction;
 import com.tc.lang.TCThreadGroup;
@@ -36,11 +33,14 @@ import com.tc.server.TCServerImpl;
 import com.tc.test.config.builder.ClusterManager;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
+import org.terracotta.test.util.WaitUtil;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.SocketException;
 import java.util.concurrent.Callable;
 
 /**
@@ -57,11 +57,20 @@ public class DSOServerBindAddressTest extends BaseDSOTestCase {
 
   static String localAddr() {
     try {
-      String rv = InetAddress.getLocalHost().getHostAddress();
-      if (rv.startsWith("127.")) { throw new RuntimeException("Wrong local address " + rv); }
-      return rv;
-    } catch (UnknownHostException uhe) {
-      throw new TCRuntimeException("Host resolve error:" + uhe);
+      return NetworkInterface.networkInterfaces()
+        .filter(networkInterface -> {
+          try {
+            return networkInterface.isUp() && (networkInterface.getHardwareAddress() != null);
+          } catch (SocketException e) {
+            return false;
+          }
+        })
+        .flatMap(NetworkInterface::inetAddresses)
+        .filter(addr -> (addr instanceof Inet4Address) && !addr.isLoopbackAddress())
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No non-loopback addresses for this host")).getHostAddress();
+    } catch (SocketException e) {
+      throw new AssertionError(e);
     }
   }
 
