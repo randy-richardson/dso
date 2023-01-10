@@ -17,11 +17,9 @@
 package com.tc.objectserver.handshakemanager;
 
 import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import com.tc.exception.ImplementMe;
-import com.tc.invalidation.Invalidations;
 import com.tc.logging.TCLogger;
 import com.tc.logging.TCLogging;
 import com.tc.net.ClientID;
@@ -71,6 +69,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.mockito.ArgumentMatchers.eq;
 
 public class ServerClientHandshakeManagerTest extends TCTestCase {
 
@@ -274,7 +274,7 @@ public class ServerClientHandshakeManagerTest extends TCTestCase {
     final ArgumentCaptor<ObjectIDSet> requestContextArg = ArgumentCaptor.forClass(ObjectIDSet.class);
 
     Mockito.verify(invalidateObjMgr, Mockito.atMost(1)).addObjectsToValidateFor(
-                                                                                (ClientID) Matchers.eq(handshake
+                                                                                (ClientID) eq(handshake
                                                                                     .getSourceNodeID()),
                                                                                 requestContextArg.capture());
     assertEquals(handshake.validateObjectIds, requestContextArg.getValue());

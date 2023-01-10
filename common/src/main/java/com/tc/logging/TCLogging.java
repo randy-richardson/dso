@@ -548,14 +548,14 @@ public class TCLogging {
        * Don't add consoleLogger to allLoggers because it's a child of customerLogger, so it shouldn't get any appenders.
        * If you DO add consoleLogger here, you'll see duplicate messages in the log file.
        */
+      Logger jettyLogger = loggerContext.getLogger("org.eclipse.jetty");
+      internalLoggers.add(jettyLogger);
       allLoggers = createAllLoggerList(internalLoggers, customerLogger);
       if (!customLogging) {
-        Logger jettyLogger = loggerContext.getLogger("org.eclipse.jetty");
-        jettyLogger.setLevel(Level.OFF);
-
         for (Logger internalLogger : internalLoggers) {
           internalLogger.setLevel(Level.INFO);
         }
+        jettyLogger.setLevel(Level.WARN);
         customerLogger.setLevel(Level.INFO);
         consoleLogger.setLevel(Level.INFO);
         if (!isDev) {

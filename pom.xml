@@ -191,6 +191,11 @@ The Initial Developer of the Covered Software is
           <artifactId>nexus-staging-maven-plugin</artifactId>
           <version>1.6.13</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>3.3.2</version>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>

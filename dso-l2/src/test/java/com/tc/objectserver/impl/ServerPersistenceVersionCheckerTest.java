@@ -16,29 +16,28 @@
  */
 package com.tc.objectserver.impl;
 
-import static org.mockito.Matchers.any;
+import com.tc.objectserver.persistence.ClusterStatePersistor;
+import com.tc.test.TCTestCase;
+import com.tc.util.ProductInfo;
+import com.tc.util.version.Version;
+import com.tc.util.version.VersionCompatibility;
+import org.junit.Rule;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
+
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-
-import com.tc.objectserver.persistence.ClusterStatePersistor;
-import com.tc.test.TCTestCase;
-import com.tc.util.ProductInfo;
-import com.tc.util.version.Version;
-import com.tc.util.version.VersionCompatibility;
-
 /**
  * @author tim
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ ProductInfo.class })
 public class ServerPersistenceVersionCheckerTest extends TCTestCase {
+  @Rule public MockitoRule mockito = MockitoJUnit.rule();
+
   private ClusterStatePersistor           clusterStatePersistor;
   private ServerPersistenceVersionChecker serverPersistenceVersionChecker;
   private ProductInfo                     productInfo;
