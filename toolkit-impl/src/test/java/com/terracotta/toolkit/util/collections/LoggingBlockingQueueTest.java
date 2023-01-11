@@ -22,10 +22,11 @@ import org.junit.Test;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class LoggingBlockingQueueTest {
 
@@ -37,29 +38,35 @@ public class LoggingBlockingQueueTest {
     for (int i = 0; i < 9; i++) {
       queue.put(Boolean.TRUE);
     }
-    verifyZeroInteractions(mockLogger);
+    verifyNoInteractions(mockLogger);
     queue.put(Boolean.TRUE);
     verify(mockLogger, times(1)).info("10");
+
+    clearInvocations(mockLogger);
 
     for (int i = 0; i < 9; i++) {
       queue.put(Boolean.TRUE);
     }
-    verifyZeroInteractions(mockLogger);
+    verifyNoInteractions(mockLogger);
     queue.put(Boolean.TRUE);
     verify(mockLogger, times(1)).info("20");
 
-    for (int i = 0; i < 9; i++) {
-      queue.take();
-    }
-    verifyZeroInteractions(mockLogger);
-    queue.take();
-    verify(mockLogger, times(2)).info("10");
+    clearInvocations(mockLogger);
 
     for (int i = 0; i < 9; i++) {
       queue.take();
     }
-    verifyZeroInteractions(mockLogger);
+    verifyNoInteractions(mockLogger);
     queue.take();
-    verify(mockLogger, times(1)).info("0");
+    verify(mockLogger).info("10");
+
+    clearInvocations(mockLogger);
+
+    for (int i = 0; i < 9; i++) {
+      queue.take();
+    }
+    verifyNoInteractions(mockLogger);
+    queue.take();
+    verify(mockLogger).info("0");
   }
 }

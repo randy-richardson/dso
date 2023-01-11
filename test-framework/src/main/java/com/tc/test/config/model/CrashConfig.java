@@ -22,11 +22,11 @@ package com.tc.test.config.model;
  * @author rsingh
  */
 public class CrashConfig {
-  private long            serverCrashWaitTimeInSec = 25;
+  private long            serverCrashWaitTimeInSec = 60;
   private int             maxCrashCount            = Integer.MAX_VALUE;
   private ServerCrashMode crashMode                = ServerCrashMode.NO_CRASH;
   private boolean         shouldCleanDbOnCrash     = true;
-  private long            initialDelayInSeconds    = 0;
+  private long            initialDelayInSeconds    = 5;
   private boolean         ignoreUnexpectedL2Crash  = false;
   private boolean         autoStartCrasher         = true;
 

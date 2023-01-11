@@ -16,13 +16,12 @@
  */
 package com.tc.objectserver.event;
 
-import static org.mockito.Mockito.verify;
-
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import com.google.common.collect.Sets;
 import com.tc.net.ClientID;
@@ -35,10 +34,14 @@ import com.tc.server.ServerEventType;
 
 import java.util.Set;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 /**
  * @author Eugene Shelestovich
  */
 public class MutationEventPublisherTest {
+  @Rule public MockitoRule mockito = MockitoJUnit.rule();
 
   private static final String CACHE_NAME = "cache";
   private static final byte[] VALUE = new byte[] { 1 };
@@ -51,7 +54,6 @@ public class MutationEventPublisherTest {
 
   @Before
   public void setUp() throws Exception {
-    MockitoAnnotations.initMocks(this);
     gtxId = new GlobalTransactionID(1);
     publisher = new DefaultMutationEventPublisher(gtxId, serverEventBuffer);
     clientIds = Sets.newHashSet();
@@ -62,7 +64,7 @@ public class MutationEventPublisherTest {
   @Test
   public void testNoPublishWithoutValue() throws Exception {
     publisher.publishEvent(clientIds, ServerEventType.PUT, 1, new CDSMValue(OID), CACHE_NAME);
-    Mockito.verifyZeroInteractions(serverEventBuffer);
+    verifyNoInteractions(serverEventBuffer);
   }
 
   @Test

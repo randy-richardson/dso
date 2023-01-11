@@ -16,7 +16,7 @@
  */
 package com.terracotta.toolkit.nonstop;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
 
 import org.junit.Before;

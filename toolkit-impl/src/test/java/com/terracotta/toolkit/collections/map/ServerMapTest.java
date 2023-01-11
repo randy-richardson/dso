@@ -21,27 +21,26 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyObject;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 import static org.mockito.AdditionalMatchers.and;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 import org.mockito.stubbing.Answer;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.terracotta.toolkit.builder.ToolkitCacheConfigBuilder;
 import org.terracotta.toolkit.collections.ToolkitMap;
 import org.terracotta.toolkit.config.Configuration;
@@ -101,9 +100,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author tim
  */
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore("javax.management.*")
 public class ServerMapTest {
+  @Rule public MockitoRule mockito = MockitoJUnit.rule();
+
   private PlatformService platformService;
   private Configuration configuration;
   private SerializationStrategy serializationStrategy;
@@ -128,7 +127,7 @@ public class ServerMapTest {
         return new MetaDataDescriptorImpl("bogus");
       }
     });
-    when(platformService.lookupOrCreate(anyObject(), any(GroupID.class))).then(new Answer<Object>() {
+    when(platformService.lookupOrCreate(any(), any(GroupID.class))).then(new Answer<Object>() {
       private final AtomicLong oid = new AtomicLong();
       @Override
       public Object answer(final InvocationOnMock invocation) throws Throwable {

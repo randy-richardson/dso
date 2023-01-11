@@ -16,22 +16,16 @@
  */
 package com.tc.object.tx;
 
-import org.mockito.Matchers;
-import org.mockito.Mockito;
-
 import com.tc.abortable.AbortableOperationManager;
 import com.tc.abortable.AbortableOperationManagerImpl;
 import com.tc.abortable.AbortedOperationException;
 import com.tc.net.protocol.tcm.TestChannelIDProvider;
 import com.tc.object.ClientIDProviderImpl;
 import com.tc.object.LogicalOperation;
-import com.tc.object.TCObject;
 import com.tc.object.TestClientObjectManager;
-import com.tc.object.dna.api.LogicalChangeID;
 import com.tc.object.locks.LockID;
 import com.tc.object.locks.LockLevel;
 import com.tc.object.locks.MockClientLockManager;
-import com.tc.object.locks.Notify;
 import com.tc.object.locks.StringLockID;
 import com.tc.stats.counter.sampled.SampledCounter;
 
@@ -41,6 +35,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import junit.framework.Assert;
 import junit.framework.TestCase;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class AbortedOpClientTransactionManagerTest extends TestCase {
   TestClientTransactionFactory clientTxnFactory;
@@ -97,18 +98,13 @@ public class AbortedOpClientTransactionManagerTest extends TestCase {
     // change 2
     clientTxnFactory.clientTransactions.get(1).addNotify(null);
 
-    Mockito.verify(clientTxnFactory.clientTransactions.get(0), Mockito.times(1))
-        .logicalInvoke((TCObject) Matchers.any(), Matchers.any(LogicalOperation.class), (Object[]) Matchers.any(),
-                       (LogicalChangeID) Matchers.any());
-    Mockito.verify(clientTxnFactory.clientTransactions.get(1), Mockito.never())
-        .logicalInvoke((TCObject) Matchers.any(), Matchers.any(LogicalOperation.class), (Object[]) Matchers.any(),
-                       (LogicalChangeID) Matchers.any());
-    
-    Mockito.verify(clientTxnFactory.clientTransactions.get(0), Mockito.never())
-        .addNotify((Notify) Matchers
-                                                                                               .anyObject());
-    Mockito.verify(clientTxnFactory.clientTransactions.get(1), Mockito.times(1)).addNotify((Notify) Matchers
-                                                                                               .anyObject());
+    verify(clientTxnFactory.clientTransactions.get(0), times(1))
+      .logicalInvoke(any(), any(LogicalOperation.class), any(), any());
+    verify(clientTxnFactory.clientTransactions.get(1), never())
+      .logicalInvoke(any(), any(LogicalOperation.class), any(), any());
+
+    verify(clientTxnFactory.clientTransactions.get(0), never()).addNotify(any());
+    verify(clientTxnFactory.clientTransactions.get(1), times(1)).addNotify(any());
     // change2
     clientTxnMgr.commit(new StringLockID("test1"), LockLevel.WRITE, false, null);
 
@@ -125,8 +121,8 @@ public class AbortedOpClientTransactionManagerTest extends TestCase {
 
     @Override
     public ClientTransaction newInstance(int session) {
-      ClientTransaction clientTransaction = Mockito.mock(ClientTransaction.class);
-      Mockito.when(clientTransaction.hasChangesOrNotifies()).thenReturn(true);
+      ClientTransaction clientTransaction = mock(ClientTransaction.class);
+      when(clientTransaction.hasChangesOrNotifies()).thenReturn(true);
 
       clientTransactions.add(clientTransaction);
       return clientTransaction;

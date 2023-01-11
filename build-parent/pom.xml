@@ -52,7 +52,7 @@ The Initial Developer of the Covered Software is
     <!-- version of ehcache embedded inside toolkit -->
     <ehcache.version>2.11.0-SNAPSHOT</ehcache.version>
     <tcconfig.version>9.6</tcconfig.version>
-    <linked-child-process.version>2.0.0</linked-child-process.version>
+    <linked-child-process.version>2.0.1</linked-child-process.version>
     <skip.testjar>false</skip.testjar>
     <listName>checkshort.txt</listName>
     <localMavenRepository>${user.home}/.m2/repository</localMavenRepository>
@@ -89,6 +89,11 @@ The Initial Developer of the Covered Software is
       ${surefire.additional-jvm-args}
       ${surefire.additional-jvm-module-args}
       -Djdk.attach.allowAttachSelf
+      --add-opens java.base/java.lang=ALL-UNNAMED
+      --add-opens java.base/java.io=ALL-UNNAMED
+      --add-opens java.base/java.util=ALL-UNNAMED
+      --add-opens java.base/java.security=ALL-UNNAMED
+      --add-opens java.base/java.net=ALL-UNNAMED
     </surefire.argLine>
   </properties>
 
@@ -175,7 +180,7 @@ The Initial Developer of the Covered Software is
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <artifactId>mockito-inline</artifactId>
     </dependency>
     <dependency>
       <groupId>org.terracotta</groupId>
