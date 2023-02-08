@@ -20,11 +20,9 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.terracotta.test.categories.CheckShorts;
 import org.terracotta.toolkit.ToolkitObjectType;
 import org.terracotta.toolkit.nonstop.NonStopConfiguration;
 import org.terracotta.toolkit.nonstop.NonStopConfigurationFields.NonStopWriteTimeoutBehavior;
@@ -37,7 +35,6 @@ import com.terracotta.toolkit.abortable.ToolkitAbortableOperationException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
-@Category(CheckShorts.class)
 public class NonStopSubTypeInvocationHandlerTest {
 
   private NonStopSubTypeInvocationHandler<Iterator> nonStopSubTypeInvocationHandler;
