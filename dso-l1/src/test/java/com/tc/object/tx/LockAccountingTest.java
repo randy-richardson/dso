@@ -16,10 +16,7 @@
  */
 package com.tc.object.tx;
 
-import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
-import org.terracotta.test.categories.CheckShorts;
-
 import com.tc.abortable.NullAbortableOperationManager;
 import com.tc.lang.TCThreadGroup;
 import com.tc.lang.ThrowableHandlerImpl;
@@ -38,7 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
-@Category(CheckShorts.class)
 public class LockAccountingTest extends TestCase {
 
   private LockAccounting la;

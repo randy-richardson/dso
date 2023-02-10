@@ -81,7 +81,7 @@ public class StandardXMLFileConfigurationCreator implements ConfigurationCreator
   private static final long          GET_CONFIGURATION_ONE_SOURCE_TIMEOUT = TCPropertiesImpl
                                                                               .getProperties()
                                                                               .getLong(TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT,
-                                                                                       30000);
+                                                                                       10000);
 
   private final ConfigurationSpec    configurationSpec;
   private final ConfigBeanFactory    beanFactory;

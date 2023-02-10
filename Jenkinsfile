@@ -16,8 +16,8 @@
 
 mavenBuildOSS.legacy4x(
     maven_params  : '-Ptc-publish,fullmode -Djenkins.publisher=true -Dsag-deps=true -DskipLocalStaging=true',
-    maven_goal_pr : 'install -Pcheck-short', // this project requires install so using install instead of verify
-    maven_goal    : 'deploy -Pcheck-short',
+    maven_goal_pr : 'clean', // PR is already handled by azure pipeline
+    maven_goal    : 'deploy',
     jdk: 11
 )
 

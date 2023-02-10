@@ -23,10 +23,8 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.terracotta.test.categories.CheckShorts;
 import org.terracotta.toolkit.ToolkitObjectType;
 import org.terracotta.toolkit.concurrent.locks.ToolkitLock;
 import org.terracotta.toolkit.store.ToolkitConfigFields.Consistency;
@@ -48,7 +46,6 @@ import java.util.concurrent.Callable;
 
 import junit.framework.Assert;
 
-@Category(CheckShorts.class)
 public class AggregateServerMapQuickApiTest {
 
   private static final int         NUM_OF_ELEMENTS = 50;

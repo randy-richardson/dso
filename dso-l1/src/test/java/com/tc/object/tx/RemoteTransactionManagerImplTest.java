@@ -23,11 +23,9 @@ import static org.mockito.Mockito.when;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.terracotta.test.categories.CheckShorts;
 
 import com.tc.exception.TCNotRunningException;
 import com.tc.logging.TCLogger;
@@ -42,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@Category(CheckShorts.class)
 public class RemoteTransactionManagerImplTest {
   @Mock
   private ClientTransactionBatch      batch;
