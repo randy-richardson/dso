@@ -31,6 +31,7 @@ import ch.qos.logback.core.util.FileSize;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 
 import com.tc.properties.TCProperties;
@@ -519,7 +520,13 @@ public class TCLogging {
 
   public static LoggerContext getLoggerContext() {
     if (loggerContext == null) {
-      loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+      ILoggerFactory logbackViaSlf4j = LoggerFactory.getILoggerFactory();
+      if (logbackViaSlf4j instanceof LoggerContext) {
+        loggerContext = (LoggerContext) logbackViaSlf4j;
+      } else {
+        loggerContext = new LoggerContext();
+        loggerContext.getLogger(TCLogging.class).warn("Logback was not the bound Slf4J provider. Using a standalone Logback LoggerContext to back TCLogging.");
+      }
     }
     return loggerContext;
   }
