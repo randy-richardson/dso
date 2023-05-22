@@ -35,7 +35,7 @@ public class TCLoggingTest extends TCTestCase {
   public static class LogWorker {
     public static void main(String[] args) {
       System.out.println("did logging");
-      TCLogging.setLogDirectory(new File(args[0]), TCLogging.PROCESS_TYPE_GENERIC);
+      TCLogging.setLogDirectory(new File(args[0]), "terracotta-generic");
       TCLogger logger = TCLogging.getTestingLogger(LogWorker.class);
       logger.info("Data for Logs");
     }
