@@ -28,16 +28,16 @@ import java.io.File;
  */
 public class LogSettingConfigItemListener implements ConfigItemListener {
 
-  private final int processType;
+  private String logName;
 
-  public LogSettingConfigItemListener(int processType) {
-    this.processType = processType;
+  public LogSettingConfigItemListener(String logName) {
+    this.logName = logName;
   }
 
   @Override
   public void valueChanged(Object oldValue, Object newValue) {
     if (newValue != null) {
-      TCLogging.setLogDirectory((File) newValue, processType);
+      TCLogging.setLogDirectory((File) newValue, logName);
     }
   }
 
