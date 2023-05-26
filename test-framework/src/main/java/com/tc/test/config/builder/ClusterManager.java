@@ -318,7 +318,7 @@ public class ClusterManager {
   private static void http_waitUntilTsaAgentInitialized(int port) {
     for (int i = 0; i < 30; i++) {
       try {
-        URL url = new URL("http://localhost:" + port + "/tc-management-api/agents");
+        URL url = new URL("http://localhost:" + port + "/tc-management-api/v2/agents");
         URLConnection urlConnection = url.openConnection();
         InputStream inputStream = urlConnection.getInputStream();
         IOUtils.copy(inputStream, new OutputStream() {
@@ -340,7 +340,7 @@ public class ClusterManager {
   private static void http_waitUntilL1ThroughTsaAgentInitialized(int port) {
     for (int i = 0; i < 30; i++) {
       try {
-        URL url = new URL("http://localhost:" + port + "/tc-management-api/agents");
+        URL url = new URL("http://localhost:" + port + "/tc-management-api/v2/agents");
         URLConnection urlConnection = url.openConnection();
         InputStream inputStream = urlConnection.getInputStream();
         Writer writer = new StringWriter();
@@ -375,7 +375,7 @@ public class ClusterManager {
 
   private static void waitForAgentInitialization(int port, HttpClient httpClient, Predicate<ContentResponse> predicate) throws InterruptedException, TimeoutException, ExecutionException {
     for (int i = 0; i < 30; i++) {
-      Request request = httpClient.newRequest("https://localhost:" + port + "/tc-management-api/agents");
+      Request request = httpClient.newRequest("https://localhost:" + port + "/tc-management-api/v2/agents");
       ContentResponse send = request.send();
       boolean success = predicate.test(send);
       if (success) {
