@@ -28,9 +28,7 @@ The Initial Developer of the Covered Software is
   </parent>
 
   <modules>
-    <module>management-tsa-v1</module>
     <module>management-tsa-v2</module>
-    <module>management-tsa-impl-v1</module>
     <module>management-tsa-impl-v2</module>
     <module>management-tsa-common</module>
     <module>management-tsa-war</module>

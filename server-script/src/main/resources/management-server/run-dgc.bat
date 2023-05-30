@@ -59,7 +59,7 @@ ${@#ee} )
 
 ${@#ee} echo Starting cluster dump on %AGENT_ID%
 ${@#ee} call set AGENT_ID=!AGENT_ID:%%=%%%%%%%%!
-${@#ee} CALL %root%rest-client.bat %IGNORE_SSL_CERT% -p "%MGM_SERVER_LOCATION%/tmc/api/agents;ids=%AGENT_ID%/diagnostics/dgc" "" %USERNAME% %PASSWORD%
+${@#ee} CALL %root%rest-client.bat %IGNORE_SSL_CERT% -p "%MGM_SERVER_LOCATION%/tmc/api/v2/agents;ids=%AGENT_ID%/diagnostics/dgc" "" %USERNAME% %PASSWORD%
 
 ${@#oss} echo Starting DGC on %MGM_SERVER_LOCATION%
 ${@#oss} CALL %root%rest-client.bat  -p "%MGM_SERVER_LOCATION%/tc-management-api/v2/agents/diagnostics/dgc" 
