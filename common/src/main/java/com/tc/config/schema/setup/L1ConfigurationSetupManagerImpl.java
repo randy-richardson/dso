@@ -71,9 +71,10 @@ public class L1ConfigurationSetupManagerImpl extends BaseConfigurationSetupManag
   }
 
   @Override
-  public void setupLogging() {
+  public void setupLogging(String clientName) {
     File logsPath = commonL1Config().logsPath();
-    TCLogging.setLogDirectory(logsPath, TCLogging.PROCESS_TYPE_L1);
+    String logName = "terracotta-client." + clientName;
+    TCLogging.setLogDirectory(logsPath, logName);
   }
 
   @Override
