@@ -38,6 +38,7 @@ public class TerracottaToolkitFactoryService implements ToolkitFactoryService {
   private static final String     TC_CONFIG_SNIPPET_KEY            = "tcConfigSnippet";
   private static final String     REJOIN_KEY                       = "rejoin";
   private static final String     PRODUCT_ID_KEY                   = "productId";
+  private static final String     CLIENT_NAME                      = "clientName";
   private static final String     CLASSLOADER                      = "classloader";
   private static final Properties EMPTY_PROPERTIES                 = new Properties();
   private static final boolean    NONSTOP_INIT_ENABLED             = Boolean.getBoolean("toolkit.nonstop.init.enabled");
@@ -90,6 +91,10 @@ public class TerracottaToolkitFactoryService implements ToolkitFactoryService {
 
     if (properties.containsKey(PRODUCT_ID_KEY)) {
       terracottaClientConfigParams.productId(properties.getProperty(PRODUCT_ID_KEY));
+    }
+
+    if (properties.containsKey(CLIENT_NAME)) {
+      terracottaClientConfigParams.clientName(properties.getProperty(CLIENT_NAME));
     }
 
     return terracottaClientConfigParams.newTerracottaClientConfig();

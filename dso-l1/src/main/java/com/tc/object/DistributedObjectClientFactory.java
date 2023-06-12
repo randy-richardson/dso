@@ -58,6 +58,7 @@ public class DistributedObjectClientFactory {
   private final ClassLoader       loader;
   private final boolean           rejoin;
   private final ProductID         productId;
+  private final String           clientName;
   private final AbortableOperationManager abortableOperationManager;
   private final UUID                      uuid;
 
@@ -67,7 +68,7 @@ public class DistributedObjectClientFactory {
 
   public DistributedObjectClientFactory(String configSpec, TCSecurityManager securityManager,
                                         SecurityInfo securityInfo, ClassLoader loader, boolean rejoin,
-                                        ProductID productId, AbortableOperationManager abortableOperationManager,
+                                        ProductID productId, String clientName, AbortableOperationManager abortableOperationManager,
                                         UUID uuid) {
     this.configSpec = configSpec;
     this.securityManager = securityManager;
@@ -75,6 +76,7 @@ public class DistributedObjectClientFactory {
     this.loader = loader;
     this.rejoin = rejoin;
     this.productId = productId;
+    this.clientName = clientName;
     this.abortableOperationManager = abortableOperationManager;
     this.uuid = uuid;
   }
@@ -90,7 +92,7 @@ public class DistributedObjectClientFactory {
                                                                                                     securityManager);
 
     L1ConfigurationSetupManager config = factory.getL1TVSConfigurationSetupManager(securityInfo);
-    config.setupLogging();
+    config.setupLogging(clientName);
 
     final PreparedComponentsFromL2Connection connectionComponents;
     try {
