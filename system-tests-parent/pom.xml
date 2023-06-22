@@ -53,7 +53,7 @@ The Initial Developer of the Covered Software is
     <tc.system.tests.properties>${project.build.testOutputDirectory}/com/tc/properties/tests.properties</tc.system.tests.properties>
 
     <cargo-maven2-plugin.version>1.9.13</cargo-maven2-plugin.version>
-    <tc.linked-child-process.version>2.0.1</tc.linked-child-process.version>
+    <tc.linked-child-process.version>2.0.2</tc.linked-child-process.version>
     <maven-appserver-plugin.version>1.0.5</maven-appserver-plugin.version>
     <tc.config>-Dtc.config=tc-config.xml</tc.config>
     <tc.base-dir>${project.build.directory}</tc.base-dir>
@@ -83,11 +83,6 @@ The Initial Developer of the Covered Software is
       -Dcom.sun.management.jmxremote
       ${ee.license}
       -Djdk.attach.allowAttachSelf
-      --add-opens java.base/java.lang=ALL-UNNAMED
-      --add-opens java.base/java.io=ALL-UNNAMED
-      --add-opens java.base/java.util=ALL-UNNAMED
-      --add-opens java.base/java.security=ALL-UNNAMED
-      --add-opens java.base/java.net=ALL-UNNAMED
     </surefire.argLine>
 
     <!--

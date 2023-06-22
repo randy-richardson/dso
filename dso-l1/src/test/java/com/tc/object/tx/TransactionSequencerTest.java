@@ -170,8 +170,12 @@ public class TransactionSequencerTest extends TestCase {
     public void run() {
       System.out.println("producer started");
       long startTime = System.currentTimeMillis();
+      int i = 0;
       while (System.currentTimeMillis() - startTime < TIME_TO_RUN) {
           this.txnSequencer.addTransaction(new TestClientTransaction());
+          if ((i++ % 100) == 0) {
+            ThreadUtil.reallySleep(10);
+          }
       }
       System.out.println("producer finished");
     }

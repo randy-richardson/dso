@@ -591,7 +591,12 @@ public class TCServerImpl extends SEDA implements TCServer {
       }
 
       try {
+        for (Handler handler : this.contextHandlerCollection.getHandlers()) {
+          this.contextHandlerCollection.removeHandler(handler);
+          handler.stop();
+        }
         this.httpServer.stop();
+        this.httpServer.destroy();
       } catch (Exception e) {
         logger.error("Error shutting down HTTP server", e);
       } finally {

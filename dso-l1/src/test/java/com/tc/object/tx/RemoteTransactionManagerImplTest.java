@@ -16,6 +16,8 @@
  */
 package com.tc.object.tx;
 
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -126,10 +128,9 @@ public class RemoteTransactionManagerImplTest {
   }
 
   private long stopManagerAndReturnTimeTaken() {
-    long startTime = System.currentTimeMillis();
+    long startTime = nanoTime();
     manager.stop();
-    long timeTaken = System.currentTimeMillis() - startTime;
-    return timeTaken;
+    return NANOSECONDS.toMillis(nanoTime() - startTime);
   }
 
   private void assertStopExitsImmediately() {
