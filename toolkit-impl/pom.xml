@@ -32,6 +32,9 @@ The Initial Developer of the Covered Software is
 
   <properties>
     <checkstyle-suppressions-file>${basedir}/../checkstyle-toolkit/suppressions.xml</checkstyle-suppressions-file>
+    <surefire.additional-jvm-module-args>
+      --add-opens java.base/java.lang=ALL-UNNAMED
+    </surefire.additional-jvm-module-args>
   </properties>
 
   <dependencies>
