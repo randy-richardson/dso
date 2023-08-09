@@ -275,6 +275,8 @@ The Initial Developer of the Covered Software is
                 <reuseForks>false</reuseForks>
                 <forkedProcessTimeoutInSeconds>${tc.tests.info.junit-test-timeout-inseconds}</forkedProcessTimeoutInSeconds>
                 <useSystemClassLoader>true</useSystemClassLoader>
+                <useManifestOnlyJar>true</useManifestOnlyJar>
+                <trimStackTrace>false</trimStackTrace>
                 <workingDirectory>${project.build.directory}/temp</workingDirectory>
                 <devLog>true</devLog>
                 <argLine>${surefire.argLine}</argLine>
@@ -328,7 +330,11 @@ The Initial Developer of the Covered Software is
       <plugin>
         <groupId>org.codehaus.gmaven</groupId>
         <artifactId>groovy-maven-plugin</artifactId>
-      </plugin>      
+      </plugin>
+      <plugin>
+        <groupId>org.terracotta</groupId>
+        <artifactId>maven-forge-plugin</artifactId>
+      </plugin>
     </plugins>
   </build>
 
