@@ -173,8 +173,9 @@ class ClusteredStateLoaderImpl extends ClusteredStateLoader {
     if (extra != null) { return returnAndLog(defineClass(name, extra, 0, extra.length), "extra"); }
 
     // special case jta types to allow consistent loading with the app
-    if (USE_APP_JTA_CLASSES && name.startsWith("javax.transaction.")) { return returnAndLog(appLoader.loadClass(name),
-                                                                                            "appLoader"); }
+    if (USE_APP_JTA_CLASSES && (name.startsWith("javax.transaction.") || name.startsWith("jakarta.transaction."))) {
+      return returnAndLog(appLoader.loadClass(name), "appLoader");
+    }
 
     URL url = findClassWithPrefix(name);
     if (url != null) { return returnAndLog(loadClassFromUrl(name, url, appLoader.getClass().getProtectionDomain()
