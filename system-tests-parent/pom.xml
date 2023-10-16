@@ -74,7 +74,19 @@ The Initial Developer of the Covered Software is
     <surefire.max-memory>1g</surefire.max-memory>
     <surefire.additional-jvm-args/>
     <surefire.additional-jvm-module-args/>
-    <surefire.argLine>-server -Xms${surefire.min-memory} -Xmx${surefire.max-memory} ${surefire.additional-jvm-module-args} ${surefire.additional-jvm-args} -Dtc.base-dir=${tc.base-dir} ${tc.config} -Dtc.dso.globalmode=${tc.dso.globalmode} -Dtc.tests.info.property-files=${tc.tests.info.property-files} -Dcom.tc.properties=${tc.system.tests.properties} -Dcom.sun.management.jmxremote ${ee.license}</surefire.argLine>
+    <surefire.argLine>-server
+      -Xms${surefire.min-memory}
+      -Xmx${surefire.max-memory}
+      ${surefire.additional-jvm-module-args}
+      ${surefire.additional-jvm-args}
+      -Dtc.base-dir=${tc.base-dir} ${tc.config}
+      -Dtc.dso.globalmode=${tc.dso.globalmode}
+      -Dtc.tests.info.property-files=${tc.tests.info.property-files}
+      -Dcom.tc.properties=${tc.system.tests.properties}
+      -Dcom.sun.management.jmxremote
+      ${ee.license}
+      -Djdk.attach.allowAttachSelf
+    </surefire.argLine>
 
     <!--
         Unfortunately, this silly localMavenRepository property is necessary
