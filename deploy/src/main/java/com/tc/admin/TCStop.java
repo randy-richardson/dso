@@ -40,11 +40,14 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import static java.lang.String.format;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+
 public class TCStop {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
 
   private static final int MAX_TRIES = 10;
-  private static final int TRY_INTERVAL = 1000;
+  private static final int TRY_INTERVAL = 2000;
 
   private static final String FORCE_OPTION_NAME = "force";
   private static final String STOP_IF_ACTIVE_OPTION_NAME = "stop-if-active";
@@ -159,48 +162,64 @@ public class TCStop {
                               boolean stopIfPassive,
                               boolean restart,
                               boolean restartInSafeMode) throws IOException {
-    for (int i = 0; i < MAX_TRIES; i++) {
-      Map<String, Boolean> map = new HashMap<>();
-      map.put("forceStop", force);
-      map.put("stopIfActive", stopIfActive);
-      map.put("stopIfPassive", stopIfPassive);
-      map.put("restart", restart);
-      map.put("restartInSafeMode", restartInSafeMode);
-      Entity<Map<String, Boolean>> stopConfig = Entity.json(map);
-      Response response = target.path("/tc-management-api/v2/local/shutdown").request(MediaType.APPLICATION_JSON_TYPE)
-          .post(stopConfig);
+    Response response;
+    Map<String, Boolean> map = new HashMap<>();
+    map.put("forceStop", force);
+    map.put("stopIfActive", stopIfActive);
+    map.put("stopIfPassive", stopIfPassive);
+    map.put("restart", restart);
+    map.put("restartInSafeMode", restartInSafeMode);
+    Entity<Map<String, Boolean>> stopConfig = Entity.json(map);
+    String hostPort = target.getUri().getHost() + ":" + target.getUri().getPort();
 
-      if (response.getStatus() >= 200 && response.getStatus() < 300) {
-        Boolean success = response.readEntity(Boolean.class);
-        if (success) {
-          consoleLogger.info("Stop success. Response code " + response.getStatus());
-        } else {
-          if (stopIfActive) {
-            String errorMsg = "Server is not in active state, not stopping the server";
-            consoleLogger.warn(errorMsg);
-            throw new RuntimeException(errorMsg);
-          } else if (stopIfPassive) {
-            String errorMsg = "Server is not in passive state, not stopping the server";
-            consoleLogger.warn(errorMsg);
-            throw new RuntimeException(errorMsg);
-          } else {
-            throw new AssertionError();
-          }
-        }
-        return;
-      } else if (response.getStatus() == 401) {
-        consoleLogger.error("Authentication/Authorization failure: Invalid username/password or insufficient permissions");
-        throw new IOException("Incorrect username/password");
-      } else if (response.getStatus() == 404) {
-        consoleLogger.info("Got a 404, waiting a bit before retrying.");
+    for (int i = 0; i < MAX_TRIES; i++) {
+      try {
+        response =
+                target.path("/tc-management-api/v2/local/shutdown").request(APPLICATION_JSON_TYPE).post(stopConfig);
+      } catch (RuntimeException e) {
+        Throwable rootCause = getRootCause(e);
+        consoleLogger.info("Failed to issue shutdown request to " + hostPort + ": " + rootCause.getMessage() + "; retrying.");
         ThreadUtil.reallySleep(TRY_INTERVAL);
-      } else {
-        Map<String, ?> errorResponse = response.readEntity(Map.class);
-        consoleLogger.error(errorResponse.get("stackTrace"));
-        throw new IOException("Error stopping server: " + errorResponse.get("error"));
+        continue;
+      }
+
+      try {
+        if (response.getStatus() >= 200 && response.getStatus() < 300) {
+          Boolean success = response.readEntity(Boolean.class);
+          if (success) {
+            consoleLogger.info("Stop success. Response code " + response.getStatus());
+          } else {
+            if (stopIfActive) {
+              String errorMsg = "Server is not in active state, not stopping the server";
+              consoleLogger.warn(errorMsg);
+              throw new RuntimeException(errorMsg);
+            } else if (stopIfPassive) {
+              String errorMsg = "Server is not in passive state, not stopping the server";
+              consoleLogger.warn(errorMsg);
+              throw new RuntimeException(errorMsg);
+            } else {
+              throw new AssertionError();
+            }
+          }
+          return;
+        } else if (response.getStatus() == 401) {
+          throw new IOException("Authentication error while connecting to " + hostPort + ", check username/password and try again.");
+        } else if (response.getStatus() == 404) {
+          consoleLogger.warn("Got a 404 while connecting to " + hostPort + ". Management service might not be started " +
+                  "yet; retrying.");
+          ThreadUtil.reallySleep(TRY_INTERVAL);
+        } else {
+          Map<String, ?> errorResponse = response.readEntity(Map.class);
+          consoleLogger.error(errorResponse.get("stackTrace"));
+          throw new IOException(format("Error stopping server %s: %s", hostPort, errorResponse.get("error")));
+        }
+      } finally {
+        try {
+          response.close();
+        } catch (Exception ignore) {}
       }
     }
-    throw new IOException("Ran out of tries.");
+    throw new IOException(format("Unable to shutdown server at %s after %d tries", hostPort, MAX_TRIES));
   }
 
   public static void restStop(String host, int port, String username, String password, boolean force, boolean secured,

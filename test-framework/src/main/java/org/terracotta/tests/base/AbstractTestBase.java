@@ -106,8 +106,9 @@ public abstract class AbstractTestBase extends TCTestCase implements TestFailure
     // disable java awt pop-up for mac os x
     testConfig.getClientConfig().addExtraClientJvmArg("-Djava.awt.headless=true");
     testConfig.getL2Config().addExtraServerJvmArg("-Djava.awt.headless=true");
-    // testConfig.getClientConfig().addExtraClientJvmArg("-Dapple.awt.UIElement=true");
-    // testConfig.getL2Config().addExtraServerJvmArg("-Dapple.awt.UIElement=true");
+
+    // Byteman agent
+    testConfig.getClientConfig().addExtraClientJvmArg("-Djdk.attach.allowAttachSelf=true");
   }
 
   /**

@@ -588,18 +588,20 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
   }
 
   private void applyRegisterServerEventListener(ApplyTransactionInfo applyInfo, Object[] params) {
-    ClientID clientID = (ClientID) applyInfo.getServerTransactionID().getSourceID();
-    for (Object eventTypeIndex : params) {
-      ServerEventType serverEventType = ServerEventType.values()[(Integer) eventTypeIndex];
+    int firstEventType = 0;
+    ClientID clientID = params[0] instanceof Long ? new ClientID((Long)params[firstEventType++]) : (ClientID)applyInfo.getServerTransactionID().getSourceID();
+    for (int x=firstEventType;x<params.length;x++) {
+      ServerEventType serverEventType = ServerEventType.values()[(Integer) params[x]];
       eventRegistry.put(serverEventType, clientID);
       applyInfo.getClientChannelMonitor().monitorClient(clientID, getId());
     }
   }
 
   private void applyUnregisterServerEventListener(ApplyTransactionInfo applyInfo, Object[] params) {
-    ClientID clientID = (ClientID) applyInfo.getServerTransactionID().getSourceID();
-    for (Object eventTypeIndex : params) {
-      ServerEventType serverEventType = ServerEventType.values()[(Integer) eventTypeIndex];
+    int firstEventType = 0;
+    ClientID clientID = params[0] instanceof Long ? new ClientID((Long)params[firstEventType++]) : (ClientID)applyInfo.getServerTransactionID().getSourceID();
+    for (int x=firstEventType;x<params.length;x++) {
+      ServerEventType serverEventType = ServerEventType.values()[(Integer) params[x]];
       eventRegistry.remove(serverEventType, clientID);
     }
   }
@@ -727,6 +729,10 @@ public class ConcurrentDistributedServerMapManagedObjectState extends PartialMap
     for (int i = 0; samples.size() < count && i < size; i++) {
       if (evictionIterator == null || !evictionIterator.hasNext()) {
         evictionIterator = references.keySet().iterator();
+        if (!evictionIterator.hasNext()) {
+          //map is empty, abort and return what we can
+          break;
+        }
       }
       final Object k = evictionIterator.next();
       if (k == null) { throw new AssertionError("key is not null"); }

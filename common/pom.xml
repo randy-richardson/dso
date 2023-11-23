@@ -117,4 +117,34 @@ The Initial Developer of the Covered Software is
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.terracotta</groupId>
+        <artifactId>maven-forge-plugin</artifactId>
+        <configuration>
+          <workingDirectory>${project.build.directory}/temp</workingDirectory>
+          <trimStackTrace>false</trimStackTrace>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>default-integration-test</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-verify</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

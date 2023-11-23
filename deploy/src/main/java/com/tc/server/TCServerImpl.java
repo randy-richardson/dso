@@ -44,6 +44,8 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Slf4jLog;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -590,7 +592,12 @@ public class TCServerImpl extends SEDA implements TCServer {
       }
 
       try {
+        for (Handler handler : this.contextHandlerCollection.getHandlers()) {
+          this.contextHandlerCollection.removeHandler(handler);
+          handler.stop();
+        }
         this.httpServer.stop();
+        this.httpServer.destroy();
       } catch (Exception e) {
         logger.error("Error shutting down HTTP server", e);
       } finally {
@@ -631,6 +638,7 @@ public class TCServerImpl extends SEDA implements TCServer {
         sslContextFactory.setSslContext(securityManager.getSslContext());
       }
 
+      Log.setLog(new Slf4jLog());
       TCServerImpl.this.httpServer = new Server() {
         @Override
         public void handle(HttpChannel connection) throws IOException, ServletException {

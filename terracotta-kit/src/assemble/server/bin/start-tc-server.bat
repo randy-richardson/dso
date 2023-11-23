@@ -17,12 +17,12 @@
 @REM      Terracotta, Inc., a Software AG company
 @REM
 
-if "%1" == "--help" goto :printHelp
-if "%1" == "-h" goto :printHelp
-if "%1" == "-?" goto :printHelp
-goto :start
+if "%1" == "--help" goto :PRINT_HELP
+if "%1" == "-h" goto :PRINT_HELP
+if "%1" == "-?" goto :PRINT_HELP
+goto :START
 
-:printHelp
+:PRINT_HELP
 echo Syntax: %~n0 [-f /path/to/tc-config.xml] [-n server_name] [--safe-mode]
 echo.
 echo          -f : start the server with your own Terracotta configuration instead of the default one
@@ -33,7 +33,7 @@ echo NOTE: An external trigger will be required to resume operations if server i
 exit /b 0
 
 
-:start
+:START
 setlocal
 set TC_INSTALL_DIR=%~d0%~p0..\..
 set TC_INSTALL_DIR="%TC_INSTALL_DIR:"=%"
@@ -53,14 +53,14 @@ for %%C in ("\bin\java -d64 -server -XX:MaxDirectMemorySize=1048576g" "\bin\java
   set JAVA_COMMAND=%JAVA_HOME%%%~C
   %JAVA_HOME%%%~C -version > NUL 2>&1
   if not errorlevel 1 (
-    goto found_command
+    goto FOUND_COMMAND
   )
 )
 
-rem rmi.dgc.server.gcInterval is set an year to avoid system gc in case authentication is enabled
-rem users may change it accordingly
+@REM rmi.dgc.server.gcInterval is set an year to avoid system gc in case authentication is enabled
+@REM users may change it accordingly
 
-:found_command
+:FOUND_COMMAND
 set CLASSPATH=%TC_INSTALL_DIR%\server\lib\tc.jar
 set OPTS=%SERVER_OPT% -Xms2g -Xmx2g -XX:+HeapDumpOnOutOfMemoryError
 set OPTS=%OPTS% -Dcom.sun.management.jmxremote
@@ -70,27 +70,33 @@ set OPTS=%OPTS% -Dtc.install-root=%TC_INSTALL_DIR%
 setlocal EnableDelayedExpansion
 
 set ARGS=%*
-set JAVA_OPTS=%OPTS% %JAVA_OPTS%
+set LICENSE_ARG=
+
+@REM [TAB-8127] There is an issue with passing -Dcom.tc.productkey.path on the command line.
+call :PARSE_ARGS_FOR_LICENSE_PATH
+
+set JAVA_OPTS=%OPTS% %JAVA_OPTS% %LICENSE_ARG%
+
 :START_TCSERVER
 %JAVA_COMMAND% %JAVA_OPTS% -cp %CLASSPATH% com.tc.server.TCServerMain !ARGS!
-if %ERRORLEVEL% EQU 11 (
-  CALL :clean_args_for_auto_restart
-  ECHO start-tc-server: Restarting the server...
-  GOTO START_TCSERVER
+if %errorlevel% EQU 11 (
+  call :CLEAN_ARGS_FOR_AUTO_RESTART
+  echo start-tc-server: Restarting the server...
+  goto START_TCSERVER
 )
 
-if %ERRORLEVEL% EQU 12 (
-  CALL :clean_args_for_auto_restart
+if %errorlevel% EQU 12 (
+  call :CLEAN_ARGS_FOR_AUTO_RESTART
   set ARGS=!ARGS! --safe-mode
-  ECHO start-tc-server: Restarting the server in Safe Mode...
-  GOTO START_TCSERVER
+  echo start-tc-server: Restarting the server in Safe Mode...
+  goto START_TCSERVER
 )
 
-:clean_args_for_auto_restart
+:CLEAN_ARGS_FOR_AUTO_RESTART
 set MOD_ARGS=
-rem The --active flag needs to be removed from the startup options when a server gets auto-restarted.
-rem When a server node is auto-restarted, the intention is to make it join the cluster as a passive.
-rem So in that case it doesn't make sense to start the server with the active flag.
+@REM The --active flag needs to be removed from the startup options when a server gets auto-restarted.
+@REM When a server node is auto-restarted, the intention is to make it join the cluster as a passive.
+@REM So in that case it doesn't make sense to start the server with the active flag.
 for %%I in (%ARGS%) do (
   if --active NEQ %%I if -a NEQ %%I if --safe-mode NEQ %%I (
     if "" EQU "!MOD_ARGS!" (
@@ -101,5 +107,22 @@ for %%I in (%ARGS%) do (
   )
   set ARGS=!MOD_ARGS!
 )
-EXIT /B 0
+exit /b 0
 
+:PARSE_ARGS_FOR_LICENSE_PATH
+@REM Remove the -Dcom.tc.productkey.path argument from the command line. If the argument exists, add it
+@REM to the LICENSE_ARG variable.
+set /a found_path=0
+set MOD_ARGS=
+for %%I in (%ARGS%) do (
+  if !found_path! NEQ 0 (
+    set LICENSE_ARG=-Dcom.tc.productkey.path=%%I
+  )
+  if "-Dcom.tc.productkey.path"=="%%I" (
+    set /a found_path+=1
+  ) else (
+    set MOD_ARGS=!MOD_ARGS! %%I
+  )
+)
+set ARGS=!MOD_ARGS!
+exit /b 0
