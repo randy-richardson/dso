@@ -16,18 +16,18 @@
  */
 package com.tc.object.tx;
 
-import static org.mockito.Matchers.any;
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.terracotta.test.categories.CheckShorts;
 
 import com.tc.exception.TCNotRunningException;
 import com.tc.logging.TCLogger;
@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@Category(CheckShorts.class)
 public class RemoteTransactionManagerImplTest {
   @Mock
   private ClientTransactionBatch      batch;
@@ -129,10 +128,9 @@ public class RemoteTransactionManagerImplTest {
   }
 
   private long stopManagerAndReturnTimeTaken() {
-    long startTime = System.currentTimeMillis();
+    long startTime = nanoTime();
     manager.stop();
-    long timeTaken = System.currentTimeMillis() - startTime;
-    return timeTaken;
+    return NANOSECONDS.toMillis(nanoTime() - startTime);
   }
 
   private void assertStopExitsImmediately() {

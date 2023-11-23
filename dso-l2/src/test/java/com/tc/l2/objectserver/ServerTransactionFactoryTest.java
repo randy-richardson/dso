@@ -28,7 +28,7 @@ import com.tc.object.tx.TransactionID;
 import com.tc.objectserver.context.ServerTransactionCompleteContext;
 import com.tc.objectserver.core.api.ServerConfigurationContext;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;

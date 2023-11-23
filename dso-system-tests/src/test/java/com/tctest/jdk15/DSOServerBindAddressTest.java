@@ -16,12 +16,9 @@
  */
 package com.tctest.jdk15;
 
-import org.terracotta.test.util.WaitUtil;
-
 import com.tc.config.schema.setup.ConfigurationSetupException;
 import com.tc.config.schema.setup.L2ConfigurationSetupManager;
 import com.tc.config.schema.setup.TestConfigurationSetupManagerFactory;
-import com.tc.exception.TCRuntimeException;
 import com.tc.lang.StartupHelper;
 import com.tc.lang.StartupHelper.StartupAction;
 import com.tc.lang.TCThreadGroup;
@@ -36,11 +33,18 @@ import com.tc.server.TCServerImpl;
 import com.tc.test.config.builder.ClusterManager;
 import com.tc.util.Assert;
 import com.tc.util.PortChooser;
+import org.eclipse.jetty.util.resource.Resource;
+import org.junit.experimental.categories.Category;
+import org.terracotta.test.categories.CheckShorts;
+import org.terracotta.test.util.WaitUtil;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.SocketException;
+import java.net.URLConnection;
 import java.util.concurrent.Callable;
 
 /**
@@ -48,6 +52,7 @@ import java.util.concurrent.Callable;
  *
  * @author Manoj
  */
+@Category(CheckShorts.class)
 public class DSOServerBindAddressTest extends BaseDSOTestCase {
   private final TCThreadGroup   group     = new TCThreadGroup(
                                                               new ThrowableHandlerImpl(TCLogging
@@ -55,13 +60,33 @@ public class DSOServerBindAddressTest extends BaseDSOTestCase {
   private static final String[] bindAddrs = { "0.0.0.0", "127.0.0.1", localAddr() };
   private TCServerImpl          server;
 
+  /*
+   * https://github.com/eclipse/jetty.project/issues/1425
+   *
+   * Jetty's WebAppContext stop() method leaves open handles on stuff in WEB-INF/lib and since
+   * this test runs servers inline, the 2nd attempt to run the server fails to clear out the
+   * temp area under the target/DSOServerBindAddressTest/l2-data/jetty.
+   *
+   * Therefor, on Windows disable caching for the "jar" protocol and also Jetty's Resource class.
+   */
+  private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
+
   static String localAddr() {
     try {
-      String rv = InetAddress.getLocalHost().getHostAddress();
-      if (rv.startsWith("127.")) { throw new RuntimeException("Wrong local address " + rv); }
-      return rv;
-    } catch (UnknownHostException uhe) {
-      throw new TCRuntimeException("Host resolve error:" + uhe);
+      return NetworkInterface.networkInterfaces()
+        .filter(networkInterface -> {
+          try {
+            return networkInterface.isUp() && (networkInterface.getHardwareAddress() != null);
+          } catch (SocketException e) {
+            return false;
+          }
+        })
+        .flatMap(NetworkInterface::inetAddresses)
+        .filter(addr -> (addr instanceof Inet4Address) && !addr.isLoopbackAddress())
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No non-loopback addresses for this host")).getHostAddress();
+    } catch (SocketException e) {
+      throw new AssertionError(e);
     }
   }
 
@@ -91,8 +116,16 @@ public class DSOServerBindAddressTest extends BaseDSOTestCase {
   }
 
   public void testDSOServerAndJMXBindAddress() throws Exception {
+    boolean resourceUseCaches = Resource.getDefaultUseCaches();
+    boolean jarProtocolUseCaches = URLConnection.getDefaultUseCaches("jar");
+
+    if (isWindows) {
+      Resource.setDefaultUseCaches(false);
+      URLConnection.setDefaultUseCaches("jar", false);
+    }
+
     System.setProperty("com.tc.management.war", ClusterManager.findWarLocation("org.terracotta", "management-tsa-war",
-        ClusterManager.guessMavenArtifactVersion()));
+      ClusterManager.guessMavenArtifactVersion()));
     PortChooser pc = new PortChooser();
 
     ManagedObjectStateFactory.disableSingleton(true);
@@ -132,6 +165,11 @@ public class DSOServerBindAddressTest extends BaseDSOTestCase {
 
       server.stop();
       Thread.sleep(3000);
+    }
+
+    if (isWindows) {
+      Resource.setDefaultUseCaches(resourceUseCaches);
+      URLConnection.setDefaultUseCaches("jar", jarProtocolUseCaches);
     }
   }
 
@@ -204,27 +242,26 @@ public class DSOServerBindAddressTest extends BaseDSOTestCase {
 
   public L2ConfigurationSetupManager createL2Manager(String bindAddress, int tsaPort, int jmxPort, int tsaGroupPort,
                                                      int managementPort)
-      throws ConfigurationSetupException {
+    throws ConfigurationSetupException {
     TestConfigurationSetupManagerFactory factory = super.configFactory();
-    L2ConfigurationSetupManager manager = factory.createL2TVSConfigurationSetupManager(null, true);
-    
-    manager.dsoL2Config().getDataStorage().setSize("64m");
-    manager.dsoL2Config().getOffheap().setSize("64m");
 
-    manager.dsoL2Config().tsaPort().setIntValue(tsaPort);
-    manager.dsoL2Config().tsaPort().setBind(bindAddress);
+    factory.l2DSOConfig().getDataStorage().setSize("64m");
+    factory.l2DSOConfig().getOffheap().setSize("64m");
 
-    manager.commonl2Config().jmxPort().setIntValue(jmxPort);
-    manager.commonl2Config().jmxPort().setBind(bindAddress);
+    factory.l2DSOConfig().tsaPort().setIntValue(tsaPort);
+    factory.l2DSOConfig().tsaPort().setBind(bindAddress);
 
-    manager.dsoL2Config().tsaGroupPort().setIntValue(tsaGroupPort);
-    manager.dsoL2Config().tsaGroupPort().setBind(bindAddress);
+    factory.l2CommonConfig().jmxPort().setIntValue(jmxPort);
+    factory.l2CommonConfig().jmxPort().setBind(bindAddress);
 
-    manager.commonl2Config().managementPort().setIntValue(managementPort);
-    manager.commonl2Config().managementPort().setBind(bindAddress);
+    factory.l2DSOConfig().tsaGroupPort().setIntValue(tsaGroupPort);
+    factory.l2DSOConfig().tsaGroupPort().setBind(bindAddress);
 
-    manager.dsoL2Config().setJmxEnabled(true);
+    factory.l2CommonConfig().managementPort().setIntValue(managementPort);
+    factory.l2CommonConfig().managementPort().setBind(bindAddress);
 
-    return manager;
+    factory.l2DSOConfig().setJmxEnabled(true);
+
+    return factory.getL2TVSConfigurationSetupManager();
   }
 }

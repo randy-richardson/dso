@@ -21,7 +21,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>4.3.10-SNAPSHOT</version>
+    <version>4.4.0-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
 
@@ -32,6 +32,9 @@ The Initial Developer of the Covered Software is
 
   <properties>
     <checkstyle-suppressions-file>${basedir}/../checkstyle-toolkit/suppressions.xml</checkstyle-suppressions-file>
+    <surefire.additional-jvm-module-args>
+      --add-opens java.base/java.lang=ALL-UNNAMED
+    </surefire.additional-jvm-module-args>
   </properties>
 
   <dependencies>
@@ -73,18 +76,23 @@ The Initial Developer of the Covered Software is
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-mockito2</artifactId>
+      <groupId>org.objenesis</groupId>
+      <artifactId>objenesis</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-module-junit4</artifactId>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-easymock</artifactId>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy-agent</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

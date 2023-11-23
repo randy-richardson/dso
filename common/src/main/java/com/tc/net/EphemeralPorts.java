@@ -212,7 +212,7 @@ public class EphemeralPorts {
   private static class Mac implements RangeGetter {
     @Override
     public Range getRange() {
-      Exec exec = new Exec(new String[] { "sysctl", "net.inet.ip.portrange" });
+      Exec exec = new Exec(new String[] { "/usr/sbin/sysctl", "net.inet.ip.portrange" });
       final String output;
       try {
         output = exec.execute(Exec.STDOUT);

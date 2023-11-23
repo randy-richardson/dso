@@ -16,16 +16,14 @@
  */
 package com.terracotta.toolkit.nonstop;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.terracotta.test.categories.CheckShorts;
 import org.terracotta.toolkit.ToolkitObjectType;
 import org.terracotta.toolkit.nonstop.NonStopConfiguration;
 import org.terracotta.toolkit.nonstop.NonStopException;
@@ -40,7 +38,6 @@ import com.terracotta.toolkit.collections.map.ToolkitCacheImplInterface;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-@Category(CheckShorts.class)
 public class NonStopInvocationHandlerTest {
 
   private NonStopInvocationHandler<ToolkitCacheImpl> nonStopInvocationHandler;

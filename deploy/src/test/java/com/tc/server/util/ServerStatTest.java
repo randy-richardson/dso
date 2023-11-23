@@ -18,9 +18,9 @@ package com.tc.server.util;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.anyVararg;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -65,30 +64,45 @@ public class ServerStatTest {
   @Test
   public void testUnknownError() throws Exception {
     String errorMessage = "this is an error message 29138491283749skjafhdkasj";
+    String stacktrace = "this is the stacktrace";
+    Map<String, String> response = new HashMap<>();
+    response.put("error", errorMessage);
+    response.put("stackTrace", stacktrace);
     WebTarget target = mockWebTarget("host", 4321);
     when(target.request(MediaType.APPLICATION_JSON_TYPE).get().getStatus()).thenReturn(403);
     when(target.request(MediaType.APPLICATION_JSON_TYPE)
         .get()
-        .readEntity(any(Class.class))).thenReturn(Collections.singletonMap("error", errorMessage));
-    ServerStat stats = ServerStat.getStats(target);
-    assertErrorStats(stats);
-    assertThat(stats.toString(), containsString(errorMessage));
+        .readEntity(any(Class.class))).thenReturn(response);
+    try {
+      ServerStat.getStats(target);
+      throw new AssertionError("Expected IOException");
+    } catch (IOException ioe) {
+      assertThat(ioe.getMessage(), containsString(errorMessage));
+    }
   }
 
   @Test
   public void testFourOhFour() throws Exception {
     WebTarget target = mockWebTarget("host", 4321);
     when(target.request(MediaType.APPLICATION_JSON_TYPE).get().getStatus()).thenReturn(404);
-    ServerStat stats = ServerStat.getStats(target);
-    assertErrorStats(stats);
+    try {
+      ServerStat stats = ServerStat.getStats(target);
+      throw new AssertionError("Expected IOException");
+    } catch (IOException ioe) {
+      assertThat(ioe.getMessage(), containsString("Unable to get status"));
+    }
   }
 
   @Test
   public void testAuthenticationFailure() throws Exception {
     WebTarget target = mockWebTarget("localhost", 1234);
     when(target.request(MediaType.APPLICATION_JSON_TYPE).get().getStatus()).thenReturn(401);
-    ServerStat stats = ServerStat.getStats(target);
-    assertErrorStats(stats);
+    try {
+      ServerStat.getStats(target);
+      throw new AssertionError("Expected IOException");
+    } catch (IOException ioe) {
+      assertThat(ioe.getMessage(), containsString("Authentication error"));
+    }
   }
 
   private void assertErrorStats(ServerStat stats) {
@@ -107,7 +121,7 @@ public class ServerStatTest {
     WebTarget target = mock(WebTarget.class);
     when(target.getUri()).thenReturn(new URI("http://" + host + ":" + port));
     when(target.path(anyString())).thenReturn(target);
-    when(target.request((MediaType[]) anyVararg())).thenReturn(builder);
+    when(target.request((MediaType[]) any())).thenReturn(builder);
     return target;
   }
 }

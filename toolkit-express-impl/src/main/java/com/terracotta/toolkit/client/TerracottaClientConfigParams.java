@@ -25,6 +25,7 @@ public class TerracottaClientConfigParams {
   private boolean     rejoin;
   private boolean     nonStop;
   private String      productId;
+  private String      clientName;
   private ClassLoader clasLoader;
   private boolean     asyncInit;
 
@@ -103,6 +104,19 @@ public class TerracottaClientConfigParams {
 
   public TerracottaClientConfigParams productId(String appName) {
     setProductId(appName);
+    return this;
+  }
+
+  public String getClientName() {
+    return clientName;
+  }
+
+  public void setClientName(final String clientName) {
+    this.clientName = clientName;
+  }
+
+  public TerracottaClientConfigParams clientName(String  clientName) {
+    setClientName(clientName);
     return this;
   }
 

@@ -17,8 +17,6 @@
 package com.tc.management.remote.protocol.terracotta;
 
 import org.junit.Assert;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -32,20 +30,33 @@ import com.tc.test.TCTestCase;
 import com.tc.util.concurrent.ThreadUtil;
 import com.tc.util.runtime.ThreadDumpUtil;
 
-import java.util.concurrent.CountDownLatch;
-
 import javax.management.remote.message.Message;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
+
+import static com.tc.util.runtime.ThreadDumpUtil.getAllThreads;
+import static java.util.Arrays.stream;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TunnelingMessageConnectionWrapperTest extends TCTestCase {
+  private static Thread[] getAllNonSystemThreads() {
+    List<Thread> allThreads = stream(getAllThreads()).filter(t -> !t.getThreadGroup().getName().equals("system"))
+      .collect(Collectors.toList());
+    return allThreads.toArray(new Thread[0]);
+  }
+
   public void testClose() throws Exception {
-    Thread[] initialThreads = ThreadDumpUtil.getAllThreads();
-    MessageChannel mockChanel = Mockito.mock(MessageChannel.class);
+    Thread[] initialThreads = getAllNonSystemThreads();
+    MessageChannel mockChanel = mock(MessageChannel.class);
     final CountDownLatch messageSendLatch = new CountDownLatch(1);
-    Mockito.when(mockChanel.createMessage((TCMessageType) Matchers.any())).then(new Answer<TCMessage>() {
+    when(mockChanel.createMessage(any())).then(new Answer<TCMessage>() {
 
       @Override
       public TCMessage answer(InvocationOnMock invocation) throws Throwable {
-        return new JmxRemoteTunnelMessage(new SessionID(0), Mockito.mock(MessageMonitor.class),
+        return new JmxRemoteTunnelMessage(new SessionID(0), mock(MessageMonitor.class),
             new TCByteBufferOutputStream(), null, TCMessageType.JMXREMOTE_MESSAGE_CONNECTION_MESSAGE) {
           @Override
           public void send() {
@@ -57,12 +68,12 @@ public class TunnelingMessageConnectionWrapperTest extends TCTestCase {
     );
     TunnelingMessageConnection connection = new TunnelingMessageConnectionWrapper(mockChanel,
                                                                                   true);
-    connection.writeMessage(Mockito.mock(Message.class));
+    connection.writeMessage(mock(Message.class));
     // wait until the message is send..
     messageSendLatch.await();
     connection.close();
     ThreadUtil.reallySleep(2000);
-    Thread[] finalThreads = ThreadDumpUtil.getAllThreads();
+    Thread[] finalThreads = getAllNonSystemThreads();
     if (finalThreads.length > initialThreads.length) {
       System.out.println(ThreadDumpUtil.getThreadDump());
       Assert.fail();
