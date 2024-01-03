@@ -46,7 +46,7 @@ public class TCStop {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
 
   private static final int MAX_TRIES = 10;
-  private static final int TRY_INTERVAL = 2000;
+  private static final int TRY_INTERVAL = 1000;
 
   private static final String FORCE_OPTION_NAME = "force";
   private static final String STOP_IF_ACTIVE_OPTION_NAME = "stop-if-active";
@@ -161,7 +161,6 @@ public class TCStop {
                               boolean stopIfPassive,
                               boolean restart,
                               boolean restartInSafeMode) throws IOException {
-    Response response;
     Map<String, Boolean> map = new HashMap<>();
     map.put("forceStop", force);
     map.put("stopIfActive", stopIfActive);
@@ -172,17 +171,9 @@ public class TCStop {
     String hostPort = target.getUri().getHost() + ":" + target.getUri().getPort();
 
     for (int i = 0; i < MAX_TRIES; i++) {
+      Response response = null;
       try {
-        response =
-          target.path("/tc-management-api/v2/local/shutdown").request(APPLICATION_JSON_TYPE).post(stopConfig);
-      } catch (RuntimeException e) {
-        Throwable rootCause = getRootCause(e);
-        consoleLogger.info("Failed to issue shutdown request to " + hostPort + ": " + rootCause.getMessage() + "; retrying.");
-        ThreadUtil.reallySleep(TRY_INTERVAL);
-        continue;
-      }
-
-      try {
+        response = target.path("/tc-management-api/v2/local/shutdown").request(APPLICATION_JSON_TYPE).post(stopConfig);
         if (response.getStatus() >= 200 && response.getStatus() < 300) {
           Boolean success = response.readEntity(Boolean.class);
           if (success) {
@@ -209,12 +200,13 @@ public class TCStop {
           ThreadUtil.reallySleep(TRY_INTERVAL);
         } else {
           Map<String, ?> errorResponse = response.readEntity(Map.class);
-          consoleLogger.error(errorResponse.get("stackTrace"));
           throw new IOException(format("Error stopping server %s: %s", hostPort, errorResponse.get("error")));
         }
       } finally {
         try {
-          response.close();
+          if (response != null) {
+            response.close();
+          }
         } catch (Exception ignore) {}
       }
     }
