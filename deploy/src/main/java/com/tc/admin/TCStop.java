@@ -37,7 +37,6 @@ import java.util.Map;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import static java.lang.String.format;
@@ -162,7 +161,6 @@ public class TCStop {
                               boolean stopIfPassive,
                               boolean restart,
                               boolean restartInSafeMode) throws IOException {
-    Response response;
     Map<String, Boolean> map = new HashMap<>();
     map.put("forceStop", force);
     map.put("stopIfActive", stopIfActive);
@@ -173,17 +171,9 @@ public class TCStop {
     String hostPort = target.getUri().getHost() + ":" + target.getUri().getPort();
 
     for (int i = 0; i < MAX_TRIES; i++) {
+      Response response = null;
       try {
-        response =
-                target.path("/tc-management-api/v2/local/shutdown").request(APPLICATION_JSON_TYPE).post(stopConfig);
-      } catch (RuntimeException e) {
-        Throwable rootCause = getRootCause(e);
-        consoleLogger.info("Failed to issue shutdown request to " + hostPort + ": " + rootCause.getMessage() + "; retrying.");
-        ThreadUtil.reallySleep(TRY_INTERVAL);
-        continue;
-      }
-
-      try {
+        response = target.path("/tc-management-api/v2/local/shutdown").request(APPLICATION_JSON_TYPE).post(stopConfig);
         if (response.getStatus() >= 200 && response.getStatus() < 300) {
           Boolean success = response.readEntity(Boolean.class);
           if (success) {
@@ -215,7 +205,9 @@ public class TCStop {
         }
       } finally {
         try {
-          response.close();
+          if (response != null) {
+            response.close();
+          }
         } catch (Exception ignore) {}
       }
     }
