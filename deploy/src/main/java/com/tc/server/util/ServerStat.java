@@ -23,21 +23,20 @@ import com.tc.logging.TCLogger;
 import com.tc.util.concurrent.ThreadUtil;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import static java.lang.String.format;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 
 public class ServerStat {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
 
   private static final int MAX_TRIES = 10;
-  private static final int RETRY_INTERVAL = 2000;
+  private static final int RETRY_INTERVAL = 1000;
 
   private static final String UNKNOWN                 = "unknown";
   private static final String NEWLINE                 = System.getProperty("line.separator");
@@ -145,43 +144,41 @@ public class ServerStat {
   }
 
   public static ServerStat getStats(WebTarget target) throws IOException {
-    Response response;
     String host = target.getUri().getHost();
     int port = target.getUri().getPort();
-    String hostPort = host + ":" + port;
     for (int i = 0; i < MAX_TRIES; i++) {
+      Response response = null;
       try {
-        response = target.path("/tc-management-api/v2/local/stat").request(APPLICATION_JSON_TYPE).get();
-      } catch (RuntimeException e) {
-        Throwable rootCause = getRootCause(e);
-        consoleLogger.info("Failed to issue status request to " + hostPort + ": " + rootCause.getMessage() + "; retrying.");
-        ThreadUtil.reallySleep(RETRY_INTERVAL);
-        continue;
-      }
-
-      try {
+        response = target.path("/tc-management-api/v2/local/stat").request(MediaType.APPLICATION_JSON_TYPE).get();
         if (response.getStatus() >= 200 && response.getStatus() < 300) {
           Map<String, String> map = response.readEntity(Map.class);
           return new ServerStat(host, map.get("name"), port, map.get("serverGroupName"), map.get("initialState"),
-            map.get("state"), map.get("role"), map.get("health"));
+                  map.get("state"), map.get("role"), map.get("health"));
         } else if (response.getStatus() == 401) {
-          throw new IOException("Authentication error while connecting to " + hostPort + ", check username/password and try again.");
+          return new ServerStat(host, port, "Authentication error, check username/password and try again.");
         } else if (response.getStatus() == 404) {
-          consoleLogger.warn("Got a 404 while connecting to " + hostPort + ". Management service might not be started " +
-            "yet; retrying.");
+          consoleLogger.debug("Got a 404 getting the server stats. Management service might not be started yet. Trying again.");
           ThreadUtil.reallySleep(RETRY_INTERVAL);
         } else {
-          Map<String, ?> errorResponse = response.readEntity(Map.class);
-          consoleLogger.error(errorResponse.get("stackTrace"));
-          throw new IOException(format("Error getting status for server %s: %s", hostPort, errorResponse.get("error")));
+          Map<?, ?> errorResponse = response.readEntity(Map.class);
+          return new ServerStat(host, port, "Error fetching stats: " + errorResponse.get("error"));
+        }
+      } catch (RuntimeException e) {
+        if (getRootCause(e) instanceof ConnectException) {
+          String displayHost = host.contains(":") ? "[" + host + "]" : host;
+          return new ServerStat(host, port, "Connection refused to " + displayHost + ". Is the TSA running?");
+        } else {
+          throw e;
         }
       } finally {
         try {
-          response.close();
+          if (response != null) {
+            response.close();
+          }
         } catch (Exception ignore) {}
       }
     }
-    throw new IOException(format("Unable to get status for %s after %d tries", hostPort, MAX_TRIES));
+    return new ServerStat(host, port, "Got a 404, is the management server running?");
   }
 
   private static Throwable getRootCause(Throwable e) {
