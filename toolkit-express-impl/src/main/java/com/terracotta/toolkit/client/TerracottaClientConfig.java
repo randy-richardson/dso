@@ -26,6 +26,7 @@ public class TerracottaClientConfig {
   private final boolean     rejoin;
   private final boolean     nonStop;
   private final String      productId;
+  private final String      clientName;
   private final ClassLoader classLoader;
   private final boolean     asyncInit;
 
@@ -36,6 +37,7 @@ public class TerracottaClientConfig {
     this.rejoin = params.isRejoin();
     this.nonStop = params.isNonStop();
     this.productId = params.getProductId();
+    this.clientName = params.getClientName();
     this.classLoader = params.getClassLoader();
     this.asyncInit = params.isAsyncInit();
   }
@@ -62,6 +64,10 @@ public class TerracottaClientConfig {
 
   public String getProductId() {
     return productId;
+  }
+
+  public String getClientName() {
+    return clientName;
   }
 
   public ClassLoader getClassLoader() {

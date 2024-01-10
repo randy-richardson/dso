@@ -22,7 +22,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent</artifactId>
-    <version>5.7</version>
+    <version>5.9.1</version>
     <relativePath/>
   </parent>
 
@@ -42,8 +42,7 @@ The Initial Developer of the Covered Software is
     <skip.deploy>false</skip.deploy>
     <!-- can't default to ${project.version}, breaks child projects like ehcache that use a different version -->
     <thirdparty-bom.version>4.3.10-SNAPSHOT</thirdparty-bom.version>
-    <groovy.version>4.0.15</groovy.version>
-    <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
+    <groovy.version>3.0.20</groovy.version>
   </properties>
 
   <modules>
@@ -106,8 +105,7 @@ The Initial Developer of the Covered Software is
               <configuration>
                 <scripts>
                   <script><![CDATA[
-                        new org.reflections.Reflections(["com", "org", "net"])
-                            .save("${project.build.directory}/reflections.xml")
+                        new org.reflections.Reflections(["com", "org", "net"]).save(new File(project.build.directory, "reflections.xml").absolutePath)
                     ]]></script>
                 </scripts>
               </configuration>
@@ -207,6 +205,14 @@ The Initial Developer of the Covered Software is
       </modules>
     </profile>
   
+    <!-- Allow building cloud stuff from top level (and automatic versions:set support for those poms) -->
+    <profile>
+      <id>cloud</id>
+      <modules>
+        <module>../cloud</module>
+      </modules>
+    </profile>
+
     <!-- activate to include EE modules if it's EE branch -->
     <profile>
       <id>include-ee-modules</id>

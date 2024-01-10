@@ -66,9 +66,31 @@ done
 #rmi.dgc.server.gcInterval is set an year to avoid system gc in case authentication is enabled
 #users may change it accordingly
 args="$@"
+
+#[TAB-8127] There is an issue with passing -Dcom.tc.productkey.path on the command line.
+# Remove the -Dcom.tc.productkey.path argument from the command line. Add it to JAVA_OPTS if it is found.
+license_path=""
+unset mod_args
+for var in $args; do
+  case "$var" in
+    *-Dcom.tc.productkey.path=* )
+    license_path=$var
+    ;;
+    * )
+    mod_args="$mod_args $var"
+    ;;
+  esac
+done
+
+if [ "$license_path" ]; then
+  JAVA_OPTS="$JAVA_OPTS $license_path"
+fi
+args="$mod_args"
+
 start=true
 while "$start"
 do
+unset mod_args
 eval ${JAVA_COMMAND} -Xms2g -Xmx2g -XX:+HeapDumpOnOutOfMemoryError \
    -Dcom.sun.management.jmxremote \
    -Dtc.install-root="${TC_INSTALL_DIR}" \
