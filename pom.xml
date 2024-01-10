@@ -42,6 +42,7 @@ The Initial Developer of the Covered Software is
     <skip.deploy>false</skip.deploy>
     <!-- can't default to ${project.version}, breaks child projects like ehcache that use a different version -->
     <thirdparty-bom.version>4.3.10-SNAPSHOT</thirdparty-bom.version>
+    <groovy.version>3.0.20</groovy.version>
   </properties>
 
   <modules>
