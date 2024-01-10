@@ -42,7 +42,7 @@ The Initial Developer of the Covered Software is
     <skip.deploy>false</skip.deploy>
     <!-- can't default to ${project.version}, breaks child projects like ehcache that use a different version -->
     <thirdparty-bom.version>4.4.0-SNAPSHOT</thirdparty-bom.version>
-    <groovy.version>4.0.12</groovy.version>
+    <groovy.version>4.0.15</groovy.version>
     <groovy-maven-plugin.version>2.1.1</groovy-maven-plugin.version>
   </properties>
 
