@@ -42,7 +42,11 @@ import com.tc.objectserver.managedobject.ManagedObjectStateFactory;
 import com.tc.platform.rejoin.RejoinManagerImpl;
 import com.tc.platform.rejoin.RejoinManagerInternal;
 import com.tc.properties.TCPropertiesConsts;
-import com.tc.server.*;
+import com.tc.server.BasicServerEvent;
+import com.tc.server.ServerEvent;
+import com.tc.server.ServerEventType;
+import com.tc.server.TCServer;
+import com.tc.server.TCServerImpl;
 import com.tc.util.PortChooser;
 import com.tcclient.cluster.DsoClusterInternal;
 import org.mockito.Mockito;
@@ -56,7 +60,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.tc.server.ServerEventType.EVICT;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 

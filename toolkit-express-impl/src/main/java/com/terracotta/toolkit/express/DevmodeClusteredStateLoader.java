@@ -113,7 +113,9 @@ class DevmodeClusteredStateLoader extends ClusteredStateLoader {
     }
 
     // special case jta types to allow consistent loading with the app
-    if (USE_APP_JTA_CLASSES && name.startsWith("javax.transaction.")) { return returnAndLog(appLoader.loadClass(name), "appLoader"); }
+    if (USE_APP_JTA_CLASSES && (name.startsWith("javax.transaction.") || name.startsWith("jakarta.transaction."))) {
+      return returnAndLog(appLoader.loadClass(name), "appLoader");
+    }
 
     // special case slf4j too. If the app already has it don't use the one that might have been included for embedded
     // ehcache (since the reward is a loader contstraint violation later down the road)

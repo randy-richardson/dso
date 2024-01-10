@@ -35,7 +35,7 @@ import javax.ws.rs.core.Response;
 public class ServerStat {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
 
-  private static final int MAX_TRIES = 50;
+  private static final int MAX_TRIES = 10;
   private static final int RETRY_INTERVAL = 1000;
 
   private static final String UNKNOWN                 = "unknown";
@@ -144,33 +144,38 @@ public class ServerStat {
   }
 
   public static ServerStat getStats(WebTarget target) throws IOException {
-    Response response = null;
     String host = target.getUri().getHost();
     int port = target.getUri().getPort();
     for (int i = 0; i < MAX_TRIES; i++) {
+      Response response = null;
       try {
         response = target.path("/tc-management-api/v2/local/stat").request(MediaType.APPLICATION_JSON_TYPE).get();
+        if (response.getStatus() >= 200 && response.getStatus() < 300) {
+          Map<String, String> map = response.readEntity(Map.class);
+          return new ServerStat(host, map.get("name"), port, map.get("serverGroupName"), map.get("initialState"),
+                  map.get("state"), map.get("role"), map.get("health"));
+        } else if (response.getStatus() == 401) {
+          return new ServerStat(host, port, "Authentication error, check username/password and try again.");
+        } else if (response.getStatus() == 404) {
+          consoleLogger.debug("Got a 404 getting the server stats. Management service might not be started yet. Trying again.");
+          ThreadUtil.reallySleep(RETRY_INTERVAL);
+        } else {
+          Map<?, ?> errorResponse = response.readEntity(Map.class);
+          return new ServerStat(host, port, "Error fetching stats: " + errorResponse.get("error"));
+        }
       } catch (RuntimeException e) {
         if (getRootCause(e) instanceof ConnectException) {
           String displayHost = host.contains(":") ? "[" + host + "]" : host;
-          return new ServerStat(host, port, "Connection refused to " + displayHost + ":" + port + ". Is the TSA running?");
+          return new ServerStat(host, port, "Connection refused to " + displayHost+ ". Is the TSA running?");
         } else {
           throw e;
         }
-      }
-
-      if (response.getStatus() >= 200 && response.getStatus() < 300) {
-        Map<String, String> map = response.readEntity(Map.class);
-        return new ServerStat(host, map.get("name"), port, map.get("serverGroupName"), map.get("initialState"),
-                              map.get("state"), map.get("role"), map.get("health"));
-      } else if (response.getStatus() == 401) {
-        return new ServerStat(host, port, "Authentication error, check username/password and try again.");
-      } else if (response.getStatus() == 404) {
-        consoleLogger.debug("Got a 404 getting the server stats. Management service might not be started yet. Trying again.");
-        ThreadUtil.reallySleep(RETRY_INTERVAL);
-      } else {
-        Map<?, ?> errorResponse = response.readEntity(Map.class);
-        return new ServerStat(host, port, "Error fetching stats: " + errorResponse.get("error"));
+      } finally {
+        try {
+          if (response != null) {
+            response.close();
+          }
+        } catch (Exception ignore) {}
       }
     }
     return new ServerStat(host, port, "Got a 404, is the management server running?");

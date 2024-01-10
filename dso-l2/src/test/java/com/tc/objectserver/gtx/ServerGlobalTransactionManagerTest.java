@@ -21,7 +21,6 @@ import org.junit.Test;
 
 import com.tc.async.api.EventContext;
 import com.tc.async.api.Sink;
-import com.tc.net.ClientID;
 import com.tc.net.ServerID;
 import com.tc.object.gtx.GlobalTransactionID;
 import com.tc.object.tx.ServerTransactionID;
@@ -32,10 +31,7 @@ import com.tc.objectserver.persistence.PersistenceTransactionProvider;
 import com.tc.util.SequenceValidator;
 import com.tc.util.sequence.Sequence;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;

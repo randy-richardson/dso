@@ -16,11 +16,11 @@
  */
 package com.tc.object.handler;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyCollection;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,7 +41,6 @@ import com.tc.object.context.ServerEventDeliveryContext;
 import com.tc.object.dna.api.DNA;
 import com.tc.object.gtx.ClientGlobalTransactionManager;
 import com.tc.object.gtx.GlobalTransactionID;
-import com.tc.object.locks.LockID;
 import com.tc.object.msg.AcknowledgeTransactionMessageFactory;
 import com.tc.object.msg.BroadcastTransactionMessage;
 import com.tc.object.msg.BroadcastTransactionMessageImpl;
@@ -92,8 +91,7 @@ public class ReceiveTransactionHandlerTest {
     ClientConfigurationContext context = mock(ClientConfigurationContext.class);
     ClientTransactionManager clientTransactionManager = mock(ClientTransactionManager.class);
     doThrow(new TCNotRunningException()).when(clientTransactionManager).apply(any(TxnType.class),
-                                                                              anyListOf(LockID.class), anyCollection(),
-                                                                              anyMap());
+      anyList(), anyCollection(), anyMap());
     when(context.getTransactionManager()).thenReturn(clientTransactionManager);
 
     ClientGlobalTransactionManager clientGlobalTransactionManager = mock(ClientGlobalTransactionManager.class);

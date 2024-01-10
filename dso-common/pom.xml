@@ -22,7 +22,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>4.3.10-SNAPSHOT</version>
+    <version>4.4.1-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
   
@@ -55,6 +55,10 @@ The Initial Developer of the Covered Software is
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
   </dependencies>
   

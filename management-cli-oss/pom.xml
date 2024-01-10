@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>4.3.10-SNAPSHOT</version>
+    <version>4.4.1-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
 
@@ -54,12 +54,21 @@
       <artifactId>json-path</artifactId>
     </dependency>
     <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.4.10</version>
     </dependency>
   </dependencies>
 
@@ -77,9 +86,9 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.3</version>
-        <configuration>
+         <configuration>
           <descriptors>
             <descriptor>${basedir}/src/assemble/assembly.xml</descriptor>
           </descriptors>

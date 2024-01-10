@@ -75,13 +75,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Answers.RETURNS_MOCKS;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.mockito.Mockito.withSettings;
 
 public class TCGroupManagerImplTest extends TCTestCase {
 
@@ -609,7 +610,7 @@ public class TCGroupManagerImplTest extends TCTestCase {
     PortChooser portChooser = new PortChooser();
     TCGroupManagerImpl tcGroupManager = spy(new TCGroupManagerImpl(new NullConnectionPolicy(), "localhost",
         portChooser.chooseRandomPort(), portChooser.chooseRandomPort(),
-        mock(StageManager.class, RETURNS_MOCKS.get()), mock(TCSecurityManager.class)) {
+        mock(StageManager.class, withSettings().defaultAnswer(RETURNS_MOCKS)), mock(TCSecurityManager.class)) {
       @Override
       protected void initializeWeights(final WeightGeneratorFactory weightGeneratorFactory) {
         weightGeneratorFactory.add(new WeightGeneratorFactory.WeightGenerator() {
@@ -666,7 +667,7 @@ public class TCGroupManagerImplTest extends TCTestCase {
   }
 
   private MessageChannel mockMessageChannel() {
-    final TCGroupHandshakeMessage tcGroupHandshakeMessage = mock(TCGroupHandshakeMessage.class, RETURNS_MOCKS.get());
+    final TCGroupHandshakeMessage tcGroupHandshakeMessage = mock(TCGroupHandshakeMessage.class, withSettings().defaultAnswer(RETURNS_MOCKS));
     MessageChannel channel = mock(MessageChannel.class);
     when(channel.getAttachment(anyString())).thenReturn(null);
     when(channel.createMessage(TCMessageType.GROUP_HANDSHAKE_MESSAGE)).thenReturn(tcGroupHandshakeMessage);
