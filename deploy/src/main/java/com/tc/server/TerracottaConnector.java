@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -45,7 +45,7 @@ import java.util.function.Consumer;
 public class TerracottaConnector extends LocalConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TerracottaConnector.class);
-  static final int DEFAULT_IDLE_TIMEOUT_IN_MS = 30000;
+  static final int DEFAULT_IDLE_TIMEOUT_IN_MS = 10000;
   private final ExecutorService executorService;
   private final Consumer<Socket> reclaimer;
 
@@ -77,7 +77,7 @@ public class TerracottaConnector extends LocalConnector {
   }
 
   @Override
-  public Future<Void> shutdown() {
+  public CompletableFuture<Void> shutdown() {
     executorService.shutdownNow();
     return super.shutdown();
   }
@@ -131,7 +131,9 @@ public class TerracottaConnector extends LocalConnector {
           ByteBuffer byteBuffer = endPoint.waitForOutput(getIdleTimeout(), TimeUnit.MILLISECONDS);
           if (byteBuffer != null && byteBuffer.remaining() > 0) {
             try (WritableByteChannel channel = Channels.newChannel(socket.getOutputStream())) {
-              channel.write(byteBuffer);
+              while (byteBuffer.hasRemaining()) {
+                channel.write(byteBuffer);
+              }
             }
           }
         } catch (Exception e) {
@@ -140,7 +142,6 @@ public class TerracottaConnector extends LocalConnector {
           }
         } finally {
           MultiIOExceptionHandler m = new MultiIOExceptionHandler();
-          m.doSafely(() -> reader.cancel(true));
           m.doSafely(endPoint::close);
           m.doSafely(socket::close);
         }
@@ -148,7 +149,6 @@ public class TerracottaConnector extends LocalConnector {
     } catch (RuntimeException re) {
       // the thread pool is too busy, abandon this request
       MultiIOExceptionHandler m = new MultiIOExceptionHandler();
-      m.doSafely(() -> reader.cancel(true));
       m.doSafely(endPoint::close);
       m.doSafely(socket::close);
       m.addAsSuppressedTo(re);

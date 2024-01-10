@@ -117,7 +117,7 @@ public abstract class BlockingQueueApiTest extends BaseConcurrentCollectionsTest
   @Test(expected = NullPointerException.class)
   public void testShouldThrowNpeIfToArrayNull() {
     final Collection<Object> q = emptyQueue();
-    q.toArray(null);
+    q.toArray((Object[]) null);
   }
 
   /**

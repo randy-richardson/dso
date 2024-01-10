@@ -94,6 +94,7 @@ public class BaseDSOTestCase extends TCTestCase implements TestClientConfigHelpe
       server.setData(getTempFile("l2-data").toString());
       server.setLogs(getTempFile("l2-logs").toString());
       server.setIndex(getTempFile("l2-index").toString());
+      server.setDataBackup(getTempFile("l2-data-backup").toString());
       ((Client) out.l1CommonConfig().getBean()).setLogs(getTempFile("l1-logs").toString());
     } catch (IOException ioe) {
       throw new ConfigurationSetupException("Can't set up log, data and statistics paths", ioe);

@@ -16,8 +16,6 @@
  */
 package com.tc.cluster;
 
-import org.mockito.Matchers;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -54,17 +52,22 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import junit.framework.TestCase;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public class DsoClusterTest extends TestCase {
 
   private DsoClusterImpl cluster;
 
   @Override
   protected void setUp() throws Exception {
-    cluster = new DsoClusterImpl(Mockito.mock(RejoinManagerInternal.class));
-    Stage mockStage = Mockito.mock(Stage.class);
-    Sink mockSink = Mockito.mock(Sink.class);
-    Mockito.when(mockStage.getSink()).thenReturn(mockSink);
-    Mockito.doAnswer(new Answer<Void>() {
+    cluster = new DsoClusterImpl(mock(RejoinManagerInternal.class));
+    Stage mockStage = mock(Stage.class);
+    Sink mockSink = mock(Sink.class);
+    when(mockStage.getSink()).thenReturn(mockSink);
+    doAnswer(new Answer<Void>() {
 
       @Override
       public Void answer(InvocationOnMock invocation) throws Throwable {
@@ -74,7 +77,7 @@ public class DsoClusterTest extends TestCase {
         return null;
       }
 
-    }).when(mockSink).add(Matchers.any(EventContext.class));
+    }).when(mockSink).add(any(EventContext.class));
     cluster.init(new MockClusterMetaDataManager(), null, mockStage);
   }
 

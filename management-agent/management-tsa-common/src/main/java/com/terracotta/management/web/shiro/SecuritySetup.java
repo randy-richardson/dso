@@ -64,7 +64,5 @@ public class SecuritySetup {
     return dfltSecurityContextService;
   }
 
-  public List<String> performSecurityChecks() {
-    return Collections.emptyList();
-  }
+  public void performSecurityChecks() {}
 }

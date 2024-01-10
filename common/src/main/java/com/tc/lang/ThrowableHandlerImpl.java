@@ -33,12 +33,13 @@ import com.tc.util.concurrent.ThreadUtil;
 import com.tc.util.startuplock.FileNotCreatedException;
 import com.tc.util.startuplock.LocationNotCreatedException;
 
-import java.lang.reflect.Field;
 import java.net.BindException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import static java.util.Arrays.stream;
 
 /**
  * Handles Throwable appropriately by printing messages to the logger, etc. Deal with nasty problems that can occur as
@@ -121,7 +122,7 @@ public class ThrowableHandlerImpl implements ThrowableHandler {
       return;
     }
 
-    if (isNotificationFetcherThread(thread)) {
+    if (isNotificationFetcherThread(t)) {
       // DEV-5006 -- Do not exit L2.
       logger.warn("Got Exception in JMX Notification forwarding", t);
       return;
@@ -228,21 +229,10 @@ public class ThrowableHandlerImpl implements ThrowableHandler {
     System.exit(status);
   }
 
-  private static boolean isNotificationFetcherThread(Thread thread) {
-    // UGLY Way to Ignore exception in JMX Notification Forwarder Thread.
-    try {
-      Field runnableField = thread.getClass().getDeclaredField("target");
-      runnableField.setAccessible(true);
-      Object runnable = runnableField.get(thread);
-      if (runnable != null && runnable.getClass().getSimpleName().equals("NotifFetcher")) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (Throwable e) {
-      return false;
-    }
-
+  private static boolean isNotificationFetcherThread(Throwable t) {
+    return stream(t.getStackTrace()).anyMatch(ste ->
+      ste.getClassName().equals("com.sun.jmx.remote.opt.internal.ClientNotifForwarder$NotifFetcher")
+        && ste.getMethodName().equals("fetchNotifs"));
   }
 
   private static boolean isJMXTerminatedException(Throwable throwable) {

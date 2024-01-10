@@ -50,6 +50,7 @@ public class CreateClient implements Callable<ClientCreatorCallable> {
   private final String              embeddedTcConfig;
   private final boolean             isURLConfig;
   private final String              productIdName;
+  private final String              clientName;
   private final ClassLoader         loader;
   private final boolean             rejoin;
 
@@ -57,10 +58,11 @@ public class CreateClient implements Callable<ClientCreatorCallable> {
   private final Map<String, Object> env;
 
   public CreateClient(String embeddedTcConfig, boolean isURLConfig, ClassLoader loader, boolean rejoin,
-                      String productIdName, Map<String, Object> env) {
+                      String productIdName, String clientName, Map<String, Object> env) {
     this.embeddedTcConfig = embeddedTcConfig;
     this.isURLConfig = isURLConfig;
     this.productIdName = productIdName;
+    this.clientName = clientName;
     String username = null;
     if (isURLConfig) {
       username = URLConfigUtil.getUsername(embeddedTcConfig);
@@ -100,6 +102,7 @@ public class CreateClient implements Callable<ClientCreatorCallable> {
                                                                                                              loader,
                                                                                                              rejoin,
                                                                                                              productId,
+                                                                                                             clientName,
                                                                                                              abortableOperationManager,
                                                                                                              uuid);
     return new ClientCreatorCallableImpl(distributedObjectClientFactory, abortableOperationManager, uuid);

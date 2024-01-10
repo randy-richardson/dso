@@ -744,7 +744,6 @@ public class ClientLockTest extends TestCase {
             lock.unlock(new AssertingRemoteLockManager(lock), new ThreadID(2), LockLevel.WRITE);
           } catch (Throwable e) {
             e.printStackTrace();
-            t.destroy();
           }
         }
       }.start();

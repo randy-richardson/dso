@@ -26,6 +26,7 @@ import com.tc.operatorevent.TerracottaOperatorEventCallback;
 import com.tc.operatorevent.TerracottaOperatorEventLogging;
 import com.tc.runtime.logging.LongGCLogger;
 import com.tc.test.TCTestCase;
+import com.tc.util.concurrent.ThreadUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,6 +93,8 @@ public class LongGCLoggerTest extends TCTestCase {
       }
 
       addObjectsToArrayList();
+
+      ThreadUtil.reallySleep(10);
     }
   }
 
@@ -112,14 +115,19 @@ public class LongGCLoggerTest extends TCTestCase {
                                + "Currently Max Memory is " + max_memory);
     }
     System.err.println("Max memory is " + max_memory);
-    int blockSize = (int) ((max_memory) / 4);
+    int blockSize;
+    if (max_memory >= Integer.MAX_VALUE) {
+      blockSize = Integer.MAX_VALUE / 4;
+    } else {
+      blockSize = (int) ((max_memory) / 4);
+    }
     System.err.println("Memory block size is " + blockSize);
     return blockSize;
   }
 
   private void register() {
     TCThreadGroup thrdGrp = new TCThreadGroup(new ThrowableHandlerImpl(TCLogging.getLogger(LongGCLoggerTest.class)));
-    TCMemoryManagerImpl tcMemManager = new TCMemoryManagerImpl(1, 2, thrdGrp);
+    TCMemoryManagerImpl tcMemManager = new TCMemoryManagerImpl(250, 2, thrdGrp);
     LongGCLogger logger = new TestLongGCLogger(1);
     tcMemManager.registerForMemoryEvents(logger);
   }
