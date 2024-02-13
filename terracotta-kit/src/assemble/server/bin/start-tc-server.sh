@@ -92,7 +92,6 @@ while "$start"
 do
 unset mod_args
 eval ${JAVA_COMMAND} -Xms2g -Xmx2g -XX:+HeapDumpOnOutOfMemoryError \
-   -Dcom.sun.management.jmxremote \
    -Dtc.install-root="${TC_INSTALL_DIR}" \
    -Dsun.rmi.dgc.server.gcInterval=31536000000\
    ${JAVA_OPTS} \
