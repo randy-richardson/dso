@@ -63,7 +63,6 @@ for %%C in ("\bin\java -d64 -server -XX:MaxDirectMemorySize=1048576g" "\bin\java
 :FOUND_COMMAND
 set CLASSPATH=%TC_INSTALL_DIR%\server\lib\tc.jar
 set OPTS=%SERVER_OPT% -Xms2g -Xmx2g -XX:+HeapDumpOnOutOfMemoryError
-set OPTS=%OPTS% -Dcom.sun.management.jmxremote
 set OPTS=%OPTS% -Dsun.rmi.dgc.server.gcInterval=31536000000
 set OPTS=%OPTS% -Dtc.install-root=%TC_INSTALL_DIR%
 
