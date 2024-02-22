@@ -12,13 +12,13 @@ import java.text.SimpleDateFormat;
 
 public class GCStatsImpl implements GCStats, Serializable {
   private static final long      serialVersionUID      = -4177683133067698672L;
-  private final SimpleDateFormat printFormat           = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss z");
 
   private static final long      NOT_INITIALIZED       = -1L;
   private static final String    YOUNG_GENERATION      = "Young";
   private static final String    FULL_GENERATION       = "Full";
   private final int              number;
   private final long             startTime;
+  private final String           startTimeFormatted;
   private long                   elapsedTime           = NOT_INITIALIZED;
   private long                   beginObjectCount      = NOT_INITIALIZED;
   private long                   endObjectCount        = NOT_INITIALIZED;
@@ -34,6 +34,7 @@ public class GCStatsImpl implements GCStats, Serializable {
     this.number = number;
     this.fullGC = fullGC;
     this.startTime = startTime;
+    this.startTimeFormatted = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss z").format(startTime);
   }
 
   public int getIteration() {
@@ -140,10 +141,6 @@ public class GCStatsImpl implements GCStats, Serializable {
     this.elapsedTime = time;
   }
 
-  private String formatAsDate(long date) {
-    return printFormat.format(date);
-  }
-
   private String formatTime(long time) {
     if (time == NOT_INITIALIZED) {
       return "N/A";
@@ -155,7 +152,7 @@ public class GCStatsImpl implements GCStats, Serializable {
   @Override
   public String toString() {
     return "DGCStats[ iteration: " + getIteration() + "; type: " + getType() + "; status: " + getStatus()
-           + " ] : startTime = " + formatAsDate(this.startTime) + "; elapsedTime = " + formatTime(this.elapsedTime)
+           + " ] : startTime = " + this.startTimeFormatted + "; elapsedTime = " + formatTime(this.elapsedTime)
            + "; markStageTime = " + formatTime(markStageTime) + "; pausedStageTime = "
            + formatTime(this.pausedStageTime) + "; deleteStageTime = " + formatTime(this.deleteStageTime)
            + "; beginObjectCount = " + this.beginObjectCount + "; endObjectCount = " + this.endObjectCount
