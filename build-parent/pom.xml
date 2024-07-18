@@ -46,7 +46,7 @@
     <management-core.version>4.5.0-SNAPSHOT</management-core.version>
     <session-management.version>4.3.9</session-management.version>
     <tc-messaging.version>1.1.6</tc-messaging.version>
-    <terracotta-license.version>1.2.3</terracotta-license.version>
+    <terracotta-license.version>0.9.1</terracotta-license.version>
     <toolkit-api.version>2.10</toolkit-api.version>
     <toolkit-api-internal.version>1.19</toolkit-api-internal.version>
     <!-- version of ehcache embedded inside toolkit -->
@@ -140,7 +140,7 @@
         <version>${management-core.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.terracotta.license</groupId>
+        <groupId>org.terracotta.license.ibm</groupId>
         <artifactId>terracotta-license</artifactId>
         <version>${terracotta-license.version}</version>
       </dependency>
