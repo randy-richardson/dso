@@ -26,7 +26,7 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class LoggingBlockingQueueTest {
 
@@ -38,7 +38,7 @@ public class LoggingBlockingQueueTest {
     for (int i = 0; i < 9; i++) {
       queue.put(Boolean.TRUE);
     }
-    verifyNoInteractions(mockLogger);
+    verifyZeroInteractions(mockLogger);
     queue.put(Boolean.TRUE);
     verify(mockLogger, times(1)).info("10");
 
@@ -47,7 +47,7 @@ public class LoggingBlockingQueueTest {
     for (int i = 0; i < 9; i++) {
       queue.put(Boolean.TRUE);
     }
-    verifyNoInteractions(mockLogger);
+    verifyZeroInteractions(mockLogger);
     queue.put(Boolean.TRUE);
     verify(mockLogger, times(1)).info("20");
 
@@ -56,7 +56,7 @@ public class LoggingBlockingQueueTest {
     for (int i = 0; i < 9; i++) {
       queue.take();
     }
-    verifyNoInteractions(mockLogger);
+    verifyZeroInteractions(mockLogger);
     queue.take();
     verify(mockLogger).info("10");
 
@@ -65,7 +65,7 @@ public class LoggingBlockingQueueTest {
     for (int i = 0; i < 9; i++) {
       queue.take();
     }
-    verifyNoInteractions(mockLogger);
+    verifyZeroInteractions(mockLogger);
     queue.take();
     verify(mockLogger).info("0");
   }
