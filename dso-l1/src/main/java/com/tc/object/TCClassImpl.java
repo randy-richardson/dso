@@ -122,21 +122,15 @@ public class TCClassImpl implements TCClass {
   }
 
   private Constructor findConstructor() {
-    Constructor rv = null;
-
     final Constructor[] cons = this.peer.getDeclaredConstructors();
     for (final Constructor con : cons) {
       final Class[] types = con.getParameterTypes();
       if (types.length == 0) {
-        rv = con;
-        rv.setAccessible(true);
-        return rv;
+        return con;
       }
     }
 
-    rv = ReflectionUtil.newConstructor(this.peer);
-    rv.setAccessible(true);
-    return rv;
+    return ReflectionUtil.newConstructor(this.peer);
   }
 
   @Override
