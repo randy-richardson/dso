@@ -1,18 +1,18 @@
-/* 
- * The contents of this file are subject to the Terracotta Public License Version
- * 2.0 (the "License"); You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at 
+/*
+ * Copyright Terracotta, Inc.
+ * Copyright Super iPaaS Integration LLC, an IBM Company 2024
  *
- *      http://terracotta.org/legal/terracotta-public-license.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
- * the specific language governing rights and limitations under the License.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * The Covered Software is Terracotta Platform.
- *
- * The Initial Developer of the Covered Software is 
- *      Terracotta, Inc., a Software AG company
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.tc.admin;
 
@@ -46,7 +46,7 @@ public class TCStop {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
 
   private static final int MAX_TRIES = 10;
-  private static final int TRY_INTERVAL = 2000;
+  private static final int TRY_INTERVAL = 1000;
 
   private static final String FORCE_OPTION_NAME = "force";
   private static final String STOP_IF_ACTIVE_OPTION_NAME = "stop-if-active";
@@ -161,7 +161,6 @@ public class TCStop {
                               boolean stopIfPassive,
                               boolean restart,
                               boolean restartInSafeMode) throws IOException {
-    Response response;
     Map<String, Boolean> map = new HashMap<>();
     map.put("forceStop", force);
     map.put("stopIfActive", stopIfActive);
@@ -172,17 +171,9 @@ public class TCStop {
     String hostPort = target.getUri().getHost() + ":" + target.getUri().getPort();
 
     for (int i = 0; i < MAX_TRIES; i++) {
+      Response response = null;
       try {
-        response =
-          target.path("/tc-management-api/v2/local/shutdown").request(APPLICATION_JSON_TYPE).post(stopConfig);
-      } catch (RuntimeException e) {
-        Throwable rootCause = getRootCause(e);
-        consoleLogger.info("Failed to issue shutdown request to " + hostPort + ": " + rootCause.getMessage() + "; retrying.");
-        ThreadUtil.reallySleep(TRY_INTERVAL);
-        continue;
-      }
-
-      try {
+        response = target.path("/tc-management-api/v2/local/shutdown").request(APPLICATION_JSON_TYPE).post(stopConfig);
         if (response.getStatus() >= 200 && response.getStatus() < 300) {
           Boolean success = response.readEntity(Boolean.class);
           if (success) {
@@ -209,12 +200,13 @@ public class TCStop {
           ThreadUtil.reallySleep(TRY_INTERVAL);
         } else {
           Map<String, ?> errorResponse = response.readEntity(Map.class);
-          consoleLogger.error(errorResponse.get("stackTrace"));
           throw new IOException(format("Error stopping server %s: %s", hostPort, errorResponse.get("error")));
         }
       } finally {
         try {
-          response.close();
+          if (response != null) {
+            response.close();
+          }
         } catch (Exception ignore) {}
       }
     }
