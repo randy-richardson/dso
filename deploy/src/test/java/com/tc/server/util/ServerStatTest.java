@@ -1,24 +1,24 @@
-/* 
- * The contents of this file are subject to the Terracotta Public License Version
- * 2.0 (the "License"); You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at 
+/*
+ * Copyright Terracotta, Inc.
+ * Copyright Super iPaaS Integration LLC, an IBM Company 2024
  *
- *      http://terracotta.org/legal/terracotta-public-license.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
- * the specific language governing rights and limitations under the License.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * The Covered Software is Terracotta Platform.
- *
- * The Initial Developer of the Covered Software is 
- *      Terracotta, Inc., a Software AG company
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.tc.server.util;
 
+import java.util.Collections;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -64,45 +64,30 @@ public class ServerStatTest {
   @Test
   public void testUnknownError() throws Exception {
     String errorMessage = "this is an error message 29138491283749skjafhdkasj";
-    String stacktrace = "this is the stacktrace";
-    Map<String, String> response = new HashMap<>();
-    response.put("error", errorMessage);
-    response.put("stackTrace", stacktrace);
     WebTarget target = mockWebTarget("host", 4321);
     when(target.request(MediaType.APPLICATION_JSON_TYPE).get().getStatus()).thenReturn(403);
     when(target.request(MediaType.APPLICATION_JSON_TYPE)
-        .get()
-        .readEntity(any(Class.class))).thenReturn(response);
-    try {
-      ServerStat.getStats(target);
-      throw new AssertionError("Expected IOException");
-    } catch (IOException ioe) {
-      assertThat(ioe.getMessage(), containsString(errorMessage));
-    }
+            .get()
+            .readEntity(any(Class.class))).thenReturn(Collections.singletonMap("error", errorMessage));
+    ServerStat stats = ServerStat.getStats(target);
+    assertErrorStats(stats);
+    assertThat(stats.toString(), containsString(errorMessage));
   }
 
   @Test
   public void testFourOhFour() throws Exception {
     WebTarget target = mockWebTarget("host", 4321);
     when(target.request(MediaType.APPLICATION_JSON_TYPE).get().getStatus()).thenReturn(404);
-    try {
-      ServerStat stats = ServerStat.getStats(target);
-      throw new AssertionError("Expected IOException");
-    } catch (IOException ioe) {
-      assertThat(ioe.getMessage(), containsString("Unable to get status"));
-    }
+    ServerStat stats = ServerStat.getStats(target);
+    assertErrorStats(stats);
   }
 
   @Test
   public void testAuthenticationFailure() throws Exception {
     WebTarget target = mockWebTarget("localhost", 1234);
     when(target.request(MediaType.APPLICATION_JSON_TYPE).get().getStatus()).thenReturn(401);
-    try {
-      ServerStat.getStats(target);
-      throw new AssertionError("Expected IOException");
-    } catch (IOException ioe) {
-      assertThat(ioe.getMessage(), containsString("Authentication error"));
-    }
+    ServerStat stats = ServerStat.getStats(target);
+    assertErrorStats(stats);
   }
 
   private void assertErrorStats(ServerStat stats) {
