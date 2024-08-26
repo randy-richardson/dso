@@ -16,6 +16,8 @@
  */
 package com.tc.net.util;
 
+import com.tc.util.properties.SystemPropertyCache;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -46,7 +48,7 @@ public class TSASSLSocketFactory extends SSLSocketFactory implements RMIClientSo
     SSLContext ctx = SSLContext.getInstance("TLS");
 
     TrustManager[] trustManagers = null;
-    if (Boolean.getBoolean("tc.ssl.trustAllCerts")) {
+    if (Boolean.parseBoolean(SystemPropertyCache.getProperty("tc.ssl.trustAllCerts"))) {
       // trust all certs
       trustManagers = new TrustManager[] {
           new X509TrustManager() {

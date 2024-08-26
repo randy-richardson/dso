@@ -17,6 +17,7 @@
 package com.tc.management;
 
 import com.tc.net.util.TSASSLSocketFactory;
+import com.tc.util.properties.SystemPropertyCache;
 
 import java.io.IOException;
 import java.io.NotSerializableException;
@@ -110,7 +111,7 @@ public class JMXConnectorProxy implements JMXConnector {
 
     if (m_secured) {
       RMIClientSocketFactory csf;
-      if (Boolean.getBoolean("tc.ssl.trustAllCerts")) {
+      if (Boolean.parseBoolean(SystemPropertyCache.getProperty("tc.ssl.trustAllCerts"))) {
         csf = new TSASSLSocketFactory();
       } else {
         csf = new SslRMIClientSocketFactory();
