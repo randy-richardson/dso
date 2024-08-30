@@ -1,2 +1,7 @@
-/svnmerge-commit-message.txt
-/.tc-build-cache
+/target
+/.classpath
+/.project
+/nb-configuration.xml
+/.settings
+/*.iml
+/.idea
