@@ -43,7 +43,7 @@ public abstract class AbstractManagedObjectState implements ManagedObjectState {
   public final boolean equals(Object o) {
     if (o == null) return false;
     if (this == o) return true;
-    if (getClass().getName().equals(o.getClass().getName())) { return basicEquals((AbstractManagedObjectState) o); }
+    if (getClass().equals(o.getClass())) { return basicEquals((AbstractManagedObjectState) o); }
     return false;
   }
 
