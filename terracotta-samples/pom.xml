@@ -21,7 +21,7 @@ The Initial Developer of the Covered Software is
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-parent</artifactId>
-    <version>4.3.10-SNAPSHOT</version>
+    <version>4.4.0-SNAPSHOT</version>
     <relativePath>../terracotta-parent</relativePath>
   </parent>
 
@@ -134,19 +134,6 @@ The Initial Developer of the Covered Software is
           <artifactId>findbugs-maven-plugin</artifactId>
           <version>3.0.5</version>
         </plugin>
-        <plugin>
-          <groupId>org.sonatype.plugins</groupId>
-          <artifactId>nexus-staging-maven-plugin</artifactId>
-          <version>1.6.1</version>
-          <extensions>true</extensions>
-          <configuration>
-            <!-- The Base URL of Nexus instance where we want to stage -->
-            <nexusUrl>http://nexus.terracotta.eur.ad.sag</nexusUrl>
-            <!-- The server "id" element from settings to use authentication from -->
-            <serverId>terracotta-nexus-staging</serverId>
-            <skipNexusStagingDeployMojo>${skipDeploy}</skipNexusStagingDeployMojo>
-          </configuration>
-        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -162,8 +149,8 @@ The Initial Developer of the Covered Software is
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.3</version>
         <configuration>
           <filters>
             <filter>${basedir}/src/assemble/filter.properties</filter>
@@ -199,10 +186,6 @@ The Initial Developer of the Covered Software is
             <argument>${mainClass}</argument>
           </arguments>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

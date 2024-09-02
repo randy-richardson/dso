@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.terracotta.management.resource.Representable;
@@ -55,7 +55,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -156,7 +158,7 @@ public class RemoteManagementSourceTest {
     remoteManagementSource.postToRemoteL2("server1", new URI("/xyz"));
 
     verify(client).target(eq(new URI("http://server-host1:9540/xyz")));
-    verify(builder).post(Matchers.<Entity<Object>>eq(null));
+    verify(builder).post(Mockito.<Entity<Object>>eq(null));
   }
 
   @Test
@@ -187,7 +189,7 @@ public class RemoteManagementSourceTest {
     }
 
     verify(client).target(eq(new URI("http://server-host1:9540/xyz")));
-    verify(builder).post(Matchers.<Entity<Object>>eq(null));
+    verify(builder).post(Mockito.<Entity<Object>>eq(null));
   }
 
   @Test

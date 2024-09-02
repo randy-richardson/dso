@@ -16,11 +16,11 @@
  */
 package com.tc.server.util;
 
+import java.util.Collections;
 import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.anyVararg;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -68,8 +67,8 @@ public class ServerStatTest {
     WebTarget target = mockWebTarget("host", 4321);
     when(target.request(MediaType.APPLICATION_JSON_TYPE).get().getStatus()).thenReturn(403);
     when(target.request(MediaType.APPLICATION_JSON_TYPE)
-        .get()
-        .readEntity(any(Class.class))).thenReturn(Collections.singletonMap("error", errorMessage));
+            .get()
+            .readEntity(any(Class.class))).thenReturn(Collections.singletonMap("error", errorMessage));
     ServerStat stats = ServerStat.getStats(target);
     assertErrorStats(stats);
     assertThat(stats.toString(), containsString(errorMessage));
@@ -107,7 +106,7 @@ public class ServerStatTest {
     WebTarget target = mock(WebTarget.class);
     when(target.getUri()).thenReturn(new URI("http://" + host + ":" + port));
     when(target.path(anyString())).thenReturn(target);
-    when(target.request((MediaType[]) anyVararg())).thenReturn(builder);
+    when(target.request((MediaType[]) any())).thenReturn(builder);
     return target;
   }
 }

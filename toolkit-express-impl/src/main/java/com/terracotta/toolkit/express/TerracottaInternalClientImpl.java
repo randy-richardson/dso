@@ -57,7 +57,7 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
   private volatile boolean            isInitialized        = false;
 
   TerracottaInternalClientImpl(String tcConfig, boolean isUrlConfig, ClassLoader appLoader, boolean rejoinEnabled,
-                               Set<String> tunneledMBeanDomains, final String productId, Map<String, Object> env) {
+                               Set<String> tunneledMBeanDomains, final String productId, final String clientName, Map<String, Object> env) {
     if (tunneledMBeanDomains != null) {
       this.tunneledMBeanDomains.addAll(tunneledMBeanDomains);
     }
@@ -67,7 +67,7 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
 
       Class bootClass = clusteredStateLoader.loadClass(CreateClient.class.getName());
       Constructor<?> cstr = bootClass.getConstructor(String.class, Boolean.TYPE, ClassLoader.class, Boolean.TYPE,
-                                                     String.class, Map.class);
+                                                     String.class, String.class, Map.class);
 
       if (isUrlConfig && isRequestingSecuredEnv(tcConfig)) {
         if (env != null) {
@@ -77,7 +77,7 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
       }
       Callable<ClientCreatorCallable> boot = (Callable<ClientCreatorCallable>) cstr.newInstance(tcConfig, isUrlConfig,
                                                                                       clusteredStateLoader,
-                                                                                      rejoinEnabled, productId, env);
+                                                                                      rejoinEnabled, productId, clientName, env);
       this.clientCreator = boot.call();
     } catch (Exception e) {
       throw new ToolkitRuntimeException(e);
@@ -94,33 +94,12 @@ class TerracottaInternalClientImpl implements TerracottaInternalClient {
 
       isInitialized = true;
       join(tunneledMBeanDomains);
-      setSecretHackOMFG();
     } catch (InvocationTargetException e) {
       throw new RuntimeException(e.getCause());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
 
-  }
-
-  private void setSecretHackOMFG() {
-    try {
-      // Let's make sure we even care about security stuff at all...
-      // if so, then check if the thing that cares is the BM Connector's TkSecurityManager
-      appClassLoader.loadClass("com.terracotta.management.keychain.KeyChain");
-      final Class<?> omfg = appClassLoader.loadClass("net.sf.ehcache.thrift.server.tc.TkSecurityManager");
-      final Field secret = omfg.getDeclaredField("SECRET");
-      if (secret.getType() == byte[].class) {
-        secret.setAccessible(true);
-        Class secretProviderClass = clusteredStateLoader.loadClass("com.terracotta.management.security.SecretProvider");
-        Method method = secretProviderClass.getMethod("getSecret");
-        secret.set(null, method.invoke(null));
-      }
-    } catch (ClassNotFoundException e) {
-      // That's fine, moving on
-    } catch (Throwable t) {
-      //
-    }
   }
 
   @Override

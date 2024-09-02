@@ -503,7 +503,7 @@ public class L2ConfigurationSetupManagerImpl extends BaseConfigurationSetupManag
     L2ConfigData serverConfigData = configDataFor(l2Identifier);
 
     if (setupLogging) {
-      LogSettingConfigItemListener listener = new LogSettingConfigItemListener(TCLogging.PROCESS_TYPE_L2);
+      LogSettingConfigItemListener listener = new LogSettingConfigItemListener("terracotta-server");
       listener.valueChanged(null, serverConfigData.commonL2Config().logsPath());
     }
     return serverConfigData;

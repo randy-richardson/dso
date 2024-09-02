@@ -257,7 +257,7 @@ public class ServerURL {
 
   private int calculateTimeout(int timeout) {
     if (timeout == -1) {
-      return (int) TCPropertiesImpl.getProperties().getLong(TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT, 30000);
+      return (int) TCPropertiesImpl.getProperties().getLong(TCPropertiesConsts.TC_CONFIG_SOURCEGET_TIMEOUT, 10000);
     } else {
       return timeout;
     }

@@ -91,7 +91,6 @@ public class RemoteCallerV2 extends RemoteCaller {
         Throwable rootCause = ExceptionUtils.getRootCause(ree);
         ExceptionEntityV2 ee = new ExceptionEntityV2(rootCause);
         ee.setAgentId(node);
-        ee.setMessage(rootCause.getMessage());
         rejectionResponse.getExceptionEntities().add(ee);
         futures.put(node, new RejectionFuture<ResponseEntityV2<T>>(rejectionResponse));
       }
@@ -121,7 +120,6 @@ public class RemoteCallerV2 extends RemoteCaller {
         Throwable rootCause = ExceptionUtils.getRootCause(e);
         ExceptionEntityV2 e1 = new ExceptionEntityV2(rootCause);
         e1.setAgentId(node);
-        e1.setMessage(rootCause.getMessage());
         globalResult.getExceptionEntities().add(e1);
 
         future.cancel(true);

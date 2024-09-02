@@ -18,7 +18,6 @@ package com.tc.objectserver.impl;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Answers;
 
 import com.tc.async.api.Sink;
 import com.tc.async.api.Stage;
@@ -35,8 +34,10 @@ import com.tc.objectserver.persistence.EvictionTransactionPersistor;
 
 import java.util.Collections;
 
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 public class ServerMapEvictionEngineTest {
   private ServerMapEvictionEngine serverMapEvictionEngine;
@@ -46,7 +47,7 @@ public class ServerMapEvictionEngineTest {
   public void setUp() throws Exception {
     serverMapEvictionEngine = new ServerMapEvictionEngine(mock(ObjectManager.class),
         new ServerTransactionFactory(ServerID.NULL_ID), mock(EvictionTransactionPersistor.class), true);
-    ServerConfigurationContext scc = mock(ServerConfigurationContext.class, Answers.RETURNS_MOCKS.get());
+    ServerConfigurationContext scc = mock(ServerConfigurationContext.class, withSettings().defaultAnswer(RETURNS_MOCKS));
     lwmUpdateSink = mock(Sink.class);
     Stage lwmUpdateStage = mock(Stage.class);
     when(lwmUpdateStage.getSink()).thenReturn(lwmUpdateSink);

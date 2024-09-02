@@ -128,12 +128,12 @@ public class ClientMessageChannelImpl extends AbstractMessageChannel implements 
       Assert.assertNotNull("TCSecurityManager should not be null", pwProvider);
       // use user-password of first server in the group
       ConnectionInfo connectionInfo = addressProvider.getIterator().next();
-      logger.info("Getting password for " + securityInfo.getUsername());
+      logger.debug("Getting password for " + securityInfo.getUsername());
       password = pwProvider.getPasswordForTC(securityInfo.getUsername(), connectionInfo.getHostname(),
                                            connectionInfo.getPort());
       Assert.assertNotNull("password is null from securityInfo " + securityInfo, password);
     } else {
-      logger.info("Non-secure mode, no password needed");
+      logger.debug("Non-secure mode, no password needed");
     }
     return password;
   }

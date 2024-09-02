@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.session.HouseKeeper;
 import org.eclipse.jetty.server.session.SessionHandler;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.EventListener;
 import java.util.Set;
 
 /**
@@ -89,6 +90,18 @@ public class TcHashSessionIdManager implements SessionIdManager {
   public boolean isFailed() {
     if (delegate == null) { return false; }
     return getDelegate().isFailed();
+  }
+
+  @Override
+  public boolean addEventListener(EventListener eventListener) {
+    if (delegate == null) { return false; }
+    return getDelegate().addEventListener(eventListener);
+  }
+
+  @Override
+  public boolean removeEventListener(EventListener eventListener) {
+    if (delegate == null) { return false; }
+    return getDelegate().removeEventListener(eventListener);
   }
 
   @Override
@@ -166,15 +179,5 @@ public class TcHashSessionIdManager implements SessionIdManager {
 
       return delegate;
     }
-  }
-
-  @Override
-  public void addLifeCycleListener(Listener arg0) {
-    /**/
-  }
-
-  @Override
-  public void removeLifeCycleListener(Listener arg0) {
-    /**/
   }
 }

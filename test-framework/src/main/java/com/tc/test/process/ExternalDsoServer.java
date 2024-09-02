@@ -16,8 +16,6 @@
  */
 package com.tc.test.process;
 
-import org.apache.commons.io.IOUtils;
-
 import com.tc.config.Loader;
 import com.tc.config.schema.defaults.SchemaDefaultValueProvider;
 import com.tc.config.test.schema.L2ConfigBuilder;
@@ -31,6 +29,8 @@ import com.tc.util.ProductInfo;
 import com.terracottatech.config.Server;
 import com.terracottatech.config.TcConfigDocument;
 import com.terracottatech.config.TcConfigDocument.TcConfig;
+import junit.framework.Assert;
+import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,8 +40,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-
-import junit.framework.Assert;
 
 /**
  * This class will start a DSO server in Enterprise mode, out of process
@@ -256,10 +254,23 @@ public class ExternalDsoServer {
     return theConfigFile;
   }
 
+  // TODO: If we remove devmode, this method can be removed and just use ProductInfo directly
+
+  private static final String detectEdition() {
+    String edition = ProductInfo.OPENSOURCE;
+    try {
+      Class.forName("com.tc.util.ProductInfoEnterpriseBundle");
+      edition = ProductInfo.ENTERPRISE;
+    } catch (ClassNotFoundException e) {
+      // ignore
+    }
+    return edition;
+  }
+
   private String guessWarLocation() throws IOException {
     String groupId = "org.terracotta";
     String artifactId = "management-tsa-war";
-    if (ProductInfo.ENTERPRISE.equals(ProductInfo.getInstance().edition())) {
+    if (ProductInfo.ENTERPRISE.equals(detectEdition())) {
       groupId = "com.terracottatech";
       artifactId = "ent-management-tsa-war";
     }
