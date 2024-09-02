@@ -39,7 +39,7 @@ public interface L1ConfigurationSetupManager {
 
   SecurityInfo getSecurityInfo();
 
-  void setupLogging();
+  void setupLogging(String clientName);
 
   void reloadServersConfiguration() throws ConfigurationSetupException;
 }

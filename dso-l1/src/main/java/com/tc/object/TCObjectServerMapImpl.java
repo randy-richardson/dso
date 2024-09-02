@@ -1169,23 +1169,23 @@ public class TCObjectServerMapImpl<L> extends TCObjectLogical implements TCObjec
 
   @Override
   public void doRegisterListener(Set<ServerEventType> eventTypes, boolean skipRejoinChecks) {
-    Set<Object> params = new HashSet<Object>();
-    for (ServerEventType eventType : eventTypes) {
-      params.add(eventType.ordinal());
+    List<Object> params = new ArrayList<>(eventTypes.size() + 1);
+    params.add(this.platformService.getClientId());
+    for (ServerEventType type : eventTypes) {
+      params.add(type.ordinal());
     }
 
-    // TODO: How to get the clientID here???
     logicalInvoke(LogicalOperation.REGISTER_SERVER_EVENT_LISTENER, params.toArray());
   }
 
   @Override
   public void doUnregisterListener(Set<ServerEventType> eventTypes) {
-    Set<Object> params = new HashSet<Object>();
-    for (ServerEventType eventType : eventTypes) {
-      params.add(eventType.ordinal());
+    List<Object> params = new ArrayList<>(eventTypes.size() + 1);
+    params.add(this.platformService.getClientId());
+    for (ServerEventType type : eventTypes) {
+      params.add(type.ordinal());
     }
 
-    // TODO: How to get the clientID here???
     logicalInvoke(LogicalOperation.UNREGISTER_SERVER_EVENT_LISTENER, params.toArray());
   }
 
