@@ -44,7 +44,7 @@
     <bigmemory-core-storage.version>2.1.4</bigmemory-core-storage.version>
     <search.version>1.5.20</search.version>
     <management-core.version>4.4.1-SNAPSHOT</management-core.version>
-    <tc-messaging.version>1.1.13</tc-messaging.version>
+    <tc-messaging.version>1.1.16</tc-messaging.version>
     <terracotta-license.version>0.9.2</terracotta-license.version>
     <toolkit-api.version>2.11</toolkit-api.version>
     <toolkit-api-internal.version>1.20</toolkit-api-internal.version>
