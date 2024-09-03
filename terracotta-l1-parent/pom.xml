@@ -100,7 +100,7 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.terracotta.license</groupId>
+      <groupId>org.terracotta.license.ibm</groupId>
       <artifactId>terracotta-license</artifactId>
     </dependency>
     <dependency>
