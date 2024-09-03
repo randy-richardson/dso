@@ -1,18 +1,18 @@
-/* 
- * The contents of this file are subject to the Terracotta Public License Version
- * 2.0 (the "License"); You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at 
+/*
+ * Copyright Terracotta, Inc.
+ * Copyright Super iPaaS Integration LLC, an IBM Company 2024
  *
- *      http://terracotta.org/legal/terracotta-public-license.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
- * the specific language governing rights and limitations under the License.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * The Covered Software is Terracotta Platform.
- *
- * The Initial Developer of the Covered Software is 
- *      Terracotta, Inc., a Software AG company
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.tc.objectserver.dgc.api;
 
@@ -24,13 +24,13 @@ import java.text.SimpleDateFormat;
 
 public class GCStatsImpl implements GCStats, Serializable {
   private static final long      serialVersionUID      = -4177683133067698672L;
-  private final SimpleDateFormat printFormat           = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss z");
 
   private static final long      NOT_INITIALIZED       = -1L;
   private static final String    YOUNG_GENERATION      = "Young";
   private static final String    FULL_GENERATION       = "Full";
   private final int              number;
   private final long             startTime;
+  private final String           startTimeFormatted;
   private long                   elapsedTime           = NOT_INITIALIZED;
   private long                   beginObjectCount      = NOT_INITIALIZED;
   private long                   endObjectCount        = NOT_INITIALIZED;
@@ -45,6 +45,7 @@ public class GCStatsImpl implements GCStats, Serializable {
     this.number = number;
     this.fullGC = fullGC;
     this.startTime = startTime;
+    this.startTimeFormatted = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss z").format(startTime);
   }
 
   @Override
@@ -150,10 +151,6 @@ public class GCStatsImpl implements GCStats, Serializable {
     this.elapsedTime = time;
   }
 
-  private String formatAsDate(long date) {
-    return printFormat.format(date);
-  }
-
   private String formatTime(long time) {
     if (time == NOT_INITIALIZED) {
       return "N/A";
@@ -165,7 +162,7 @@ public class GCStatsImpl implements GCStats, Serializable {
   @Override
   public String toString() {
     return "DGCStats[ iteration: " + getIteration() + "; type: " + getType() + "; status: " + getStatus()
-           + " ] : startTime = " + formatAsDate(this.startTime) + "; elapsedTime = " + formatTime(this.elapsedTime)
+           + " ] : startTime = " + this.startTimeFormatted + "; elapsedTime = " + formatTime(this.elapsedTime)
            + "; markStageTime = " + formatTime(markStageTime) + "; pausedStageTime = "
            + formatTime(this.pausedStageTime) + "; beginObjectCount = " + this.beginObjectCount + "; endObjectCount = "
            + this.endObjectCount + "; candidateGarbageCount = " + this.candidateGarbageCount +
