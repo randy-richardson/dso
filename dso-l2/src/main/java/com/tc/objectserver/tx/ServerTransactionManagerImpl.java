@@ -184,12 +184,8 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
     return out;
   }
 
-  /**
-   * Shutdown clients are not cleared immediately. Only on completing of all txns this is processed.
-   */
-  @Override
-  public synchronized void shutdownNode(final NodeID deadNodeID) {
-    // acknowledgement can invoke backup callback which requires instance-level sync
+  private synchronized boolean cleanupTransactionAccount(final NodeID deadNodeID) {
+       // acknowledgement can invoke backup callback which requires instance-level sync
     boolean callBackAdded = false;
     synchronized (this.transactionAccounts) {
 
@@ -223,8 +219,15 @@ public class ServerTransactionManagerImpl implements ServerTransactionManager, S
         }
       }
     }
+    return callBackAdded;
+  }
 
-    if (!callBackAdded) {
+  /**
+   * Shutdown clients are not cleared immediately. Only on completing of all txns this is processed.
+   */
+  @Override
+  public void shutdownNode(final NodeID deadNodeID) {
+    if (!cleanupTransactionAccount(deadNodeID)) {
       this.stateManager.shutdownNode(deadNodeID);
       if (deadNodeID instanceof ClientID) {
         this.lockManager.clearAllLocksFor((ClientID) deadNodeID);

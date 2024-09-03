@@ -16,14 +16,13 @@
  */
 package com.tc.objectserver.handler;
 
-
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import com.tc.license.ProductID;
 import com.tc.management.RemoteManagement;
@@ -36,8 +35,9 @@ import com.tc.operatorevent.TerracottaOperatorEvent;
 import com.tc.operatorevent.TerracottaOperatorEventLogger;
 import com.tc.operatorevent.TerracottaOperatorEventLogging;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -46,17 +46,18 @@ import static org.mockito.Mockito.when;
 /**
  * @author tim
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ TerracottaOperatorEventLogging.class})
 public class ClientChannelOperatorEventlistenerTest {
+  @Rule public MockitoRule mockito = MockitoJUnit.rule();
+
   private TerracottaOperatorEventLogger logger;
   private ClientChannelOperatorEventlistener listener;
+  private MockedStatic mockTerracottaOperatorEventLogging;
 
   @Before
   public void setUp() throws Exception {
     logger = spy(new TerracottaOperatorEventLogger(NodeNameProvider.DEFAULT_NODE_NAME_PROVIDER));
-    PowerMockito.mockStatic(TerracottaOperatorEventLogging.class);
-    when(TerracottaOperatorEventLogging.getEventLogger()).thenReturn(logger);
+    mockTerracottaOperatorEventLogging = mockStatic(TerracottaOperatorEventLogging.class);
+    mockTerracottaOperatorEventLogging.when(TerracottaOperatorEventLogging::getEventLogger).thenReturn(logger);
     listener = new ClientChannelOperatorEventlistener();
     RemoteManagement remoteManagement = mock(RemoteManagement.class);
     TerracottaRemoteManagement.setRemoteManagementInstance(remoteManagement);
@@ -65,6 +66,7 @@ public class ClientChannelOperatorEventlistenerTest {
   @After
   public void tearDown() {
     TerracottaRemoteManagement.setRemoteManagementInstance(null);
+    mockTerracottaOperatorEventLogging.close();
   }
 
   @Test

@@ -29,8 +29,8 @@ import com.terracotta.toolkit.nonstop.NonStopManager;
 import com.terracotta.toolkit.nonstop.NonstopTimeoutBehaviorResolver;
 import com.terracotta.toolkit.nonstop.ToolkitObjectLookup;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

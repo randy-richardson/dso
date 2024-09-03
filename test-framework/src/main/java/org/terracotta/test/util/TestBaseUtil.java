@@ -72,7 +72,7 @@ public class TestBaseUtil {
     Map<String, String> argsMap = new HashMap<String, String>();
     Set<String> argSet = new HashSet<String>();
     for (String arg : jvmArgs) {
-      if (arg.indexOf("=") > 0) {
+      if (arg.startsWith("-D") && arg.indexOf("=") > 0) {
         String key = arg.substring(0, arg.indexOf("="));
         String value = arg.substring(arg.indexOf("=") + 1);
         argsMap.put(key, value);

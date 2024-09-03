@@ -18,7 +18,6 @@ package com.terracotta.toolkit;
 
 import static org.mockito.Mockito.mock;
 
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.terracotta.toolkit.internal.feature.ToolkitManagementEvent;
 
@@ -52,7 +51,7 @@ public class NonStopManagementInternalFeatureImplTest extends TestCase {
 
     PlatformService ps = mock(PlatformService.class);
     feature.setPlatformService(ps);
-    Mockito.verify(ps, Mockito.times(1)).sendEvent(Matchers.any(TCManagementEvent.class));
+    Mockito.verify(ps, Mockito.times(1)).sendEvent(Mockito.any(TCManagementEvent.class));
 
     Object service = new Object();
     ExecutorService executor = mock(ExecutorService.class);

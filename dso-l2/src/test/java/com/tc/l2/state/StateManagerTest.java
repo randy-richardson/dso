@@ -28,7 +28,7 @@ import com.tc.test.TCTestCase;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;

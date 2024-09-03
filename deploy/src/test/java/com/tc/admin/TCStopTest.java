@@ -18,12 +18,10 @@ package com.tc.admin;
 
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
-import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -110,7 +108,7 @@ public class TCStopTest {
     WebTarget target = mock(WebTarget.class);
     when(target.getUri()).thenReturn(new URI("http://" + host + ":" + port));
     when(target.path(anyString())).thenReturn(target);
-    when(target.request(ArgumentMatchers.<MediaType>any())).thenReturn(builder);
+    when(target.request((MediaType) any())).thenReturn(builder);
     return target;
   }
 

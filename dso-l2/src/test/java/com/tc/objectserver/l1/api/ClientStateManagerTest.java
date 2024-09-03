@@ -41,8 +41,8 @@ import junit.framework.TestCase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import org.mockito.Matchers;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -276,7 +276,7 @@ public class ClientStateManagerTest extends TestCase {
     clientStateManager.registerObjectReferenceAddListener(listener);
     assertTrue(clientStateManager.addReference(clientID, oid));
     assertFalse(clientStateManager.addReference(clientID, oid));
-    verify(listener).objectReferenceAdded(Matchers.eq(oid));
+    verify(listener).objectReferenceAdded(eq(oid));
     ClientID client2 = new ClientID(2);
     assertFalse(clientStateManager.addReference(client2, oid));
   }
