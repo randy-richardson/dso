@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>terracotta-parent</artifactId>
-    <version>4.4.1-SNAPSHOT</version>
+    <version>4.5.0-SNAPSHOT</version>
     <relativePath>../terracotta-parent/pom.xml</relativePath>
   </parent>
 
@@ -36,7 +36,7 @@
     <kit.name>${product.name}-${project.version}</kit.name>
     <root.dir>${project.build.directory}/${kit.name}</root.dir>
 
-    <ehcache.version>2.11.1-SNAPSHOT</ehcache.version>
+    <ehcache.version>2.12.0-SNAPSHOT</ehcache.version>
     <toolkit-api.version>2.1.0</toolkit-api.version>
     <escrow-maven-plugin.version>1.0.3-SNAPSHOT</escrow-maven-plugin.version>
     <management-cli.version>${project.version}</management-cli.version>
