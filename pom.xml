@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent</artifactId>
-    <version>7.0</version>
+    <version>8.0</version>
     <relativePath/>
   </parent>
 
@@ -39,7 +39,7 @@
   
   <properties>
     <build.edition>opensource</build.edition>
-    <tc-shader.version>2.0</tc-shader.version>
+    <tc-shader.version>2.1.1</tc-shader.version>
     <skip.deploy>false</skip.deploy>
     <!-- can't default to ${project.version}, breaks child projects like ehcache that use a different version -->
     <thirdparty-bom.version>4.4.1-SNAPSHOT</thirdparty-bom.version>
