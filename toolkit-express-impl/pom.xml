@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.terracotta</groupId>
     <artifactId>build-parent</artifactId>
-    <version>4.4.1-SNAPSHOT</version>
+    <version>4.5.0-SNAPSHOT</version>
     <relativePath>../build-parent</relativePath>
   </parent>
 
@@ -46,7 +46,7 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.terracotta.license</groupId>
+      <groupId>org.terracotta.license.ibm</groupId>
       <artifactId>terracotta-license</artifactId>
       <scope>provided</scope>
     </dependency>
