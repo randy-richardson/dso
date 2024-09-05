@@ -16,7 +16,6 @@
  */
 package org.terracotta.kit;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -34,7 +33,7 @@ public class EhcacheAllIT {
         System.out.println(path.toAbsolutePath());
 
         try (URLClassLoader urlClassLoader = URLClassLoader.newInstance(new URL[] {path.toUri().toURL()}, null)) {
-            Assert.assertNotNull(urlClassLoader.findResource("Version.info"));
+            urlClassLoader.loadClass("org.terracotta.util.ToolkitVersion");
             urlClassLoader.loadClass("net.sf.ehcache.Cache");
             urlClassLoader.loadClass("org.slf4j.Logger");
         }
