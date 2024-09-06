@@ -16,7 +16,6 @@
  */
 package com.tc.util.io;
 
-import com.tc.util.properties.SystemPropertyCache;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 
@@ -52,15 +51,15 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import static com.tc.util.properties.SslSettings.DISABLE_HOSTNAME_VERIFIER;
+import static com.tc.util.properties.SslSettings.TRUST_ALL_CERTS;
+
 @SuppressWarnings("restriction")
 public class ServerURL {
 
   private static final TCLogger logger                    = TCLogging.getLogger(ServerURL.class);
 
   private static final String   VERSION_HEADER            = "Version";
-
-  private static final boolean  DISABLE_HOSTNAME_VERIFIER = Boolean.parseBoolean(SystemPropertyCache.getProperty("tc.ssl.disableHostnameVerifier"));
-  private static final boolean  TRUST_ALL_CERTS           = Boolean.parseBoolean(SystemPropertyCache.getProperty("tc.ssl.trustAllCerts"));
 
   private final URL             theURL;
   private final int             timeout;

@@ -17,7 +17,6 @@
 package com.tc.management;
 
 import com.tc.net.util.TSASSLSocketFactory;
-import com.tc.util.properties.SystemPropertyCache;
 
 import java.io.IOException;
 import java.io.NotSerializableException;
@@ -41,6 +40,8 @@ import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
 import javax.security.auth.Subject;
+
+import static com.tc.util.properties.SslSettings.TRUST_ALL_CERTS;
 
 public class JMXConnectorProxy implements JMXConnector {
   private final String       m_host;
@@ -111,7 +112,7 @@ public class JMXConnectorProxy implements JMXConnector {
 
     if (m_secured) {
       RMIClientSocketFactory csf;
-      if (Boolean.parseBoolean(SystemPropertyCache.getProperty("tc.ssl.trustAllCerts"))) {
+      if (TRUST_ALL_CERTS) {
         csf = new TSASSLSocketFactory();
       } else {
         csf = new SslRMIClientSocketFactory();
