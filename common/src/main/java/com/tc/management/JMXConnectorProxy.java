@@ -41,6 +41,8 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
 import javax.security.auth.Subject;
 
+import static com.tc.util.properties.SslSettings.TRUST_ALL_CERTS;
+
 public class JMXConnectorProxy implements JMXConnector {
   private final String       m_host;
   private final int          m_port;
@@ -110,7 +112,7 @@ public class JMXConnectorProxy implements JMXConnector {
 
     if (m_secured) {
       RMIClientSocketFactory csf;
-      if (Boolean.getBoolean("tc.ssl.trustAllCerts")) {
+      if (TRUST_ALL_CERTS) {
         csf = new TSASSLSocketFactory();
       } else {
         csf = new SslRMIClientSocketFactory();
