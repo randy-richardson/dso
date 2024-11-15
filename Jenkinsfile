@@ -15,7 +15,7 @@
  */
 
 mavenBuildOSS.legacy4x(
-    maven_params  : '-Ptc-publish,fullmode -Djenkins.publisher=true -Dsag-deps=true -DskipLocalStaging=true',
+    maven_params  : '-Ptc-publish,fullmode -Djenkins.publisher=true -Dsag-deps=true -DskipLocalStaging=true -DskipCheckstyle=true',
     maven_goal_pr : 'clean', // PR is already handled by azure pipeline
     maven_goal    : 'deploy',
     jdk: 11
