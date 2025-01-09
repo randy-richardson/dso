@@ -1,6 +1,6 @@
 /*
  * Copyright Terracotta, Inc.
- * Copyright Super iPaaS Integration LLC, an IBM Company 2024
+ * Copyright IBM Corp. 2024, 2025
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public class ProductInfoBundle extends ListResourceBundle {
     {"moniker", "Terracotta"},
     {"invalid.timestamp", "The build timestamp string ''{0}'' does not appear to be valid."},
     {"load.properties.failure", "Unable to load build properties from ''{0}''."},
-    {"copyright", "Copyright (c) 2003-2008 Terracotta, Inc. Copyright Super iPaaS Integration LLC, an IBM Company 2024. All rights reserved."},
+    {"copyright", "Copyright (c) 2003-2008 Terracotta, Inc. Copyright IBM Corp. 2024, 2025. All rights reserved."},
     {"option.verbose", "Produces more detailed information."},
     {"option.raw", "Produces raw information."},
     {"option.help", "Shows this text."},

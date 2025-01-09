@@ -3,7 +3,7 @@
  * &#064;(#)Grep.java  1.3 01/12/13
  *
  * Copyright 2001-2002 Sun Microsystems, Inc. All Rights Reserved.
- * Copyright Super iPaaS Integration LLC, an IBM Company 2024
+ * Copyright IBM Corp. 2024, 2025
  *
  * Redistribution and use in source and binary forms, with or
  * without modification, are permitted provided that the following

@@ -54,5 +54,5 @@ uses by setting the JAVA_HOME environment variable.
 
 ----
 Copyright Terracotta, Inc.
-Copyright Super iPaaS Integration LLC, an IBM Company 2024
+Copyright IBM Corp. 2024, 2025
 http://www.terracotta.org
