@@ -30,8 +30,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.xmlbeans.XmlException;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +98,7 @@ public class ClusterManager {
 
     this.tcConfig = tcConfig;
     this.tcConfigBuilder = new TcConfigBuilder(parsedDoc);
+    this.tcConfigBuilder.setClientLogs(new File(workingDir, "client-logs").getAbsolutePath());
     this.workingDir = workingDir;
     this.version = guessMavenArtifactVersion();
     LOG.info("Guessed version: " + this.version);

@@ -35,12 +35,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 
 import static java.lang.String.format;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 
 public class TCStop {
   private static final TCLogger consoleLogger = CustomerLogging.getConsoleLogger();
@@ -194,6 +194,8 @@ public class TCStop {
           return;
         } else if (response.getStatus() == 401) {
           throw new IOException("Authentication error while connecting to " + hostPort + ", check username/password and try again.");
+        } else if (response.getStatus() == 403) {
+          throw new IOException("Insufficient permissions to perform a server shutdown.");
         } else if (response.getStatus() == 404) {
           consoleLogger.warn("Got a 404 while connecting to " + hostPort + ". Management service might not be started " +
             "yet; retrying.");
